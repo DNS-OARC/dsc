@@ -64,7 +64,7 @@ each type of dataset.  Thus, if you add a new dataset definition
 to {\em dsc.conf\/}, you also need to write a corresponding XML
 extractor.
 
-An XML extractor essentially convers the XML-structured data to a
+An XML extractor essentially converts the XML-structured data to a
 format that is easier (faster) for the graphing tools to parse.
 All XML extractors save the data to ``flat'' text files.  Some
 extractors also store the data to relational database tables.
@@ -164,7 +164,7 @@ Here are the directories you need to visit:
 \section{Prerequisites}
 
 The XML-extractors and Ploticus-graphers are written in Perl.  In addition the
-standard Perl installation, you will also need the folowing Perl modules:
+standard Perl installation, you will also need the following Perl modules:
 
 \begin{itemize}
 	\item CGI-Untaint (CGI::Untaint)
@@ -207,7 +207,7 @@ these type:
 \end{verbatim}
 
 \noindent
-The files will be intalled in your standard ``site\_perl'' directory.
+The files will be installed in your standard ``site\_perl'' directory.
 
 \subsection{\tt xml-extractors}
 
@@ -313,7 +313,7 @@ to the installed script from your server's {\em cgi-bin\/} directory:
 \end{verbatim}
 
 This script accepts PUT requests on the HTTP server.  The HTTP
-server valdiates the client's X509 certificate.  If the certificate
+server validates the client's X509 certificate.  If the certificate
 is invalid, the PUT request is denied.  This script reads environment
 variables to get X509 parameters.  The uploaded-data is stored in
 a directory based on the X509 Organizational Unit (server) and
@@ -743,7 +743,7 @@ necessary so that {\tt curl\/} can authenticate the server.
 \chapter{Configuring the {\dsc} Archiver}
 
 After installation of the {\dsc} files, there is not much additional
-configuration to do.  You do need to configure the HTTP server, howerver.
+configuration to do.  You do need to configure the HTTP server, however.
 
 \section{Apache Configuration}
 
@@ -814,7 +814,7 @@ Common Name (eg, YOUR name) []:BLDR
 Email Address []:wessels@measurement-factory.com
 \end{verbatim}
 
-When the {\em put-file.pl\/} script recieves an XML file over an SSL session
+When the {\em put-file.pl\/} script receives an XML file over an SSL session
 that uses this key, it will store the data in the {\em x-root/bldr\/} directory.
 
 \chapter{Data Storage}
