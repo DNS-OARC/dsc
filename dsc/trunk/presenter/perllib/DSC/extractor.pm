@@ -24,6 +24,7 @@ BEGIN {
 		&grok_rcode_xml
 		&grok_qtype_xml
 		&grok_cltsub_xml
+		&grok_cltsub2_xml
 		&grok_tld_xml
 		&grok_qtype_vs_qnamelen_xml
 		&grok_rcode_vs_replylen_xml
@@ -53,6 +54,9 @@ sub yymmdd {
 	POSIX::strftime "%Y%m%d", @t;
 }
 
+#
+# time k1 v1 k2 v2 ...
+#
 sub read_data {
 	my $href = shift;
 	my $fn = shift;
@@ -74,6 +78,9 @@ sub read_data {
 	#print "read $nl lines from $fn";
 }
 
+#
+# time k1 v1 k2 v2 ...
+#
 sub write_data {
 	my $A = shift;
 	my $fn = shift;
@@ -95,7 +102,8 @@ sub write_data {
 	print "wrote $nl lines to $fn";
 }
 
-# reads a 1-level hash database with no time dimension
+# a 1-level hash database with no time dimension
+#
 # ie: key value
 #
 sub read_data2 {
@@ -120,7 +128,8 @@ sub read_data2 {
 }
 
 
-# writes a 1-level hash database with no time dimension
+# a 1-level hash database with no time dimension
+#
 # ie: key value
 #
 sub write_data2 {
@@ -248,192 +257,105 @@ sub write_data4 {
 
 ##############################################################################
 
-sub grok_rcode_xml {
+sub grok_1d_xml {
 	my $fname = shift || die;
+	my $L2 = shift || die;
 	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
 	my $XML = $XS->XMLin($fname);
+	my %result;
+	my $aref = $XML->{data}[0]->{All};
+	foreach my $k1ref (@$aref) {
+		foreach my $k2ref (@{$k1ref->{$L2}}) {
+			my $k2 = $k2ref->{val};
+			$result{$k2} = $k2ref->{count};
+		}
+	}
+	($XML->{start_time}, \%result);
+}
 
-	my $href = $XML->{data}[0];
-	my $aref = $href->{All};
+sub grok_2d_xml {
+	my $fname = shift || die;
+	my $L1 = shift || die;
+	my $L2 = shift || die;
+	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
+	my $XML = $XS->XMLin($fname);
+	my %result;
+	my $aref = $XML->{data}[0]->{$L1};
+	foreach my $k1ref (@$aref) {
+		my $k1 = $k1ref->{val};
+		foreach my $k2ref (@{$k1ref->{$L2}}) {
+			my $k2 = $k2ref->{val};
+			$result{$k1}->{$k2} = $k2ref->{count};
+		}
+	}
+	($XML->{start_time}, \%result);
+}
+
+sub grok_array_xml {
+	my $fname = shift || die;
+	my $L2 = shift || die;
+	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
+	my $XML = $XS->XMLin($fname);
+	my $aref = $XML->{data}[0]->{All};
 	my @result;
-
-	foreach my $x (@$aref) {
-		#print "Rcode $x->{val}";
-		my $rcode_aref = $x->{Rcode};
-		foreach my $rcode_href (@$rcode_aref) {
-			$result[$rcode_href->{val}] = $rcode_href->{count};
-			#printf "Rcode %d total: %d\n", $x->{val}, $rcode_sum;
+	foreach my $k1ref (@$aref) {
+		my $rcode_aref = $k1ref->{$L2};
+		foreach my $k2ref (@$rcode_aref) {
+			my $k2 = $k2ref->{val};
+			$result[$k2] = $k2ref->{count};
 		}
 	}
 	($XML->{start_time}, @result);
+}
+
+sub grok_rcode_xml {
+	my $fname = shift || die;
+	&grok_array_xml($fname, 'Rcode');
 }
 
 sub grok_qtype_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-
-	my $href = $XML->{data}[0];
-	my $aref = $href->{All};
-	my @result;
-
-	foreach my $x (@$aref) {
-		my $qtype_aref = $x->{Qtype};
-		foreach my $qtype_href (@$qtype_aref) {
-			$result[$qtype_href->{val}] = $qtype_href->{count};
-		}
-	}
-	($XML->{start_time}, @result);
+	&grok_array_xml($fname, 'Qtype');
 }
 
 sub grok_cltsub_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	my $n = 0;
+	&grok_1d_xml($fname, 'ClientSubnet');
+}
 
-	my $href = $XML->{data}[0];
-	my $aref = $href->{All};
-	my %result;
-
-	foreach my $x (@$aref) {
-		my $cltsub_aref = $x->{ClientSubnet};
-		foreach my $cltsub_href (@$cltsub_aref) {
-			$result{$cltsub_href->{val}} = $cltsub_href->{count};
-			$n++;
-		}
-	}
-	#print "grok_cltsub_xml: $n items in $fname";
-	($XML->{start_time}, %result);
+sub grok_cltsub2_xml {
+	my $fname = shift || die;
+	&grok_2d_xml($fname, 'Class', 'ClientSubnet');
 }
 
 sub grok_tld_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	my $n = 0;
-
-	my $href = $XML->{data}[0];
-	my $aref = $href->{All};
-	my %result;
-
-	foreach my $x (@$aref) {
-		my $tld_aref = $x->{TLD};
-		foreach my $tld_href (@$tld_aref) {
-			$result{$tld_href->{val}} = $tld_href->{count};
-			$n++;
-		}
-	}
-	#print "grok_tld_xml: $n items in $fname";
-	($XML->{start_time}, %result);
+	&grok_1d_xml($fname, 'TLD');
 }
 
 sub grok_qtype_vs_qnamelen_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	my $n = 0;
-	my %result;
-
-	my $aref = $XML->{data}[0]->{Qtype};
-	foreach my $qtypehref (@$aref) {
-		my $qt = $qtypehref->{val};
-		#print Dumper($qtypehref);
-		foreach my $href (@{$qtypehref->{QnameLen}}) {
-			my $ql = $href->{val};
-			$result{$qt}->{$ql} = $href->{count};
-			#print "  result{$qt}->{$ql} = $href->{count}";
-		}
-	}
-
-	($XML->{start_time}, %result);
+	&grok_2d_xml($fname, 'Qtype', 'QnameLen');
 }
 
 sub grok_rcode_vs_replylen_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	#print Data::Dumper($XML);
-	my $n = 0;
-	my %result;
-	my $aref = $XML->{data}[0]->{Rcode};
-	foreach my $rcodehref (@$aref) {
-		my $rc = $rcodehref->{val};
-		#print main::Dumper($rcodehref);
-		foreach my $href (@{$rcodehref->{ReplyLen}}) {
-			my $rl = $href->{val};
-			$result{$rc}->{$rl} = $href->{count};
-			#print "  result{$rc}->{$rl} = $href->{count}";
-		}
-	}
-	($XML->{start_time}, %result);
+	&grok_2d_xml($fname, 'Rcode', 'ReplyLen');
 }
 
 sub grok_qtype_vs_tld_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	my $n = 0;
-	my %result;
-
-	my $aref = $XML->{data}[0]->{Qtype};
-	foreach my $qtypehref (@$aref) {
-		my $qt = $qtypehref->{val};
-		#print Dumper($qtypehref);
-		foreach my $href (@{$qtypehref->{TLD}}) {
-			next if defined ($href->{base64});
-			my $ql = $href->{val};
-			$result{$qt}->{$ql} = $href->{count};
-			#print "  result{$qt}->{$ql} = $href->{count}";
-		}
-	}
-
-	($XML->{start_time}, %result);
+	&grok_2d_xml($fname, 'Qtype', 'TLD');
 }
 
 sub grok_certain_qnames_vs_qtype_xml {
 	my $fname = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	my $n = 0;
-	my %result;
-
-	my $aref = $XML->{data}[0]->{CertainQnames};
-	foreach my $qnamehref (@$aref) {
-		my $qt = $qnamehref->{val};
-		#print Dumper($qnamehref);
-		foreach my $href (@{$qnamehref->{Qtype}}) {
-			die if defined ($href->{base64});
-			my $ql = $href->{val};
-			$result{$qt}->{$ql} = $href->{count};
-			#print "  result{$qt}->{$ql} = $href->{count}";
-		}
-	}
-
-	($XML->{start_time}, \%result);
+	&grok_2d_xml($fname, 'CertainQnames', 'Qtype');
 }
-
 
 sub grok_direction_vs_ipproto_xml {
         my $fname = shift || die;
-        my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-        my $XML = $XS->XMLin($fname);
-        my %result;
-
-        my $href = $XML->{data}[0]->{Direction};
-        foreach my $dirhash (@$href) {
-                #print Dumper($dirhash);
-                my $dir = $$dirhash{val};
-                #print $dir;
-                my $protocountarr = $$dirhash{IPProto};
-                #print Dumper($protocountarr);
-                foreach my $protocounthash (@$protocountarr) {
-                        #print Dumper($protocounthash);
-                        #print "result{$dir}{$$protocounthash{val}} = $$protocounthash{count}";
-                        $result{$dir}{$$protocounthash{val}} = $$protocounthash{count};
-                }
-        }
-        ($XML->{start_time}, \%result);
+	&grok_2d_xml($fname, 'Direction', 'IPProto');
 }
 
 1;
