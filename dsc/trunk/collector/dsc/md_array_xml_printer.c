@@ -3,6 +3,7 @@
 
 #include "dns_message.h"
 #include "md_array.h"
+#include "pcap.h"
 
 static char *d1_type_s;		/* XXX barf */
 static char *d2_type_s;		/* XXX barf */
