@@ -21,6 +21,7 @@ GRAPHERS += rcode-grapher.pl
 GRAPHERS += rcode_vs_replylen-grapher.pl
 GRAPHERS += server-qcounts-grapher.pl
 GRAPHERS += tlds-grapher.pl
+GRAPHERS += dsc-grapher.pl
 
 GRAPHERS += whois.pl
 GRAPHERS += hostinfo.pl

@@ -1,0 +1,166 @@
+#!/usr/bin/perl -wl
+
+$|=1;
+
+use OARC::ploticus;
+use OARC::mysql;
+require '/usr/local/dsc/libexec/tables-cfg.pl';
+
+use POSIX;
+use List::Util qw(max);
+use Chart::Ploticus;
+use CGI;
+use CGI::Untaint;
+use URI::Escape;
+use DBI;
+use Data::Dumper;
+use Hash::Merge qw(merge);
+
+# globals
+$now = time;
+$ploticus_debug = undef;
+
+# constants
+my $DATAROOT = '/usr/local/dsc/data';
+my $YYMMDD = strftime("%Y%m%d", gmtime(time));
+
+my $cgi = CGI->new();
+my $untaint = CGI::Untaint->new($cgi->Vars);
+my $SERVER = $untaint->extract(-as_printable => 'server') || die;
+my $NODE = $untaint->extract(-as_printable => 'node') || die;
+my $TBL = $untaint->extract(-as_printable => 'tbl') || die;
+my $WINDOW = $untaint->extract(-as_integer => 'window') || 3600*4;
+my $BINSIZE = $untaint->extract(-as_integer => 'binsize') || 60;
+
+unless (defined($CFG{$TBL})) {
+	print "Content-type: text/html\r\n";
+	print "<P>Unknown Table '${TBL}'\n";
+	exit 0;
+}
+
+my $plotnames = $CFG{$TBL}{plotnames} || $CFG{$TBL}{names};
+
+my $start = time;
+my $data = get_trace_data($NODE,$TBL,$WINDOW);
+#dumpdata($data);
+my $tf = plotdata_tmp($TBL);
+data_to_tmpfile($data, $tf);
+
+print "Content-type: image/png\r\n";
+do_plot($tf, $BINSIZE);
+my $stop = time;
+
+printf STDERR "graph took %d seconds\n", $stop-$start;
+exit 0;
+
+sub get_trace_data {
+	my $NODE = shift;
+	my $TBL = shift;
+	my $WINDOW = shift;
+	my $timekey = 'time';
+	my $colspec = '"$_/60 as $_"';	# eval'd inside a map()
+	my $groupclause = '';
+	mysql_connect($SERVER);
+	error("Table $TBL does not exist") unless mysql_table_exists($NODE, $TBL);
+	if ($BINSIZE > 60) {
+		#
+		# perform yucky averaging if the bin size is larger
+		# than our sample size
+		#
+		$timekey = 'from_unixtime(UNIX_TIMESTAMP(time)-UNIX_TIMESTAMP(time)%300)';
+		$colspec = '"avg($_/60) as $_"';
+		$groupclause = ' group by time';
+	}
+	
+	my $query = "date_format(${timekey},'%m/%d/%y.%T') as time,"
+		. join(',', map(eval $colspec, @$plotnames))
+		. " from ${NODE}_${TBL}"
+		. " where ${timekey} > date_sub(NOW(), interval ${WINDOW} second)"
+		. $groupclause;
+	print STDERR "select $query;";
+	my $start = time;
+	my $data = mysql_selectall_hashref($query,'time');
+	my $stop = time;
+	printf STDERR "query took %d seconds\n", $stop-$start;
+	mysql_disconnect();
+	$data;
+}
+
+sub data_to_tmpfile {
+	my $data = shift;
+	my $tf = shift;
+	my $start = time;
+	foreach my $firstcol (sort keys %$data) {
+		printf $tf "%s", $firstcol;
+		foreach my $col (@$plotnames) {
+			printf $tf " %f", zero_if_undef($$data{$firstcol}{$col});
+		}
+		print $tf "";
+	}
+	close($tf);
+	my $stop = time;
+	printf STDERR "writing tmpfile took %d seconds\n", $stop-$start;
+}
+
+sub zero_if_undef {
+	my $val = shift;
+	defined($val) ? $val : 0;
+}
+
+
+sub do_plot {
+	my $tf = shift;
+	my $binsize = shift;
+	my $ntypes = @$plotnames;
+	my $start = time;
+
+        ploticus_init("png", "stdout");
+        ploticus_arg("-maxrows", "20000");
+        ploticus_begin();
+        Ploticus_getdata($tf->filename());
+
+        Ploticus_areadef({
+                -title => strftime($CFG{$TBL}{plottitle} . "\nGenerated: %A, %b %d, %Y, %T UTC",
+			gmtime(time)),
+                -rectangle => '1 1 6 4',
+                -xscaletype => 'datetime mm/dd/yy',
+                -ystackfields => join(',', 2..($ntypes+1)),
+                -window => $WINDOW,
+        });
+
+        Ploticus_xaxis({
+                -window => $WINDOW,
+        });
+
+        Ploticus_yaxis({
+                -label => $CFG{$TBL}{yaxislabel},
+                -grid => 'yes',
+        });
+
+        Ploticus_bars({
+		-labelsarrayref => $plotnames,
+                -colorsarrayref => $CFG{$TBL}{colors},
+                -indexesarrayref => [0..$ntypes-1],
+                -barwidth => 4.5 / ($WINDOW / $binsize),
+        });
+
+	Ploticus_legend();
+        ploticus_end();
+	my $stop = time;
+	printf STDERR "ploticus took %d seconds\n", $stop-$start;
+
+}
+
+sub error {
+	my $msg = shift;
+	print "Content-type: text/plain\r\n";
+	print $msg;
+	die "$msg\n";
+}
+
+sub dumpdata {
+	my $ref = shift;
+	print "Content-type: text/plain\r\n";
+	print Dumper($ref);
+	exit 0;
+}
