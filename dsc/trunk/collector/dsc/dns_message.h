@@ -17,6 +17,7 @@ struct _dns_message {
     const char *tld;
     unsigned char rcode;
     unsigned int qr:1;
+    unsigned int rd:1;		/* set if RECUSION DESIRED bit is set */
     struct {
 	unsigned int found:1;	/* set if we found an OPT RR */
 	unsigned int d0:1;	/* set if DNSSEC D0 bit is set */

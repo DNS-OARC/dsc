@@ -30,6 +30,7 @@ OBJS=\
 	idn_qname_index.o \
 	edns_version_index.o \
 	d0_bit_index.o \
+	rd_bit_index.o \
 	ParseConfig.o \
 	config_hooks.o
 
