@@ -133,7 +133,7 @@ md_array_print(md_array * a, md_array_printer * pr)
 	    pr->print_element(fp, label2, a->array[i1][i2]);
 	}
 	if (skipped)
-		pr->print_element(fp, "#SKIPPED#", skipped);
+		pr->print_element(fp, "-:SKIPPED:-", skipped);
 	pr->d1_end(fp, label1);
     }
     pr->finish_data(fp);
