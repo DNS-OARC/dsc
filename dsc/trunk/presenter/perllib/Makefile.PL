@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     'NAME'	=> 'DSC',
-    'VERSION_FROM' => 'lib/DSC/ploticus.pm',
+    'VERSION_FROM' => 'DSC/ploticus.pm',
 
     'LIBS'	=> [],
     'DEFINE'	=> '',
