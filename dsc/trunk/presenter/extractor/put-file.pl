@@ -180,7 +180,7 @@ sub load_md5s {
 sub md5_file {
 	my $fn = shift;
 	my $ctx = Digest::MD5->new;
-	open(F, $fn) || die "$fn: $!";
+	open(F, $fn) || return "$!";
 	$ctx->addfile(F);
 	close(F);
 	$ctx->hexdigest;
