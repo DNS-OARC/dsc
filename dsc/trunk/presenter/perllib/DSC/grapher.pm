@@ -6,7 +6,6 @@ use DSC::grapher::config;
 
 use POSIX;
 use List::Util qw(max);
-use Chart::Ploticus;
 use CGI;
 use CGI::Untaint;
 use DBI;

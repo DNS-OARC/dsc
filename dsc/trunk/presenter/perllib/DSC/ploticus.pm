@@ -1,6 +1,5 @@
 package DSC::ploticus;
 
-use Chart::Ploticus;
 use Data::Dumper;
 use POSIX;
 use File::Temp qw(tempfile);
@@ -13,6 +12,10 @@ BEGIN {
         $VERSION     = 1.00;
         @ISA         = qw(Exporter);
         @EXPORT      = qw(
+		&ploticus_init
+		&ploticus_arg
+		&ploticus_begin
+		&ploticus_end
 		&Ploticus_create_datafile
 		&Ploticus_create_datafile_type2
 		&Ploticus_getdata
@@ -363,8 +366,58 @@ sub PO {
 sub P {
 	my $line = shift;
 	print STDERR "$line\n" if ($main::ploticus_debug);
-	Chart::Ploticus::ploticus_execline($line);
+	ploticus_execline($line);
 }
+
+
+###### The following routines mimick the old Chart::Ploticus
+
+my $ploticus_state = 0;
+my $ploticus_type = undef;
+my $ploticus_output = undef;
+my %ploticus_args;
+
+sub ploticus_init {
+	die "wrong state" unless (0 == $ploticus_state);
+	$ploticus_type = shift or die;
+	$ploticus_output = shift or die;
+	undef %ploticus_args;
+	$ploticus_state = 1;
+}
+
+sub ploticus_arg {
+	die "wrong state" unless (1 == $ploticus_state);
+	my $k = shift;
+	my $v = shift;
+	$ploticus_args{$k} = $v;
+}
+
+sub ploticus_begin {
+	die "wrong state" unless (1 == $ploticus_state);
+	my $cmd = join(" ",
+		"/usr/local/bin/pl" ,
+		"-stdin",
+		(map { "$_ $ploticus_args{$_}" } keys %ploticus_args),
+		"-$ploticus_type",
+		"-o $ploticus_output");
+	print STDERR "$cmd\n" if ($main::ploticus_debug);
+	open(PLOTICUS, "|$cmd") or die "$cmd";
+	$ploticus_state = 2;
+}
+
+sub ploticus_execline {
+	die "wrong state" unless (2 == $ploticus_state);
+	my $line = shift;
+	$line =~ s/\n/\\n/g;
+	print PLOTICUS $line, "\n"
+}
+
+sub ploticus_end {
+	die "wrong state" unless (2 == $ploticus_state);
+	close(PLOTICUS) or die "close";
+	$ploticus_state = 0;
+}
+
 
 1;
 
