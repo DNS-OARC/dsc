@@ -151,10 +151,15 @@ handle_ppp(const u_char * pkt, int len)
 	pkt += 2;
 	len -= 2;
     }
-    if (ETHERTYPE_IP != proto && PPP_IP != proto)
-	return NULL;
-    memcpy(buf, pkt, len);
-    return handle_ipv4((struct ip *) buf, len);
+    if (ETHERTYPE_IP == proto || PPP_IP == proto) {
+        memcpy(buf, pkt, len);
+        return handle_ipv4((struct ip *) buf, len);
+    }
+    if (ETHERTYPE_IPV6 == proto) {
+        memcpy(buf, pkt, len);
+        return handle_ipv6((struct ip6_hdr *) buf, len);
+    }
+    return NULL;
 }
 
 #endif
