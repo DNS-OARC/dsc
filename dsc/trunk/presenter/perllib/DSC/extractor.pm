@@ -89,7 +89,7 @@ sub read_data {
 		$md->add($_);
 		chomp;
 		my ($k, %B) = split;
-		$$href{$k} = \%B;
+		$href->{$k} = \%B;
 		$nl++;
 	    }
 	    close(IN);
@@ -109,7 +109,7 @@ sub write_data {
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a <=> $b} keys %$A) {
-		$B = $$A{$k};
+		$B = $A->{$k};
 		my $line = join(' ', $k, %$B) . "\n";
 		next unless ($line =~ /\S/);
 		print OUT $line;
@@ -145,7 +145,7 @@ sub read_data2 {
 		$md->add($_);
 		chomp;
 		my ($k, $v) = split;
-		$$href{$k} = $v;
+		$href->{$k} = $v;
 		$nl++;
 	    }
 	    close(IN);
@@ -166,7 +166,7 @@ sub write_data2 {
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a cmp $b} keys %$A) {
-		my $line = "$k $$A{$k}\n";
+		my $line = "$k $A->{$k}\n";
 		print OUT $line;
 		$md->add($line);
 		$nl++;
@@ -200,7 +200,7 @@ sub read_data3 {
 		chomp;
 		my ($k1, $k2, $v) = split;
 		next unless defined($v);
-		$$href{$k1}->{$k2} = $v;
+		$href->{$k1}{$k2} = $v;
 		$nl++;
 	    }
 	    close(IN);
@@ -220,7 +220,7 @@ sub write_data3 {
 	open(OUT, ">$fn.new") || return;
 	foreach my $k1 (keys %$href) {
 		foreach my $k2 (keys %{$href->{$k1}}) {
-			my $line = "$k1 $k2 $href->{$k1}->{$k2}\n";
+			my $line = "$k1 $k2 $href->{$k1}{$k2}\n";
 			print OUT $line;
 			$md->add($line);
 			$nl++;
@@ -257,7 +257,7 @@ sub read_data4 {
 		my ($ts, %foo) = split;
 		while (my ($k,$v) = each %foo) {
 			my %bar = split(':', $v);
-			$$href{$ts}{$k} = \%bar;
+			$href->{$ts}{$k} = \%bar;
 		}
 		$nl++;
 	    }
@@ -278,9 +278,9 @@ sub write_data4 {
 	open(OUT, ">$fn.new") || return;
 	foreach my $ts (sort {$a <=> $b} keys %$href) {
 		my @foo = ();
-		foreach my $k1 (keys %{$$href{$ts}}) {
+		foreach my $k1 (keys %{$href->{$ts}}) {
 			push(@foo, $k1);
-			push(@foo, join(':', %{$$href{$ts}{$k1}}));
+			push(@foo, join(':', %{$href->{$ts}{$k1}}));
 		}
 		my $line = join(' ', $ts, @foo) . "\n";
 		print OUT $line;
@@ -324,7 +324,7 @@ sub grok_2d_xml {
 		my $k1 = $k1ref->{val};
 		foreach my $k2ref (@{$k1ref->{$L2}}) {
 			my $k2 = $k2ref->{val};
-			$result{$k1}->{$k2} = $k2ref->{count};
+			$result{$k1}{$k2} = $k2ref->{count};
 		}
 	}
 	($XML->{start_time}, \%result);
@@ -353,8 +353,8 @@ sub elsify_unwanted_keys {
 	foreach my $k (keys %{$hashref}) {
 		next if ('else' eq $k);
 		next if (grep {$k eq $_} @$keysref);
-		$$hashref{else} += $$hashref{$k};
-		delete $$hashref{$k};
+		$hashref->{else} += $hashref->{$k};
+		delete $hashref->{$k};
 	}
 }
 
@@ -363,7 +363,7 @@ sub replace_keys {
 	my $oldkeys = shift;
 	my $newkeys = shift;
 	my @newkeycopy = @$newkeys;
-	my %newhash = map { $_ => $$oldhash{shift @$oldkeys}} @newkeycopy;
+	my %newhash = map { $_ => $oldhash->{shift @$oldkeys}} @newkeycopy;
 	\%newhash;
 }
 
