@@ -5,7 +5,6 @@
 
 \def\dsc{{\sc dsc}}
 
-
 \begin{document}
 
 \begin{titlepage}
@@ -31,9 +30,10 @@ a busy DNS server.
 {\dsc} consists of the following components:
 \begin{itemize}
 \item A data collector
+\item A data presenter, where data is archived and rendered
 \item A method for securely transferring data from the collector
 	to the presenter
-\item Utilities and scripts that parse XML files from the collector
+\item Utilities and scripts that parse XML and archive files from the collector
 \item Utilities and scripts that generate graphs and HTML pages
 \end{itemize}
 
@@ -56,7 +56,7 @@ along one dimension and TLD along the other.
 
 \subsection{XML Data Transfer}
 
-You may run the {\tt dsc\/} collector on a remote machine.  That
+You may run the {\dsc} collector on a remote machine.  That
 is, the collector may run on a different machine than where the
 data is archived and displayed.  {\dsc} includes some Perl and {\tt /bin/sh}
 scripts that enable transporting XML files over a secure HTTP
@@ -77,6 +77,13 @@ before transfer to eliminate per-connection delays.
 You could use {\tt scp\/} or {\tt rsync\/}/{\tt ssh\/} instead of
 {\tt curl\/} if you like.
 
+\path|put-file.pl| is the script that accepts PUT requests on the
+HTTP server.  The HTTP server validates the client's X.509 certificate.
+If the certificate is invalid, the PUT request is denied.  This
+script reads environment variables to get X.509 parameters.  The
+uploaded-data is stored in a directory based on the X.509 Organizational
+Unit (server) and Common Name fields (node).
+
 \subsection{The Extractor}
 
 The XML extractor is a Perl script that reads the XML files from
@@ -92,6 +99,9 @@ as the graphing engine.  A Perl module and CGI script read extracted
 data files and generate Ploticus scriptfiles to generate plots.  Plots
 are always generated on demand via the CGI application.
 
+\path|dsc-grapher.pl| is the script that displays graphs from the
+archived data.  
+
 
 \section{Architecture}
 
@@ -102,7 +112,7 @@ Figure~\ref{fig-architecture} shows the {\dsc} architecture.
 \caption{\label{fig-architecture}The {\dsc} architecture.}
 \end{figure}
 
-Note that {\dsc} supports the concept of {\em servers\/} and {\em
+Note that {\dsc} utilizes the concept of {\em servers\/} and {\em
 nodes\/}.  A server is generally a logical service, which may
 actually consist of multiple nodes.  Figure~\ref{fig-architecture}
 shows six collectors (the circles) and two servers (the rounded
@@ -112,7 +122,7 @@ nodes that share a single IP address.  We call each instance a
 {\em node\/} and all nodes sharing the single IP address belong
 to the same {\em server\/}.
 
-The {\tt dsc\/} collector program runs on or near\footnote{by
+The {\dsc} collector program runs on or near\footnote{by
 ``near'' we mean that packets may be sniffed remotely via switch
 port mirroring, or a SPAN port.} the remote nodes.  Its XML output
 is transferred to the presentation machine via HTTPS PUTs (or something simpler
@@ -124,117 +134,134 @@ the HTTP server to display graphs and other information.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Presenter Installation}
 
-Getting everything installed on the Presenter is a little more complicated.
-In addition to the prerequisites, you need to run {\tt make install\/} in
-six subdirectories.
+\chapter{Installing the Presenter}
 
-\section{Prerequisites}
+You'll probably want to get the Presenter working before the Collector.
+If you're using the secure XML data transfer, you'll need to
+generate X.509 both client- and server-side X.509 certificates.
 
-The XML-extractors and Ploticus-graphers are written in Perl.  In addition the
-standard Perl installation, you will also need the following Perl modules:
+Installing the Presenter involves the following steps:
+\begin{itemize}
+\setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
+\item
+	Install Perl dependencies
+\item
+	Install {\dsc} software
+\item
+	Create X.509 certificates
+\item
+	Set up a secure HTTP server (e.g., Apache and mod\_ssl)
+\item
+	Add some cron jobs
+\end{itemize}
+
+
+\section{Install Perl Dependencies}
+
+{\dsc} uses Perl for the extractor and grapher components.  Chances are
+that you'll need Perl-5.8, or maybe only Perl-5.6.  You'll also need
+these readily available third-party Perl modules, which you
+can find via CPAN:
 
 \begin{itemize}
+\setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
 	\item CGI-Untaint (CGI::Untaint)
-	\item CGI.pm
-	\item (Chart::Ploticus)
+	\item CGI.pm (CGI)
+	\item Digest-MD5 (Digest::MD5)
+	\item File-Flock (File::Flock)
 	\item File-Spec (File::Spec)
 	\item File-Temp (File::Temp)
-	\item Geography-Countries (Geography::Countries)
-	\item IP-Country (IP::Country)
-	\item Lockfile-Simple (LockFile::Simple)
-	\item Net-IRR (Net::IRR)
-	\item Net-Whois (Net::Whois)
-	\item Net-Whois-IP (Whois::IP)
+	\item Hash-Merge (Hash::Merge)
+	\item MIME-Base64 (MIME::Base64)
+	\item Math-Calc-Units (Math::Calc::Units)
 	\item Scalar-List-Utils (List::Util)
-	\item URI
+	\item Text-Template (Text::Template)
+	\item URI (URI::Escape)
 	\item XML-Parser (XML::Parser)
 	\item XML-Simple (XML::Simple)
+
 \end{itemize}
 
 \noindent
-Also note that the XML::Parser module requires the {\em expat\/} package
+Also note that XML::Parser requires the {\em expat\/} package.
 
-If you are using {\tt curl\/} to securely transport data files from
-collector to archiver, you'll need an HTTP server with SSL and CGI support.
-We recommend Apache with mod\_ssl.
+\section{Install {\dsc} Software}
 
-\section{\tt perllib}
-
-The {\em perllib\/} subdirectory contains some Perl modules
-used by the XML extractors and Ploticus graphers.  To install
-these type:
+All of the extractor and grapher tools are Perl or {\tt /bin/sh}
+scripts, so there is no need to compile anything.  Still,
+you should run {\tt make} first:
 
 \begin{verbatim}
-% cd perllib
-% ln -s . lib
-% perl Makefile.PL
-% make
-% su
-# make install
+> cd presenter
+> make
 \end{verbatim}
 
-\noindent
-The files will be installed in your standard ``site\_perl'' directory.
-Or, if you prefer, you can specify {\em /usr/local/dsc/perl\/}
-as the installation directory.
+If you see errors missing Perl prerequisites, you may want
+to correct those before continuing.
 
-\section{\tt xml-extractors}
-
-The XML extractor Perl scripts are simply copied to the
-{\em /usr/local/dsc/libexec\/} directory with this command:
+The next step is to install the files.  Recall that
+\path|/usr/local/dsc| is the hard-coded installation prefix.
+You must create it manually:
 
 \begin{verbatim}
-% cd xml-extractors
-% make install
+> mkdir /usr/local/dsc
+> make install
 \end{verbatim}
 
-\section{\tt ploticus-graphers}
+Note that {\dsc}'s Perl modules are installed in the 
+``site\_perl'' directory.  You'll probably need {\em root\/}
+privileges to install files there.
 
-The Ploticus grapher Perl scripts are simply copied to the
-{\em /usr/local/dsc/libexec\/} directory with this command:
+\section{CGI Symbolic Links}
+
+{\dsc} has a couple of CGI scripts that are installed
+into \path|/usr/local/dsc/libexec|.  You should add symbolic
+links from your HTTP server's \path|cgi-bin| directory to
+these scripts.
+
+Both of these scripts have been designed to be mod\_perl-friendly.
 
 \begin{verbatim}
-% cd ploticus-graphers
-% make install
+> cd /usr/local/apache/cgi-bin
+> ln -s /usr/local/dsc/libexec/put-file.pl
+> ln -s /usr/local/dsc/libexec/dsc-grapher.pl
 \end{verbatim}
 
-\noindent
-Note that this directory currently contains some files that are not
-actually grapher scripts: {\em whois.pl\/} and {\em hostinfo.pl\/}
-are CGI scripts that display information about IP networks and hosts.
-They are linked from certain graphs with HTML imagemaps.  These are
-installed in {\em /usr/local/dsc/libexec\/}, but you may need to manually
-link to them from your {\em cgi-bin\/} directory:
+If you cannot create symbolic links, you'll need to manually
+copy the scripts to the appropriate directory.
+
+
+\section{/usr/local/dsc/data}
+
+This directory is where \path|put-file.pl| writes incoming XML
+files.  Actually, XML files are placed in {\em server\/} and {\em
+node\/} subdirectories based on the authorized client X.509 certificate
+parameters.  If you want \path|put-file.pl| to automatically create
+the subdirectories, the \path|data| directory must be writable by
+the process owner:
 
 \begin{verbatim}
-# cd /usr/local/apache/cgi-bin
-# ln -s /usr/local/dsc/libexec/hostinfo.pl .
-# ln -s /usr/local/dsc/libexec/whois.pl .
+> mkdir /usr/local/dsc/data/
+> chgrp nobody /usr/local/dsc/data/
+> chmod 2775 /usr/local/dsc/data/
 \end{verbatim}
 
-\noindent
-The other non-grapher files in this directory are {\em server-plots.mk\/}
-and {\em node-plots.mk\/}.  These are Makefiles that you can use to create
-the necessary graphs and HTML pages.  They should be symbolicly linked
-from the HTTP server document tree:
+Alternatively, you can create {\em server\/} and {\em node\/} directories
+in advance and make those writable.
 
 \begin{verbatim}
-# cd /usr/local/apache/htdocs
-# mkdir server-name ; cd server-name
-# ln -s /usr/local/dsc/share/server-plots.mk Makefile
-# mkdir node-name ; cd node-name
-# ln -s /usr/local/dsc/share/node-plots.mk Makefile
+> mkdir /usr/local/dsc/data/
+> mkdir /usr/local/dsc/data/x-root/
+> mkdir /usr/lodal/dsc/data/x-root/blah/
+> chgrp nobody /usr/local/dsc/data/x-root/blah/
+> chmod 2775 /usr/local/dsc/data/x-root/blah/
 \end{verbatim}
 
-\section{\tt HTML}
+Make sure that \path|/usr/local/dsc/data/| is on a large partition with
+plenty of free space.  You can make it a symbolic link to another
+parition if necessary.
 
-The {\em HTML\/} directory contains HTML template files for the graphs.
-When you type {\tt make install\/} these are copied to
-{\em /usr/local/dsc/share/html\/}.  The Makefiles discussed in
-the previous subsection look for the HTML files in that directory.
-You do not need to make any symbolic links.
 
 \section{\tt cron}
 
@@ -270,25 +297,6 @@ worth of XML files, use this cron entry:
 \end{verbatim}
 
 
-
-\section{\tt cgi}
-
-The {\em cgi\/} directory contains a single file: {\em put-file.pl\/}.
-When you type {\tt make install\/} this script is copied to
-{\em /usr/local/dsc/libexec\/}.  You should then make a symbolic link
-to the installed script from your server's {\em cgi-bin\/} directory:
-
-\begin{verbatim}
-# cd /usr/local/apache/cgi-bin
-# ln -s /usr/local/dsc/libexec/put-file.pl .
-\end{verbatim}
-
-This script accepts PUT requests on the HTTP server.  The HTTP
-server validates the client's X.509 certificate.  If the certificate
-is invalid, the PUT request is denied.  This script reads environment
-variables to get X.509 parameters.  The uploaded-data is stored in
-a directory based on the X.509 Organizational Unit (server) and
-Common Name fields (node).
 
 \section{/usr/local/dsc symlinks}
 
@@ -753,6 +761,7 @@ $\cdots$ & & & & & & \\
 \noindent
 A dataset is defined by the following parameters:
 \begin{itemize}
+\setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
 \item A name
 \item A protocol layer (IP or DNS)
 \item An indexer for the first dimension
@@ -934,6 +943,7 @@ Here are some longer descriptions of the DNS indexers:
 \item[query\_classification]
 	A stateless classification of ``bogus'' queries:
 	\begin{itemize}
+	\setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
 	\item non-auth-tld: when the TLD is not one of the IANA-approved TLDs.
 	\item root-servers.net: a query for a root server IP address.
 	\item localhost: a query for the localhost IP address.
@@ -1250,8 +1260,8 @@ For example:
 	since they must match what the XML extractors look for.
 
 \item
-	``OARC::'' is perhaps a poor name for the Perl module
-	directory.  DSC:: might be better.
+	DSC perl modules are installed in the ``site\_perl'' directory
+	but they should probably be installed under /usr/local/dsc.
 
 \end{itemize}
 
