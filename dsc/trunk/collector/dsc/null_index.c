@@ -4,7 +4,7 @@
 #include "dns_message.h"
 
 int
-null_indexer(const void * vp)
+null_indexer(const void *vp)
 {
     return 0;
 }

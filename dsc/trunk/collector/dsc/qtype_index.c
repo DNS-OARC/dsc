@@ -11,7 +11,7 @@ static int next_idx = 0;
 int
 qtype_indexer(const void *vp)
 {
-    const dns_message * h = vp;
+    const dns_message *h = vp;
     int i;
     for (i = 0; i < next_idx; i++) {
 	if (h->qtype == idx_to_qtype[i]) {

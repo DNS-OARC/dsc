@@ -36,7 +36,7 @@ md_array_create(FLTR * filter,
 }
 
 int
-md_array_count(md_array * a, const void * vp)
+md_array_count(md_array * a, const void *vp)
 {
     int i1;
     int i2;

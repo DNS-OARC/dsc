@@ -12,7 +12,7 @@ static struct in_addr idx_to_cip4_net[MAX_ARRAY_SZ];	/* XXX replace with hash */
 static int next_idx = 0;
 
 int
-cip4_net_indexer(const void * vp)
+cip4_net_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i;

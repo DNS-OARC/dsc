@@ -10,7 +10,7 @@ static unsigned short idx_to_rcode[MAX_RCODE_IDX];
 static int next_idx = 0;
 
 int
-rcode_indexer(const void * vp)
+rcode_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i;

@@ -9,7 +9,7 @@
 static int largest = 0;
 
 int
-ip_proto_indexer(const void * vp)
+ip_proto_indexer(const void *vp)
 {
     const struct ip *ip = vp;
     int i = (int) ip->ip_p;
@@ -35,6 +35,6 @@ ip_proto_iterator(char **label)
     if (p)
 	*label = p->p_name;
     else
-        snprintf(*label = label_buf, 20, "p%d", next_iter);
+	snprintf(*label = label_buf, 20, "p%d", next_iter);
     return next_iter++;
 }

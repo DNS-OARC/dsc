@@ -184,19 +184,19 @@ handle_raw(const u_char * pkt, int len)
 int
 match_vlan(const char *pkt)
 {
-	unsigned short vlan;
-	int i;
-	if (0 == n_vlan_ids)
-		return 1;
-	memcpy(&vlan, pkt, 2);
-	if (vlan_tag_needs_byte_conversion)
-		vlan = ntohs(vlan) & 0xfff;
-	else
-		vlan = vlan & 0xfff;
-	for (i=0; i<n_vlan_ids; i++)
-		if (vlan_ids[i] == vlan)
-			return 1;
-	return 0;
+    unsigned short vlan;
+    int i;
+    if (0 == n_vlan_ids)
+	return 1;
+    memcpy(&vlan, pkt, 2);
+    if (vlan_tag_needs_byte_conversion)
+	vlan = ntohs(vlan) & 0xfff;
+    else
+	vlan = vlan & 0xfff;
+    for (i = 0; i < n_vlan_ids; i++)
+	if (vlan_ids[i] == vlan)
+	    return 1;
+    return 0;
 }
 
 dns_message *
@@ -211,8 +211,8 @@ handle_ether(const u_char * pkt, int len)
     len -= ETHER_HDR_LEN;
     if (ETHERTYPE_8021Q == etype) {
 	if (!match_vlan(pkt))
-		return NULL;
-	etype = ntohs(*(unsigned short *)(pkt + 2));
+	    return NULL;
+	etype = ntohs(*(unsigned short *) (pkt + 2));
 	pkt += 4;
 	len -= 4;
     }
@@ -285,7 +285,7 @@ Pcap_init(const char *device, int promisc)
     if (readfile_state) {
 	new_pcap = pcap_open_offline(device, errbuf);
     } else {
-	new_pcap = pcap_open_live((char *)device, PCAP_SNAPLEN, promisc, 1000, errbuf);
+	new_pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1000, errbuf);
     }
     if (NULL == new_pcap) {
 	syslog(LOG_ERR, "pcap_open_*: %s\n", errbuf);
@@ -381,6 +381,6 @@ Pcap_finish_time(void)
 void
 pcap_set_match_vlan(int vlan)
 {
-	assert(n_vlan_ids < MAX_VLAN_IDS);
-	vlan_ids[n_vlan_ids++] = vlan;
+    assert(n_vlan_ids < MAX_VLAN_IDS);
+    vlan_ids[n_vlan_ids++] = vlan;
 }

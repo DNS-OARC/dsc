@@ -9,8 +9,8 @@
 #include "pcap.h"
 #include "base64.h"
 
-static const char *d1_type_s;		/* XXX barf */
-static const char *d2_type_s;		/* XXX barf */
+static const char *d1_type_s;	/* XXX barf */
+static const char *d2_type_s;	/* XXX barf */
 
 static const char *b64 = " base64=\"1\"";
 
@@ -51,7 +51,7 @@ d2_type(void *pr_data, const char *t)
 }
 
 static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-				  "0123456789._-:";
+"0123456789._-:";
 
 static void
 d1_begin(void *pr_data, char *l)

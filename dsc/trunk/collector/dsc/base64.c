@@ -36,10 +36,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char base64_chars[] = 
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static char base64_chars[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static int 
+static int
 pos(char c)
 {
     char *p;
@@ -49,7 +49,7 @@ pos(char c)
     return -1;
 }
 
-int 
+int
 base64_encode(const void *data, int size, char **str)
 {
     char *s, *p;

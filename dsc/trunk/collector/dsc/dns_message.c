@@ -27,16 +27,16 @@ dns_message_handle(dns_message * m)
 }
 
 static int
-queries_only_filter(const void * vp)
+queries_only_filter(const void *vp)
 {
-    const dns_message * m = vp;
+    const dns_message *m = vp;
     return m->qr ? 0 : 1;
 }
 
 static int
-replies_only_filter(const void * vp)
+replies_only_filter(const void *vp)
 {
-    const dns_message * m = vp;
+    const dns_message *m = vp;
     return m->qr ? 1 : 0;
 }
 
@@ -71,102 +71,102 @@ dns_message_init(void)
 
 
 int
-dns_message_find_indexer(const char *in, IDXR **ix, HITR **it)
+dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 {
-	if (0 == strcmp(in, "client")) {
-		*ix = cip4_indexer;
-		*it = cip4_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "client_subnet")) {
-		*ix = cip4_net_indexer;
-		*it = cip4_net_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "null")) {
-		*ix = null_indexer;
-		*it = null_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "qclass")) {
-		*ix = qclass_indexer;
-		*it = qclass_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "qnamelen")) {
-		*ix = qnamelen_indexer;
-		*it = qnamelen_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "qtype")) {
-		*ix = qtype_indexer;
-		*it = qtype_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "qnamelen")) {
-		*ix = qnamelen_indexer;
-		*it = qnamelen_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "rcode")) {
-		*ix = rcode_indexer;
-		*it = rcode_iterator;
-		return 1;
-	}
-	if (0 == strcmp(in, "tld")) {
-		*ix = tld_indexer;
-		*it = tld_iterator;
-		return 1;
-	}
-	syslog(LOG_ERR, "unknown indexer '%s'", in);
-	return 0;
+    if (0 == strcmp(in, "client")) {
+	*ix = cip4_indexer;
+	*it = cip4_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "client_subnet")) {
+	*ix = cip4_net_indexer;
+	*it = cip4_net_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "null")) {
+	*ix = null_indexer;
+	*it = null_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "qclass")) {
+	*ix = qclass_indexer;
+	*it = qclass_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "qnamelen")) {
+	*ix = qnamelen_indexer;
+	*it = qnamelen_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "qtype")) {
+	*ix = qtype_indexer;
+	*it = qtype_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "qnamelen")) {
+	*ix = qnamelen_indexer;
+	*it = qnamelen_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "rcode")) {
+	*ix = rcode_indexer;
+	*it = rcode_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "tld")) {
+	*ix = tld_indexer;
+	*it = tld_iterator;
+	return 1;
+    }
+    syslog(LOG_ERR, "unknown indexer '%s'", in);
+    return 0;
 }
 
 int
-dns_message_find_filter(const char *fn, FLTR **f)
+dns_message_find_filter(const char *fn, FLTR ** f)
 {
-	if (0 == strcmp(fn, "any")) {
-		*f = NULL;
-		return 1;
-	}
-	if (0 == strcmp(fn, "queries-only")) {
-		*f = queries_only_filter;
-		return 1;
-	}
-	if (0 == strcmp(fn, "replies-only")) {
-		*f = replies_only_filter;
-		return 1;
-	}
-	syslog(LOG_ERR, "unknown indexer '%s'", fn);
-	return 0;
+    if (0 == strcmp(fn, "any")) {
+	*f = NULL;
+	return 1;
+    }
+    if (0 == strcmp(fn, "queries-only")) {
+	*f = queries_only_filter;
+	return 1;
+    }
+    if (0 == strcmp(fn, "replies-only")) {
+	*f = replies_only_filter;
+	return 1;
+    }
+    syslog(LOG_ERR, "unknown indexer '%s'", fn);
+    return 0;
 }
 
 int
 dns_message_add_array(const char *name, const char *fn, const char *fi,
-	const char *sn, const char *si, const char *f)
+    const char *sn, const char *si, const char *f)
 {
-	FLTR *filter;
-        IDXR *indexer1;
-        HITR *iterator1;
-        IDXR *indexer2;
-        HITR *iterator2;
-	md_array_list *a;
+    FLTR *filter;
+    IDXR *indexer1;
+    HITR *iterator1;
+    IDXR *indexer2;
+    HITR *iterator2;
+    md_array_list *a;
 
-	if (0 == dns_message_find_indexer(fn, &indexer1, &iterator1))
-		return 0;
-	if (0 == dns_message_find_indexer(sn, &indexer2, &iterator2))
-		return 0;
-	if (0 == dns_message_find_filter(fn, &filter))
-		return 0;
+    if (0 == dns_message_find_indexer(fn, &indexer1, &iterator1))
+	return 0;
+    if (0 == dns_message_find_indexer(sn, &indexer2, &iterator2))
+	return 0;
+    if (0 == dns_message_find_filter(fn, &filter))
+	return 0;
 
-	a = calloc(1, sizeof(*a));
-	a->theArray = md_array_create(filter,
-		fn, indexer1, iterator1,
-		sn, indexer2, iterator2);
-	assert(a->theArray);
-	a->next = Arrays;
-	Arrays = a;
-	return 1;
+    a = calloc(1, sizeof(*a));
+    a->theArray = md_array_create(filter,
+	fn, indexer1, iterator1,
+	sn, indexer2, iterator2);
+    assert(a->theArray);
+    a->next = Arrays;
+    Arrays = a;
+    return 1;
 }
 
 void

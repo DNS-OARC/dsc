@@ -8,7 +8,7 @@
 static int largest = 0;
 
 int
-qnamelen_indexer(const void * vp)
+qnamelen_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i = strlen(m->qname);;
