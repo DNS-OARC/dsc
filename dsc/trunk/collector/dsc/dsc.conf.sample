@@ -58,6 +58,7 @@ dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes;
 dataset rcode_vs_replylen dns Rcode:rcode MsgLen:msglen replies-only;
 dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype queries-only;
 dataset client_subnet2 dns Class:query_classification ClientSubnet:cip4_net queries-only min-count=5;
+dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 
