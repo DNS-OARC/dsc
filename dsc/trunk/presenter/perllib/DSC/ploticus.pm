@@ -3,6 +3,7 @@
 use Chart::Ploticus;
 use Data::Dumper;
 use POSIX;
+use File::Temp qw(tempfile);
 
 package OARC::ploticus;
 use strict;
@@ -31,7 +32,7 @@ BEGIN {
 		&extract_server_from_datafile_path
 		&extract_node_from_datafile_path
 		&index_in_array
-		$plotdata_tmp
+		&plotdata_tmp
 	 );
         %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
         @EXPORT_OK   = qw();
@@ -41,10 +42,19 @@ use vars      @EXPORT_OK;
 
 END { }
 
-# globals
-$plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
-
+my $plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
 my $strftimefmt = '%D.%T';
+
+sub plotdata_tmp {
+	my $label = shift;
+	my $tf;
+	if (defined($label)) {
+		$tf = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
+	} else {
+		$tf = new File::Temp(TEMPLATE => $plotdata_tmp);
+	}
+	$tf;
+}
 
 sub Ploticus_create_datafile {
 	my $hashref = shift;
