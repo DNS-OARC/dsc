@@ -78,5 +78,5 @@ cip4_net_iterator(char **label)
 void
 cip4_net_indexer_init(void)
 {
-	mask.s_addr = inet_addr("255.255.255.0");
+    mask.s_addr = inet_addr("255.255.255.0");
 }
