@@ -27,7 +27,7 @@ GRAPHERS += plots-cfg.pl
 GRAPHERS += whois.pl
 GRAPHERS += hostinfo.pl
 
-CONFIGS  += dsc-grapher.cfg
+CONFIGS  += dsc-grapher.cfg.sample
 
 INSTALLDIR=/usr/local/dsc
 
