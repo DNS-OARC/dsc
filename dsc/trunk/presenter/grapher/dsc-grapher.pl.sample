@@ -67,6 +67,10 @@ if (!defined($ARGS{yaxis})) {
 	$ARGS{yaxis} = find_default_yaxis_type();
 }
 
+if ($PLOT->{plot_type} =~ /^accum/ && $ARGS{window} < 86400) {
+	$ARGS{window} = 86400;
+}
+
 $ARGS{end} = $main::now if ($ARGS{end} > $main::now);
 #print STDERR "[$$] " . Dumper(\%ARGS);
 my $cache_name = cache_name($ARGS{server},
