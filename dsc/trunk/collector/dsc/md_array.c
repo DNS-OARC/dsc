@@ -134,10 +134,12 @@ md_array_print(md_array * a, md_array_printer * pr)
 		skipped_sum += a->array[i1][i2];
 		continue;
 	    }
-	    pr->print_element(fp, label2, a->array[i1][i2], -1);
+	    pr->print_element(fp, label2, a->array[i1][i2]);
 	}
-	if (skipped)
-		pr->print_element(fp, "-:SKIPPED:-", skipped, skipped_sum);
+	if (skipped) {
+		pr->print_element(fp, "-:SKIPPED:-", skipped);
+		pr->print_element(fp, "-:SKIPPED_SUM:-", skipped_sum);
+	}
 	pr->d1_end(fp, label1);
     }
     pr->finish_data(fp);

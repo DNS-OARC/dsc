@@ -44,7 +44,7 @@ struct _md_array_printer {
     void (*finish_data) (void *);
     void (*d1_begin) (void *, char *);
     void (*d1_end) (void *, char *);
-    void (*print_element) (void *, char *label, int, int);
+    void (*print_element) (void *, char *label, int);
 };
 
 struct _md_array_list {

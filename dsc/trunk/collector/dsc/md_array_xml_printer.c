@@ -70,7 +70,7 @@ d1_begin(void *pr_data, char *l)
 }
 
 static void
-print_element(void *pr_data, char *l, int val, int sum)
+print_element(void *pr_data, char *l, int val)
 {
     FILE *fp = pr_data;
     int ll = strlen(l);
@@ -80,10 +80,9 @@ print_element(void *pr_data, char *l, int val, int sum)
 	assert(x);
 	l = e;
     }
-    fprintf(fp, "      <%s val=\"%s\"%s", d2_type_s, l, e ? b64 : "");
+    fprintf(fp, "      <%s", d2_type_s);
+    fprintf(fp, " val=\"%s\"%s", l, e ? b64 : "");
     fprintf(fp, " count=\"%d\"", val);
-    if (sum > -1)
-        fprintf(fp, " sum=\"%d\"", sum);
     fprintf(fp, "/>\n");
     if (e)
 	free(e);
