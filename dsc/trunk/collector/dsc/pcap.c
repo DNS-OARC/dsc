@@ -93,6 +93,7 @@ handle_udp(const struct udphdr *udp, int len)
     m = handle_dns(buf, len - sizeof(*udp));
     if (NULL == m)
 	return NULL;
+    m->src_port = udp->uh_sport;
     return m;
 }
 
