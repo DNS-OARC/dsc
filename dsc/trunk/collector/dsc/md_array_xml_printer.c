@@ -11,6 +11,8 @@
 static char *d1_type_s;		/* XXX barf */
 static char *d2_type_s;		/* XXX barf */
 
+static const char *b64 = " base64=\"1\"";
+
 static void
 start_array(void *pr_data, const char *name)
 {
@@ -61,7 +63,7 @@ d1_begin(void *pr_data, char *l)
 	assert(x);
 	l = e;
     }
-    fprintf(fp, "    <%s val=\"%s\"%s>\n", d1_type_s, l, e ? " base64" : "");
+    fprintf(fp, "    <%s val=\"%s\"%s>\n", d1_type_s, l, e ? b64 : "");
     if (e)
 	free(e);
 }
@@ -77,7 +79,7 @@ print_element(void *pr_data, char *l, int val)
 	assert(x);
 	l = e;
     }
-    fprintf(fp, "      <%s val=\"%s\"%s count=\"%d\"/>\n", d2_type_s, l, e ? " base64" : "", val);
+    fprintf(fp, "      <%s val=\"%s\"%s count=\"%d\"/>\n", d2_type_s, l, e ? b64 : "", val);
     if (e)
 	free(e);
 }
