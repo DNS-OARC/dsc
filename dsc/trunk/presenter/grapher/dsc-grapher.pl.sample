@@ -83,7 +83,13 @@ my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
 
 if ('html' eq $ARGS{content}) {
 	if ($main::use_data_uri) {
-		make_image($cache_name) unless (check_image_cache($cache_name));
+		if (!reason_to_not_plot()) {
+			print STDERR "no reason to not plot\n";
+			if (!check_image_cache($cache_name)) {
+				print STDERR "need to make cached image\n";
+				make_image($cache_name);
+			}
+		}
 	}
 	my $source = "/usr/local/dsc/share/html/plot.page";
 	my $t = Text::Template->new(
@@ -96,10 +102,20 @@ if ('html' eq $ARGS{content}) {
 	print $t->fill_in(PACKAGE => TEMPLATE);
 	exit 0;
 } else {
-	make_image($cache_name) unless (check_image_cache($cache_name));
-	print $cgi->header(-type=>'image/png',-expires=>'+15m');
-	cat_image($cache_name);
+	make_image($cache_name) unless (!reason_to_not_plot() && check_image_cache($cache_name));
+	if (-f cache_image_path($cache_name)) {
+		print $cgi->header(-type=>'image/png',-expires=>'+15m');
+		cat_image($cache_name);
+	}
 	exit 0;
+}
+
+sub reason_to_not_plot {
+	return 'Please select a server' if ($ARGS{server} eq 'none');
+	return 'Please select a plot' if ($ARGS{plot} eq 'none');
+	my $PLOT = main::Plot($ARGS{plot});
+	return 'Please select a Query Attributes sub-item' if ($PLOT->{plot_type} eq 'none');
+	undef;
 }
 
 sub make_image {
@@ -296,7 +312,8 @@ sub find_default_yaxis_type {
 	foreach my $t (keys %{$PLOT->{yaxes}}) {
 		return $t if ($PLOT->{yaxes}{$t}{default});
 	}
-	die "[$$] no default yaxis type for $ARGS{plot}\n";
+	#die "[$$] no default yaxis type for $ARGS{plot}\n";
+	'none';
 }
 
 sub trace_plot {
@@ -538,6 +555,8 @@ sub cache_image_path {
 	"/usr/local/dsc/cache/$prefix.png";
 }
 
+# return 0 if we should generate a cached image
+# return 1 if the cached image is useable
 sub check_image_cache {
 	my $prefix = shift;
 	my @sb = stat(cache_image_path($prefix));
@@ -672,10 +691,9 @@ package TEMPLATE;
 
 sub img_with_map {
 	my $imgsrc;
-	return '<p>Please select a server' if ($ARGS{server} eq 'none');
-	return '<p>Please select a plot' if ($ARGS{plot} eq 'none');
-	my $PLOT = main::Plot($ARGS{plot});
-	return '<p>Please select a Query Attributes sub-item' if ($PLOT->{plot_type} eq 'none');
+	if (my $reason = main::reason_to_not_plot()) {
+		return "<p>$reason";
+	}
 	
 	if ($main::use_data_uri) {
 		$imgsrc = "data:image/png;base64,\n";
@@ -783,6 +801,7 @@ sub navbar_servers_nodes {
 	$snippet .= "<ul>\n";
 	my @items;
 	foreach my $server ( keys %{$CFG->{servers}} ) {
+		#print STDERR "server=$server\n";
 		$snippet .= "<li>" . navbar_item('server',$server,$server);
 		if ($ARGS{server} eq $server) {
 			foreach my $node (@{$CFG->{servers}{$server}}) {
