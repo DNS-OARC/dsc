@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
+#et -x
 
-PATH=/usr/bin:/bin:/usr/local/ssh2/bin:/usr/local/bin:/udir/wessels/bin:/usr/local/bin:/udir/wessels/bin
+PATH=/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 export PATH
 PROG=`basename $0`
 
@@ -17,32 +18,25 @@ fi
 echo $$ >$PIDF
 trap "rm -f $PIDF" EXIT
 
-exec > $PROG.out
-exec 2>&1
-sleep 3
-date
-
-CURL=curl
-SRVAUTH="--cacert $HOME/dsc/etc/cacert.pem"
+CURL="curl --silent"
+SRVAUTH="--cacert /usr/local/dsc/etc/cacert.pem"
 URI="https://dns-oarc.measurement-factory.com"
 
-for d in pao1 ; do
-
-	CLTAUTH="--cert $HOME/dsc/etc/$d-cert.pem"
-	cd $HOME/dsc/run-$d
+for node in hq lgh sc ; do
+	CLTAUTH="--cert /usr/local/dsc/etc/$node-cert.pem"
+	cd /usr/local/dsc/run/$node
 	sleep 5
 
 	exec > $PROG.out
 	exec 2>&1
 
-	k=`ls -r | grep xml$ | head -50` || true
-	if test -n "$k" ; then
-		for f in $k ; do
-			UPLOAD="--upload $f"
-			$CURL $SRVAUTH $CLTAUTH $UPLOAD $URI && rm -f $f &
-		done
-	fi
-
+	k=`ls -t | grep xml$ | head -500` || true
+	test -n "$k" || continue
+	TF=`mktemp /tmp/put.XXXXXXXXXXXXX`
+	tar czf $TF $k
+	mv $TF $TF.tar
+	TF="$TF.tar"
+	UPLOAD="--upload $TF"
+	$CURL $SRVAUTH $CLTAUTH $UPLOAD $URI | awk '$1 == "Stored" {print $2}' | xargs rm -v
+	rm -f $TF
 done
-wait
-date
