@@ -2,7 +2,7 @@ package DSC::ploticus;
 
 use Data::Dumper;
 use POSIX;
-use File::Temp qw(tempfile);
+use File::Temp;
 
 use strict;
 
@@ -51,9 +51,9 @@ sub plotdata_tmp {
 	my $label = shift;
 	my $obj;
 	if (defined($label)) {
-		$obj = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
+		$obj = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX", UNLINK=>0);
 	} else {
-		$obj = new File::Temp(TEMPLATE => $plotdata_tmp);
+		$obj = new File::Temp(TEMPLATE => $plotdata_tmp, UNLINK=>0);
 	}
 	$obj;
 }
@@ -77,8 +77,8 @@ sub Ploticus_create_datafile {
 		next if ($fromkey < $cutoff);
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
 		foreach my $k1 (@$keysarrayref) {
-			if (defined($$hashref{$fromkey}{$k1})) {
-				$newhash{$tokey}{$k1} += $$hashref{$fromkey}{$k1};
+			if (defined($hashref->{$fromkey}{$k1})) {
+				$newhash{$tokey}{$k1} += $hashref->{$fromkey}{$k1};
 			}
 			# always increment the denominator, even for undef values
 			# otherwise averaging comes out wrong, and really creates
@@ -136,8 +136,8 @@ sub Ploticus_create_datafile_type2 {
 		# note $fromkey is a time_t.
 		next if ($fromkey < $cutoff);
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
-		next unless defined($$hashref{$fromkey});
-		$newhash{$tokey} += $$hashref{$fromkey};
+		next unless defined($hashref->{$fromkey});
+		$newhash{$tokey} += $hashref->{$fromkey};
 		$COUNT{$tokey}++;
 	}
 	#
@@ -249,8 +249,8 @@ sub Ploticus_lines_stacked {
 		P("#proc bars");
 		&$cloneref if defined($cloneref);
 		P("lenfield: $field");
-		P("color: $$colorsarrayref[$i]");
-		P("legendlabel: $$labelsarrayref[$i]");
+		P("color: $colorsarrayref->[$i]");
+		P("legendlabel: $labelsarrayref->[$i]");
 	}
 }
 
@@ -354,7 +354,7 @@ sub index_in_array {
 	my $arrayref = shift;
 	my $val = shift;
 	for(my $i=0; $i<@$arrayref; $i++) {
-		return $i if ($$arrayref[$i] eq $val);
+		return $i if ($arrayref->[$i] eq $val);
 	}
 	-1;
 }
@@ -372,7 +372,7 @@ sub PO {
 
 sub P {
 	my $line = shift;
-	print STDERR "$line\n" if ($main::ploticus_debug);
+	print STDERR "$line\n" ;# if ($main::ploticus_debug);
 	ploticus_execline($line);
 }
 
