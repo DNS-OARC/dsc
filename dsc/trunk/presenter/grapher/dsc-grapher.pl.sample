@@ -55,6 +55,15 @@ $ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'bynode';
 $ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
 $ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
 $ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $main::now;
+$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis');
+
+$PLOT = Plot($ARGS{plot});
+error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
+#print STDERR "[$$] PLOT=" . Dumper($PLOT);
+
+if (!defined($ARGS{yaxis})) {
+	$ARGS{yaxis} = find_default_yaxis_type();
+}
 
 $ARGS{end} = $main::now if ($ARGS{end} > $main::now);
 #print STDERR "[$$] " . Dumper(\%ARGS);
@@ -64,10 +73,8 @@ my $cache_name = cache_name($ARGS{server},
 	$ARGS{end} == $main::now ? 0 : $ARGS{end},
 	$ARGS{window},
 	$ARGS{binsize},
-	$ARGS{mini});
-$PLOT = Plot($ARGS{plot});
-error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
-#print STDERR "[$$] PLOT=" . Dumper($PLOT);
+	$ARGS{mini},
+	$ARGS{yaxis});
 
 my $ACCUM_TOP_N = $ARGS{mini} ? 20 : 40;
 my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
@@ -112,6 +119,10 @@ sub make_image {
 	if (defined($PLOT->{munge_func})) {
 		print STDERR "[$$] munging\n";
 		$data = &{$PLOT->{munge_func}}($data);
+	}
+	if ($ARGS{yaxis} eq 'percent') {
+		print STDERR "[$$] converting to percentage\n";
+		$data = convert_to_percentage($data);
 	}
 	print STDERR Dumper($data) if ($PLOT->{debugflag});
 	$datafile = plotdata_tmp($ARGS{plot});
@@ -281,6 +292,13 @@ sub time_descr
 	"From $from_ctime To $to_ctime";
 }
 
+sub find_default_yaxis_type {
+	foreach my $t (keys %{$PLOT->{yaxes}}) {
+		return $t if ($PLOT->{yaxes}{$t}{default});
+	}
+	die "[$$] no default yaxis type for $ARGS{plot}\n";
+}
+
 sub trace_plot {
 	my $tf = shift;
 	my $binsize = shift;
@@ -307,7 +325,7 @@ sub trace_plot {
 		-window => $ARGS{window},
 	};
 	my $yaxis_opts = {
-		-label => $PLOT->{yaxislabel},
+		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
 		-grid => 'yes',
 	};
 	my $bars_opts = {
@@ -481,10 +499,12 @@ sub munge_2d_to_1d {
 	foreach my $t (keys %$data) {
 		foreach my $k1 (keys %{$data->{$t}}) {
 			$j1 = $k1;
-			$j1 = 'else' unless grep {$_ eq $j1} @$d1keys;
+			#$j1 = 'else' unless grep {$_ eq $j1} @$d1keys;
+			next unless grep {$_ eq $j1} @$d1keys;
 			foreach my $k2 (keys %{$data->{$t}{$k1}}) {
 				$j2 = $k2;
-				$j2 = 'else' unless grep {$_ eq $j2} @$d2keys;
+				#$j2 = 'else' unless grep {$_ eq $j2} @$d2keys;
+				next unless grep {$_ eq $j2} @$d2keys;
 				$newdata{$t}{"$j1:$j2"} += $data->{$t}{$k1}{$k2};
 			}
 		}
@@ -492,7 +512,7 @@ sub munge_2d_to_1d {
 	\%newdata;
 }
 
-sub munge_to_1d_to_percentage {
+sub convert_to_percentage {
 	my $data = shift;
 	my %newdata;
 	foreach my $t (keys %$data) {
@@ -506,7 +526,6 @@ sub munge_to_1d_to_percentage {
 	}
 	\%newdata;
 }
-
 
 sub cache_name {
 	my $ctx = Digest::MD5->new;
@@ -724,6 +743,7 @@ sub delete_default_args {
 	delete $href->{plot} if ('none' eq $href->{plot});
 	delete $href->{content} if ('html' eq $href->{content});
 	delete $href->{mini} if (0 == $href->{mini});
+	delete $href->{yaxis} if (main::find_default_yaxis_type() eq $href->{yaxis});
 }
 
 sub server { $ARGS{server}; }
@@ -770,6 +790,13 @@ sub navbar_plot_item {
 	a_markup(urlpath(merge_args(plot=>$plot)), $label, $class) . "\n";
 }
 
+sub navbar_yaxis_item {
+	my $yaxis = shift;
+	my $label = shift;
+	my $class = ($yaxis eq $ARGS{yaxis}) ? 'current' : undef;
+	a_markup(urlpath(merge_args(yaxis=>$yaxis)), $label, $class) . "\n";
+}
+
 sub navbar_arrow_item {
 	my $delta = shift;
 	my $icon = shift;
@@ -793,6 +820,38 @@ sub navbar_servers_nodes {
 	}
 	$snippet .= "</ul>\n";
 	$snippet;
+}
+
+sub navbar_plot {
+	my @items = ();
+	push(@items, navbar_plot_item('bynode','By Node')) if ($ARGS{node} eq 'all');
+	push(@items, navbar_plot_item('qtype','Qtypes'));
+	push(@items, navbar_plot_item('client_subnet2_accum','Classification'));
+	if ($ARGS{plot} =~ /^client_subnet2/) {
+		push(@items, sublist_item() . navbar_plot_item('client_subnet2_trace', 'trace'));
+		push(@items, sublist_item() . navbar_plot_item('client_subnet2_count', 'count'));
+	}
+	push(@items, navbar_plot_item('client_subnet_accum','Client Geography'));
+	push(@items, navbar_plot_item('qtype_vs_all_tld','TLDs'));
+	if ($ARGS{plot} =~ /qtype_vs_.*_tld/) {
+		push(@items, sublist_item() . navbar_plot_item('qtype_vs_valid_tld', 'valid'));
+		push(@items, sublist_item() . navbar_plot_item('qtype_vs_invalid_tld', 'invalid'));
+		push(@items, sublist_item() . navbar_plot_item('qtype_vs_numeric_tld', 'numeric'));
+	}
+	push(@items, navbar_plot_item('certain_qnames_vs_qtype','Popular Names'));
+	push(@items, navbar_plot_item('X','Qname Length'));
+	push(@items, navbar_plot_item('rcode','Rcodes'));
+	push(@items, navbar_plot_item('X','Reply Lengths'));
+	push(@items, navbar_plot_item('opcode','Opcodes'));
+	push(@items, navbar_plot_item('query_attrs','Query Attributes'));
+	if ($ARGS{plot} =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
+		push(@items, sublist_item() . navbar_plot_item('idn_qname', 'IDN Qnames'));
+		push(@items, sublist_item() . navbar_plot_item('rd_bit', 'RD bit'));
+		push(@items, sublist_item() . navbar_plot_item('do_bit', 'DO bit'));
+		push(@items, sublist_item() . navbar_plot_item('edns_version', 'EDNS version'));
+	}
+	push(@items, navbar_plot_item('direction_vs_ipproto','IP Protocols'));
+	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 
 # This is function called from an "HTML" file by the template parser
@@ -823,37 +882,16 @@ sub navbar_window {
 	join('<br>', @items);
 }
 
-sub navbar_plot {
+
+# This is function called from an "HTML" file by the template parser
+#
+sub navbar_yaxis {
 	my @items = ();
-	push(@items, navbar_plot_item('bynode','By Node')) if ($ARGS{node} eq 'all');
-	push(@items, navbar_plot_item('qtype','Qtypes'));
-	push(@items, navbar_plot_item('client_subnet2_accum','Classification'));
-	if ($ARGS{plot} =~ /^client_subnet2/) {
-		push(@items, sublist_item() . navbar_plot_item('client_subnet2_trace', 'trace'));
-		push(@items, sublist_item() . navbar_plot_item('client_subnet2_count', 'count'));
+	my $PLOT = main::Plot($ARGS{plot});
+	foreach my $t (keys %{$PLOT->{yaxes}}) {
+		push(@items, navbar_yaxis_item($t, $PLOT->{yaxes}{$t}{label}));
 	}
-	push(@items, navbar_plot_item('client_subnet_accum','Client Geography'));
-	push(@items, navbar_plot_item('qtype_vs_all_tld','TLDs'));
-	if ($ARGS{plot} =~ /qtype_vs_.*_tld/) {
-		push(@items, sublist_item() . navbar_plot_item('qtype_vs_valid_tld', 'valid'));
-		push(@items, sublist_item() . navbar_plot_item('qtype_vs_invalid_tld', 'invalid'));
-		push(@items, sublist_item() . navbar_plot_item('qtype_vs_numeric_tld', 'numeric'));
-	}
-	push(@items, navbar_plot_item('certain_qnames_vs_qtype','Popular Names'));
-	push(@items, navbar_plot_item('X','Attributes'));
-	push(@items, navbar_plot_item('X','Qname Length'));
-	push(@items, navbar_plot_item('rcode','Rcodes'));
-	push(@items, navbar_plot_item('X','Reply Lengths'));
-	push(@items, navbar_plot_item('opcode','Opcodes'));
-	push(@items, navbar_plot_item('query_attrs','Query Attributes'));
-	if ($ARGS{plot} =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
-		push(@items, sublist_item() . navbar_plot_item('idn_qname', 'IDN Qnames'));
-		push(@items, sublist_item() . navbar_plot_item('rd_bit', 'RD bit'));
-		push(@items, sublist_item() . navbar_plot_item('do_bit', 'DO bit'));
-		push(@items, sublist_item() . navbar_plot_item('edns_version', 'EDNS version'));
-	}
-	push(@items, navbar_plot_item('direction_vs_ipproto','IP Protocols'));
-	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
+	join('<br>', @items);
 }
 
 sub window_secs {
