@@ -785,7 +785,10 @@ sub navbar_item {
 	my $val = shift;
 	my $label = shift;
 	my $class = ($val eq $ARGS{$arg}) ? 'current' : undef;
-	a_markup(urlpath(merge_args($arg=>$val,node=>'all')), $label, $class) . "\n";
+	my %newargs;
+	$newargs{$arg} = $val;
+	$newargs{node} = 'all' if ($arg eq 'server');
+	a_markup(urlpath(merge_args(%newargs)), $label, $class) . "\n";
 }
 
 sub navbar_arrow_item {
