@@ -40,7 +40,7 @@ my $client_subnet2_keys =   [ qw(
     type1	=> 'Qtype',
     outputs	=> {
       qtype => {
-        keys	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	keys	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
 	data_munger => \&main::munge_elsify,
         data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -208,6 +208,7 @@ my $client_subnet2_keys =   [ qw(
         data_reader	=> \&DSC::extractor::read_data3,
 	data_merger	=> \&main::merge_accum2d,
         data_writer	=> \&DSC::extractor::write_data3,
+	data_trimer	=> \&main::trim_accum2d,
       },
     },
   },
