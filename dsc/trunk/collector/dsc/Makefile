@@ -1,6 +1,7 @@
 PROG=dsc
 HAPY=../TmfBase/Hapy
 CFLAGS=-g -Wall -I $(HAPY)/src/include
+CPPFLAGS = ${CFLAGS}
 TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
 
