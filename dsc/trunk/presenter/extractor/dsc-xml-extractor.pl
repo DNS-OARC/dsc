@@ -64,6 +64,13 @@ sub extract {
 		&{$O->{data_merger}}($start_time, \%db, $grok_copy);
 		print STDERR 'POST MERGE db=', Dumper(\%db) if ($dbg);
 
+		# trim
+		#
+		if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
+			print STDERR "trimming db\n";
+			&{$O->{data_trimer}}(\%db);
+		}
+
 		# write out the new data file
 		#
 		&{$O->{data_writer}}(\%db, "$yymmdd/$dataset/$output.dat");
@@ -195,4 +202,14 @@ sub swap_dimensions {
 		}
 	}
 	$output;
+}
+
+sub trim_accum2d {
+	my $data = shift;
+	foreach my $k1 (keys %$data) {
+		my $n = 0;
+		foreach my $k2 (sort {$data->{$k1}{$b} <=> $data->{$k1}{$a}} keys %{$data->{$k1}}) {
+			delete $data->{$k1}{$k2} if (++$n > 1000);
+		}
+	}
 }
