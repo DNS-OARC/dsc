@@ -155,11 +155,11 @@ handle_dns(const char *buf, int len)
     m->qr = (us >> 15) & 0x01;
 
 #if 0
-    opcode = (us >> 11) & 0x0F;
     aa = (us >> 10) & 0x01;
     tc = (us >> 9) & 0x01;
     ra = (us >> 7) & 0x01;
 #endif
+    m->opcode = (us >> 11) & 0x0F;
     m->rd = (us >> 8) & 0x01;
     m->rcode = us & 0x0F;
 

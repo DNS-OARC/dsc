@@ -26,6 +26,7 @@
 #include "edns_version_index.h"
 #include "d0_bit_index.h"
 #include "rd_bit_index.h"
+#include "opcode_index.h"
 
 extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;
@@ -179,6 +180,11 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "rd_bit")) {
 	*ix = rd_bit_indexer;
 	*it = rd_bit_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "opcode")) {
+	*ix = opcode_indexer;
+	*it = opcode_iterator;
 	return 1;
     }
     syslog(LOG_ERR, "unknown indexer '%s'", in);

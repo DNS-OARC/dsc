@@ -16,6 +16,7 @@ struct _dns_message {
     unsigned short msglen;
     char qname[MAX_QNAME_SZ];
     const char *tld;
+    unsigned char opcode;
     unsigned char rcode;
     unsigned int qr:1;
     unsigned int rd:1;		/* set if RECUSION DESIRED bit is set */

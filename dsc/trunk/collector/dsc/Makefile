@@ -31,6 +31,7 @@ OBJS=\
 	edns_version_index.o \
 	d0_bit_index.o \
 	rd_bit_index.o \
+	opcode_index.o \
 	ParseConfig.o \
 	config_hooks.o
 
