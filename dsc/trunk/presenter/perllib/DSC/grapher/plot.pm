@@ -291,21 +291,6 @@ my $std_accum_yaxes = {
   },
 
   qtype_vs_all_tld => {
-    #
-    # this dataset is stored as:
-    #   qtype tld count
-    # and we have to swap the first two dimensions
-    #
-    munge_func => sub {
-	my $old = shift;
-	my $new;
-	foreach my $k1 (keys %$old) {
-		foreach my $k2 (keys %{$old->{$k1}}) {
-			$new->{$k2}{$k1} = $old->{$k1}{$k2};
-		}
-	}
-	$new;
-    },
     dataset => 'qtype_vs_tld',
     datafile => 'qtype_vs_tld',
     plot_type => 'accum2d',
@@ -321,25 +306,16 @@ my $std_accum_yaxes = {
   },
 
   qtype_vs_invalid_tld => {
-    #
-    # this dataset is stored as:
-    #   qtype tld count
-    # and we have to swap the first two dimensions
-    #
     munge_func => sub {
-	my $old = shift;
-	my $new;
-	foreach my $k1 (keys %$old) {
-		foreach my $k2 (keys %{$old->{$k1}}) {
-			next if (!DSC::grapher::invalid_tld_filter($k2));
-			$new->{$k2}{$k1} = $old->{$k1}{$k2};
-		}
-	}
-	$new;
+      my $data = shift;
+      foreach my $k1 (keys %$data) {
+	delete $data->{$k1} unless (DSC::grapher::invalid_tld_filter($k1));
+      }
+      $data;
     },
-    dataset => 'qtype_vs_tld',
-    datafile => 'qtype_vs_tld',
-    plot_type => 'accum2d',
+    dataset	=> 'qtype_vs_tld',
+    datafile	=> 'qtype_vs_tld',
+    plot_type	=> 'accum2d',
     divideflag 	=> 0,
     keys	=> $qtype_keys,
     names	=> $qtype_names,
@@ -352,64 +328,46 @@ my $std_accum_yaxes = {
   },
 
   qtype_vs_valid_tld => {
-    #
-    # this dataset is stored as:
-    #   qtype tld count
-    # and we have to swap the first two dimensions
-    #
     munge_func => sub {
-	my $old = shift;
-	my $new;
-	foreach my $k1 (keys %$old) {
-		foreach my $k2 (keys %{$old->{$k1}}) {
-			next if (!DSC::grapher::valid_tld_filter($k2));
-			$new->{$k2}{$k1} = $old->{$k1}{$k2};
-		}
-	}
-	$new;
+      my $data = shift;
+      foreach my $k1 (keys %$data) {
+	delete $data->{$k1} unless (DSC::grapher::valid_tld_filter($k1));
+      }
+      $data;
     },
-    dataset => 'qtype_vs_tld',
-    datafile => 'qtype_vs_tld',
-    plot_type => 'accum2d',
+    dataset	=> 'qtype_vs_tld',
+    datafile	=> 'qtype_vs_tld',
+    plot_type	=> 'accum2d',
     divideflag 	=> 0,
     keys	=> $qtype_keys,
     names	=> $qtype_names,
     colors	=> $qtype_colors,
-    data_reader => \&DSC::extractor::read_data3,
-    data_summer => \&DSC::grapher::data_summer_1d,
+    data_reader	=> \&DSC::extractor::read_data3,
+    data_summer	=> \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
-    plottitle   => 'Most Popular TLDs Queried',
+    plottitle  	=> 'Most Popular TLDs Queried',
     map_legend	=> 1,
   },
 
   qtype_vs_numeric_tld => {
-    #
-    # this dataset is stored as:
-    #   qtype tld count
-    # and we have to swap the first two dimensions
-    #
     munge_func => sub {
-	my $old = shift;
-	my $new;
-	foreach my $k1 (keys %$old) {
-		foreach my $k2 (keys %{$old->{$k1}}) {
-			next if (!DSC::grapher::numeric_tld_filter($k2));
-			$new->{$k2}{$k1} = $old->{$k1}{$k2};
-		}
-	}
-	$new;
+      my $data = shift;
+      foreach my $k1 (keys %$data) {
+	delete $data->{$k1} unless (DSC::grapher::numeric_tld_filter($k1));
+      }
+      $data;
     },
-    dataset => 'qtype_vs_tld',
-    datafile => 'qtype_vs_tld',
-    plot_type => 'accum2d',
+    dataset	=> 'qtype_vs_tld',
+    datafile	=> 'qtype_vs_tld',
+    plot_type	=> 'accum2d',
     divideflag 	=> 0,
     keys	=> $qtype_keys,
     names	=> $qtype_names,
     colors	=> $qtype_colors,
-    data_reader => \&DSC::extractor::read_data3,
-    data_summer => \&DSC::grapher::data_summer_1d,
+    data_reader	=> \&DSC::extractor::read_data3,
+    data_summer	=> \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
-    plottitle   => 'Most Popular TLDs Queried',
+    plottitle  	=> 'Most Popular TLDs Queried',
     map_legend	=> 1,
   },
 

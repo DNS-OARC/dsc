@@ -177,8 +177,8 @@ my $client_subnet2_keys =   [ qw(
       client_subnet2_accum => {
 	keys	=> $client_subnet2_keys,
 	data_munger => \&main::swap_dimensions,
-	data_merger => \&main::merge_accum2d,
 	data_reader => \&DSC::extractor::read_data3,
+	data_merger => \&main::merge_accum2d,
 	data_writer => \&DSC::extractor::write_data3,
       },
     },
@@ -205,6 +205,7 @@ my $client_subnet2_keys =   [ qw(
     type2	=> 'TLD',
     outputs	=> {
       qtype_vs_tld => {
+	data_munger	=> \&main::swap_dimensions,
 	data_reader	=> \&DSC::extractor::read_data3,
 	data_merger	=> \&main::merge_accum2d,
 	data_writer	=> \&DSC::extractor::write_data3,

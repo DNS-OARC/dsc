@@ -211,8 +211,8 @@ sub trim_accum2d {
 		my $n = 0;
 		foreach my $k2 (sort {$data->{$k1}{$b} <=> $data->{$k1}{$a}} keys %{$data->{$k1}}) {
 			next unless (++$n > 1000);
-			$data->{$k1}{$SKIPPED_KEY}++;
-			$data->{$k1}{$SKIPPED_SUM_KEY} += $data->{$k1}{$k2};
+			$data->{$SKIPPED_KEY}{$k2}++;
+			$data->{$SKIPPED_SUM_KEY}{$k2} += $data->{$k1}{$k2};
 			delete $data->{$k1}{$k2};
 			$ndel++;
 		}
