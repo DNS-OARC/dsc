@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <syslog.h>
+#include <string.h>
 
 
 #include "dns_message.h"
@@ -34,7 +35,7 @@ queries_only_filter(const void *vp)
 }
 
 static int
-popular_qtypes_queries_only_filter(const void *vp)
+popular_qtypes_filter(const void *vp)
 {
     const dns_message *m = vp;
     if (1 == m->qr)
@@ -118,33 +119,44 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 }
 
 static int
-dns_message_find_filter(const char *fn, FLTR ** f)
+dns_message_find_filters(const char *fn, filter_list ** fl)
 {
-    if (0 == strcmp(fn, "any")) {
-	*f = NULL;
-	return 1;
+    char *t;
+    char *copy = strdup(fn);
+    for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
+	*fl = calloc(1, sizeof(**fl));
+	assert(*fl);
+	if (0 == strcmp(t, "any")) {
+	    (*fl)->filter = NULL;
+	    fl = &(*fl)->next;
+	    continue;
+	}
+	if (0 == strcmp(t, "queries-only")) {
+	    (*fl)->filter = queries_only_filter;
+	    fl = &(*fl)->next;
+	    continue;
+	}
+	if (0 == strcmp(t, "replies-only")) {
+	    (*fl)->filter = replies_only_filter;
+	    fl = &(*fl)->next;
+	    continue;
+	}
+	if (0 == strcmp(t, "popular-qtypes")) {
+	    (*fl)->filter = popular_qtypes_filter;
+	    fl = &(*fl)->next;
+	    continue;
+	}
+	syslog(LOG_ERR, "unknown filter '%s'", t);
+	return 0;
     }
-    if (0 == strcmp(fn, "queries-only")) {
-	*f = queries_only_filter;
-	return 1;
-    }
-    if (0 == strcmp(fn, "replies-only")) {
-	*f = replies_only_filter;
-	return 1;
-    }
-    if (0 == strcmp(fn, "popular-qtypes")) {
-	*f = popular_qtypes_queries_only_filter;
-	return 1;
-    }
-    syslog(LOG_ERR, "unknown filter '%s'", fn);
-    return 0;
+    return 1;
 }
 
 int
 dns_message_add_array(const char *name, const char *fn, const char *fi,
     const char *sn, const char *si, const char *f)
 {
-    FLTR *filter;
+    filter_list *filters;
     IDXR *indexer1;
     HITR *iterator1;
     IDXR *indexer2;
@@ -155,11 +167,11 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 	return 0;
     if (0 == dns_message_find_indexer(si, &indexer2, &iterator2))
 	return 0;
-    if (0 == dns_message_find_filter(f, &filter))
+    if (0 == dns_message_find_filters(f, &filters))
 	return 0;
 
     a = calloc(1, sizeof(*a));
-    a->theArray = md_array_create(name, filter,
+    a->theArray = md_array_create(name, filters,
 	fn, indexer1, iterator1,
 	sn, indexer2, iterator2);
     assert(a->theArray);

@@ -14,14 +14,14 @@ void md_array_grow_d2(md_array * a);
 
 
 md_array *
-md_array_create(const char *name, FLTR * filter,
+md_array_create(const char *name, filter_list * fl,
     const char *type1, IDXR * idx1, HITR * itr1,
     const char *type2, IDXR * idx2, HITR * itr2)
 {
     int i1;
     md_array *a = calloc(1, sizeof(*a));
     a->name = strdup(name);
-    a->filter = filter;
+    a->filter_list = fl;
     a->d1.type = type1;
     a->d1.indexer = idx1;
     a->d1.iterator = itr1;
@@ -42,9 +42,10 @@ md_array_count(md_array * a, const void *vp)
 {
     int i1;
     int i2;
+    filter_list *fl;
 
-    if (a->filter)
-	if (0 == a->filter(vp))
+    for (fl = a->filter_list; fl; fl=fl->next)
+	if (0 == fl->filter(vp))
 	    return -1;
 
     i1 = a->d1.indexer(vp);

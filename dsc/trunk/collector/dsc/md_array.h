@@ -3,14 +3,20 @@
 typedef struct _md_array md_array;
 typedef struct _md_array_printer md_array_printer;
 typedef struct _md_array_list md_array_list;
+typedef struct _filter_list filter_list;
 
 typedef int (IDXR) (const void *);
 typedef int (HITR) (char **);
 typedef int (FLTR) (const void *);
 
+struct _filter_list {
+	FLTR *filter;
+	struct _filter_list *next;
+};
+
 struct _md_array {
     const char *name;
-    FLTR *filter;
+    filter_list *filter_list;
     struct {
 	IDXR *indexer;
 	HITR *iterator;
@@ -44,7 +50,7 @@ struct _md_array_list {
 };
 
 int md_array_count(md_array *, const void *);
-md_array *md_array_create(const char *name, FLTR *,
+md_array *md_array_create(const char *name, filter_list *,
     const char *, IDXR *, HITR *,
     const char *, IDXR *, HITR *);
 int md_array_print(md_array * a, md_array_printer * pr);

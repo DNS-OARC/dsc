@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <syslog.h>
+#include <string.h>
 
 #include "ip_message.h"
 #include "md_array.h"
@@ -36,23 +37,31 @@ ip_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     syslog(LOG_ERR, "unknown indexer '%s'", in);
     return 0;
 }
-    
-static int  
-ip_message_find_filter(const char *fn, FLTR ** f)
+
+static int
+ip_message_find_filters(const char *fn, filter_list ** fl)
 {
-    if (0 == strcmp(fn, "any")) {
-        *f = NULL;
-        return 1;
+    char *t;
+    char *copy = strdup(fn);
+    for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
+	*fl = calloc(1, sizeof(**fl));
+	assert(*fl);
+	if (0 == strcmp(t, "any")) {
+	    (*fl)->filter = NULL;
+	    fl = &(*fl)->next;
+	    continue;
+	}
+	syslog(LOG_ERR, "unknown filter '%s'", t);
+	return 0;
     }
-    syslog(LOG_ERR, "unknown filter '%s'", fn);
-    return 0;
+    return 1;
 }
         
 int
 ip_message_add_array(const char *name, const char *fn, const char *fi,
     const char *sn, const char *si, const char *f)
 {
-    FLTR *filter;
+    filter_list *filters;
     IDXR *indexer1;
     HITR *iterator1;
     IDXR *indexer2;
@@ -63,11 +72,11 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
         return 0;
     if (0 == ip_message_find_indexer(si, &indexer2, &iterator2))
         return 0;
-    if (0 == ip_message_find_filter(f, &filter))
+    if (0 == ip_message_find_filters(f, &filters))
         return 0;
         
     a = calloc(1, sizeof(*a));
-    a->theArray = md_array_create(name, filter,
+    a->theArray = md_array_create(name, filters,
         fn, indexer1, iterator1, 
         sn, indexer2, iterator2);
     assert(a->theArray);
