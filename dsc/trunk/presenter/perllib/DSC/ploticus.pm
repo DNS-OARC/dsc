@@ -2,7 +2,7 @@ package DSC::ploticus;
 
 use Data::Dumper;
 use POSIX;
-use File::Temp;
+use File::Temp qw();
 
 use strict;
 
@@ -67,6 +67,7 @@ sub Ploticus_create_datafile {
 	my $window = shift;
 	my $divideflag = shift;
 	my %newhash;
+	my %COUNT;
 	my $cutoff = $end - $window;
 	$divideflag = 0 unless defined($divideflag);
 	#
@@ -83,7 +84,7 @@ sub Ploticus_create_datafile {
 			# always increment the denominator, even for undef values
 			# otherwise averaging comes out wrong, and really creates
 			# problems with missing data on percentage plots
-			$newhash{$tokey}{$k1 . '_COUNT'}++;
+			$COUNT{$tokey}{$k1}++;
 		}
 	}
 
@@ -99,7 +100,7 @@ sub Ploticus_create_datafile {
 	#unless ((keys %newhash)) {
 	#	foreach my $k1 (@$keysarrayref) {
 	#		$newhash{$cutoff}{$k1} = 0;
-	#		$newhash{$cutoff}{$k1 . '_COUNT'} = 1;
+	#		$COUNT{$cutoff}{$k1} = 1;
 	#	}
 	#}
 
@@ -111,7 +112,7 @@ sub Ploticus_create_datafile {
 	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
 		my @v = ();
 		foreach my $k1 (@$keysarrayref) {
-			push (@v, defined($newhash{$tokey}{$k1}) ? $newhash{$tokey}{$k1} / ($DF*$newhash{$tokey}{$k1 . '_COUNT'}): '-');
+			push (@v, defined($newhash{$tokey}{$k1}) ? $newhash{$tokey}{$k1} / ($DF*$COUNT{$tokey}{$k1}): '-');
 		}
 		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v), "\n";
 		$nl++;
@@ -136,8 +137,12 @@ sub Ploticus_create_datafile_type2 {
 		# note $fromkey is a time_t.
 		next if ($fromkey < $cutoff);
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
-		next unless defined($hashref->{$fromkey});
-		$newhash{$tokey} += $hashref->{$fromkey};
+		if (defined($hashref->{$fromkey})) {
+			$newhash{$tokey} += $hashref->{$fromkey};
+		}
+		# always increment the denominator, even for undef values
+		# otherwise averaging comes out wrong, and really creates
+		# problems with missing data on percentage plots
 		$COUNT{$tokey}++;
 	}
 	#
@@ -372,7 +377,7 @@ sub PO {
 
 sub P {
 	my $line = shift;
-	print STDERR "$line\n" ;# if ($main::ploticus_debug);
+	print STDERR "$line\n" if ($main::ploticus_debug);
 	ploticus_execline($line);
 }
 
