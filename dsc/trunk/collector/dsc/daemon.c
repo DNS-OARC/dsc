@@ -27,7 +27,7 @@ extern void add_local_address(const char *);
 void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [opts] netdevice|savefile\n",
+    fprintf(stderr, "usage: %s [opts] netdevice [netdevice ...]\n",
 	progname);
     fprintf(stderr, "\t-b expr\tBPF program code\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode\n");
@@ -39,7 +39,6 @@ int
 main(int argc, char *argv[])
 {
     int x;
-    char *device = NULL;
     extern char *bpf_program_str;
     extern DMC dns_message_handle;
 
@@ -67,7 +66,10 @@ main(int argc, char *argv[])
 
     if (argc < 1)
 	usage();
-    device = strdup(argv[0]);
+    cip4_net_indexer_init();
+    for (; argc; argc--, argv++) {
+	Pcap_init(argv[0], promisc_flag);
+    }
 
     /*
      * I'm using fork() in this loop, (a) out of laziness, and (b)
@@ -79,8 +81,6 @@ main(int argc, char *argv[])
      * collector exits.
      */
 
-    cip4_net_indexer_init();
-    Pcap_init(device, promisc_flag);
     for (;;) {
 	pid_t cpid = fork();
 	if (0 == cpid) {
@@ -88,8 +88,8 @@ main(int argc, char *argv[])
 	    ip_message_init();
 	    Pcap_run(dns_message_handle, ip_message_handle);
 	    if (0 == fork())
-	        dns_message_report();
-	        ip_message_report();
+		dns_message_report();
+	    ip_message_report();
 	    _exit(0);
 	} else {
 	    int cstatus = 0;

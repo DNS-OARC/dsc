@@ -55,7 +55,12 @@
 #define uh_dport dest
 #endif
 
-static pcap_t *pcap = NULL;
+#define MAX_N_PCAP 10
+static int n_pcap = 0;
+static pcap_t **pcap = NULL;
+static fd_set pcap_fdset;
+static int max_pcap_fds = 0;
+
 /*static char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0"; */
 char *bpf_program_str = "udp port 53";
 dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
@@ -199,16 +204,17 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 
 
 
-int
-Pcap_select(pcap_t * p, int sec, int usec)
+fd_set *
+Pcap_select(const fd_set * theFdSet, int sec, int usec)
 {
-    fd_set R;
+    static fd_set R;
     struct timeval to;
-    FD_ZERO(&R);
-    FD_SET(pcap_fileno(p), &R);
     to.tv_sec = sec;
     to.tv_usec = usec;
-    return select(pcap_fileno(p) + 1, &R, NULL, NULL, &to);
+    R = *theFdSet;
+    if (select(max_pcap_fds, &R, NULL, NULL, &to) > 0)
+	return &R;
+    return NULL;
 }
 
 void
@@ -218,8 +224,15 @@ Pcap_init(char *device, int promisc)
     struct bpf_program fp;
     int readfile_state = 0;
     char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t *new_pcap;
     int x;
 
+    if (pcap == NULL) {
+	pcap = calloc(MAX_N_PCAP, sizeof(*pcap));
+	FD_ZERO(&pcap_fdset);
+    }
+    assert(pcap);
+    assert(n_pcap < MAX_N_PCAP);
 
     port53 = htons(53);
     last_ts.tv_sec = last_ts.tv_usec = 0;
@@ -227,26 +240,26 @@ Pcap_init(char *device, int promisc)
     if (0 == stat(device, &sb))
 	readfile_state = 1;
     if (readfile_state) {
-	pcap = pcap_open_offline(device, errbuf);
+	new_pcap = pcap_open_offline(device, errbuf);
     } else {
-	pcap = pcap_open_live(device, PCAP_SNAPLEN, promisc, 1000, errbuf);
+	new_pcap = pcap_open_live(device, PCAP_SNAPLEN, promisc, 1000, errbuf);
     }
-    if (NULL == pcap) {
+    if (NULL == new_pcap) {
 	fprintf(stderr, "pcap_open_*: %s\n", errbuf);
 	exit(1);
     }
     memset(&fp, '\0', sizeof(fp));
-    x = pcap_compile(pcap, &fp, bpf_program_str, 1, 0);
+    x = pcap_compile(new_pcap, &fp, bpf_program_str, 1, 0);
     if (x < 0) {
 	fprintf(stderr, "pcap_compile failed\n");
 	exit(1);
     }
-    x = pcap_setfilter(pcap, &fp);
+    x = pcap_setfilter(new_pcap, &fp);
     if (x < 0) {
 	fprintf(stderr, "pcap_setfilter failed\n");
 	exit(1);
     }
-    switch (pcap_datalink(pcap)) {
+    switch (pcap_datalink(new_pcap)) {
     case DLT_EN10MB:
 	handle_datalink = handle_ether;
 	break;
@@ -270,14 +283,17 @@ Pcap_init(char *device, int promisc)
 	break;
     default:
 	fprintf(stderr, "unsupported data link type %d\n",
-	    pcap_datalink(pcap));
+	    pcap_datalink(new_pcap));
 	exit(1);
 	break;
     }
+    FD_SET(pcap_fileno(new_pcap), &pcap_fdset);
+    max_pcap_fds = pcap_fileno(new_pcap) + 1;	/* XXX FDs increment */
+    pcap[n_pcap++] = new_pcap;
 }
 
 void
-Pcap_run(DMC * dns_callback, IPC *ip_callback)
+Pcap_run(DMC * dns_callback, IPC * ip_callback)
 {
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
@@ -285,17 +301,25 @@ Pcap_run(DMC * dns_callback, IPC *ip_callback)
     finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
     finish_ts.tv_usec = 0;
     while (last_ts.tv_sec < finish_ts.tv_sec) {
-	if (Pcap_select(pcap, 0, 250000))
-	    pcap_dispatch(pcap, 50, handle_pcap, NULL);
-	else
+	fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
+	if (NULL == R) {
 	    gettimeofday(&last_ts, NULL);
+	} else {
+	    int i;
+	    for (i = 0; i < n_pcap; i++)
+		if (FD_ISSET(pcap_fileno(pcap[i]), &pcap_fdset))
+		    pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+	}
     }
 }
 
 void
 Pcap_close(void)
 {
-    pcap_close(pcap);
+    int i;
+    for (i = 0; i < n_pcap; i++)
+	pcap_close(pcap[i]);
+    free(pcap);
     pcap = NULL;
 }
 
