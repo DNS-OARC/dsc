@@ -1,4 +1,4 @@
-PROG=dnsstatd
+PROG=dsc
 CFLAGS=-g -Wall
 TODAY != date +%Y%m%d
 
