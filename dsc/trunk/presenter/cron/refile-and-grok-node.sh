@@ -1,11 +1,13 @@
 #!/bin/sh
 
 set -e
+#et -x
 
 : ${SERVER:?}
 : ${NODE:?}
 : ${EXECDIR:?}
 : ${TYPES:?}
+export SERVER NODE
 
 PROG=`basename $0`
 PIDF="/var/tmp/$PROG-$SERVER-$NODE.pid"
@@ -21,7 +23,7 @@ fi
 trap "rm -f $PIDF" EXIT
 echo $$ > $PIDF
 
-exec >$PROG.stdout
+ exec >$PROG.stdout
 #exec 2>&1
 #set -x
 date
@@ -32,13 +34,16 @@ for type in $TYPES ; do
 	if test -n "$xmls" ; then
 		for h in $xmls ; do
 			secs=`echo $h | awk -F. '{print $1}'`
-			# convert end time to start time
 			secs=`expr $secs - 60`
 			yymmdd=`date -u -r $secs +%Y%m%d`
 			test -d $yymmdd || mkdir $yymmdd
 			test -d $yymmdd/$type || mkdir $yymmdd/$type
-			$EXECDIR/$type-extractor.pl $h
-			mv $h $yymmdd/$type
+			#echo "Doing $type-extractor.pl $h"
+			if $EXECDIR/$type-extractor.pl $h ; then
+				mv $h $yymmdd/$type
+			else
+				echo "error processing $SERVER/$NODE/$h" 1>&2
+			fi
 		done
 	fi
 done
