@@ -13,13 +13,15 @@
 #define RFC1035_MAXLABELSZ 63
 
 static int
-rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, size_t ns
-)
+rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, size_t ns)
 {
     off_t no = 0;
     unsigned char c;
     size_t len;
-    assert(ns > 0);
+    if (ns <= 0) {
+	/* probably compression loop */
+	return 4;
+    }
     do {
 	if ((*off) >= sz)
 	    break;
