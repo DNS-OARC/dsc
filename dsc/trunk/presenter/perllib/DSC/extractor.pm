@@ -72,7 +72,7 @@ sub read_data {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	return unless (-f $fn);
+	return 0 unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
@@ -122,7 +122,7 @@ sub read_data2 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	return unless (-f $fn);
+	return 0 unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
@@ -171,7 +171,7 @@ sub read_data3 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	return unless (-f $fn);
+	return 0 unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
@@ -222,7 +222,7 @@ sub read_data4 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	return unless (-f $fn);
+	return 0 unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
