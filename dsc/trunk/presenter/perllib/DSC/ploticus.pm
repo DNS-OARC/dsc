@@ -86,16 +86,23 @@ sub Ploticus_create_datafile {
 			$newhash{$tokey}{$k1 . '_COUNT'}++;
 		}
 	}
+
+	#
+	# bail here for empty datasets;
+	#
+	return 0 unless (keys %newhash);
+
 	#
 	# if our dataset is empty, create some fake entries with zeros
 	# so that ploticus doesn't puke
 	#
-	unless ((keys %newhash)) {
-		foreach my $k1 (@$keysarrayref) {
-			$newhash{$cutoff}{$k1} = 0;
-			$newhash{$cutoff}{$k1 . '_COUNT'} = 1;
-		}
-	}
+	#unless ((keys %newhash)) {
+	#	foreach my $k1 (@$keysarrayref) {
+	#		$newhash{$cutoff}{$k1} = 0;
+	#		$newhash{$cutoff}{$k1 . '_COUNT'} = 1;
+	#	}
+	#}
+
 	#
 	# now write the new data
 	#
