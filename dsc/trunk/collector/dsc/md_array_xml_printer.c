@@ -48,28 +48,38 @@ d2_type(void *pr_data, char *t)
 }
 
 static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-				  "0123456789_-:";
+				  "0123456789._-:";
+
 static void
 d1_begin(void *pr_data, char *l)
 {
-    int ll = strlen(l);
     FILE *fp = pr_data;
-    if (strspn(l, entity_chars) == ll) {
-    	fprintf(fp, "    <%s val=\"%s\">\n", d1_type_s, l);
-    } else {
-	char *e;
+    int ll = strlen(l);
+    char *e;
+    if (strspn(l, entity_chars) != ll) {
 	int x = base64_encode(l, ll, &e);
 	assert(x);
-    	fprintf(fp, "    <%s val=\"%s\" base64>\n", d1_type_s, e);
-	free(e);
+	l = e;
     }
+    fprintf(fp, "    <%s val=\"%s\"%s>\n", d1_type_s, l, e ? " base64" : "");
+    if (e)
+	free(e);
 }
 
 static void
 print_element(void *pr_data, char *l, int val)
 {
     FILE *fp = pr_data;
-    fprintf(fp, "      <%s val=\"%s\" count=\"%d\"/>\n", d2_type_s, l, val);
+    int ll = strlen(l);
+    char *e;
+    if (strspn(l, entity_chars) != ll) {
+	int x = base64_encode(l, ll, &e);
+	assert(x);
+	l = e;
+    }
+    fprintf(fp, "      <%s val=\"%s\"%s count=\"%d\"/>\n", d2_type_s, l, e ? " base64" : "", val);
+    if (e)
+	free(e);
 }
 
 static void
