@@ -10,7 +10,8 @@ OBJS=\
 	daemon.o \
 	md_array.o \
 	qtype_index.o \
-	qclass_index.o
+	qclass_index.o \
+	tld_index.o
 
 LIBS=\
 	-lpcap

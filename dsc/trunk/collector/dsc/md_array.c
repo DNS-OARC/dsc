@@ -107,10 +107,8 @@ md_array_print(md_array * a, md_array_printer * pr)
 	a->d2.iterator(NULL);
 	while ((i2 = a->d2.iterator(&label2)) > -1) {
 	    assert(i2 < a->d2.alloc_sz);
-#if 0
 	    if (0 == a->array[i1][i2])
 		continue;
-#endif
 	    pr->print_element(a->d2.type, label2, a->array[i1][i2]);
 	}
 	pr->d1_end(a->d1.type, label1);
