@@ -227,7 +227,7 @@ sub trace_data_to_tmpfile {
 		$ARGS{binsize},
 		$ARGS{end},
 		$ARGS{window},
-		$PLOT->{divideflag});
+		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
 	my $stop = time;
 	printf STDERR "[$$] writing tmpfile took %d seconds, %d lines\n",
 		$stop-$start,
@@ -390,7 +390,8 @@ sub accum1d_plot {
 		-xstackfields => '2',
 	};
 	my $xaxis_opts = {
-		-label => $PLOT->{xaxislabel},
+		# yes we abuse/confuse x/y axes
+		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
 		-grid => 'yes',
 	};
 	my $yaxis_opts = {
@@ -452,7 +453,8 @@ sub accum2d_plot {
 		-xstackfields => join(',', 2..($ntypes+1)),
 	};
 	my $xaxis_opts = {
-		-label => $PLOT->{xaxislabel},
+		# yes we abuse/confuse x/y axes
+		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
 		-grid => 'yes',
 	};
 	my $yaxis_opts = {
@@ -771,6 +773,8 @@ sub a_markup {
 	my $h = shift;
 	my $a = shift;
 	my $c = shift;
+	die "no h" unless (defined($h));
+	die "no a" unless (defined($a));
 	"<a" . (defined($c) ? " class=\"$c\"" : '') . " href=\"$h\">$a</a>";
 }
 
