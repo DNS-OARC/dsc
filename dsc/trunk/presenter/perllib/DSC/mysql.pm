@@ -1,4 +1,4 @@
-package OARC::mysql;
+package DSC::mysql;
 
 use DBI;
 use Data::Dumper;

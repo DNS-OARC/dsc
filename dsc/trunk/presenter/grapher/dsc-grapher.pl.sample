@@ -4,8 +4,8 @@ use strict;
 use warnings;
 use vars qw(%PLOTS $PLOT %ARGS $CFG);
 
-use OARC::ploticus;
-use OARC::extractor;
+use DSC::ploticus;
+use DSC::extractor;
 require '/usr/local/dsc/libexec/plots-cfg.pl';
 
 use POSIX;

@@ -1,4 +1,4 @@
-package OARC::ploticus;
+package DSC::ploticus;
 
 use Chart::Ploticus;
 use Data::Dumper;

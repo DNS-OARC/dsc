@@ -1,4 +1,4 @@
-package OARC::extractor;
+package DSC::extractor;
 
 use XML::Simple;
 use POSIX;
