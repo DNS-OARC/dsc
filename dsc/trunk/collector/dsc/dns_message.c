@@ -10,17 +10,17 @@
 #include "tld_index.h"
 
 static md_array_printer stderr_printer;
+extern md_array_printer xml_printer;
 static md_array *qclass_vs_qtype;
 static md_array *qtype_vs_tld;
 
 void
 dns_message_handle(dns_message * m)
 {
-    fprintf(stderr, "handling a message\n");
     md_array_count(qclass_vs_qtype, m);
     md_array_count(qtype_vs_tld, m);
-    md_array_print(qclass_vs_qtype, &stderr_printer);
-    md_array_print(qtype_vs_tld, &stderr_printer);
+    md_array_print(qclass_vs_qtype, &xml_printer);
+    md_array_print(qtype_vs_tld, &xml_printer);
 }
 
 void
@@ -29,20 +29,20 @@ x_start_array(void)
 }
 
 void
-x_d1_begin(char *t, char *v)
+x_d1_begin(char *l)
 {
-	fprintf(stderr, "%s=%s\n", t, v);
+	fprintf(stderr, "%s\n", l);
 }
 
 void
-x_d1_end(char *t, char *v)
+x_d1_end(char *l)
 {
 }
 
 void
-x_print_element(char *t, char *v, int val)
+x_print_element(char *l, int val)
 {
-	fprintf(stderr, "\t%s=%s=%d\n", t,v,val);
+	fprintf(stderr, "\t%s=%d\n", l,val);
 }
 
 void

@@ -47,8 +47,6 @@ md_array_count(md_array * a, dns_message * m)
     assert(i1 < a->d1.alloc_sz);
     assert(i2 < a->d2.alloc_sz);
     a->array[i1][i2]++;
-    fprintf(stderr, "incrementing array[%d][%d] = %d\n", i1, i2,
-		a->array[i1][i2]);
     return a->array[i1][i2];
 }
 
@@ -101,17 +99,22 @@ md_array_print(md_array * a, md_array_printer * pr)
     int i2;
     a->d1.iterator(NULL);
     pr->start_array();
+    pr->d1_type(a->d1.type);
+    pr->d2_type(a->d2.type);
+    pr->start_data();
     while ((i1 = a->d1.iterator(&label1)) > -1) {
 	assert(i1 < a->d1.alloc_sz);
-	pr->d1_begin(a->d1.type, label1);
+	pr->d1_begin(label1);
 	a->d2.iterator(NULL);
 	while ((i2 = a->d2.iterator(&label2)) > -1) {
 	    assert(i2 < a->d2.alloc_sz);
 	    if (0 == a->array[i1][i2])
 		continue;
-	    pr->print_element(a->d2.type, label2, a->array[i1][i2]);
+	    pr->print_element(label2, a->array[i1][i2]);
 	}
-	pr->d1_end(a->d1.type, label1);
+	pr->d1_end(label1);
     }
+    pr->finish_data();
+    pr->finish_array();
     return 0;
 }

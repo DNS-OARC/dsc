@@ -11,7 +11,8 @@ OBJS=\
 	md_array.o \
 	qtype_index.o \
 	qclass_index.o \
-	tld_index.o
+	tld_index.o \
+	md_array_xml_printer.o
 
 LIBS=\
 	-lpcap

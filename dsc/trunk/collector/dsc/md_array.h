@@ -26,9 +26,14 @@ struct _md_array {
 
 struct _md_array_printer {
 	void (*start_array)(void);
-	void (*d1_begin)(char *type, char *val);
-	void (*d1_end)(char *type, char *val);
-	void (*print_element)(char *type, char *val, int);
+	void (*finish_array)(void);
+	void (*d1_type)(char *);
+	void (*d2_type)(char *);
+	void (*start_data)(void);
+	void (*finish_data)(void);
+	void (*d1_begin)(char *);
+	void (*d1_end)(char *);
+	void (*print_element)(char *label, int);
 };
 
 int md_array_count(md_array *, dns_message *);
