@@ -1,4 +1,5 @@
 
 server f-root pao1 sfo2
 server k-root A B C
-windows 1hour 4hour 1day 1week
+trace_windows 1hour 4hour 1day 1week
+accum_windows 1day 2days 3days 1week
