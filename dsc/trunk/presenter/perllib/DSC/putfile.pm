@@ -75,7 +75,7 @@ sub run {
 	&reply(500, "No PATH_TRANSLATED") if (!$path);
 	my @F = split('/', $path);
 	$filename = pop @F;
-	my $TF = new File::Temp::Temp(TEMPLATE=>"put.XXXXXXXXXXXXXXXX", DIR=>'.');
+	my $TF = new File::Temp(TEMPLATE=>"put.XXXXXXXXXXXXXXXX", DIR=>'.');
 
 	&reply(409, "File Exists") if (-f $filename);
 
