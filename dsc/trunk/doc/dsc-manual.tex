@@ -1,0 +1,520 @@
+\documentclass{report}
+\usepackage{psfig}
+
+\def\dsc{{\sc dsc}}
+
+
+\begin{document}
+
+\begin{titlepage}
+\title{DSC Manual}
+\author{Duane Wessels}
+\date{\today}
+\end{titlepage}
+
+\maketitle
+
+\chapter{Introduction}
+
+{\dsc} is a system for collecting, archiving, and displaying statistics from
+a DNS server.  
+
+\section{Components}
+
+{\dsc} consists of the following components:
+
+\subsection{The Collector}
+
+The collector is a binary program, named {\tt dsc\/}, which snoops on 
+DNS messages.  It is written in C and uses {\em libpcap\/} for packet capture.
+
+{\tt dsc\/} uses a relatively simple configuration file {\em dsc.conf\/} to define certain
+parameters and options.  The configuration file also determines the {\em datasets\/}
+that {\tt dsc\/} collects.
+
+{\tt dsc\/} dumps the datasets to XML files every 60 seconds.
+
+\subsection{XML Data Transfer}
+
+You may run the {\tt dsc\/} collector on a remote machine.  That
+is, the collector may run on a different machine than where the
+data is archived and displayed.  {\dsc} includes some Perl and /bin/sh
+scripts that enable transporting XML files over a secure HTTP
+connection.
+
+To make this work, Apache+mod\_ssl should run on the archive machine.
+Data transfer is authenticated via SSL X509 certificates.  A Perl
+CGI script handles all PUT requests on the server.  If the client
+certificate is allowed, XML files are stored in the appropriate
+directory.
+
+A shell script runs on the collector to upload the XML files.  It
+uses {\tt curl\/}\footnote{http://curl.haxx.se} to establish an
+HTTPS connection.  XML files are bundled together with {\tt tar\/}
+before transfer to eliminate per-connection delays.
+
+You could use {\tt scp\/} or {\tt rsync\/}/{\tt ssh\/} instead of
+{\tt curl\/} if you like.
+
+\subsection{XML Extractors}
+
+The XML extractors are Perl scripts that read the XML files from
+{\tt dsc\/}.  Presently there is one XML extractor Perl script for
+each type of dataset.  Thus, if you add a new dataset definition
+to {\em dsc.conf\/}, you also need to write a corresponding XML
+extractor.
+
+An XML extractor essentially convers the XML-structured data to a
+format that is easier (faster) for the graphing tools to parse.
+All XML extractors save the data to ``flat'' text files.  Some
+extractors also store the data to relational database tables.
+
+\subsection{Ploticus Graphers}
+
+{\dsc} uses {\em Ploticus\/}\footnote{http://ploticus.sourceforge.net/}
+as the graphing engine.  The ``Ploticus Graphers'' read the text
+files from the XML extractors.  Graphers are also currently
+dataset-specific.   Graphers are written in Perl and use a
+now-unavailable Perl Module for the interface to Ploticus.
+
+
+\section{Architecture}
+
+Figure~\ref{fig-architecture} shows the {\dsc} architecture.  
+
+\begin{figure}
+\centerline{\psfig{figure=dsc-arch.eps,width=3.5in}}
+\label{fig-architecture}
+\caption{The {\dsc} architecture.}
+\end{figure}
+
+Note that {\dsc} supports the concept of {\em servers\/} and {\em
+nodes\/}.  A server is generally a logical service, which may
+actually consist of multiple nodes.
+
+The {\tt dsc\/} collector program runs on or near the remote nodes.
+Its XML output is transferred to the archive via HTTPS PUTs.
+
+The archiver runs the HTTPS server, the XML extractors, and the
+Ploticus graphers.
+
+\chapter{Prerequisites}
+
+\begin{itemize}
+\item
+	A C/C++ Compiler
+\item
+	Perl
+\item
+	Apache with mod\_ssl
+\item
+	At least the following Perl modules:
+	\begin{itemize}
+	\item CGI-Untaint (CGI::Untaint)
+	\item CGI.pm
+	\item (Chart::Ploticus)
+	\item File-Spec (File::Spec)
+	\item File-Temp (File::Temp)
+	\item Geography-Countries (Geography::Countries)
+	\item IP-Country (IP::Country)
+	\item Lockfile-Simple (LockFile::Simple)
+	\item Net-IRR (Net::IRR)
+	\item Net-Whois (Net::Whois)
+	\item Scalar-List-Utils (List::Util)
+	\item URI
+	\item XML-Parser (XML::Parser)
+	\item XML-Simple (XML::Simple)
+	\end{itemize}
+\item
+	expat (needed by XML::Parser)
+\end{itemize}
+
+
+\chapter{Installation}
+
+At this point, {\dsc} lacks certain things such as a {\tt ./configure\/}
+script and many pathnames are currently hard-coded.  The package
+also lacks a top-level makefile that supports {\tt make install\/}.
+Therefore, we will install it one subdirectory at a time.
+
+\section{On the Collector}
+
+A collector machine needs only the {\em dsc\/} binary, a configuration file,
+and a cron job script.
+
+\subsection{\tt src}
+
+This subdirectory contains the C code for the {\tt dsc\/} binary.
+You'll need this program on the collector, but not on the archiver.
+To compile:
+
+\begin{verbatim}
+% cd src
+% make
+\end{verbatim}
+
+At the end you should have a {\em dsc\/} binary in the current directory.
+You can run {\tt make install\/} if you like.  It copies things to
+{\em /usr/local/dsc/bin\/} and {\em /usr/local/dsc/etc\/}.
+Alternatively you can manually copy the {\em dsc\/} binary and {\em
+dsc.conf.sample\/} file to a location of your choosing.
+
+\subsection{\tt cron}
+
+The collector needs only one file from this directory: {\em
+push-data.sh\/}.  This script uses {\tt curl\/} to upload XML files
+to the archiver via HTTPS.  You may need to modify it (particularly
+the pathnames) for your particular installation.
+
+The script creates a tar file of XML files, then transfers them
+with {\tt curl\/}.  If the transfer is successful, the XML files
+are removed.
+
+The script should probably run every 60 seconds, the same rate at
+which {\tt dsc\/} outputs its XML files.  For example:
+
+\begin{verbatim}
+* * * * * /usr/local/dsc/libexec/push-data.sh
+\end{verbatim}
+
+\section{The Archiver}
+
+\subsection{\tt xml-extractors}
+
+
+\subsection{\tt ploticus-graphers}
+
+\subsection{\tt HTML}
+
+\subsection{\tt cron}
+
+\subsection{\tt cgi}
+
+\chapter{Running {\dsc}}
+
+\section{On the Collector}
+
+\subsection{dsc.conf}
+
+Before running {\tt dsc\/} you need to create a configuration file.
+Note that configuration directive lines are terminated with a semi-colon.
+The configuration file currently understands the following directives:
+
+\begin{description}
+
+\item[local\_address]
+
+	Specifies the DNS server's local IP address.  It is used
+	to determine the ``direction'' of an IP packet: sending,
+	receiving, or other.  You may specify multiple local addresses
+	if necessary.
+
+	Example: {\tt local\_address 172.16.0.1;\/}
+
+\item[run\_dir]
+
+	A directory that should become {\tt dsc\/}'s current directory
+	after it starts.  XML files will be written here, as will
+	any core dumps.
+
+	Example: {\tt run\_dir "/var/run/dsc";\/}
+
+\item[bpf\_program]
+
+	A Berkeley Packet Filter program string.  Normally you
+	should leave this unset.  You may use this to further
+	restrict the traffic seen by {\tt dsc\/}.  Note that {\tt
+	dsc\/} currently has one indexer that looks at all IP
+	packets.  If you specify something like {\em udp port 53\/}
+	that indexer will not work.
+
+	Note that this directive must go before the {\em interface\/}
+	directive because {\tt dsc\/} makes only one pass through
+	the configuration file and the BFP filter is set when the
+	interface is initialized.
+
+	Example: {\tt bpf\_program "dst host 192.168.1.1";\/}
+
+\item[interface]
+
+	The interface name to sniff packets from.   You may specify multiple
+	interfaces.
+
+	Example: {\tt interface fxp0;\/}
+
+\item[bpf\_vlan\_tag\_byte\_order]
+
+	{\tt dsc\/} knows about VLAN tags.  Some operating systems (FreeBSD-4.x) have a bug
+	whereby the VLAN tag id is byte-swapped.  Valid values for this directive
+	are {\tt host\/} and {\tt net\/} (the default).    Set this to {\tt host\/}
+	if you suspect your operating system has the VLAN tag byte order bug.
+
+	Example: {\tt bpf\_vlan\_tag\_byte\_order host;\/}
+
+\item[match\_vlan]
+
+	A list of VLAN identifiers (integers).  If set, only the packets belonging to these
+	VLANs are counted.
+
+	Example: {\tt match\_vlan 101 102;\/}
+
+\item[dataset]
+
+	This directive is the hart of {\dsc}.  Please see the following section for its description.
+
+\end{description}
+
+\section{The dataset directive}
+
+A {\em dataset\/} is a 2-D array of counters.  For example, you
+might have a dataset with ``Query Type'' along one dimension and
+``Query Name Length'' on the other.  The result is a table that
+shows the distribution of query name lengths for each query type.
+For example:
+
+\vspace{1ex}
+\begin{center}
+\begin{tabular}{l|rrrrrr}
+Len & A & AAAA & A6 & PTR & NS & SOA \\
+\hline
+$\cdots$ & & & & & \\
+11 & 14 & 8 & 7 & 11 & 2 & 0 \\
+12 & 19 & 2 & 3 & 19 & 4 & 1 \\
+$\cdots$ & & & & & & \\
+255 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\hline
+\end{tabular}
+\end{center}
+\vspace{1ex}
+
+\noindent
+A dataset is defined by the following parameters:
+\begin{itemize}
+\item A name
+\item A protocol layer (IP or DNS)
+\item An indexer for the first dimension
+\item An indexer for the second dimension
+\item Zero or more options
+\end{itemize}
+
+\noindent
+{\em dsc.conf\/} syntax:
+
+{\tt dataset\/}
+{\em name\/}
+{\em protocol\/}
+{\em Label1:Indexer1\/}
+{\em Label2:Indexer2\/}
+{\em options\/};
+\vspace{2ex}
+
+\subsubsection{Dataset Name}
+
+The dataset name is used in the filename for {\tt dsc\/}'s XML
+files.  Although this is an opaque string, the dataset name is also
+used as the name for the XML extractors.  That is, if {\dsc} finds
+an XML file named {\em 1092180200.foo.xml\/}, it passes that file
+to {\em foo-extractor.pl\/}.
+
+\subsubsection{Protocol}
+
+{\dsc} currently knows about two protocol layers: IP and DNS.
+On the {\tt dataset\/} line they are written as {\tt ip\/} and {\tt dns\/}.
+
+\subsubsection{Indexers}
+
+An {\em indexer\/} is simply a function that transforms the attributes
+of an IP/DNS message into an array index.  For some attributes the
+transformation is straightforward.  For example, the ``Query Type''
+indexer simply extracts the query type value from a DNS message and
+uses this 16-bit value as the array index.
+
+Other attributes are slightly more complicated.  For example, the
+``TLD'' indexer extracts the TLD of the QNAME field of a DNS message
+and maps it to an integer.  The indexer maintains a simple internal
+table of TLD-to-integer mappings.  The actual integer values are
+unimportant because the TLD strings, not the integers, appear in
+the resulting XML data.
+
+When you specify an indexer on a {\tt dataset\/} line, you must
+provide both the name of the indexer and a label.  The Label appears
+as an attribute in the XML output.  For example,
+Figure~\ref{fig-sample-xml} shows the XML corresponding to this
+{\em dataset\/} line:
+
+\begin{verbatim}
+dataset the_dataset dns Foo:foo Bar:bar queries-only;
+\end{verbatim}
+
+\begin{figure}
+\begin{small}\begin{verbatim}
+<array name="the_dataset" dimensions="2" start_time="1091663940" ...
+  <dimension number="1" type="Foo"/>
+  <dimension number="2" type="Bar"/>
+  <data>
+    <Foo val="1">
+      <Bar val="0" count="4"/>
+      ...
+      <Bar val="100" count="41"/>
+    </Foo>
+    <Foo val="2">
+      ...
+    </Foo>
+  </data>
+</array>
+\end{verbatim}\end{small}
+\label{fig-sample-xml}
+\caption{Sample XML output}
+\end{figure}
+
+In theory you are free to choose any label that you like, however,
+the XML extractors look for specific labels.  Please use the labels
+given for the indexers in Tables~\ref{tbl-dns-indexers}
+and~\ref{tbl-ip-indexers}.  Table~\ref{tbl-dns-indexers} shows the
+currently-defined indexers for DNS messages.  Similarly,
+Table~\ref{tbl-ip-indexers} shows the indexers for IP packets.
+
+\begin{table}
+\label{tbl-dns-indexers}
+\begin{center}
+\begin{tabular}{|lll|}
+\hline
+Indexer & Label & Description \\
+\hline 
+certain\_qnames & CertainQnames & Popular query names seen at roots \\
+cip4\_net & ClientSubnet & The client's IPv4 /24 subnet \\
+client & - & The client's IPv4 address \\
+do\_bit & DO & Whether the DO bit is on \\
+edns\_version & EDNSVersion & The EDNS version number \\
+idn\_qname & IDNQname & If the QNAME is in IDN format \\
+msglen & MsgLen & The DNS message length \\
+null & All & A ``no-op'' indexer \\
+opcode & Opcode & DNS message opcode \\
+qclass & - & Query class \\
+qnamelen & QnameLen & Length of the query name \\
+qtype & Qtype & DNS query type \\
+query\_classification & Class & A classification for bogus queries \\
+rcode & Rcode & DNS reply code \\
+rd\_bit & RD & Check if Recursion Desired bit set \\
+tld & TLD & TLD of the query name \\
+\hline
+\end{tabular}
+\caption{DNS message indexers}
+\end{center}
+\end{table}
+
+\begin{table}
+\label{tbl-ip-indexers}
+\begin{center}
+\begin{tabular}{|lll|}
+\hline
+Indexer & Label & Description \\
+\hline 
+ip\_direction & Direction & one of sent, recv, or other \\
+ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
+\hline
+\end{tabular}
+\caption{IP packet indexers}
+\end{center}
+\end{table}
+
+\noindent
+Here are some longer descriptions of the DNS indexers:
+
+\begin{description}
+\item[certain\_qnames]
+	This indexer isolates the two most popular query names seen
+	by DNS root servers: {\em localhost\/} and {\em
+	[a--m].root-servers.net\/}.
+\item[cip4\_net]
+	Groups DNS messages together by the /24 subnet of the
+	client's IPv4 address.  We use this to make datasets with
+	large, diverse client populations more manageable and to
+	provide a small amount of privacy and anonymization.
+\item[client]
+	The IPv4 address of the DNS client.
+\item[do\_bit]
+	This indexer has only two values: 0 or 1.  It indicates
+	whether or not the ``DO'' bit is set in a DNS query.  According to
+	RFC 2335: {\em Setting the DO bit to one in a query indicates to the server
+	that the resolver is able to accept DNSSEC security RRs.}
+\item[edns\_version]
+	The EDNS version number, if any, in a DNS query.  EDNS
+	Version 0 is documented in RFC 2671.
+\item[idn\_qname]
+	This indexer has only two values: 0 or 1.  It returns 1
+	when the first QNAME in the DNS message question section
+	is an internationalized domain name (i.e., containing
+	non-ASCII characters).  Such QNAMEs begin with the string
+	{\tt xn--\/}.  This convention is documented in RFC 3490.
+\item[msglen]
+	The overall length (size) of the DNS message.
+\item[null]
+	A ``no-op'' indexer that always returns the same value.
+	This can be used to effectively turn the 2-D table into a
+	1-D array.
+\item[opcode]
+	The DNS message opcode is a four-bit field.  QUERY is the
+	most common opcode.  Additional currently defined opcodes
+	include: IQUERY, STATUS, NOTIFY, and UPDATE.
+\item[qclass]
+	The DNS message query class (QCLASS) is a 16-bit value.  IN
+	is the most common query class.  Additional currently defined
+	query class values include: CHAOS, HS, NONE, and ANY.
+\item[qnamelen]
+	The length of the first (and usually only) QNAME in a DNS
+	message question section.  Note this is the ``expanded''
+	length if the message happens to take advantage of DNS
+	message ``compression.''
+\item[qtype]
+	The query type (QTYPE) for the first QNAME in the DNS message
+	question section.  Well-known query types include: A, AAAA,
+	A6, CNAME, PTR, MX, NS, SOA, and ANY.
+\item[query\_classification]
+	A stateless classification of ``bogus'' queries:
+	\begin{itemize}
+	\item non-auth-tld: when the TLD is not one of the IANA-approved TLDs.
+	\item root-servers.net: a query for a root server IP address.
+	\item localhost: a query for the localhost IP address.
+	\item a-for-root: an A query for the DNS root (.).
+	\item a-for-a: an A query for an IPv4 address.
+	\item rfc1918-ptr: a PTR query for an RFC 1918 address.
+	\item funny-class: a query with an unknown/undefined query class.
+	\item funny-qtype: a query with an unknown/undefined query type.
+	\item src-port-zero: when the UDP message's source port equals zero.
+	\item malformed: a malformed DNS message that could not be entirely parsed.
+	\end{itemize}
+\item[rcode]
+	The RCODE value in a DNS reply.  The most common response
+	codes are 0 (NO ERROR) and 3 (NXDOMAIN). 
+\item[rd\_bit]
+	This indexer returns 1 if the RD (recursion desired) bit is
+	set in the query.  Usually only stub resolvers set the RD bit.
+	Usually authoritative servers do not offer recursion to their
+	clients.
+\item[tld]
+	the TLD of the first QNAME in a DNS message's question section.
+\end{description}
+
+\noindent
+Here are some longer descriptions of the IP indexers:
+
+\begin{description}
+\item[ip\_direction]
+	One of three values: sent, recv, or else.  Direction is determined
+	based on the setting for {\em local\_address\/} in the configuration file.
+\item[ip\_proto]
+	The IP protocol type, e.g.: tcp, udp, icmp.
+\end{description}
+\chapter{Bugs}
+
+\begin{itemize}
+
+\item
+	Seems too confusing to have an opaque name for indexers in dsc.conf dataset
+	line.  The names are pre-determined anyway since they must match what the
+	XML extractors look for.
+
+\end{itemize}
+
+\end{document}
