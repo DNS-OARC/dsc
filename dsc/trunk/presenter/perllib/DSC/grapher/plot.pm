@@ -205,7 +205,6 @@ my $std_accum_yaxes = {
 
   client_subnet_accum => {
     dataset => 'client_subnet',
-    datafile => 'client_subnet',
     plot_type => 'accum1d',
     keys	=> [ qw(?? IA LA AP RI AR) ],
     names	=> [ qw(Unknown IANA LACNIC APNIC RIPE ARIN) ],
@@ -226,6 +225,19 @@ my $std_accum_yaxes = {
     plottitle	=> 'Busiest Client Subnets',
     map_legend	=> 1,
   },
+
+#  client_subnet_count => {
+#    dataset => 'client_subnet',
+#    plot_type => 'trace',
+#    keys	=> [ qw(All) ],
+#    names	=> [ qw(all) ],
+#    colors	=> [ qw(red) ],
+#    data_reader => \&DSC::extractor::read_data2,
+#    data_summer => \&DSC::grapher::data_summer_0d,
+#    yaxes	=> $std_trace_yaxes,
+#    plottitle	=> '# /24s seen per minute',
+#    map_legend	=> 0,
+#  },
 
   client_subnet2_accum => {
     dataset => 'client_subnet2',
