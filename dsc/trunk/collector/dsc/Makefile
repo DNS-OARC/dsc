@@ -53,7 +53,7 @@ tar:
 
 TmfBase/xstd/libxstd.a: TmfBase/xstd/Makefile
 	@echo $@ is out of date
-	cd TmfBase/xstd; $(MAKE)
+	cd TmfBase/xstd; $(MAKE) libxstd.a
 
 TmfBase/xstd/Makefile:
 	@echo $@ is out of date
@@ -61,7 +61,7 @@ TmfBase/xstd/Makefile:
 
 TmfBase/Hapy/libHapy.a: TmfBase/Hapy/Makefile TmfBase/xstd/libxstd.a
 	@echo $@ is out of date
-	cd TmfBase/Hapy; $(MAKE)
+	cd TmfBase/Hapy; $(MAKE) libHapy.a
 
 
 # base64.c client_ipv4_addr_index.c client_ipv4_net_index.c daemon.c dns_message.c dns_protocol.c generic_counter.c md_array.c md_array_xml_printer.c null_index.c pcap.c qclass_index.c qnamelen_index.c qtype_index.c rcode_index.c string_counter.c tld_index.c
