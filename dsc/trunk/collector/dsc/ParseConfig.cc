@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <assert.h>
 
 #include <Hapy/Parser.h>
 #include <Hapy/Rules.h>
@@ -92,18 +93,24 @@ interpret(const Pree &tree, int level)
 	int x;
         if (tree.rid() == rInterface.id()) {
 		assert(tree.count() > 1);
-                if (open_interface(tree[1].image().c_str()) != 1)
+                if (open_interface(tree[1].image().c_str()) != 1) {
+			cerr << "interpret() failure in interface" << endl;
 			return 0;
+		}
 	} else
         if (tree.rid() == rRunDir.id()) {
 		assert(tree.count() > 1);
-                if (set_run_dir(remove_quotes(tree[1].image()).c_str()) != 1)
-                    return 0;
+                if (set_run_dir(remove_quotes(tree[1].image()).c_str()) != 1) {
+			cerr << "interpret() failure in run_dir" << endl;
+			return 0;
+		}
 	} else
         if (tree.rid() == rLocalAddr.id()) {
 		assert(tree.count() > 1);
-		if (add_local_address(tree[1].image().c_str()) != 1)
+		if (add_local_address(tree[1].image().c_str()) != 1) {
+			cerr << "interpret() failure in local_addr" << endl;
 			return 0;
+		}
         } else
 	if (tree.rid() == rDataset.id()) {
 		int min_count = 0;
@@ -117,29 +124,39 @@ interpret(const Pree &tree, int level)
 			tree[8].image().c_str(),		// 2nd dim indexer
 			tree[9].image().c_str(),		// filter name
 			min_count);				// min cell count to report
-		if (x != 1)
+		if (x != 1) {
+			cerr << "interpret() failure in dataset" << endl;
 			return 0;
+		}
         } else
 	if (tree.rid() == rBVTBO.id()) {
 		assert(tree.count() > 1);
-		if (set_bpf_vlan_tag_byte_order(tree[1].image().c_str()) != 1)
+		if (set_bpf_vlan_tag_byte_order(tree[1].image().c_str()) != 1) {
+			cerr << "interpret() failure in bpf_vlan_tag_byte_order" << endl;
 			return 0;
+		}
 	} else
 	if (tree.rid() == rMatchVlan.id()) {
 		for(unsigned int i = 0; i<tree[1].count(); i++) {
-			if (set_match_vlan(tree[1][i].image().c_str()) != 1)
+			if (set_match_vlan(tree[1][i].image().c_str()) != 1) {
+				cerr << "interpret() failure in match_vlan" << endl;
 				return 0;
+			}
 		}
 	} else
 	if (tree.rid() == rPacketFilterProg.id()) {
 		assert(tree.count() > 1);
-		if (set_bpf_program(remove_quotes(tree[1].image()).c_str()) != 1)
+		if (set_bpf_program(remove_quotes(tree[1].image()).c_str()) != 1) {
+			cerr << "interpret() failure in bpf_filter_prog" << endl;
 			return 0;
+		}
 	} else
         {
                 for (unsigned int i = 0; i < tree.count(); i++) {
-                        if (interpret(tree[i], level + 1) != 1)
+                        if (interpret(tree[i], level + 1) != 1) {
+			cerr << "interpret() failure in recurse" << endl;
 				return 0;
+			}
                 }
         }
 	return 1;
