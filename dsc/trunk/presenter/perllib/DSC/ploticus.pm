@@ -1,11 +1,10 @@
-#!/usr/bin/perl -wl
+package OARC::ploticus;
 
 use Chart::Ploticus;
 use Data::Dumper;
 use POSIX;
 use File::Temp qw(tempfile);
 
-package OARC::ploticus;
 use strict;
 
 BEGIN {

@@ -1,9 +1,10 @@
+package OARC::extractor;
+
 use XML::Simple;
 use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
 use Data::Dumper;
 
-package OARC::extractor;
 use strict;
 
 BEGIN {
