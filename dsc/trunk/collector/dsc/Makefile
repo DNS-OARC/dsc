@@ -22,10 +22,9 @@ OBJS=\
 	client_ipv4_net_index.o \
 	md_array_xml_printer.o \
 	ip_direction_index.o \
-	ip_proto_index.o
-
-C++OBJS=\
-	ParseConfig.o
+	ip_proto_index.o \
+	ParseConfig.o \
+	config_hooks.o
 
 LIBS=\
 	-lpcap \
@@ -35,8 +34,8 @@ LIBS=\
 all:  $(PROG)
 
 
-$(PROG): $(OBJS) $(C++OBJS)
-	$(CXX) -o $@ $(OBJS) $(C++OBJS) $(LIBS)
+$(PROG): $(OBJS)
+	$(CXX) -o $@ $(OBJS) $(LIBS)
 
 install:
 	install -m 755 $(PROG) $(INSTALLDIR)

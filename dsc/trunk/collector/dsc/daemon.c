@@ -25,7 +25,7 @@ char *progname = NULL;
 int promisc_flag = 1;
 
 extern void cip4_net_indexer_init(void);
-extern void ParseConfig(void);
+extern void ParseConfig(const char *);
 
 void
 daemonize(void)
@@ -64,7 +64,6 @@ usage(void)
 {
     fprintf(stderr, "usage: %s [opts] netdevice [netdevice ...]\n",
 	progname);
-    fprintf(stderr, "\t-b expr\tBPF program code\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode\n");
     exit(1);
 }
@@ -73,19 +72,16 @@ int
 main(int argc, char *argv[])
 {
     int x;
-    extern char *bpf_program_str;
     extern DMC dns_message_handle;
 
     progname = strdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     srandom(time(NULL));
+    openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
-    while ((x = getopt(argc, argv, "b:p")) != -1) {
+    while ((x = getopt(argc, argv, "p")) != -1) {
 	switch (x) {
 	case 'p':
 	    promisc_flag = 0;
-	    break;
-	case 'b':
-	    bpf_program_str = strdup(optarg);
 	    break;
 	default:
 	    usage();
@@ -95,15 +91,10 @@ main(int argc, char *argv[])
     argc -= optind;
     argv += optind;
 
-    if (argc < 1)
+    if (argc != 1)
 	usage();
-    ParseConfig();
-fprintf(stderr, "parsed config\n");
+    ParseConfig(argv[0]);
     cip4_net_indexer_init();
-    for (; argc; argc--, argv++) {
-	syslog(LOG_INFO, "Opening interface %s", argv[0]);
-	Pcap_init(argv[0], promisc_flag);
-    }
 
     daemonize();
 

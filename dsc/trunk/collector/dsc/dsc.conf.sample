@@ -1,0 +1,29 @@
+# interface
+#
+# 	specifies a network interface to sniff packets from.
+#	can specify more than one.
+#
+interface fxp0;
+
+# local_address
+#
+#	specifies a local IPv4 address.  used to determine the
+#	"direction" of an IP packet: sending or receiving or other
+#
+local_address 127.0.0.1;
+
+# run_dir
+#
+#	dsc passes this directory to chdir() after starting.
+#
+run_dir "/tmp";
+
+# bpf_program
+#
+#	a berkely packet filter program.  it can be used to limit
+#	the number and type of queries that the application receives
+#	from the kernel.  note if you limit it to "udp port 53" the
+#	IP-based collectors do not work
+#
+bpf_program "udp port 53";
+bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";

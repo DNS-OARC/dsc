@@ -41,11 +41,10 @@ add_local_address(const char *dotted)
 	struct _foo *n = calloc(1, sizeof(*n));
 	n->next = local_addrs;
 	if (inet_aton(dotted, &n->addr) != 1) {
-fprintf(stderr, "yucky IPv4 addr %s\n", dotted);
+		fprintf(stderr, "yucky IPv4 addr %s\n", dotted);
 		return 0;
 	}
 	local_addrs = n;
-fprintf(stderr, "added local addr %s\n", dotted);
 	return 1;
 }
 

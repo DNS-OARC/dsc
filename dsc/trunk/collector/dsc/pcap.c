@@ -224,7 +224,7 @@ Pcap_select(const fd_set * theFdSet, int sec, int usec)
 }
 
 void
-Pcap_init(char *device, int promisc)
+Pcap_init(const char *device, int promisc)
 {
     struct stat sb;
     struct bpf_program fp;
@@ -248,7 +248,7 @@ Pcap_init(char *device, int promisc)
     if (readfile_state) {
 	new_pcap = pcap_open_offline(device, errbuf);
     } else {
-	new_pcap = pcap_open_live(device, PCAP_SNAPLEN, promisc, 1000, errbuf);
+	new_pcap = pcap_open_live((char *)device, PCAP_SNAPLEN, promisc, 1000, errbuf);
     }
     if (NULL == new_pcap) {
 	syslog(LOG_ERR, "pcap_open_*: %s\n", errbuf);
