@@ -1,166 +1,724 @@
-#!/usr/bin/perl -wl
-
-$|=1;
+#!/usr/bin/perl -w
 
 use OARC::ploticus;
-use OARC::mysql;
-require '/usr/local/dsc/libexec/tables-cfg.pl';
+use OARC::extractor;
+require '/usr/local/dsc/libexec/plots-cfg.pl';
 
 use POSIX;
 use List::Util qw(max);
 use Chart::Ploticus;
 use CGI;
 use CGI::Untaint;
-use URI::Escape;
 use DBI;
 use Data::Dumper;
-use Hash::Merge qw(merge);
+use Digest::MD5;
+use Text::Template;
+use MIME::Base64;
+use Hash::Merge;
 
 # globals
-$now = time;
-$ploticus_debug = undef;
+$main::now = time;
+$main::ploticus_debug = undef;
 
 # constants
 my $DATAROOT = '/usr/local/dsc/data';
-my $YYMMDD = strftime("%Y%m%d", gmtime(time));
+my @valid_tlds = qw(
+ac ad ae af ag ai al am an ao aq ar as at au aw az ba bb bd be bf
+bg bh bi bj bm bn bo br bs bt bv bw by bz ca cc cd cf cg ch ci ck
+cl cm cn co cr cu cv cx cy cz de dj dk dm do dz ec ee eg eh er es
+et fi fj fk fm fo fr ga gd ge gf gg gh gi gl gm gn gp gq gr gs gt
+gu gw gy hk hm hn hr ht hu id ie il im in io iq ir is it je jm jo
+jp ke kg kh ki km kn kp kr kw ky kz la lb lc li lk lr ls lt lu lv
+ly ma mc md mg mh mk ml mm mn mo mp mq mr ms mt mu mv mw mx my mz
+na nc ne nf ng ni nl no np nr nu nz om pa pe pf pg ph pk pl pm pn
+pr ps pt pw py qa re ro ru rw sa sb sc sd se sg sh si sj sk sl sm
+sn so sr st sv sy sz tc td tf tg th tj tk tm tn to tp tr tt tv tw
+tz ua ug uk um us uy uz va vc ve vg vi vn vu wf ws ye yt yu za zm
+zw aero biz com coop info museum name net org pro gov edu mil int
+arpa .
+);
+$main::use_data_uri = 1;
+
 
 my $cgi = CGI->new();
 my $untaint = CGI::Untaint->new($cgi->Vars);
-my $SERVER = $untaint->extract(-as_printable => 'server') || die;
-my $NODE = $untaint->extract(-as_printable => 'node') || die;
-my $TBL = $untaint->extract(-as_printable => 'tbl') || die;
-my $WINDOW = $untaint->extract(-as_integer => 'window') || 3600*4;
-my $BINSIZE = $untaint->extract(-as_integer => 'binsize') || 60;
+my %ARGS;
+$ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
+$ARGS{node} = $untaint->extract(-as_printable => 'node')	|| 'all';
+$ARGS{window} = $untaint->extract(-as_integer => 'window')	|| 3600*4;
+$ARGS{binsize} = $untaint->extract(-as_integer => 'binsize')	|| 60;
+$ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'none';
+$ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
+$ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
+$ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $main::now;
+print STDERR "[$$] " . Dumper(\%ARGS);
+my $cache_name = cache_name($ARGS{server}, $ARGS{node}, $ARGS{plot},
+	$ARGS{end}, $ARGS{window}, $ARGS{binsize}, $ARGS{mini});
+my $PLOT = $PLOTS{$ARGS{plot}};
 
-unless (defined($CFG{$TBL})) {
-	print "Content-type: text/html\r\n";
-	print "<P>Unknown Table '${TBL}'\n";
+my $ACCUM_TOP_N = $ARGS{mini} ? 20 : 40;
+my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
+#print STDERR Dumper($CFG);
+
+if ('html' eq $ARGS{content}) {
+	if ($main::use_data_uri) {
+		make_image($cache_name) unless (check_image_cache($cache_name));
+	}
+	my $source = "/usr/local/dsc/share/html/plot.page";
+	my $t = Text::Template->new(
+		TYPE => 'FILE',
+		SOURCE => $source,
+		DELIMITERS => ['[', ']']
+	);
+	error("Text::Template failed for plot.page") unless defined ($t);
+	print $cgi->header(-type=>'text/html',-expires=>'+15m');
+	print $t->fill_in(PACKAGE => TEMPLATE);
+	exit 0;
+} else {
+	make_image($cache_name) unless (check_image_cache($cache_name));
+	print $cgi->header(-type=>'image/png',-expires=>'+15m');
+	cat_image($cache_name);
 	exit 0;
 }
 
-my $plotnames = $CFG{$TBL}{plotnames} || $CFG{$TBL}{names};
+sub make_image {
+	my $cache_name = shift;
+	my $start;	# script starting time
+	my $stop;	# script ending time
+	my $data;	# hashref holding the data to plot
+	my $datafile;	# temp filename storing plot data
+	my $cache_image_path = cache_image_path($cache_name);
 
-my $start = time;
-my $data = get_trace_data($NODE,$TBL,$WINDOW);
-#dumpdata($data);
-my $tf = plotdata_tmp($TBL);
-data_to_tmpfile($data, $tf);
-
-print "Content-type: image/png\r\n";
-do_plot($tf, $BINSIZE);
-my $stop = time;
-
-printf STDERR "graph took %d seconds\n", $stop-$start;
-exit 0;
-
-sub get_trace_data {
-	my $NODE = shift;
-	my $TBL = shift;
-	my $WINDOW = shift;
-	my $timekey = 'time';
-	my $colspec = '"$_/60 as $_"';	# eval'd inside a map()
-	my $groupclause = '';
-	mysql_connect($SERVER);
-	error("Table $TBL does not exist") unless mysql_table_exists($NODE, $TBL);
-	if ($BINSIZE > 60) {
-		#
-		# perform yucky averaging if the bin size is larger
-		# than our sample size
-		#
-		$timekey = 'from_unixtime(UNIX_TIMESTAMP(time)-UNIX_TIMESTAMP(time)%300)';
-		$colspec = '"avg($_/60) as $_"';
-		$groupclause = ' group by time';
+	return unless defined($PLOT);
+	print STDERR "[$$] Plotting $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}\n";
+	$start = time;
+	$data = load_data();
+	print STDERR Dumper($data) if ($PLOT->{debugflag});
+	if (defined($PLOT->{munge_func})) {
+		print STDERR "[$$] munging\n";
+		$data = &{$PLOT->{munge_func}}($data);
 	}
-	
-	my $query = "date_format(${timekey},'%m/%d/%y.%T') as time,"
-		. join(',', map(eval $colspec, @$plotnames))
-		. " from ${NODE}_${TBL}"
-		. " where ${timekey} > date_sub(NOW(), interval ${WINDOW} second)"
-		. $groupclause;
-	print STDERR "select $query;";
-	my $start = time;
-	my $data = mysql_selectall_hashref($query,'time');
-	my $stop = time;
-	printf STDERR "query took %d seconds\n", $stop-$start;
-	mysql_disconnect();
-	$data;
+	print STDERR Dumper($data) if ($PLOT->{debugflag});
+	$datafile = plotdata_tmp($ARGS{plot});
+	if ($PLOT->{plot_type} eq 'trace') {
+		trace_data_to_tmpfile($data, $datafile);
+		trace_plot($datafile, $ARGS{binsize}, $cache_image_path);
+	} elsif ($PLOT->{plot_type} eq 'accum1d') {
+		accum1d_data_to_tmpfile($data, $datafile);
+		accum1d_plot($datafile, $ARGS{binsize}, $cache_image_path);
+	} elsif ($PLOT->{plot_type} eq 'accum2d') {
+		accum2d_data_to_tmpfile($data, $datafile);
+		accum2d_plot($datafile, $ARGS{binsize}, $cache_image_path);
+	} else {
+		error("Unknown plot type: $PLOT->{plot_type}");
+	}
+	$stop = time;
+	printf STDERR "[$$] graph took %d seconds\n", $stop-$start;
 }
 
-sub data_to_tmpfile {
+sub datafile_path {
+	my $plot = shift;
+	my $node = shift;
+	my $when = shift;
+	my $dataset = $PLOT->{dataset} || $plot;
+	my $datafile = $PLOT->{datafile} || $plot;
+	join('/',
+		$DATAROOT,
+		$ARGS{server},
+		$node,
+		yymmdd($when),
+		$dataset,
+		"$datafile.dat");
+}
+
+sub load_data {
+	my $datadir;
+	my $yymmdd;
+	my %hash;
+	my $start = time;
+	my $last = int($ARGS{end} / 86400);
+	my $first;
+	my $nl = -1;
+	if ($PLOT->{plot_type} eq 'trace') {
+		$first = int(($ARGS{end} - $ARGS{window}) / 86400);
+	} else {
+		$first = $last;
+	}
+	foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
+	    next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
+	    for (my $d = $first; $d <= $last; $d++) {
+		my %thash;
+		my $datafile = datafile_path($ARGS{plot}, $node, $d*86400);
+		print STDERR "[$$] reading $datafile\n";
+		warn "[$$] $!\n" unless (-f $datafile);
+print STDERR "node=$ARGS{node}\n";
+		if ('all' ne $ARGS{node}) {
+print STDERR "reading into hash\n";
+			$nl = &{$PLOT->{data_reader}}(\%hash, $datafile);
+		} else {
+print STDERR "reading into thash\n";
+			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
+			&{$PLOT->{data_summer}}(\%thash, \%hash);
+		}
+	    }
+	}
+	my $stop = time;
+	printf STDERR "[$$] reading datafile took %d seconds, %d lines\n",
+		$stop-$start,
+		$nl;
+#print STDERR Dumper(\%hash);
+	\%hash;
+}
+
+sub trace_data_to_tmpfile {
 	my $data = shift;
 	my $tf = shift;
 	my $start = time;
-	foreach my $firstcol (sort keys %$data) {
-		printf $tf "%s", $firstcol;
-		foreach my $col (@$plotnames) {
-			printf $tf " %f", zero_if_undef($$data{$firstcol}{$col});
-		}
-		print $tf "";
+	my $nl = Ploticus_create_datafile($data,
+		$PLOT->{keys},
+		$tf,
+		$ARGS{binsize},
+		$ARGS{end},
+		$ARGS{window},
+		$PLOT->{divideflag});
+	my $stop = time;
+	printf STDERR "[$$] writing tmpfile took %d seconds, %d lines\n",
+		$stop-$start,
+		$nl;
+}
+
+sub accum1d_data_to_tmpfile {
+	my $data = shift;
+	my $tf = shift;
+	my $start = time;
+	my $accum_win = time % 86400;	# time since midnight;
+	my $n;
+	delete $data->{$SKIPPED_KEY};
+        delete $data->{$SKIPPED_SUM_KEY};
+	$n = 0;
+	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
+		print $tf join(' ',
+			$k1,
+			$data->{$k1} / $accum_win,
+			&{$PLOT->{label_func}}($k1),
+			&{$PLOT->{color_func}}($k1),
+			), "\n";
+		last if (++$n == $ACCUM_TOP_N);
 	}
 	close($tf);
 	my $stop = time;
-	printf STDERR "writing tmpfile took %d seconds\n", $stop-$start;
+	printf STDERR "[$$] writing tmpfile took %d seconds, %d lines\n",
+		$stop-$start,
+		$n;
 }
 
-sub zero_if_undef {
-	my $val = shift;
-	defined($val) ? $val : 0;
+sub accum2d_data_to_tmpfile {
+	my $data = shift;
+	my $tf = shift;
+	my $start = time;
+	my %accum_sum;
+	my $accum_win = time % 86400;	# time since midnight;
+	my $n;
+	delete $data->{$SKIPPED_KEY};
+        delete $data->{$SKIPPED_SUM_KEY};
+	foreach my $k1 (keys %$data) {
+		foreach my $k2 (keys %{$data->{$k1}}) {
+			$accum_sum{$k1} += $data->{$k1}{$k2};
+		}
+	}
+	$n = 0;
+	foreach my $k1 (sort {$accum_sum{$b} <=> $accum_sum{$a}} keys %accum_sum) {
+		my @vals;
+		foreach my $k2 (@{$PLOT->{keys}}) {
+			my $val;
+			if (defined($data->{$k1}{$k2})) {
+				$val = sprintf "%f", $data->{$k1}{$k2} / $accum_win;
+			} else {
+				$val = 0;
+			}
+			push (@vals, $val);
+		}
+		push(@vals, $accum_sum{$k1});
+		print $tf join(' ', $k1, @vals), "\n";
+		last if (++$n == $ACCUM_TOP_N);
+	}
+	close($tf);
+	my $stop = time;
+	printf STDERR "[$$] writing tmpfile took %d seconds\n", $stop-$start;
 }
 
-
-sub do_plot {
+sub trace_plot {
 	my $tf = shift;
 	my $binsize = shift;
+	my $pngfile = shift;
+	my $plotnames = $PLOT->{plotnames} || $PLOT->{names};
 	my $ntypes = @$plotnames;
 	my $start = time;
 
-        ploticus_init("png", "stdout");
-        ploticus_arg("-maxrows", "20000");
-        ploticus_begin();
-        Ploticus_getdata($tf->filename());
+	ploticus_init("png", "$pngfile.new");
+	ploticus_arg("-maxrows", "20000");
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	#system "cat $tf 1>&2";
 
-        Ploticus_areadef({
-                -title => strftime($CFG{$TBL}{plottitle} . "\nGenerated: %A, %b %d, %Y, %T UTC",
+	my $areadef_opts = {
+		-title => $PLOT->{plottitle}
+			. strftime("\nGenerated: %A, %b %d, %Y, %T UTC",
 			gmtime(time)),
-                -rectangle => '1 1 6 4',
-                -xscaletype => 'datetime mm/dd/yy',
-                -ystackfields => join(',', 2..($ntypes+1)),
-                -window => $WINDOW,
-        });
-
-        Ploticus_xaxis({
-                -window => $WINDOW,
-        });
-
-        Ploticus_yaxis({
-                -label => $CFG{$TBL}{yaxislabel},
-                -grid => 'yes',
-        });
-
-        Ploticus_bars({
+		-rectangle => '1 1 6 4',
+		-xscaletype => 'datetime mm/dd/yy',
+		-ystackfields => join(',', 2..($ntypes+1)),
+		-end => $ARGS{end},
+		-window => $ARGS{window},
+	};
+	my $xaxis_opts = {
+		-window => $ARGS{window},
+	};
+	my $yaxis_opts = {
+		-label => $PLOT->{yaxislabel},
+		-grid => 'yes',
+	};
+	my $bars_opts = {
 		-labelsarrayref => $plotnames,
-                -colorsarrayref => $CFG{$TBL}{colors},
-                -indexesarrayref => [0..$ntypes-1],
-                -barwidth => 4.5 / ($WINDOW / $binsize),
-        });
+		-colorsarrayref => $PLOT->{colors},
+		-indexesarrayref => [0..$ntypes-1],
+		-barwidth => 4.5 / ($ARGS{window} / $binsize),
+	};
 
-	Ploticus_legend();
-        ploticus_end();
+	if ($ARGS{mini}) {
+		$areadef_opts->{-title} = $PLOT->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 4 2';
+		delete $yaxis_opts->{-label};
+		$xaxis_opts->{-mini} = 'yes';
+	}
+
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	Ploticus_bars($bars_opts);
+	Ploticus_legend() unless ($ARGS{mini});
+	ploticus_end();
+
+	rename("$pngfile.new", $pngfile);
 	my $stop = time;
-	printf STDERR "ploticus took %d seconds\n", $stop-$start;
+	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+}
 
+sub accum1d_plot {
+	my $tf = shift;
+	my $binsize = shift;
+	my $pngfile = shift;
+	my $plotnames = $PLOT->{plotnames} || $PLOT->{names};
+	my $ntypes = @$plotnames;
+	my $start = time;
+
+	ploticus_init("png", "$pngfile.new");
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	Ploticus_categories(1);
+	my $areadef_opts = {
+		-title => $PLOT->{plottitle}
+			. strftime("\nGenerated: %A, %b %d, %Y, %T UTC",
+			gmtime(time)),
+		-rectangle => '1 1 6 6',
+		-yscaletype => 'categories',
+		-xstackfields => '2',
+	};
+	my $xaxis_opts = {
+		-label => $PLOT->{xaxislabel},
+		-grid => 'yes',
+	};
+	my $yaxis_opts = {
+		-stubs => 'usecategories',
+	};
+	my $bars_opts = {
+                -colorfield => '4',
+                -indexesarrayref => [0],
+                -labelfield => 3,
+                -horizontalbars => 'yes',
+	};
+	my $legend_opts = {
+		-reverseorder => 'no',
+	};
+
+	if ($ARGS{mini}) {
+		$areadef_opts->{-title} = $PLOT->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 3 4';
+		delete($xaxis_opts->{-label});
+	}
+
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	unless ($ARGS{mini}) {
+		for($i=0;$i<$ntypes;$i++) {
+			Ploticus_legendentry({
+				-label => $PLOT->{names}->[$i],
+				-details => $PLOT->{colors}->[$i],
+				-tag => $PLOT->{keys}->[$i],
+			});
+		}
+	}
+	Ploticus_bars($bars_opts);
+	Ploticus_legend() unless ($ARGS{mini});
+	ploticus_end();
+
+	rename("$pngfile.new", $pngfile);
+	my $stop = time;
+	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+}
+
+sub accum2d_plot {
+	my $tf = shift;
+	my $binsize = shift;
+	my $pngfile = shift;
+	my $plotnames = $PLOT->{plotnames} || $PLOT->{names};
+	my $ntypes = @$plotnames;
+	my $start = time;
+
+	ploticus_init("png", "$pngfile.new");
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	Ploticus_categories(1);
+	my $areadef_opts = {
+		-title => $PLOT->{plottitle}
+			. strftime("\nGenerated: %A, %b %d, %Y, %T UTC",
+			gmtime(time)),
+		-rectangle => '1 1 6 6',
+		-yscaletype => 'categories',
+		-xstackfields => join(',', 2..($ntypes+1)),
+	};
+	my $xaxis_opts = {
+		-label => $PLOT->{xaxislabel},
+		-grid => 'yes',
+	};
+	my $yaxis_opts = {
+		-stubs => 'usecategories',
+	};
+	my $bars_opts = {
+		-labelsarrayref => $plotnames,
+		-colorsarrayref => $PLOT->{colors},
+		-keysarrayref => $PLOT->{keys},
+		-indexesarrayref => [0..$ntypes-1],
+		-horizontalbars => 'yes',
+	};
+	my $legend_opts = {
+		-reverseorder => 'no',
+	};
+
+	if ($ARGS{mini}) {
+		$areadef_opts->{-title} = $PLOT->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 3 4';
+		delete($xaxis_opts->{-label});
+	}
+
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	Ploticus_bars($bars_opts);
+	Ploticus_legend() unless ($ARGS{mini});
+	ploticus_end();
+
+	rename("$pngfile.new", $pngfile);
+	my $stop = time;
+	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
 }
 
 sub error {
 	my $msg = shift;
-	print "Content-type: text/plain\r\n";
-	print $msg;
+	print $cgi->header(-type=>'text/html',-expires=>'+15m');
+	print "<h2>$0 ERROR</h2><p>$msg\n";
 	die "$msg\n";
 }
 
 sub dumpdata {
 	my $ref = shift;
-	print "Content-type: text/plain\r\n";
+	print $cgi->header(-type=>'text/plain',-expires=>'+15m');
 	print Dumper($ref);
 	exit 0;
+}
+
+
+
+
+sub munge_2d_to_1d {
+	# this function changes a 2D array into a 1D array
+	# by combining key values.   For example $dat{k1}{k2} becomes $dat{"k1:k2"}
+	my $data = shift;
+	my $d1keys = shift;
+	my $d2keys = shift;
+	my %newdata;
+	my $j1;
+	my $j2;
+	my $N = 0;
+	foreach my $t (keys %$data) {
+		foreach my $k1 (keys %{$data->{$t}}) {
+			$j1 = $k1;
+			$j1 = 'else' unless grep {$_ eq $j1} @$d1keys;
+			foreach my $k2 (keys %{$data->{$t}{$k1}}) {
+				$j2 = $k2;
+				$j2 = 'else' unless grep {$_ eq $j2} @$d2keys;
+				$newdata{$t}{"$j1:$j2"} += $data->{$t}{$k1}{$k2};
+			}
+		}
+	}
+	\%newdata;
+}
+
+
+sub cache_name {
+	my $ctx = Digest::MD5->new;
+	$ctx->add(@_);
+	$ctx->hexdigest;
+}
+
+sub cache_image_path {
+	my $prefix = shift;
+	"/usr/local/dsc/cache/$prefix.png";
+}
+
+sub check_image_cache {
+	my $prefix = shift;
+	my @sb = stat(cache_image_path($prefix));
+	return 0 unless (defined(@sb));
+	return 0 unless (time - $sb[9] < 900);
+	return 1;
+}
+
+sub cat_image {
+	my $prefix = shift;
+	open(F, cache_image_path($prefix)) || die "$prefix: $!\n";
+	print while (<F>);
+	close(F);
+}
+
+sub image_to_buf {
+	my $prefix = shift;
+	my $buf = '';
+	open(F, cache_image_path($prefix)) || die "$prefix: $!\n";
+	$buf .= $_ while (<F>);
+	close(F);
+	$buf;
+}
+
+sub valid_tld_filter {
+        my $tld = shift;
+        grep {$tld eq $_} @valid_tlds;
+}
+
+sub numeric_tld_filter {
+        my $tld = shift;
+        return ($tld =~ /^[0-9]+$/) ? 1 : 0;
+}
+
+sub invalid_tld_filter {
+        my $tld = shift;
+        return 0 if (valid_tld_filter($tld));
+        return 0 if (numeric_tld_filter($tld));
+        return 1;
+}
+
+sub read_config {
+	my $f = shift;
+	my %C;
+	open(F, $f) || die "$f: $!\n";
+	while (<F>) {
+		my @x = split;
+		next unless @x;
+		my $directive = shift @x;
+		if ($directive eq 'server') {
+			my $servername = shift @x;
+			$C{servers}{$servername} = \@x;
+		}
+		if ($directive eq 'windows') {
+			$C{windows} = \@x;
+		}
+	}
+	close(F);
+	\%C;
+}
+
+sub data_summer_0d {
+	my $from = shift;
+	my $to = shift;
+	my $start = time;
+	foreach my $k0 (keys %$from) {
+		$to->{$k0} += $from->{$k0};
+	}
+	my $stop = time;
+	printf STDERR "[$$] data_summer_0d took %d seconds\n", $stop-$start;
+}
+
+sub data_summer_1d {
+	my $from = shift;
+	my $to = shift;
+	my $start = time;
+	foreach my $k0 (keys %$from) {
+		foreach my $k1 (keys %{$from->{$k0}}) {
+			$to->{$k0}{$k1} += $from->{$k0}{$k1};
+		}
+	}
+	my $stop = time;
+	printf STDERR "[$$] data_summer_1d took %d seconds\n", $stop-$start;
+}
+
+sub data_summer_2d {
+	my $from = shift;
+	my $to = shift;
+	my $start = time;
+	foreach my $k0 (keys %$from) {
+		foreach my $k1 (keys %{$from->{$k0}}) {
+			foreach my $k2 (keys %{$from->{$k0}{$k1}}) {
+				$to->{$k0}{$k1}{$k2} += $from->{$k0}{$k1}{$k2};
+			}
+		}
+	}
+	my $stop = time;
+	printf STDERR "[$$] data_summer_2d took %d seconds\n", $stop-$start;
+}
+
+package TEMPLATE;
+
+sub img_with_map {
+	my $imgsrc;
+	return '<p>Please select a server' if ($ARGS{server} eq 'none');
+	return '<p>Please select a plot' if ($ARGS{plot} eq 'none');
+	
+	if ($main::use_data_uri) {
+		$imgsrc = "data:image/png;base64,\n";
+		$imgsrc .= main::encode_base64(main::image_to_buf($cache_name));
+	} else {
+		my %own_args = %ARGS;	# copy
+		while ($k = shift) { $own_args{$k} = shift; }
+		$own_args{content} = 'image';
+		$imgsrc = urlpath(%own_args);
+	}
+	'<img src="' . $imgsrc . '">';
+}
+
+sub img {
+	my %own_args = %ARGS;	# copy
+	while ($k = shift) { $own_args{$k} = shift; }
+	$own_args{content} = 'image';
+	my $p = urlpath(%own_args);
+	my $q = "<img src=\"$p\">";
+	#print STDERR "[$$] img() ret '$q'\n";
+	$q;
+}
+
+sub page {
+	my %own_args = %ARGS;	# copy
+	while ($k = shift) { $own_args{$k} = shift; }
+	my $p = urlpath(%own_args);
+	#print STDERR "[$$] page() ret '$p'\n";
+	$p;
+}
+
+sub urlpath {
+	my %args = @_;
+	my $cgi = $ENV{REQUEST_URI};
+	if ((my $n = index($cgi,'?')) > 0) {
+		$cgi = substr($cgi,0,$n);
+	}
+	"$cgi?" . join('&', map {"$_=$args{$_}"} keys %args);
+}
+
+sub merge_args {
+	my %new = @_;
+	my %old = %ARGS;
+	foreach my $k (keys %new) {
+		$old{$k} = $new{$k};
+	}
+	%old;
+}
+
+sub server { $ARGS{server}; }
+sub node { $ARGS{node}; }
+
+sub a {
+	my $h = shift;
+	my $a = shift;
+	my $c = shift;
+	"<a" . (defined($c) ? " class=\"$c\"" : '') . " href=\"$h\">$a</a>";
+}
+
+sub navbar_server {
+	my $server = shift;
+	my $label = shift;
+	my $class = ($server eq $ARGS{server}) ? 'current' : undef;
+	a(urlpath(merge_args(server=>$server,node=>'all')), $label, $class) . "\n";
+}
+
+sub navbar_node {
+	my $node = shift;
+	my $label = shift;
+	my $class = ($node eq $ARGS{node}) ? 'current' : undef;
+	a(urlpath(merge_args(node=>$node)), $label, $class) . "\n";
+}
+
+sub navbar_window {
+	my $window = shift;
+	my $label = shift;
+	my $class = ($window eq $ARGS{window}) ? 'current' : undef;
+	a(urlpath(merge_args(window=>$window)), $label,$class) . "\n";
+}
+
+sub navbar_plot {
+	my $plot = shift;
+	my $label = shift;
+	my $class = ($plot eq $ARGS{plot}) ? 'current' : undef;
+	a(urlpath(merge_args(plot=>$plot)), $label, $class) . "\n";
+}
+
+sub navbar {
+	my $snippet = '';
+	$snippet .= '<div class="border">';
+	$snippet .= '<ul>';
+	my @items;
+	foreach my $server ( keys %{$CFG->{servers}} ) {
+		$snippet .= "<li>" . navbar_server($server,$server);
+		if ($ARGS{server} eq $server) {
+			$snippet .= "<ul>";
+			foreach my $node (@{$CFG->{servers}{$server}}) {
+				$snippet .= "<li>" . navbar_node($node,$node);
+			}
+			$snippet .= "</ul>";
+		}
+	}
+	$snippet .= '</ul>';
+	$snippet .= '</div>';
+
+	@items = ();
+	$snippet .= '<div class="border">';
+	push(@items, navbar_window(3600,'1&middot;hour'));
+	push(@items, navbar_window(14440,'4&middot;hours'));
+	push(@items, navbar_window(86400,'1&middot;day'));
+	push(@items, navbar_window(608400,'1&middot;week'));
+	$snippet .= join('<br>', @items);
+	$snippet .= '</div>';
+
+	@items = ();
+	$snippet .= '<div class="border">';
+	push(@items, navbar_plot('qtype','Qtypes'));
+	push(@items, navbar_plot('client_subnet2_accum','Classification'));
+	push(@items, navbar_plot('client_subnet2_trace','Classification Trace'));
+	push(@items, navbar_plot('client_subnet2_count','Classification Count'));
+	push(@items, navbar_plot('client_subnet_accum','Geography'));
+	push(@items, navbar_plot('qtype_vs_all_tld','TLDs'));
+	if ($ARGS{plot} =~ /qtype_vs_.*_tld/) {
+		push(@items, navbar_plot('qtype_vs_valid_tld','&nbsp;valid'));
+		push(@items, navbar_plot('qtype_vs_invalid_tld','&nbsp;invalid'));
+		push(@items, navbar_plot('qtype_vs_numeric_tld','&nbsp;numeric'));
+	}
+	push(@items, navbar_plot('certain_qnames_vs_qtype','Certain Names'));
+	push(@items, navbar_plot('X','Attributes'));
+	push(@items, navbar_plot('X','Qname Length'));
+	push(@items, navbar_plot('rcode','Rcodes'));
+	push(@items, navbar_plot('X','Reply Lengths'));
+	push(@items, navbar_plot('opcode','Opcodes'));
+	push(@items, navbar_plot('edns_version','EDNS Version'));
+	push(@items, navbar_plot('direction_vs_ipproto','IP Protocols'));
+	$snippet .= join('<br>', @items);
+	$snippet .= '</div>';
+	$snippet;
 }
