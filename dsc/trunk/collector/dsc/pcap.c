@@ -64,8 +64,11 @@ static pcap_t **pcap = NULL;
 static fd_set pcap_fdset;
 static int max_pcap_fds = 0;
 
-/*static char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0"; */
+#if 0
+char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0"; */
 char *bpf_program_str = "udp port 53";
+#endif
+char *bpf_program_str = NULL;
 dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
 static unsigned short port53;
 
