@@ -63,8 +63,8 @@ static unsigned short port53;
 extern dns_message *handle_dns(const char *buf, int len);
 static DMC *dns_message_callback;
 static struct timeval last_ts;
-struct timeval start_ts;
-struct timeval finish_ts;
+static struct timeval start_ts;
+static struct timeval finish_ts;
 
 dns_message *
 handle_udp(const struct udphdr *udp, int len)
@@ -293,4 +293,16 @@ Pcap_close(void)
 {
     pcap_close(pcap);
     pcap = NULL;
+}
+
+int
+Pcap_start_time(void)
+{
+    return (int) start_ts.tv_sec;
+}
+
+int
+Pcap_finish_time(void)
+{
+    return (int) finish_ts.tv_sec;
 }

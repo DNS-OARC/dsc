@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/time.h>
 
 #include "dns_message.h"
 #include "md_array.h"
@@ -12,14 +10,12 @@ static char *d2_type_s;		/* XXX barf */
 static void
 start_array(void *pr_data)
 {
-    extern struct timeval start_ts;
-    extern struct timeval finish_ts;
     FILE *fp = pr_data;
     assert(fp);
     fprintf(fp, "<array");
     fprintf(fp, " dimensions=\"%d\"", 2);
-    fprintf(fp, " start_time=\"%d\"", (int) start_ts.tv_sec);
-    fprintf(fp, " stop_time=\"%d\"", (int) finish_ts.tv_sec);
+    fprintf(fp, " start_time=\"%d\"", Pcap_start_time());
+    fprintf(fp, " stop_time=\"%d\"", Pcap_finish_time());
     fprintf(fp, ">\n");
 }
 
@@ -50,14 +46,14 @@ static void
 d1_begin(void *pr_data, char *l)
 {
     FILE *fp = pr_data;
-    fprintf(fp, "    <%s=\"%s\">\n", d1_type_s, l);
+    fprintf(fp, "    <%s val=\"%s\">\n", d1_type_s, l);
 }
 
 static void
 print_element(void *pr_data, char *l, int val)
 {
     FILE *fp = pr_data;
-    fprintf(fp, "      <%s=\"%s\" count=\"%d\"/>\n", d2_type_s, l, val);
+    fprintf(fp, "      <%s val=\"%s\" count=\"%d\"/>\n", d2_type_s, l, val);
 }
 
 static void

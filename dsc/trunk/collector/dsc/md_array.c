@@ -5,6 +5,7 @@
 
 #include "dns_message.h"
 #include "md_array.h"
+#include "pcap.h"
 
 void md_array_grow_d1(md_array * a);
 void md_array_grow_d2(md_array * a);
@@ -93,33 +94,41 @@ md_array_grow_d2(md_array * a)
 }
 
 int
-md_array_print(md_array * a, md_array_printer * pr, void *pr_data)
+md_array_print(md_array * a, md_array_printer * pr, const char *name)
 {
+    FILE *fp;
+    char fname[128];
     char *label1;
     char *label2;
     int i1;
     int i2;
+
+    snprintf(fname, 128, "%d.%s.xml", Pcap_finish_time(), name);
+    fp = fopen(fname, "w");
+    if (NULL == fp)
+	return -1;
     a->d1.iterator(NULL);
-    pr->start_array(pr_data);
-    pr->d1_type(pr_data, a->d1.type);
-    pr->d2_type(pr_data, a->d2.type);
-    pr->start_data(pr_data);
+    pr->start_array(fp);
+    pr->d1_type(fp, a->d1.type);
+    pr->d2_type(fp, a->d2.type);
+    pr->start_data(fp);
     while ((i1 = a->d1.iterator(&label1)) > -1) {
 	if (i1 >= a->d1.alloc_sz)
 	    continue;		/* see [1] */
-	pr->d1_begin(pr_data, label1);
+	pr->d1_begin(fp, label1);
 	a->d2.iterator(NULL);
 	while ((i2 = a->d2.iterator(&label2)) > -1) {
 	    if (i2 >= a->d2.alloc_sz)
 		continue;
 	    if (0 == a->array[i1][i2])
 		continue;
-	    pr->print_element(pr_data, label2, a->array[i1][i2]);
+	    pr->print_element(fp, label2, a->array[i1][i2]);
 	}
-	pr->d1_end(pr_data, label1);
+	pr->d1_end(fp, label1);
     }
-    pr->finish_data(pr_data);
-    pr->finish_array(pr_data);
+    pr->finish_data(fp);
+    pr->finish_array(fp);
+    fclose(fp);
     return 0;
 }
 

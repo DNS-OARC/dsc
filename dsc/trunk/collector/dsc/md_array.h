@@ -40,4 +40,4 @@ int md_array_count(md_array *, dns_message *);
 md_array *md_array_create(FLTR *,
     char *, IDXR *, HITR *,
     char *, IDXR *, HITR *);
-int md_array_print(md_array * a, md_array_printer * pr, void *pr_data);
+int md_array_print(md_array * a, md_array_printer * pr, const char *);
