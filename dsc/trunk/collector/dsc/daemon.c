@@ -87,7 +87,7 @@ main(int argc, char *argv[])
 	    _exit(0);
 	} else {
 	    int cstatus = 0;
-	    fprintf(stderr, "waiting for child pid %d\n", (int) cpid);
+	    /* fprintf(stderr, "waiting for child pid %d\n", (int) cpid); */
 	    while (waitpid(cpid, &cstatus, 0) < 0)
 		(void) 0;
 	}
