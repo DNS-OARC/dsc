@@ -19,7 +19,8 @@ enum {
     CLASS_RFC1918_PTR,
     CLASS_FUNNY_QCLASS,
     CLASS_FUNNY_QTYPE,
-    CLASS_SRC_PORT_ZERO
+    CLASS_SRC_PORT_ZERO,
+    CLASS_MALFORMED
 };
 
 static const char *KnownTLDS[];
@@ -169,11 +170,21 @@ src_port_zero(const dns_message * m)
     return 0;
 }
 
+static int
+malformed(const dns_message * m)
+{
+    if (m->malformed)
+	return CLASS_MALFORMED;
+    return 0;
+}
+
 int
 query_classification_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int x;
+    if ((x = malformed(m)))
+	return x;
     if ((x = src_port_zero(m)))
 	return x;
     if ((x = funny_qclass(m)))
@@ -219,6 +230,8 @@ query_classification_iterator(char **label)
         *label = "funny-qtype";
     else if (CLASS_SRC_PORT_ZERO == next_iter)
         *label = "src-port-zero";
+    else if (CLASS_MALFORMED == next_iter)
+        *label = "malformed";
     else
         return -1;
     return next_iter++;

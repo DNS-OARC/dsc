@@ -85,8 +85,6 @@ grok_question(const char *buf, int len, off_t offset, char *qname, unsigned shor
     char *t;
     int x;
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
-    if (4 == x)
-	syslog(LOG_NOTICE, "Loop detected while unpacking QNAME");
     if (0 != x)
 	return 0;
     if ('\0' == *qname)
@@ -156,8 +154,8 @@ handle_dns(const char *buf, int len)
     m->msglen = (unsigned short) len;
 
     if (len < DNS_MSG_HDR_SZ) {
-	free(m);
-	return NULL;
+	m->malformed = 1;
+	return m;
     }
     memcpy(&us, buf + 2, 2);
     us = ntohs(us);
@@ -190,8 +188,8 @@ handle_dns(const char *buf, int len)
 	off_t new_offset;
 	new_offset = grok_question(buf, len, offset, m->qname, &m->qtype, &m->qclass);
 	if (0 == new_offset) {
-	    free(m);
-	    return NULL;
+	    m->malformed = 1;
+	    return m;
 	}
 	offset = new_offset;
 	qdcount--;
