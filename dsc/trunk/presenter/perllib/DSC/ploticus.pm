@@ -65,7 +65,13 @@ sub Ploticus_create_datafile {
 	#
 	# now write the new data
 	#
-	foreach my $tokey (sort {$a <=> $b} keys %newhash) {
+	unless ((keys %newhash)) {
+		foreach my $qt (@$keysarrayref) {
+			$newhash{$cutoff}{$qt} = 0;
+			$newhash{$cutoff}{$qt . '_COUNT'} = 1;
+		}
+	}
+	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
 		my @v = ();
 		foreach my $qt (@$keysarrayref) {
 			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / (60*$newhash{$tokey}{$qt . '_COUNT'}): '-');
