@@ -9,7 +9,6 @@
 #define QNAME_LOCALHOST 0
 #define QNAME_RSN 1
 #define QNAME_OTHER 2
-#define LARGEST 3
 
 int
 certain_qnames_indexer(const void *vp)
@@ -28,13 +27,13 @@ certain_qnames_iterator(char **label)
     static int next_iter = 0;
     if (NULL == label) {
         next_iter = 0;
-        return LARGEST;
+        return QNAME_OTHER;
     }
-    if (0 == next_iter)
+    if (QNAME_LOCALHOST == next_iter)
         *label = "localhost";
-    else if (1 == next_iter)
-        *label = "?.root-servers.net";
-    else if (LARGEST == next_iter)
+    else if (QNAME_RSN == next_iter)
+        *label = "X.root-servers.net";
+    else if (QNAME_OTHER == next_iter)
         *label = "else";
     else
         return -1;
