@@ -19,15 +19,18 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
     off_t no = 0;
     unsigned char c;
     size_t len;
-    if (ns <= 0) {
+    static int loop_detect = 0;
+    if (loop_detect > 2)
+	return 4;  /* compression loop */
+    if (ns <= 0)
 	return 4; /* probably compression loop */
-    }
     do {
 	if ((*off) >= sz)
 	    break;
 	c = *(buf + (*off));
 	if (c > 191) {
 	    /* blasted compression */
+	    int rc;
 	    unsigned short s;
 	    off_t ptr;
 	    memcpy(&s, buf + (*off), sizeof(s));
@@ -42,7 +45,10 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 		return 2;	/* bad compression ptr */
 	    if (ptr < DNS_MSG_HDR_SZ)
 		return 2;	/* bad compression ptr */
-	    return rfc1035NameUnpack(buf, sz, &ptr, name + no, ns - no);
+	    loop_detect++;
+	    rc = rfc1035NameUnpack(buf, sz, &ptr, name + no, ns - no);
+	    loop_detect--;
+	    return rc;
 	} else if (c > RFC1035_MAXLABELSZ) {
 	    /*
 	     * "(The 10 and 01 combinations are reserved for future use.)"
@@ -121,7 +127,7 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
 	memcpy(&m->edns.version, buf + offset + 5, 1);
 	memcpy(&us, buf + offset + 6, 2);
 	us = ntohs(us);
-	m->edns.d0 = (us >> 15) & 0x01;
+	m->edns.d0 = (us >> 15) & 0x01;		/* RFC 3225 */
     }
     /* get rdlength */
     memcpy(&us, buf + offset + 8, 2);
