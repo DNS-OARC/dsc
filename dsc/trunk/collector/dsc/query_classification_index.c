@@ -16,6 +16,7 @@ enum {
     CLASS_ROOT_SERVERS_NET,
     CLASS_LOCALHOST,
     CLASS_A_FOR_A,
+    CLASS_A_FOR_ROOT,
     CLASS_RFC1918_PTR,
     CLASS_FUNNY_QCLASS,
     CLASS_FUNNY_QTYPE,
@@ -60,6 +61,16 @@ a_for_a(const dns_message *m)
 		return 0;
 	if (inet_aton(m->qname, &a))
 		return CLASS_A_FOR_A;
+	return 0;
+}
+
+static int
+a_for_root(const dns_message *m)
+{
+	if (m->qtype != T_A)
+		return 0;
+	if (0 == strcmp(m->qname, "."))
+		return CLASS_A_FOR_ROOT;
 	return 0;
 }
 
@@ -193,6 +204,8 @@ query_classification_indexer(const void *vp)
 	return x;
     if ((x = a_for_a(m)))
 	return x;
+    if ((x = a_for_root(m)))
+	return x;
     if ((x = localhost(m)))
 	return x;
     if ((x = root_servers_net(m)))
@@ -220,6 +233,8 @@ query_classification_iterator(char **label)
         *label = "root-servers.net";
     else if (CLASS_LOCALHOST == next_iter)
         *label = "localhost";
+    else if (CLASS_A_FOR_ROOT == next_iter)
+        *label = "a-for-root";
     else if (CLASS_A_FOR_A == next_iter)
         *label = "a-for-a";
     else if (CLASS_RFC1918_PTR == next_iter)
