@@ -996,6 +996,7 @@ sub navbar_plot {
 	my @items = ();
 	push(@items, navbar_item('plot','bynode','By Node')) if ($ARGS{node} eq 'all');
 	push(@items, navbar_item('plot','qtype','Qtypes'));
+	push(@items, navbar_item('plot','rcode','Rcodes'));
 	push(@items, navbar_item('plot','client_subnet2_accum','Classification'));
 	if ($ARGS{plot} =~ /^client_subnet2/) {
 		push(@items, sublist_item() . navbar_item('plot','client_subnet2_trace', 'trace'));
@@ -1009,9 +1010,6 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
 	}
 	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
-	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
-	push(@items, navbar_item('plot','rcode','Rcodes'));
-	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
 	push(@items, navbar_item('plot','opcode','Opcodes'));
 	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
 	if ($ARGS{plot} =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
@@ -1021,6 +1019,8 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
 	}
 	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
+	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
+	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 
