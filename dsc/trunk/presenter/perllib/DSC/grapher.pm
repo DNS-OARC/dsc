@@ -225,17 +225,17 @@ sub make_image {
 	debug(5, 'data=' . Dumper($data)) if ($dbg_lvl >= 5);
 	$datafile = plotdata_tmp($ARGS{plot});
 	if ($PLOT->{plot_type} eq 'trace') {
-		trace_data_to_tmpfile($data, $datafile);
+		trace_data_to_tmpfile($data, $datafile) and
 		trace_plot($datafile, $ARGS{binsize}, $cache_name);
 	} elsif ($PLOT->{plot_type} eq 'accum1d') {
-		accum1d_data_to_tmpfile($data, $datafile);
+		accum1d_data_to_tmpfile($data, $datafile) and
 		accum1d_plot($datafile, $ARGS{binsize}, $cache_name);
 	} elsif ($PLOT->{plot_type} eq 'accum2d') {
-		accum2d_data_to_tmpfile($data, $datafile);
+		accum2d_data_to_tmpfile($data, $datafile) and
 		accum2d_plot($datafile, $ARGS{binsize}, $cache_name);
 	} elsif ($PLOT->{plot_type} eq 'hist2d') {
 		# like for qtype_vs_qnamelen
-		hist2d_data_to_tmpfile($data, $datafile);
+		hist2d_data_to_tmpfile($data, $datafile) and
 		hist2d_plot($datafile, $ARGS{binsize}, $cache_name);
 	} else {
 		error("Unknown plot type: $PLOT->{plot_type}");
@@ -324,6 +324,7 @@ sub trace_data_to_tmpfile {
 	debug(1, "writing tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$nl);
+	$nl
 }
 
 # calculate the amount of time in an 'accum' dataset.
@@ -357,9 +358,10 @@ sub accum1d_data_to_tmpfile {
 	}
 	close($tf);
 	my $stop = time;
-	debug(1, "writing tmpfile took %d seconds, %d lines",
+	debug(1, "writing $n lines to tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$n);
+	$n;
 }
 
 sub accum2d_data_to_tmpfile {
@@ -396,7 +398,8 @@ sub accum2d_data_to_tmpfile {
 	}
 	close($tf);
 	my $stop = time;
-	debug(1, "writing tmpfile took %d seconds", $stop-$start);
+	debug(1, "writing $n lines to tmpfile took %d seconds", $stop-$start);
+	$n;
 }
 
 sub hist2d_data_to_tmpfile {
@@ -431,6 +434,7 @@ sub hist2d_data_to_tmpfile {
 		last if (defined($p1) && defined($p2));
 	}
 	
+	my $nl = 0;
 	foreach my $k2 ($p1..$p2) {
 		my @vals;
 		foreach my $k1 (@plotkeys) {
@@ -443,11 +447,13 @@ sub hist2d_data_to_tmpfile {
 			push (@vals, $val);
 		}
 		print $tf join(' ', $k2, @vals), "\n";
+		$nl++;
 	}
 	close($tf);
 	my $stop = time;
-	debug(1, "writing tmpfile took %d seconds", $stop-$start);
+	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
 	#system "cat $tf 1>&2";
+	$nl;
 }
 
 sub time_descr {
@@ -867,9 +873,13 @@ sub cache_mapfile_path {
 # return 1 if the cached image is useable
 sub check_image_cache {
 	my $prefix = shift;
-	my @sb = stat(cache_image_path($prefix));
+	my $f = cache_image_path($prefix);
+	my @sb = stat($f);
 	return 0 unless (@sb);
-	return 0 unless (time - $sb[9] < $CacheImageTTL);
+	unless (time - $sb[9] < $CacheImageTTL) {
+		unlink $f;
+		return 0;
+	}
 	return 1;
 }
 
