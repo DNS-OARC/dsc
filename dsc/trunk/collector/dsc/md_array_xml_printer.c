@@ -55,7 +55,7 @@ d1_begin(void *pr_data, char *l)
 {
     FILE *fp = pr_data;
     int ll = strlen(l);
-    char *e;
+    char *e = NULL;
     if (strspn(l, entity_chars) != ll) {
 	int x = base64_encode(l, ll, &e);
 	assert(x);
@@ -71,7 +71,7 @@ print_element(void *pr_data, char *l, int val)
 {
     FILE *fp = pr_data;
     int ll = strlen(l);
-    char *e;
+    char *e = NULL;
     if (strspn(l, entity_chars) != ll) {
 	int x = base64_encode(l, ll, &e);
 	assert(x);
