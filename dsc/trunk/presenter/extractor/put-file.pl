@@ -10,101 +10,117 @@ use LockFile::Simple qw(lock trylock unlock);
 use File::Temp qw(tempfile);
 use Digest::MD5;
 
-my $putlog = "/usr/local/dsc/var/log/put-file.log";
-my $TOPDIR = "/usr/local/dsc/data";
+my $putlog;
+my $TOPDIR;
 
-my $filename = '-';
-my $tempname = '-';
+my $filename;
+my $tempname;
 my $OUT;	# filehandle ref
-my $clength = $ENV{CONTENT_LENGTH};
-my $method = $ENV{REQUEST_METHOD} || '-';
-my $remaddr = $ENV{REMOTE_ADDR} || '-';
-my $timestamp = strftime("[%d/%b/%Y:%H:%M:%S %z]", localtime(time));
-my $SERVER = get_envar(qw(SSL_CLIENT_S_DN_OU REDIRECT_SSL_CLIENT_OU));
-my $NODE = get_envar(qw(SSL_CLIENT_S_DN_CN SSL_CLIENT_CN));
+my $clength;
+my $method;
+my $remaddr;
+my $timestamp;
+my $SERVER;
+my $NODE;
 my %MD5;
+my $debug;
 
-my $debug = 0;
+run();
+exit 0;
 
-umask 022;
+sub run {
+	$debug = 0;
+	$putlog = "/usr/local/dsc/var/log/put-file.log";
+	$TOPDIR = "/usr/local/dsc/data";
 
-# Check we are using PUT method
-&reply(500, "No request method") unless defined ($method);
-&reply(500, "Request method is not PUT") if ($method ne "PUT");
+	$filename = '-';
+	$tempname = '-';
+	$clength = $ENV{CONTENT_LENGTH};
+	$method = $ENV{REQUEST_METHOD} || '-';
+	$remaddr = $ENV{REMOTE_ADDR} || '-';
+	$timestamp = strftime("[%d/%b/%Y:%H:%M:%S %z]", localtime(time));
+	$SERVER = get_envar(qw(SSL_CLIENT_S_DN_OU REDIRECT_SSL_CLIENT_OU));
+	$NODE = get_envar(qw(SSL_CLIENT_S_DN_CN SSL_CLIENT_CN));
+	%MD5 = ();
 
-# Check we got some content
-&reply(500, "Content-Length missing or zero") if (!$clength);
+	umask 022;
+
+	# Check we are using PUT method
+	&reply(500, "No request method") unless defined ($method);
+	&reply(500, "Request method is not PUT") if ($method ne "PUT");
+
+	# Check we got some content
+	&reply(500, "Content-Length missing or zero") if (!$clength);
 
 
-mkdir("$TOPDIR/$SERVER", 0700) unless (-d "$TOPDIR/$SERVER");
-mkdir("$TOPDIR/$SERVER/$NODE", 0700) unless (-d "$TOPDIR/$SERVER/$NODE");
-chdir "$TOPDIR/$SERVER/$NODE" || die "$TOPDIR/$SERVER/$NODE: $!";
+	mkdir("$TOPDIR/$SERVER", 0700) unless (-d "$TOPDIR/$SERVER");
+	mkdir("$TOPDIR/$SERVER/$NODE", 0700) unless (-d "$TOPDIR/$SERVER/$NODE");
+	chdir "$TOPDIR/$SERVER/$NODE" || die "$TOPDIR/$SERVER/$NODE: $!";
 
-# Check we got a destination filename
-my $path = $ENV{PATH_TRANSLATED};
-&reply(500, "No PATH_TRANSLATED") if (!$path);
-my @F = split('/', $path);
-$filename = pop @F;
-($OUT, $tempname) = tempfile(
-	TEMPLATE=>"put.XXXXXXXXXXXXXXXX",
-	DIR=>'.',
-	UNLINK=>0);
+	# Check we got a destination filename
+	my $path = $ENV{PATH_TRANSLATED};
+	&reply(500, "No PATH_TRANSLATED") if (!$path);
+	my @F = split('/', $path);
+	$filename = pop @F;
+	($OUT, $tempname) = tempfile(
+		TEMPLATE=>"put.XXXXXXXXXXXXXXXX",
+		DIR=>'.',
+		UNLINK=>0);
 
-&reply(409, "File Exists") if (-f $filename);
+	&reply(409, "File Exists") if (-f $filename);
 
-# Read the content itself
-my $toread = $clength;
-my $content = "";
-while ($toread > 0)
-{
-    my $data;
-    my $nread = read(STDIN, $data, $toread);
-    &reply(500, "Error reading content") if !defined($nread);
-    $toread -= $nread;
-    $content .= $data;
-}
-
-print $OUT $content;
-close($OUT);
-
-if ($filename =~ /\.xml$/) {
-	&reply(500, "$filename Exists") if (-f $filename);
-	&reply(500, "rename $tempname $filename: $!") unless rename($tempname, $filename);
-	chmod 0644, $filename;
-	&reply(201, "Stored $filename\n");
-} elsif ($filename =~ /\.tar$/) {
-	my $tar_output = '';
-	print STDERR "running tar -xzvf $tempname\n" if ($debug);
-	open(CMD, "tar -xzvf $tempname 2>&1 |") || die;
-	#
-	# gnutar prints extracted files on stdout, bsdtar prints
-	# to stderr and adds "x" to beginning of each line.  F!
-	#
-	my @files;
-	while (<CMD>) {
-		chomp;
-		my @x = split;
-		my $f = pop(@x);
-		push(@files, $f);
+	# Read the content itself
+	my $toread = $clength;
+	my $content = "";
+	while ($toread > 0)
+	{
+    	my $data;
+    	my $nread = read(STDIN, $data, $toread);
+    	&reply(500, "Error reading content") if !defined($nread);
+    	$toread -= $nread;
+    	$content .= $data;
 	}
-	close(CMD);
-	load_md5s();
-	foreach my $f (@files) {
-		next if ($f eq 'MD5s');
-		if (check_md5($f)) {
-			$tar_output .= "Stored $f\n";
-		} else {
-			unlink($f);
+	
+	print $OUT $content;
+	close($OUT);
+	
+	if ($filename =~ /\.xml$/) {
+		&reply(500, "$filename Exists") if (-f $filename);
+		&reply(500, "rename $tempname $filename: $!") unless rename($tempname, $filename);
+		chmod 0644, $filename;
+		&reply(201, "Stored $filename\n");
+	} elsif ($filename =~ /\.tar$/) {
+		my $tar_output = '';
+		print STDERR "running tar -xzvf $tempname\n" if ($debug);
+		open(CMD, "tar -xzvf $tempname 2>&1 |") || die;
+		#
+		# gnutar prints extracted files on stdout, bsdtar prints
+		# to stderr and adds "x" to beginning of each line.  F!
+		#
+		my @files;
+		while (<CMD>) {
+			chomp;
+			my @x = split;
+			my $f = pop(@x);
+			push(@files, $f);
 		}
+		close(CMD);
+		load_md5s();
+		foreach my $f (@files) {
+			next if ($f eq 'MD5s');
+			if (check_md5($f)) {
+				$tar_output .= "Stored $f\n";
+			} else {
+				unlink($f);
+			}
+		}
+		close(CMD);
+		unlink($tempname);
+		&reply(201, $tar_output);
+	} else {
+		&reply(500, "unknown file type ($filename)");
 	}
-	close(CMD);
-	unlink($tempname);
-	&reply(201, $tar_output);
-} else {
-	&reply(500, "unknown file type ($filename)");
 }
-
-exit(0);
 
 #
 # Send back reply to client for a given status.
