@@ -128,7 +128,7 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
 	memcpy(&m->edns.version, buf + offset + 5, 1);
 	memcpy(&us, buf + offset + 6, 2);
 	us = ntohs(us);
-	m->edns.d0 = (us >> 15) & 0x01;		/* RFC 3225 */
+	m->edns.DO = (us >> 15) & 0x01;		/* RFC 3225 */
     }
     /* get rdlength */
     memcpy(&us, buf + offset + 8, 2);

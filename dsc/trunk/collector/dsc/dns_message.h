@@ -23,7 +23,7 @@ struct _dns_message {
     unsigned int rd:1;		/* set if RECUSION DESIRED bit is set */
     struct {
 	unsigned int found:1;	/* set if we found an OPT RR */
-	unsigned int d0:1;	/* set if DNSSEC D0 bit is set */
+	unsigned int DO:1;	/* set if DNSSEC DO bit is set */
 	unsigned char version;	/* version field from OPT RR */
     } edns;
     /* ... */

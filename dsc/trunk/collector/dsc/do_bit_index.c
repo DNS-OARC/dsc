@@ -6,8 +6,8 @@
 #include "dns_message.h"
 #include "md_array.h"
 
-#define D0_BIT_CLR 0
-#define D0_BIT_SET 1
+#define DO_BIT_CLR 0
+#define DO_BIT_SET 1
 
 int
 do_bit_indexer(const void *vp)
@@ -15,9 +15,9 @@ do_bit_indexer(const void *vp)
     const dns_message *m = vp;
     if (m->malformed)
 	return -1;
-    if (m->edns.found && m->edns.do)
-	return D0_BIT_SET;
-    return D0_BIT_CLR;
+    if (m->edns.found && m->edns.DO)
+	return DO_BIT_SET;
+    return DO_BIT_CLR;
 }
 
 int
@@ -25,12 +25,12 @@ do_bit_iterator(char **label)
 {
     static int next_iter = 0;
     if (NULL == label) {
-        next_iter = D0_BIT_CLR;
-        return D0_BIT_CLR;
+        next_iter = DO_BIT_CLR;
+        return DO_BIT_CLR;
     }
-    if (D0_BIT_CLR == next_iter)
+    if (DO_BIT_CLR == next_iter)
         *label = "clr";
-    else if (D0_BIT_SET == next_iter)
+    else if (DO_BIT_SET == next_iter)
         *label = "set";
     else
         return -1;
