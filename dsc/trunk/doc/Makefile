@@ -20,10 +20,16 @@ $(DOC).dvi: $(DOC).tex $(FIGS)
 .fig.eps:
 	fig2dev -L eps $< > $@
 
-clean:
+clean-junk:
 	rm -f $(FIGS)
 	rm -f $(DOC).aux
 	rm -f $(DOC).dvi
 	rm -f $(DOC).log
+
+clean: clean-junk
 	rm -f $(DOC).pdf
 	rm -f $(DOC).ps
+
+clean-release: clean-junk
+	rm -f $(DOC).tex
+	rm -f dsc-arch.fig
