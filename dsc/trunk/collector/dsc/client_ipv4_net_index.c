@@ -12,8 +12,9 @@ static struct in_addr idx_to_cip4_net[MAX_ARRAY_SZ];	/* XXX replace with hash */
 static int next_idx = 0;
 
 int
-cip4_net_indexer(dns_message * m)
+cip4_net_indexer(void * vp)
 {
+    dns_message *m = vp;
     int i;
     struct in_addr masked_addr;
     assert(next_idx < MAX_ARRAY_SZ);

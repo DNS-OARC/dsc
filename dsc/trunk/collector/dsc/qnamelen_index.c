@@ -8,8 +8,9 @@
 static int largest = 0;
 
 int
-qnamelen_indexer(dns_message * m)
+qnamelen_indexer(void * vp)
 {
+    dns_message *m = vp;
     int i = strlen(m->qname);;
     if (i >= MAX_QNAME_SZ)
 	i = MAX_QNAME_SZ - 1;

@@ -11,8 +11,9 @@ static char *idx_to_tld[MAX_ARRAY_SZ];	/* XXX replace with hash */
 static int next_idx = 0;
 
 int
-tld_indexer(dns_message * m)
+tld_indexer(void * vp)
 {
+    dns_message * m = vp;
     int i;
     char *tld;
     assert(next_idx < MAX_ARRAY_SZ);

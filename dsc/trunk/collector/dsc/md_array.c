@@ -3,8 +3,9 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "dns_message.h"
 #include "md_array.h"
+#include "dns_message.h"
+#include "ip_message.h"
 #include "pcap.h"
 
 void md_array_grow_d1(md_array * a);
@@ -35,7 +36,7 @@ md_array_create(FLTR * filter,
 }
 
 int
-md_array_count(md_array * a, dns_message * m)
+md_array_count(md_array * a, void * m)
 {
     int i1;
     int i2;

@@ -9,6 +9,7 @@ OBJS=\
 	pcap.o \
 	dns_protocol.o \
 	dns_message.o \
+	ip_message.o \
 	daemon.o \
 	md_array.o \
 	null_index.o \

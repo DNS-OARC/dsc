@@ -1,2 +1,2 @@
-int qtype_indexer(dns_message * h);
+int qtype_indexer(void *);
 int qtype_iterator(char **label);

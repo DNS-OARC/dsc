@@ -9,8 +9,9 @@ static unsigned short idx_to_qtype[65536];
 static int next_idx = 0;
 
 int
-qtype_indexer(dns_message * h)
+qtype_indexer(void *vp)
 {
+    dns_message * h = vp;
     int i;
     for (i = 0; i < next_idx; i++) {
 	if (h->qtype == idx_to_qtype[i]) {

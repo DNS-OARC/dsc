@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "dns_message.h"
+#include "ip_message.h"
 #include "md_array.h"
 #include "pcap.h"
 #include "base64.h"

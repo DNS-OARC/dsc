@@ -10,8 +10,9 @@ static unsigned short idx_to_rcode[MAX_RCODE_IDX];
 static int next_idx = 0;
 
 int
-rcode_indexer(dns_message * m)
+rcode_indexer(void * vp)
 {
+    dns_message *m = vp;
     int i;
     for (i = 0; i < next_idx; i++) {
 	if (m->rcode == idx_to_rcode[i]) {

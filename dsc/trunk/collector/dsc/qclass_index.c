@@ -9,8 +9,9 @@ static unsigned short idx_to_qclass[65536];
 static int next_idx = 0;
 
 int
-qclass_indexer(dns_message * h)
+qclass_indexer(void * vp)
 {
+    dns_message * h = vp;
     int i;
     for (i = 0; i < next_idx; i++) {
 	if (h->qclass == idx_to_qclass[i]) {

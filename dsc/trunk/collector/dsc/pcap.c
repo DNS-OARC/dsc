@@ -35,6 +35,7 @@
 #include <netinet/udp.h>
 
 #include "dns_message.h"
+#include "ip_message.h"
 #include "pcap.h"
 
 #define PCAP_SNAPLEN 1460
@@ -62,6 +63,7 @@ static unsigned short port53;
 
 extern dns_message *handle_dns(const char *buf, int len);
 static DMC *dns_message_callback;
+static IPC *ip_message_callback;
 static struct timeval last_ts;
 static struct timeval start_ts;
 static struct timeval finish_ts;
@@ -86,6 +88,7 @@ handle_ip(const struct ip * ip, int len)
     char buf[PCAP_SNAPLEN];
     dns_message *m;
     int offset = ip->ip_hl << 2;
+    ip_message_callback(ip);
     if (IPPROTO_UDP != ip->ip_p)
 	return NULL;
     memcpy(buf, (void *) ip + offset, len - offset);
@@ -274,9 +277,10 @@ Pcap_init(char *device, int promisc)
 }
 
 void
-Pcap_run(DMC * callback)
+Pcap_run(DMC * dns_callback, IPC *ip_callback)
 {
-    dns_message_callback = callback;
+    dns_message_callback = dns_callback;
+    ip_message_callback = ip_callback;
     gettimeofday(&start_ts, NULL);
     finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
     finish_ts.tv_usec = 0;
