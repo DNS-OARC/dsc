@@ -17,6 +17,11 @@ struct _dns_message {
     const char *tld;
     unsigned char rcode;
     unsigned int qr:1;
+    struct {
+	unsigned int found:1;	/* set if we found an OPT RR */
+	unsigned int d0:1;	/* set if DNSSEC D0 bit is set */
+	unsigned char version;	/* version field from OPT RR */
+    } edns;
     /* ... */
 };
 

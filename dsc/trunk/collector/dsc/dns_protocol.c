@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <ctype.h>
+#include <arpa/nameser.h>
 
 #include "string_counter.h"
 #include "dns_message.h"
@@ -68,13 +69,72 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
     return 0;
 }
 
+static off_t
+grok_question(const char *buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
+{
+    unsigned short us;
+    char *t;
+    int x;
+    x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
+    if (0 != x)
+	return 0;
+    if ('\0' == *qname)
+	strcpy(qname, ".");
+    /* XXX remove special characters from QNAME */
+    while ((t = strchr(qname, '\n')))
+	*t = ' ';
+    while ((t = strchr(qname, '\r')))
+	*t = ' ';
+    for (t = qname; *t; t++)
+	*t = tolower(*t);
+    memcpy(&us, buf + offset, 2);
+    *qtype = ntohs(us);
+    memcpy(&us, buf + offset + 2, 2);
+    *qclass = ntohs(us);
+    offset += 4;
+    return offset;
+}
+
+static off_t
+grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message * m)
+{
+    int x;
+    unsigned short sometype;
+    unsigned short someclass;
+    unsigned short us;
+    char somename[MAX_QNAME_SZ];
+    x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
+    if (0 != x)
+	return 0;
+    memcpy(&us, buf + offset, 2);
+    sometype = ntohs(us);
+    memcpy(&us, buf + offset + 2, 2);
+    someclass = ntohs(us);
+    offset += 4;
+    if (sometype == T_OPT) {
+	m->edns.found = 1;
+	memcpy(&m->edns.version, buf + 1, 1);
+	memcpy(&us, buf + 2, 2);
+	us = ntohs(us);
+	m->edns.d0 = (us >> 15) & 0x01;
+    }
+    offset += 4;
+    /* get rdlength */
+    memcpy(&us, buf + offset, 2);
+    us = ntohs(us);
+    offset += (2 + us);
+    return offset;
+}
+
 dns_message *
 handle_dns(const char *buf, int len)
 {
     unsigned short us;
     off_t offset;
-    char *t;
-    int x;
+    int qdcount;
+    int ancount;
+    int nscount;
+    int arcount;
     dns_message *m = calloc(1, sizeof(*m));
     assert(m);
     m->msglen = (unsigned short) len;
@@ -96,43 +156,60 @@ handle_dns(const char *buf, int len)
 #endif
     m->rcode = us & 0x0F;
 
-#if 0
     memcpy(&us, buf + 4, 2);
     qdcount = ntohs(us);
-
     memcpy(&us, buf + 6, 2);
     ancount = ntohs(us);
-
     memcpy(&us, buf + 8, 2);
     nscount = ntohs(us);
-
     memcpy(&us, buf + 10, 2);
     arcount = ntohs(us);
-#endif
+
+    offset = DNS_MSG_HDR_SZ;
 
     /*
-     * XXX assume there is exactly one query
+     * Grab the first question
      */
-    offset = DNS_MSG_HDR_SZ;
-    x = rfc1035NameUnpack(buf, len, &offset, m->qname, MAX_QNAME_SZ);
-    if (0 != x) {
-	free(m);
-	return NULL;
+    if (qdcount > 0 && offset < len) {
+	off_t new_offset;
+	new_offset = grok_question(buf, len, offset, m->qname, &m->qtype, &m->qclass);
+	if (0 == new_offset) {
+	    free(m);
+	    return NULL;
+	}
+	offset = new_offset;
+	qdcount--;
     }
-    if ('\0' == m->qname[0])
-	strcpy(m->qname, ".");
-    /* XXX remove special characters from QNAME */
-    while ((t = strchr(m->qname, '\n')))
-	*t = ' ';
-    while ((t = strchr(m->qname, '\r')))
-	*t = ' ';
-    for (t = m->qname; *t; t++)
-	*t = tolower(*t);
+    /*
+     * Gobble up subsequent questions, if any
+     */
+    while (qdcount > 0 && offset < len) {
+	off_t new_offset;
+	char t_qname[MAX_QNAME_SZ];
+	unsigned short t_qtype;
+	unsigned short t_qclass;
+	new_offset = grok_question(buf, len, offset, t_qname, &t_qtype, &t_qclass);
+	if (0 == new_offset) {
+	    /*
+	     * point offset to the end of the buffer to avoid any subsequent processing
+	     */
+	    offset = len;
+	    break;
+	}
+	offset = new_offset;
+	qdcount--;
+    }
 
-    memcpy(&us, buf + offset, 2);
-    m->qtype = ntohs(us);
-    memcpy(&us, buf + offset + 2, 2);
-    m->qclass = ntohs(us);
-
+    if (arcount > 0 && offset < len) {
+	off_t new_offset;
+	new_offset = grok_additional_for_opt_rr(buf, len, offset, m);
+	if (0 == new_offset) {
+	    offset = len;
+	} else {
+	    offset = new_offset;
+	}
+	arcount--;
+    }
+    assert(offset <= len);
     return m;
 }
