@@ -61,6 +61,8 @@ $PLOT = Plot($ARGS{plot});
 error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 #print STDERR "[$$] PLOT=" . Dumper($PLOT);
 
+# Sanity checking on CGI args
+#
 if (!defined($ARGS{yaxis})) {
 	$ARGS{yaxis} = find_default_yaxis_type();
 } elsif (!defined($PLOT->{yaxes}{$ARGS{yaxis}})) {
@@ -72,6 +74,9 @@ if ($PLOT->{plot_type} =~ /^accum/ && $ARGS{window} < 86400) {
 }
 
 $ARGS{end} = $main::now if ($ARGS{end} > $main::now);
+
+
+
 #print STDERR "[$$] " . Dumper(\%ARGS);
 my $cache_name = cache_name($ARGS{server},
 	$ARGS{node},
@@ -301,7 +306,7 @@ sub accum2d_data_to_tmpfile {
 			}
 			push (@vals, $val);
 		}
-		push(@vals, $accum_sum{$k1});
+		push(@vals, $accum_sum{$k1});	# label location (?)
 		print $tf join(' ', $k1, @vals), "\n";
 		last if (++$n == $ACCUM_TOP_N);
 	}
@@ -803,6 +808,7 @@ sub delete_default_args {
 	delete $href->{server} if ('none' eq $href->{server});
 	delete $href->{node} if ('all' eq $href->{node});
 	delete $href->{binsize} if (default_binsize($ARGS{window}) == $href->{binsize});
+	delete $href->{binsize} unless (main::Plot($ARGS{plot})->{plot_type} eq 'trace');
 	delete $href->{end} if ((abs($main::now - $href->{end}) / $href->{window}) < 0.20);
 	delete $href->{window} if (3600*4 == $href->{window});
 	delete $href->{plot} if ('none' eq $href->{plot});
