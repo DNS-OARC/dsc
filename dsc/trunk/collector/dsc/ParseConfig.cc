@@ -24,11 +24,13 @@ enum {
 	ctDecimalNumber,
 	ctComment,
 	ctIPv4Address = 11,
+	ctHostOrNet,
 	ctInterface = 21,
 	ctRunDir,
 	ctLocalAddr,
 	ctPacketFilterProg,
 	ctDataset,
+	ctBVTBO,		// bpf_vlan_tag_byte_order
 	ctConfig = 30,
 	ctMax
 } configToken;
@@ -94,12 +96,14 @@ ParseConfig(const char *fn)
 	Rule rComment("comment", ctComment);
 
 	Rule rIPv4Address("ipv4-address", ctIPv4Address);
+	Rule rHostOrNet("host-or-net", ctHostOrNet);
 
 	Rule rInterface("Interface", ctInterface);
 	Rule rRunDir("RunDir", ctRunDir);
 	Rule rLocalAddr("LocalAddr", ctLocalAddr);
 	Rule rPacketFilterProg("PacketFilter", ctPacketFilterProg);
 	Rule rDataset("Dataset", ctDataset);
+	Rule rBVTBO("bpf_vlan_tag_byte_order", ctBVTBO);
 
 	Rule rConfig("Config", ctConfig);
 
@@ -115,6 +119,7 @@ ParseConfig(const char *fn)
 		rDecimalNumber >> "." >>
 		rDecimalNumber >> "." >>
 		rDecimalNumber;
+	rHostOrNet = string_r("host") | string_r("net");
 
 
 	// rule/line level
@@ -126,6 +131,7 @@ ParseConfig(const char *fn)
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>";" ;
+	rBVTBO = "bpf_vlan_tag_byte_order" >>rHostOrNet >>";" ;
 
 	// the whole config
 	rConfig = *(
@@ -133,7 +139,8 @@ ParseConfig(const char *fn)
 		rRunDir |
 		rLocalAddr |
 		rPacketFilterProg |
-		rDataset
+		rDataset |
+		rBVTBO
 	) >> end_r();
 
 	// trimming
@@ -146,6 +153,15 @@ ParseConfig(const char *fn)
 	rQuotedToken.leaf(true);
 	rBareToken.leaf(true);
 	rIPv4Address.leaf(true);
+	rHostOrNet.leaf(true);
+
+	// commit points
+        rInterface.committed(true);
+        rRunDir.committed(true);
+        rLocalAddr.committed(true);
+        rPacketFilterProg.committed(true);
+        rDataset.committed(true);
+	rBVTBO.committed(true);
 
 	string config;
 	char c;
