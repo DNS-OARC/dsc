@@ -148,8 +148,11 @@ sub Ploticus_areadef{
 	PO($ropts, 'rectangle', '1 1 6 4');
 	PO($ropts, 'xscaletype');
 	PO($ropts, 'xscaletype');
-	if (defined($ropts->{-window})) {
-		my $range_begin = POSIX::strftime($strftimefmt, gmtime($main::now-$ropts->{-window}));
+	my $window = $ropts->{-window};
+	if (defined($window)) {
+		my $then = $main::now - $window;
+	#	   $then -= ($then % &window2increment($window));
+		my $range_begin = POSIX::strftime($strftimefmt, gmtime($then));
 		my $range_end = POSIX::strftime($strftimefmt, gmtime($main::now));
 		P("xrange: $range_begin $range_end");
 	} elsif (defined($ropts->{-xstackfields})) {
@@ -315,6 +318,7 @@ sub window2increment {
 	return 30*60 if ($window == 4*3600);
 	return 2*3600 if ($window == 24*3600);
 	return 24*3600 if ($window == 7*24*3600);
+	warn "window2increment: bad window value $window";
 	undef;
 }
 
