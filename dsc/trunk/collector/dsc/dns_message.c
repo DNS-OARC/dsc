@@ -78,7 +78,7 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 	*it = cip4_iterator;
 	return 1;
     }
-    if (0 == strcmp(in, "client_subnet")) {
+    if (0 == strcmp(in, "cip4_net")) {
 	*ix = cip4_net_indexer;
 	*it = cip4_net_iterator;
 	return 1;
@@ -137,7 +137,7 @@ dns_message_find_filter(const char *fn, FLTR ** f)
 	*f = replies_only_filter;
 	return 1;
     }
-    syslog(LOG_ERR, "unknown indexer '%s'", fn);
+    syslog(LOG_ERR, "unknown filter '%s'", fn);
     return 0;
 }
 
@@ -152,11 +152,18 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     HITR *iterator2;
     md_array_list *a;
 
-    if (0 == dns_message_find_indexer(fn, &indexer1, &iterator1))
+syslog(LOG_DEBUG, "%s:%d, name=%s\n", __FILE__,__LINE__,name);
+syslog(LOG_DEBUG, "%s:%d, fn=%s\n", __FILE__,__LINE__,fn);
+syslog(LOG_DEBUG, "%s:%d, fi=%s\n", __FILE__,__LINE__,fi);
+syslog(LOG_DEBUG, "%s:%d, sn=%s\n", __FILE__,__LINE__,sn);
+syslog(LOG_DEBUG, "%s:%d, si=%s\n", __FILE__,__LINE__,si);
+syslog(LOG_DEBUG, "%s:%d, f=%s\n", __FILE__,__LINE__,f);
+
+    if (0 == dns_message_find_indexer(fi, &indexer1, &iterator1))
 	return 0;
-    if (0 == dns_message_find_indexer(sn, &indexer2, &iterator2))
+    if (0 == dns_message_find_indexer(si, &indexer2, &iterator2))
 	return 0;
-    if (0 == dns_message_find_filter(fn, &filter))
+    if (0 == dns_message_find_filter(f, &filter))
 	return 0;
 
     a = calloc(1, sizeof(*a));

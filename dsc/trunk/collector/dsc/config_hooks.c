@@ -1,6 +1,10 @@
 #include <syslog.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include "dns_message.h"
+#include "ip_message.h"
 
 int promisc_flag;
 void Pcap_init(const char *device, int promisc);
@@ -51,10 +55,13 @@ add_dataset(const char *name, const char *layer,
 	return dns_message_add_array(name, firstname, firstindexer,
 	    secondname, secondindexer, filtername);
     }
+#if 0
     if (0 == strcmp(layer, "ip")) {
 	return ip_message_add_array(name, firstname, firstindexer,
 	    secondname, secondindexer, filtername);
     }
+#endif
+    syslog(LOG_ERR, "%s:%d: unknown message layer '%s'", __FILE__,__LINE__,layer);
     return 0;
 }
 
