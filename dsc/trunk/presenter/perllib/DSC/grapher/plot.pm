@@ -96,8 +96,8 @@ my $std_accum_yaxes = {
   bynode => {
     dataset 	=> 'qtype',
     datafile	=> 'qtype',
-    keys	=> undef,
-    names	=> undef,
+    keys	=> [ qw(a b c d e f g h i j k l m) ],
+    names	=> [ qw(a b c d e f g h i j k l m) ],
     colors	=> [ qw (red orange yellow brightgreen brightblue
 		     purple magenta redorange yellow2 green darkblue) ],
     data_reader => \&DSC::extractor::read_data,
