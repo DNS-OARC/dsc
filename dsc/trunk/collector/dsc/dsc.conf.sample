@@ -52,6 +52,7 @@ interface fxp0;
 
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
+dataset opcode dns All:null Opcode:opcode queries-only;
 dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only min-count=10;
 dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
 dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes;
