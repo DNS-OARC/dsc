@@ -13,3 +13,6 @@ install:
 	install -m 755 ${GRAPHERS} ${INSTALLDIR}/libexec/
 	@test -d ${INSTALLDIR}/etc/ || mkdir ${INSTALLDIR}/etc/
 	install -m 644 ${CONFIGS} ${INSTALLDIR}/etc/
+
+clean:
+	
