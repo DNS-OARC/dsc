@@ -83,7 +83,8 @@ main(int argc, char *argv[])
 	if (0 == cpid) {
 	    dns_message_init();
 	    Pcap_run(dns_message_handle);
-	    dns_message_report();
+	    if (0 == fork())
+	        dns_message_report();
 	    _exit(0);
 	} else {
 	    int cstatus = 0;
