@@ -53,7 +53,7 @@ dsc.conf\/} to define certain parameters and options.  The configuration
 file also determines the {\em datasets\/} that {\tt dsc\/} collects.
 
 A Dataset is a 2-D array of counters of IP/DNS message properties.
-You can define each dimension of the arrray independently.  For
+You can define each dimension of the array independently.  For
 example you might define a dataset categorized by DNS query type
 along one dimension and TLD along the other.
 
@@ -258,14 +258,14 @@ in advance and make those writable.
 \begin{MyVerbatim}
 > mkdir /usr/local/dsc/data/
 > mkdir /usr/local/dsc/data/x-root/
-> mkdir /usr/lodal/dsc/data/x-root/blah/
+> mkdir /usr/local/dsc/data/x-root/blah/
 > chgrp nobody /usr/local/dsc/data/x-root/blah/
 > chmod 2775 /usr/local/dsc/data/x-root/blah/
 \end{MyVerbatim}
 
 Make sure that \path|/usr/local/dsc/data/| is on a large partition with
 plenty of free space.  You can make it a symbolic link to another
-parition if necessary.
+partition if necessary.
 
 
 \section{\tt Cron Jobs}
@@ -579,7 +579,7 @@ You can compile {\tt dsc\/} from the {\tt collector\/} directory:
 % make
 \end{MyVerbatim}
 
-Assuming there are no errors or problems during compliation, install
+Assuming there are no errors or problems during compilation, install
 the {\tt dsc\/} binary and other scripts with:
 
 \begin{MyVerbatim}
