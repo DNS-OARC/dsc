@@ -21,22 +21,9 @@ BEGIN {
 		&write_data3
 		&read_data4
 		&write_data4
-		&grok_rcode_xml
-		&grok_qtype_xml
-		&grok_cltsub_xml
-		&grok_ipv6_rsn_abusers_xml
-		&grok_client_subnet2_xml
-		&grok_tld_xml
-		&grok_idn_vs_tld_xml
-		&grok_qtype_vs_qnamelen_xml
-		&grok_rcode_vs_replylen_xml
-		&grok_qtype_vs_tld_xml
-		&grok_certain_qnames_vs_qtype_xml
-		&grok_direction_vs_ipproto_xml
-		&grok_edns_version_xml
-		&grok_idn_qname_xml
-		&grok_d0_bit_xml
-		&grok_rd_bit_xml
+		&grok_1d_xml
+		&grok_2d_xml
+		&grok_array_xml
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
         );
@@ -333,84 +320,4 @@ sub grok_array_xml {
 	($XML->{start_time}, @result);
 }
 
-sub grok_rcode_xml {
-	my $fname = shift || die;
-	&grok_array_xml($fname, 'Rcode');
-}
-
-sub grok_edns_version_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'EDNSVersion');
-}
-
-sub grok_idn_qname_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'IDNQname');
-}
-
-sub grok_d0_bit_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'D0');
-}
-
-sub grok_rd_bit_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'RD');
-}
-
-sub grok_qtype_xml {
-	my $fname = shift || die;
-	&grok_array_xml($fname, 'Qtype');
-}
-
-sub grok_cltsub_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'ClientSubnet');
-}
-
-sub grok_ipv6_rsn_abusers_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'ClientAddr');
-}
-
-sub grok_client_subnet2_xml {
-	my $fname = shift || die;
-	&grok_2d_xml($fname, 'Class', 'ClientSubnet');
-}
-
-sub grok_tld_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'TLD');
-}
-
-sub grok_idn_vs_tld_xml {
-	my $fname = shift || die;
-	&grok_1d_xml($fname, 'TLD');
-}
-
-sub grok_qtype_vs_qnamelen_xml {
-	my $fname = shift || die;
-	&grok_2d_xml($fname, 'Qtype', 'QnameLen');
-}
-
-sub grok_rcode_vs_replylen_xml {
-	my $fname = shift || die;
-	&grok_2d_xml($fname, 'Rcode', 'ReplyLen');
-}
-
-sub grok_qtype_vs_tld_xml {
-	my $fname = shift || die;
-	&grok_2d_xml($fname, 'Qtype', 'TLD');
-}
-
-sub grok_certain_qnames_vs_qtype_xml {
-	my $fname = shift || die;
-	&grok_2d_xml($fname, 'CertainQnames', 'Qtype');
-}
-
-sub grok_direction_vs_ipproto_xml {
-        my $fname = shift || die;
-	&grok_2d_xml($fname, 'Direction', 'IPProto');
-}
-
-1;
+##############################################################################
