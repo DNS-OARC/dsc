@@ -25,6 +25,7 @@ BEGIN {
         $VERSION     = 1.00;
         @ISA         = qw(Exporter);
         @EXPORT      = qw(
+		&prepare
 		&run
 		&cgi
         );
@@ -64,10 +65,7 @@ my $ACCUM_TOP_N;
 my $cgi;
 my $now;
 
-sub cgi { $cgi; }
-
-sub run {
-
+sub prepare {
 	# initialize vars
 	$use_data_uri = 1;
 	%ARGS = ();
@@ -76,7 +74,12 @@ sub run {
 	$ACCUM_TOP_N = 40;
 	$cgi = new CGI();
 	$now = time;
+}
 
+sub cgi { $cgi; }
+
+
+sub run {
 	debug(1, "===> starting at " . strftime('%+', localtime($now)));
 	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
 	debug(3, "ENV=" . Dumper(\%ENV));
