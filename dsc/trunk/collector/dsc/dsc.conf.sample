@@ -48,6 +48,11 @@ bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 #	replies-only
 
 dataset qtype dns All:null Qtype:qtype queries-only;
+dataset rcode dns All:null Rcode:rcode replies-only;
+dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only;
+dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
+
+dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 
 # bpf_vlan_tag_byte_order
 #
