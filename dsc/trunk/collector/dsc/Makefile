@@ -1,5 +1,5 @@
 PROG=dsc
-CFLAGS=-g -Wall
+CFLAGS=-g -Wall -I TmfBase
 TODAY != date +%Y%m%d
 
 OBJS=\
@@ -24,14 +24,19 @@ OBJS=\
 	ip_direction_index.o \
 	ip_proto_index.o
 
+C++OBJS=\
+	ParseConfig.o
+
 LIBS=\
-	-lpcap
+	-lpcap \
+	TmfBase/Hapy/libHapy.a \
+	TmfBase/xstd/libxstd.a
 
 all:  $(PROG)
 
 
-$(PROG): $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LIBS)
+$(PROG): $(OBJS) $(C++OBJS)
+	$(CXX) -o $@ $(OBJS) $(C++OBJS) $(LIBS)
 
 install:
 	install -m 755 $(PROG) $(INSTALLDIR)

@@ -25,7 +25,7 @@ char *progname = NULL;
 int promisc_flag = 1;
 
 extern void cip4_net_indexer_init(void);
-extern void add_local_address(const char *);
+extern void ParseConfig(void);
 
 void
 daemonize(void)
@@ -66,7 +66,6 @@ usage(void)
 	progname);
     fprintf(stderr, "\t-b expr\tBPF program code\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode\n");
-    fprintf(stderr, "\t-l addr\tspecify a local IP address\n");
     exit(1);
 }
 
@@ -78,19 +77,15 @@ main(int argc, char *argv[])
     extern DMC dns_message_handle;
 
     progname = strdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
-    daemonize();
     srandom(time(NULL));
 
-    while ((x = getopt(argc, argv, "b:pl:")) != -1) {
+    while ((x = getopt(argc, argv, "b:p")) != -1) {
 	switch (x) {
 	case 'p':
 	    promisc_flag = 0;
 	    break;
 	case 'b':
 	    bpf_program_str = strdup(optarg);
-	    break;
-	case 'l':
-	    add_local_address(optarg);
 	    break;
 	default:
 	    usage();
@@ -102,11 +97,15 @@ main(int argc, char *argv[])
 
     if (argc < 1)
 	usage();
+    ParseConfig();
+fprintf(stderr, "parsed config\n");
     cip4_net_indexer_init();
     for (; argc; argc--, argv++) {
 	syslog(LOG_INFO, "Opening interface %s", argv[0]);
 	Pcap_init(argv[0], promisc_flag);
     }
+
+    daemonize();
 
     /*
      * I'm using fork() in this loop, (a) out of laziness, and (b)

@@ -35,13 +35,18 @@ ip_direction_indexer(const void *vp)
 	return LARGEST;
 }
 
-void
+int
 add_local_address(const char *dotted)
 {
 	struct _foo *n = calloc(1, sizeof(*n));
 	n->next = local_addrs;
-	n->addr.s_addr = inet_addr(dotted);
+	if (inet_aton(dotted, &n->addr) != 1) {
+fprintf(stderr, "yucky IPv4 addr %s\n", dotted);
+		return 0;
+	}
 	local_addrs = n;
+fprintf(stderr, "added local addr %s\n", dotted);
+	return 1;
 }
 
 int
