@@ -179,6 +179,7 @@ handle_dns(const char *buf, int len)
 	offset = new_offset;
 	qdcount--;
     }
+    assert(offset <= len);
     /*
      * Gobble up subsequent questions, if any
      */
@@ -198,6 +199,7 @@ handle_dns(const char *buf, int len)
 	offset = new_offset;
 	qdcount--;
     }
+    assert(offset <= len);
 
     if (arcount > 0 && offset < len) {
 	off_t new_offset;
