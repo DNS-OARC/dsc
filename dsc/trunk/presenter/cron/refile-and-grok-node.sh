@@ -36,7 +36,7 @@ for type in $TYPES ; do
 			secs=`echo $h | awk -F. '{print $1}'`
 			secs=`expr $secs - 60`
 			#yymmdd=`date -u -r $secs +%Y%m%d`
-			yymmdd=`perl -e 'use POSIX; print strftime "%Y%m%d", localtime(shift)' $secs`
+			yymmdd=`perl -e 'use POSIX; print strftime "%Y%m%d", gmtime(shift)' $secs`
 			test -d $yymmdd || mkdir $yymmdd
 			test -d $yymmdd/$type || mkdir $yymmdd/$type
 			#echo "Doing $type-extractor.pl $h"
@@ -55,7 +55,7 @@ for type in $TYPES ; do
 				case $? in
 				254)
 					echo "problem reading $type data file for $SERVER/$NODE"
-					exit 254
+					break
 					;;
 				*)
 					test -d errors || mkdir errors
@@ -69,4 +69,7 @@ for type in $TYPES ; do
 done
 date
 
-/usr/bin/head $PROG.stderr
+if test -s $PROG.stderr ; then
+	/usr/bin/head $PROG.stderr \
+		| /usr/bin/Mail -s "Cron <${USER}@`hostname -s`> $0" $USER
+fi
