@@ -68,7 +68,7 @@ sub extract {
 		#
 		if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
 			my $ntrim = &{$O->{data_trimer}}(\%db, $O);
-			print STDERR "trimmed $ntrim records from $yymmdd/$dataset/$output.dat\n" if ($ntrim);
+			print "trimmed $ntrim records from $yymmdd/$dataset/$output.dat\n" if ($ntrim);
 		}
 
 		# write out the new data file
