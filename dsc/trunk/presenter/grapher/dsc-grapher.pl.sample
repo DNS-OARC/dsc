@@ -17,6 +17,7 @@ use Digest::MD5;
 use Text::Template;
 use MIME::Base64;
 use Hash::Merge;
+use URI::Escape;
 
 # globals
 $main::now = time;
@@ -902,7 +903,7 @@ sub urlpath {
 		$cgi = substr($cgi,0,$n);
 	}
 	delete_default_args(\%args);
-	"$cgi?" . join('&', map {"$_=$args{$_}"} keys %args);
+	"$cgi?" . join('&', map {"$_=" . main::uri_escape($args{$_})} keys %args);
 }
 
 sub merge_args {
