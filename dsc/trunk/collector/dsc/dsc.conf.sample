@@ -29,6 +29,24 @@ bpf_program "udp port 53";
 bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
 
+#
+# dns indexers:
+#
+#	client
+#	client_subnet
+#	null
+#	qclass
+#	qnamelen
+#	qtype
+#	rcode
+#	tld
+#
+# dns filters:
+#
+#	any
+#	queries-only
+#	replies-only
+
 dataset qtype dns All:null Qtype:qtype queries-only;
 
 # bpf_vlan_tag_byte_order

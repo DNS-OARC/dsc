@@ -2,12 +2,14 @@
 
 typedef struct _md_array md_array;
 typedef struct _md_array_printer md_array_printer;
+typedef struct _md_array_list md_array_list;
 
 typedef int (IDXR) (const void *);
 typedef int (HITR) (char **);
 typedef int (FLTR) (const void *);
 
 struct _md_array {
+    const char *name;
     FLTR *filter;
     struct {
 	IDXR *indexer;
@@ -34,6 +36,11 @@ struct _md_array_printer {
     void (*d1_begin) (void *, char *);
     void (*d1_end) (void *, char *);
     void (*print_element) (void *, char *label, int);
+};
+
+struct _md_array_list {
+	md_array *theArray;
+	md_array_list *next;
 };
 
 int md_array_count(md_array *, const void *);

@@ -15,6 +15,9 @@
 #include "qnamelen_index.h"
 
 extern md_array_printer xml_printer;
+
+static md_array_list *Arrays = NULL;
+
 #if USE_QCLASS_VS_QTYPE
 static md_array *qclass_vs_qtype;
 #endif
@@ -26,13 +29,9 @@ static md_array *qtype_vs_qnamelen;
 void
 dns_message_handle(dns_message * m)
 {
-#if USE_QCLASS_VS_QTYPE
-    md_array_count(qclass_vs_qtype, m);
-#endif
-    md_array_count(qtype, m);
-    md_array_count(rcode, m);
-    md_array_count(client_subnet, m);
-    md_array_count(qtype_vs_qnamelen, m);
+    md_array_list *a;
+    for (a = Arrays; a; a = a->next)
+	md_array_count(a->theArray, m);
 }
 
 static int
@@ -52,13 +51,9 @@ replies_only_filter(const void * vp)
 void
 dns_message_init(void)
 {
-#if USE_QCLASS_VS_QTYPE
-    qclass_vs_qtype = md_array_create(
-	queries_only_filter,
-	"Qclass", qclass_indexer, qclass_iterator,
-	"Qtype", qtype_indexer, qtype_iterator);
-#endif
+    assert(Arrays == NULL);
 
+#if 0
     qtype = md_array_create(
 	queries_only_filter,
 	"All", null_indexer, null_iterator,
@@ -78,17 +73,113 @@ dns_message_init(void)
 	queries_only_filter,
 	"Qtype", qtype_indexer, qtype_iterator,
 	"QnameLen", qnamelen_indexer, qnamelen_iterator);
+#endif
 
+}
+
+
+int
+dns_message_find_indexer(const char *in, IDXR **ix, HITR **it)
+{
+	if (0 == strcmp(in, "client")) {
+		*ix = client_indexer;
+		*it = client_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "client_subnet")) {
+		*ix = cip4_net_indexer;
+		*it = cip4_net_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "null")) {
+		*ix = null_indexer;
+		*it = null_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "qclass")) {
+		*ix = qclass_indexer;
+		*it = qclass_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "qnamelen")) {
+		*ix = qnamelen_indexer;
+		*it = qnamelen_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "qtype")) {
+		*ix = qtype_indexer;
+		*it = qtype_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "qnamelen")) {
+		*ix = qnamelen_indexer;
+		*it = qnamelen_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "rcode")) {
+		*ix = rcode_indexer;
+		*it = rcode_iterator;
+		return 1;
+	}
+	if (0 == strcmp(in, "tld")) {
+		*ix = tld_indexer;
+		*it = tld_iterator;
+		return 1;
+	}
+	syslog(LOG_ERR, "unknown indexer '%s'", in);
+	return 0;
+}
+
+int
+dns_message_find_filter(const char *fn, FLTR **f)
+{
+	if (0 == strcmp(in, "any")) {
+		*f = NULL;
+		return 1;
+	}
+	if (0 == strcmp(in, "queries-only")) {
+		*f = queries_only_filter;
+		return 1;
+	}
+	if (0 == strcmp(in, "replies-only")) {
+		*f = replies_only_filter;
+		return 1;
+	}
+	syslog(LOG_ERR, "unknown indexer '%s'", in);
+	return 0;
+}
+
+int
+dns_message_add_array(const char *name, const char *fn, const char *fi,
+	const char *sn, const char *si, const char *f)
+{
+	FLTR *filter;
+        IDXR *indexer1;
+        HITR *iterator1;
+        IDXR *indexer2;
+        HITR *iterator2;
+
+	if (0 == dns_message_find_indexer(fn, &indexer1, &iterator1))
+		return 0;
+	if (0 == dns_message_find_indexer(sn, &indexer2, &iterator2))
+		return 0;
+	if (0 == dns_message_find_filter(fn, &filter))
+		return 0;
+
+	md_array_list *a = calloc(1, sizeof(*a));
+	a->theArray = md_array_create(filter,
+		fn, indexer1, iterator1,
+		sn, indexer2, iterator2);
+	assert(a->theArray);
+	a->next = Arrays;
+	Arrays = a;
+	return 1;
 }
 
 void
 dns_message_report(void)
 {
-#if USE_QCLASS_VS_QTYPE
-    md_array_print(qclass_vs_qtype, &xml_printer, "qclass_vs_qtype");
-#endif
-    md_array_print(qtype, &xml_printer, "qtype");
-    md_array_print(rcode, &xml_printer, "rcode");
-    md_array_print(client_subnet, &xml_printer, "client_subnet");
-    md_array_print(qtype_vs_qnamelen, &xml_printer, "qtype_vs_qnamelen");
+    md_array_list *a;
+    for (a = Arrays; a; a = a->next)
+	md_array_print(a->theArray, &mxl_printer);
 }

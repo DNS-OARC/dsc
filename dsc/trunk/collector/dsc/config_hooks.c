@@ -47,7 +47,15 @@ add_dataset(const char *name, const char *layer,
         const char *filtername)
 {
 	syslog(LOG_INFO, "creating dataset %s", name);
-	return 1;
+	if (0 == strcmp(layer, "dns")) {
+		return dns_message_add_array(name, firstname, firstindexer,
+			secondname, secondindexer, filtername);
+	}
+	if (0 == strcmp(layer, "ip")) {
+		return ip_message_add_array(name, firstname, firstindexer,
+			secondname, secondindexer, filtername);
+	}
+	return 0;
 }
 
 int

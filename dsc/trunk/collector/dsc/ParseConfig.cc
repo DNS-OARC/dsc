@@ -200,6 +200,7 @@ ParseConfig(const char *fn)
 		       << (p >= config.size() ?
 			       string(" the end of input") : config.substr(p).substr(0, 160))
 		       << endl;
+		exit(1);
 	}
 	if (my_parse(parser.result().pree, 0) != 1)
 		abort();
