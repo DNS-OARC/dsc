@@ -14,128 +14,61 @@
 using namespace Hapy;
 
 
-/* RuleAlgPtr */
+/* RuleBase */
 
-Hapy::RuleAlgPtr::Link::Link(): alg(0), next(0) {
+Hapy::RuleBase::RuleBase(): alg(0), id(0), core(0), itrimmer(0),
+	commitMode(cmDefault), trimMode(tmDefault), isLeaf(false),
+	compiling(false) {
 }
 
-const RuleAlgPtr::Link *Hapy::RuleAlgPtr::Link::find() const {
-	// XXX: optimize: cache found link
 
-	if (alg)
-		return this;
-	
-	if (next)
-		return next->find();
+/* RuleBasePtr */
 
-	return 0;
+Hapy::RuleBasePtr::RuleBasePtr(): thePtr(new RuleBase) {
 }
 
-Hapy::RuleAlgPtr::RuleAlgPtr(): theLink(new Link) {
+Hapy::RuleBasePtr::RuleBasePtr(const RuleBasePtr &p): thePtr(p.thePtr) {
 }
 
-// cannot assign p.Link to theLink because of repoint()
-Hapy::RuleAlgPtr::RuleAlgPtr(const RuleAlgPtr &p): theLink(new Link) {
-	theLink->next = p.theLink;
+Hapy::RuleBasePtr::~RuleBasePtr() {
+	// delete thePtr; // XXX: leaking links, need refcounting
+	thePtr = 0;
 }
 
-Hapy::RuleAlgPtr::~RuleAlgPtr() {
-	// delete theLink; // XXX: leaking links, need refcounting
-	theLink = 0;
-}
-
-RuleAlgPtr &Hapy::RuleAlgPtr::operator =(const RuleAlgPtr &p) {
+RuleBasePtr &Hapy::RuleBasePtr::operator =(const RuleBasePtr &p) {
+	// nothing special going on here; added for completeness
 	if (&p == this)
 		return *this; // assignment to self
-
-	Assert(theLink);
-	Assert(p.theLink);
-	Assert(!theLink->alg);  // user does not accidently redefine known rule
-	Assert(!theLink->next); // user does not accidently redefine future rule
-	theLink->next = p.theLink;
+	thePtr = p.thePtr;
 	return *this;
-}
-
-bool Hapy::RuleAlgPtr::known() const {
-	return theLink && theLink->find() != 0;
-}
-
-const RuleAlg &Hapy::RuleAlgPtr::value() const {
-	const Link *link = theLink->find();
-	Assert(link);
-	Assert(link->alg);
-	return *link->alg;
-}
-
-RuleAlg &Hapy::RuleAlgPtr::value() {
-	const Link *link = theLink->find();
-	Assert(link);
-	Assert(link->alg);
-	return *link->alg;
-}
-
-void Hapy::RuleAlgPtr::value(RuleAlg *anAlg) {
-	Assert(anAlg);
-	Assert(theLink);
-	Assert(!theLink->next);
-	Assert(!theLink->alg);
-	theLink->alg = anAlg;
-}
-
-void Hapy::RuleAlgPtr::repoint(RuleAlg *anAlg) {
-	Assert(anAlg);
-	Assert(theLink);
-
-	// we cannot delete/new theLink because others may point to it
-	Link *newPoint = new Link; // XXX: never deleted; leaking links
-	newPoint->alg = anAlg;
-
-	// theCore knows what we were pointing to; others get new alg
-	theLink->next = newPoint;  
-	theLink->alg = 0;
 }
 
 
 /* Rule */
 
-#if CERR_DEBUG
-#define debug(label, buf, pree) \
-	cerr << here << this << ' '<< theName << "::" << label << \
+#define debug(label, buf, pree) ;
+
+#define dodebug(label, buf, pree) \
+	cerr << here << this << ' '<< name() << "::" << label << \
 		" raw_cnt: " << pree.rawCount() << \
 		" trim: " << pree.trimming << \
 		" buf: " << buf.content().substr(0,20) << endl;
-#else
-#define debug(label, buf, pree) (void) 0;
-#endif
 
-Hapy::Rule::Rule(): theId(0), theCore(0), theCommitMode(cmDefault) {
+Hapy::Rule::Rule() {
 }
 
-Hapy::Rule::Rule(const string &aName, int anId): theName(aName), theId(anId),
-	theCore(0), theCommitMode(cmDefault) {
+Hapy::Rule::Rule(const string &aName, int anId) {
+	theBase->name = aName;
+	theBase->id = anId;
 }
 
-Hapy::Rule::Rule(const Rule &r):  
-	theId(0), theCore(0), theCommitMode(cmDefault) {
-	init(r);
+Hapy::Rule::Rule(const Rule &r): theBase(r.theBase) {
 }
 
-Hapy::Rule::Rule(const string &s): theId(0), theCore(0) {
-	init(string_r(s));
+Hapy::Rule::Rule(const string &s): theBase(string_r(s).theBase) {
 }
 
-Hapy::Rule::Rule(const char *s): theId(0), theCore(0) {
-	Should(s);
-	init(string_r(s));
-}
-
-void Hapy::Rule::init(const Rule &r) {
-	Should(!theId && !theCore); // init is called from constructors
-	theId = r.theId;
-	theName = r.theName;
-	theAlg = r.theAlg;
-	// theCore is not updated (but the alg is, above)
-	theCommitMode = r.theCommitMode;
+Hapy::Rule::Rule(const char *s): theBase(string_r(s).theBase) {
 }
 
 Rule &Hapy::Rule::operator =(const Rule &r) {
@@ -143,64 +76,143 @@ Rule &Hapy::Rule::operator =(const Rule &r) {
 		return *this; // assignment to self
 
 	// assignments update user-accessible/visible core, not trimming details
-	if (theCore)
-		return *theCore = r;
+	if (theBase->core)
+		return *theBase->core = r;
 
-	ProxyRule *pr = new ProxyRule(r); // XXX: delete; leaking algs
-	alg(pr);
-	// theCore and theCommitMode is not updated but used via Proxy
+	if (this->temporary()) {
+		Should(!hasAlg() || !r.hasAlg());
+		theBase = r.theBase;
+	} else
+	if (r.temporary()) {
+		if (Should(r.hasAlg()))
+			alg(r.theBase->alg);
+		// theBase is not updated
+	} else {
+		ProxyRule *pr = new ProxyRule(r); // XXX: delete; leaking algs
+		alg(pr);
+		// theBase is not updated but new base is used via proxy
+	}
 	return *this;
 }
 
 Hapy::Rule::~Rule() {
-	// delete theCore; // XXX: leaking if trimming
 }
 
 void Hapy::Rule::committed(bool be) {
-	theCommitMode = be ? cmCommit : cmDont;
+	theBase->commitMode = be ? RuleBase::cmCommit : RuleBase::cmDont;
+}
+
+bool Hapy::Rule::terminal() const {
+	Should(theBase->compiling);
+	return theBase->isLeaf ||
+		(Should(theBase->compiling) && hasAlg() && alg().terminal());
 }
 
 bool Hapy::Rule::trimming() const {
-	return theCore != 0;
+	return theBase->core != 0;
 }
 
+// remember explicit trimming request
 void Hapy::Rule::trim(const Rule &skipper) {
-	Should(!trimming());
-
-	Rule trimmer(skipper);
-	Should(!trimmer.trimming());
-	if (trimmer.theCommitMode == cmDefault)
-		trimmer.committed(true);
-
-	theCore = new Rule(theName, theId);
-	theCore->alg(&theAlg.value());
-	theCore->theCommitMode = this->theCommitMode;
-	this->theName += "_trimmed";
-	this->committed(false); // but core rule will be committed if we were
-
-	SeqRule *s = new SeqRule;
-	s->add(trimmer);
-	s->add(*theCore);
-	s->add(trimmer);
-	theAlg.repoint(s);
-print(cerr << here << "repointed: ") << endl;
+	Should(!theBase->itrimmer);
+	theBase->itrimmer = new Rule(skipper); // XXX: leaking trimmers
+	theBase->trimMode = RuleBase::tmExplicit;
 }
 
-bool Hapy::Rule::anonymous() const {
-	return theName.empty() && theId <= 0;
+// remember explicit no-internal-trimming request
+void Hapy::Rule::verbatim(bool be) {
+	theBase->itrimmer = 0;
+	theBase->trimMode = RuleBase::tmVerbatim;
+}
+
+// remember leaf setting
+void Hapy::Rule::leaf(bool be) {
+	theBase->isLeaf = be;
+}
+
+// set trimming if no trimming was configured
+void Hapy::Rule::implicitTrim(const Rule &skipper) {
+	if (theBase->trimMode == RuleBase::tmDefault) {
+		Should(theBase->itrimmer == 0);
+		theBase->itrimmer = new Rule(skipper); // XXX: leaking trimmers
+		theBase->trimMode = RuleBase::tmImplicit;
+	}
+}
+
+bool Hapy::Rule::compileTrim() {
+	if (!Should(theBase->core == 0))
+		return false;
+
+	if (!Should(theBase->itrimmer))
+		return false;
+
+	if (!Should(theBase->trimMode != RuleBase::tmVerbatim))
+		return false;
+
+	Rule *trimmer = theBase->itrimmer;
+	if (trimmer->theBase->commitMode == RuleBase::cmDefault)
+		trimmer->committed(true);
+
+	Rule *c = new Rule;
+	*c->theBase = *this->theBase;
+	theBase->id = 0;
+	theBase->name += "_trimming";
+	theBase->itrimmer = 0;
+	committed(false); // but core rule will be committed if we were
+
+	theBase->alg = 0;
+	theBase->core = c;
+	SeqRule *s = new SeqRule;
+	s->add(*trimmer);
+	s->add(*c);
+	s->add(*trimmer);
+	alg(s);
+
+	return true;
+}
+
+bool Hapy::Rule::compile() {
+//print(cerr << here << "pre rule:  ") << endl;
+
+	// prevent infinite recursion
+	if (theBase->compiling) 
+		return true;
+	theBase->compiling = true;
+
+	if (!Should(theBase->alg))
+		return false;
+
+	if (theBase->itrimmer && theBase->trimMode != RuleBase::tmVerbatim)
+		theBase->alg->spreadTrim(*theBase->itrimmer);
+
+	if (!theBase->alg->compile())
+		return false;
+
+	if (theBase->itrimmer && terminal() && !compileTrim())
+		return false;
+
+//print(cerr << here << "comp rule: ") << endl;
+//if (theBase->core)
+//theBase->core->print(cerr << here << "comp core: ") << endl;
+	return true;
+}
+
+bool Hapy::Rule::temporary() const {
+	return name().empty() && id() <= 0;
 }
 
 Rule::StatusCode Hapy::Rule::firstMatch(Buffer &buf, PreeNode &pree) const {
-	pree.rid = theId;
+	pree.rawRid(id());
 	pree.trimming = this->trimming();
+	pree.leaf = theBase->isLeaf;
 	debug("firstMatch", buf, pree);
 	return alg().firstMatch(buf, pree);
 }
 
 Rule::StatusCode Hapy::Rule::nextMatch(Buffer &buf, PreeNode &pree) const {
-	Should(pree.rid == theId);
+	Should(pree.rawRid() == id());
 	debug("nextMatch", buf, pree);
-	if (theCommitMode == cmCommit) {
+	if (theBase->commitMode == RuleBase::cmCommit) {
 		cancel(buf, pree);
 		return Result::scMiss;
 	}
@@ -208,23 +220,26 @@ Rule::StatusCode Hapy::Rule::nextMatch(Buffer &buf, PreeNode &pree) const {
 }
 
 Rule::StatusCode Hapy::Rule::resume(Buffer &buf, PreeNode &pree) const {
-	Should(pree.rid == theId);
+	Should(pree.rawRid() == id());
 	debug("resume", buf, pree);
 	return alg().resume(buf, pree);
 }
 
 void Hapy::Rule::cancel(Buffer &buf, PreeNode &pree) const {
-	Should(pree.rid == theId);
+	Should(pree.rawRid() == id());
 	debug("cancel", buf, pree);
 	alg().cancel(buf, pree);
 }
 
 const RuleAlg &Hapy::Rule::alg() const {
-	return theAlg.value();
+	Assert(theBase->alg);
+	return *theBase->alg;
 }
 
 void Hapy::Rule::alg(RuleAlg *anAlg) {
-	theAlg.value(anAlg);
+	Assert(anAlg);
+	Assert(!theBase->alg); // assume rule redefinitions are bugs
+	theBase->alg = anAlg;
 }
 
 ostream &Hapy::Rule::print(ostream &os) const {
@@ -232,5 +247,11 @@ ostream &Hapy::Rule::print(ostream &os) const {
 		os << name() << '(' << id() << ')' << " = ";
 	if (hasAlg())
 		alg().print(os);
+	os << " trim: " << theBase->trimMode <<
+		" leaf:" << theBase->isLeaf <<
+		" trimmer: " << (void*)theBase->itrimmer <<
+		" term: " << (theBase->isLeaf || (hasAlg() && alg().terminal())) <<
+		" comp: " << theBase->compiling;
+		;
 	return os;
 }

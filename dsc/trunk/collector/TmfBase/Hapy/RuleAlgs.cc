@@ -15,6 +15,37 @@ using namespace Hapy;
 static RuleAlg::StatusCode ApplyRule(const Rule &r, Buffer &buf, PreeNode &pree, const char *defName = "");
 static void PrintSubRule(ostream &os, const Rule &r);
 
+
+// r = empty sequence
+RuleAlg::StatusCode Hapy::EmptyRule::firstMatch(Buffer &, PreeNode &) const {
+	return Result::scMatch;
+}
+	
+RuleAlg::StatusCode Hapy::EmptyRule::nextMatch(Buffer &, PreeNode &) const {
+	return Result::scMiss;
+}
+
+RuleAlg::StatusCode Hapy::EmptyRule::resume(Buffer &, PreeNode &) const {
+	Should(false);
+	return Result::scError;
+}
+
+bool Hapy::EmptyRule::terminal() const {
+	return true;
+}
+
+bool Hapy::EmptyRule::compile() {
+	return true;
+}
+
+void Hapy::EmptyRule::spreadTrim(const Rule &) {
+}
+
+ostream &Hapy::EmptyRule::print(ostream &os) const {
+	return os << "empty";
+}
+
+
 // r = a >> b
 Hapy::SeqRule::SeqRule() {
 }
@@ -108,11 +139,33 @@ RuleAlg::StatusCode Hapy::SeqRule::resume(Buffer &buf, PreeNode &pree) const {
 	}
 }
 
-
 bool Hapy::SeqRule::isA(const string &s) const {
 	return s == "SeqRule";
 }
 		
+bool Hapy::SeqRule::terminal() const {
+	return theRules.size() == 0;
+}
+
+bool Hapy::SeqRule::compile() {
+	for (Store::iterator i = theRules.begin(); i != theRules.end(); ++i) {
+		if (!i->compile())
+			return false;
+	}
+	return true;
+}
+
+void Hapy::SeqRule::spreadTrim(const Rule &itrimmer) {
+	bool odd;
+	for (Store::iterator i = theRules.begin(); i != theRules.end(); ++i) {
+		if (odd)
+			i->implicitTrim(itrimmer);
+		else
+			i->implicitTrim(itrimmer); // XXX: optimize with internalImplTrim
+		odd = !odd;
+	}
+}
+
 ostream &Hapy::SeqRule::print(ostream &os) const {
 	for (Store::const_iterator i = theRules.begin(); i != theRules.end(); ++i) {
 		if (i != theRules.begin())
@@ -216,6 +269,23 @@ bool Hapy::OrRule::isA(const string &s) const {
 	return s == "OrRule";
 }
 		
+bool Hapy::OrRule::terminal() const {
+	return theRules.size() == 0;
+}
+
+bool Hapy::OrRule::compile() {
+	for (Store::iterator i = theRules.begin(); i != theRules.end(); ++i) {
+		if (!i->compile())
+			return false;
+	}
+	return true;
+}
+
+void Hapy::OrRule::spreadTrim(const Rule &itrimmer) {
+	for (Store::iterator i = theRules.begin(); i != theRules.end(); ++i)
+		i->implicitTrim(itrimmer);
+}
+
 ostream &Hapy::OrRule::print(ostream &os) const {
 	for (Store::const_iterator i = theRules.begin(); i != theRules.end(); ++i) {
 		if (i != theRules.begin())
@@ -268,6 +338,19 @@ RuleAlg::StatusCode Hapy::DiffRule::checkAndAdvance(Buffer &buf, PreeNode &pree,
 			Should(false); // unknown code
 			return Result::scError;
 	}
+}
+
+bool Hapy::DiffRule::terminal() const {
+	return false;
+}
+
+bool Hapy::DiffRule::compile() {
+	return theExcept.compile() && theMatch.compile();
+}
+
+void Hapy::DiffRule::spreadTrim(const Rule &r) {
+	theExcept.implicitTrim(r);
+	theMatch.implicitTrim(r);
 }
 
 ostream &Hapy::DiffRule::print(ostream &os) const {
@@ -360,6 +443,18 @@ RuleAlg::StatusCode Hapy::StarRule::tryMore(Buffer &buf, PreeNode &pree) const {
 	return count > 1 ? Result::scMatch : Result::scMiss;
 }
 
+bool Hapy::StarRule::terminal() const {
+	return false;
+}
+
+bool Hapy::StarRule::compile() {
+	return theRule.compile();
+}
+
+void Hapy::StarRule::spreadTrim(const Rule &r) {
+	theRule.implicitTrim(r);
+}
+
 ostream &Hapy::StarRule::print(ostream &os) const {
 	PrintSubRule(os << "*", theRule);
 	return os;
@@ -409,6 +504,18 @@ RuleAlg::StatusCode Hapy::ProxyRule::check(Buffer &buf, PreeNode &pree, StatusCo
 	}
 }
 
+bool Hapy::ProxyRule::terminal() const {
+	return false;
+}
+
+bool Hapy::ProxyRule::compile() {
+	return theRule.compile();
+}
+
+void Hapy::ProxyRule::spreadTrim(const Rule &r) {
+	theRule.implicitTrim(r);
+}
+
 ostream &Hapy::ProxyRule::print(ostream &os) const {
 	PrintSubRule(os << "=", theRule);
 	return os;
@@ -424,13 +531,12 @@ RuleAlg::StatusCode Hapy::StringRule::firstMatch(Buffer &buf, PreeNode &pree) co
 }
 
 RuleAlg::StatusCode Hapy::StringRule::nextMatch(Buffer &buf, PreeNode &pree) const {
-	buf.backtrack();
+	buf.backtrack(theToken.size());
 	pree.image(string());
 	return Result::scMiss;
 }
 
 RuleAlg::StatusCode Hapy::StringRule::resume(Buffer &buf, PreeNode &pree) const {
-	buf.prep();
 	if (buf.contentSize() < theToken.size()) {
 		if (buf.atEnd())
 			return Result::scMiss;
@@ -443,15 +549,25 @@ RuleAlg::StatusCode Hapy::StringRule::resume(Buffer &buf, PreeNode &pree) const 
 	}
 	buf.advance(theToken.size());
 	pree.image(theToken);
-	Assert(pree.rawCount() == 0);
+	Should(pree.rawCount() == 0);
 	return Result::scMatch;
+}
+
+bool Hapy::StringRule::terminal() const {
+	return true;
+}
+
+bool Hapy::StringRule::compile() {
+	return true;
+}
+
+void Hapy::StringRule::spreadTrim(const Rule &) {
 }
 
 ostream &Hapy::StringRule::print(ostream &os) const {
 	os << '"' << theToken << '"';
 	return os;
 }
-
 
 // r = single character from a known set
 Hapy::CharSetRule::CharSetRule(const string &aSetName): theSetName(aSetName) {
@@ -462,14 +578,12 @@ RuleAlg::StatusCode Hapy::CharSetRule::firstMatch(Buffer &buf, PreeNode &pree) c
 }
 
 RuleAlg::StatusCode Hapy::CharSetRule::nextMatch(Buffer &buf, PreeNode &pree) const {
-	buf.backtrack();
+	buf.backtrack(1);
 	pree.image(string());
 	return Result::scMiss;
 }
 
 RuleAlg::StatusCode Hapy::CharSetRule::resume(Buffer &buf, PreeNode &pree) const {
-	buf.prep();
-
 	if (buf.contentSize() <= 0) {
 		return buf.atEnd() ? Result::scMiss : Result::scMore;
 	}
@@ -480,8 +594,19 @@ RuleAlg::StatusCode Hapy::CharSetRule::resume(Buffer &buf, PreeNode &pree) const
 	}
 
 	buf.advance(1);
-	pree.image(string(1, c));
+	pree.image(string(1, c)); // optimize with cached strings?
 	return Result::scMatch;
+}
+
+bool Hapy::CharSetRule::terminal() const {
+	return true;
+}
+
+bool Hapy::CharSetRule::compile() {
+	return true;
+}
+
+void Hapy::CharSetRule::spreadTrim(const Rule &) {
 }
 
 ostream &Hapy::CharSetRule::print(ostream &os) const {
@@ -525,24 +650,6 @@ bool Hapy::SpaceRule::matchingChar(char c) const {
 }
 
 
-// r = empty sequence
-RuleAlg::StatusCode Hapy::EmptyRule::firstMatch(Buffer &, PreeNode &) const {
-	return Result::scMatch;
-}
-	
-RuleAlg::StatusCode Hapy::EmptyRule::nextMatch(Buffer &, PreeNode &) const {
-	return Result::scMiss;
-}
-
-RuleAlg::StatusCode Hapy::EmptyRule::resume(Buffer &, PreeNode &) const {
-	Should(false);
-	return Result::scError;
-}
-
-ostream &Hapy::EmptyRule::print(ostream &os) const {
-	return os << "empty";
-}
-
 // r = end of input
 RuleAlg::StatusCode Hapy::EndRule::firstMatch(Buffer &buf, PreeNode &pree) const {
 	return resume(buf, pree);
@@ -558,6 +665,17 @@ RuleAlg::StatusCode Hapy::EndRule::resume(Buffer &buf, PreeNode &pree) const {
 	if (!buf.atEnd())
 		return Result::scMore;
 	return Result::scMatch;
+}
+
+bool Hapy::EndRule::terminal() const {
+	return true;
+}
+
+bool Hapy::EndRule::compile() {
+	return true;
+}
+
+void Hapy::EndRule::spreadTrim(const Rule &) {
 }
 
 ostream &Hapy::EndRule::print(ostream &os) const {
@@ -653,24 +771,20 @@ string shortStr(const string &str) {
 
 static
 RuleAlg::StatusCode ApplyRule(const Rule &r, Buffer &buf, PreeNode &pree, const char *defName) {
-	static int lastId = 0;
-	static int level = 0;
-	const int id = ++lastId;
-	++level;
-	const string pfx = string(2*level, ' ');
-	const char *name = r.name().size() ? r.name().c_str() : defName;
-#if CERR_DEBUG
-r.print(cerr << endl << id << '/' << level << '-' << pfx << "try rule: ") << " (" << name << "/" << defName << ")" << endl;
-cerr << id << '/' << level << '-' << pfx << "try buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
-cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rid << " pree: " << &pree << " children: " << pree.rawCount() << endl;
-#endif
+//	static int lastId = 0;
+//	static int level = 0;
+//	const int id = ++lastId;
+//	++level;
+//	const string pfx = string(2*level, ' ');
+//	const char *name = r.name().size() ? r.name().c_str() : defName;
+//r.print(cerr << endl << id << '/' << level << '-' << pfx << "try rule: ") << " (" << name << "/" << defName << ")" << endl;
+//cerr << id << '/' << level << '-' << pfx << "try buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
+//cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rawRid() << " pree: " << &pree << " children: " << pree.rawCount() << endl;
 	const RuleAlg::StatusCode res = r.firstMatch(buf, pree);
-#if CERR_DEBUG
-r.print(cerr << endl << id << '/' << level << '-' << pfx << '#' << res.sc() << " rule: ") << " (" << name << "/" << defName << ")" << endl;
-cerr << id << '/' << level << '-' << pfx << '#' << res.sc() << " buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
-cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rid << " pree: " << &pree << " children: " << pree.rawCount() << endl;
-#endif
-	--level;
+//r.print(cerr << endl << id << '/' << level << '-' << pfx << '#' << res.sc() << " rule: ") << " (" << name << "/" << defName << ")" << endl;
+//cerr << id << '/' << level << '-' << pfx << '#' << res.sc() << " buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
+//cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rawRid() << " pree: " << &pree << " children: " << pree.rawCount() << endl;
+//	--level;
 	return res;
 }
 
@@ -678,9 +792,10 @@ static
 void PrintSubRule(ostream &os, const Rule &r) {
 	if (r.name().size()) {
 		os << r.name();
-	} else {
+	} else
+	if (r.hasAlg()) {
 		os << '(';
-		r.print(os);
+		r.alg().print(os);
 		os << ')';
 	}
 }

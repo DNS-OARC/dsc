@@ -25,9 +25,6 @@ void Hapy::RuleAlg::cancel(Buffer &buf, PreeNode &pree) const {
 	} while (true);
 }
 
-void Hapy::RuleAlg::compile(const Rule *) {
-}
-
 bool Hapy::RuleAlg::isA(const string &) const {
 	return false;
 }

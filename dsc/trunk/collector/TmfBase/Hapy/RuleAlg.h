@@ -36,7 +36,11 @@ class RuleAlg {
 		// poor man's dynamic_cast; used to merge ">>" and "|" operands
 		virtual bool isA(const string &typeName) const;
 
-		virtual void compile(const Rule *parent);
+		// algorithm has no subrules
+		virtual bool terminal() const = 0;
+
+		virtual bool compile() = 0;
+		virtual void spreadTrim(const Rule &itrimmer) = 0;
 
 		virtual ostream &print(ostream &os) const;
 };

@@ -12,36 +12,47 @@ class Buffer;
 class PreeNode;
 
 class RuleAlg;
+class Rule;
 
-// a smart algorithm pointer to support recursive and yet-undefined rules
-class RuleAlgPtr {
+// rule information holder
+class RuleBase {
 	public:
-		RuleAlgPtr();
-		RuleAlgPtr(const RuleAlgPtr &p);
-		~RuleAlgPtr();
+		RuleBase();
 
-		void reset();
+	public:
+		RuleAlg *alg;
+		string name;
+		int id;
 
-		RuleAlgPtr &operator =(const RuleAlgPtr &p);
+		Rule *core;
+		Rule *itrimmer;
 
-		bool known() const;
-		RuleAlg &value();
-		const RuleAlg &value() const;
-		void value(RuleAlg *anAlg);
-		void repoint(RuleAlg *anAlg);
+		enum { cmDefault, cmDont, cmCommit } commitMode;
+		enum { tmDefault, tmVerbatim, tmImplicit, tmExplicit } trimMode;
+		bool isLeaf;
 
-	private:
-		struct Link {
-			mutable RuleAlg *alg;
-			Link *next;
-
-			Link();
-			const Link *find() const;
-		};
-		Link *theLink;
+		bool compiling;
 };
 
-// rule holder to support recursive rule definitions
+// a smart pointer to RuleBase
+class RuleBasePtr {
+	public:
+		RuleBasePtr();
+		RuleBasePtr(const RuleBasePtr &p);
+		~RuleBasePtr();
+
+		RuleBasePtr &operator =(const RuleBasePtr &p);
+
+		RuleBase *operator ->() { return thePtr; }
+		RuleBase &operator *() { return *thePtr; }
+		const RuleBase *operator ->() const { return thePtr; }
+		const RuleBase &operator *() const { return *thePtr; }
+
+	private:
+		RuleBase *thePtr;
+};
+
+// rule handler to support recursive, delayed, and proxied rule definitions
 class Rule {
 	public:
 		typedef Result::StatusCode StatusCode;
@@ -54,13 +65,19 @@ class Rule {
 		Rule(const char *s); // converts to StringRule
 		~Rule();
 
-		bool anonymous() const;
-		const string &name() const { return theName; }
-		int id() const { return theId; }
+		const string &name() const { return theBase->name; }
+		int id() const { return theBase->id; }
+
+		bool compile();
 
 		void committed(bool be);
+
+		bool terminal() const;
 		bool trimming() const;
 		void trim(const Rule &skipper);
+		void implicitTrim(const Rule &itrimmer);
+		void verbatim(bool be);
+		void leaf(bool be);
 
 		StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
@@ -69,24 +86,20 @@ class Rule {
 
 		ostream &print(ostream &os) const;
 
-		bool hasAlg() const { return theAlg.known(); }
+		bool hasAlg() const { return theBase->alg != 0; }
 		const RuleAlg &alg() const;
 		void alg(RuleAlg *anAlg);
 
-		// prevents name and id re-initialization
+		// prevents base (name, id, trimming, etc.) re-initialization
 		Rule &operator =(const Rule &r);
+		Rule &operator =(const RuleAlg &a);
 
 	protected:
-		void init(const Rule &r);
+		bool temporary() const;
+		bool compileTrim();
 
-	protected:
-		RuleAlgPtr theAlg;
-		string theName;
-		int theId;
-
-		Rule *theCore;
-
-		enum { cmDefault, cmDont, cmCommit } theCommitMode;
+	private:
+		RuleBasePtr theBase;
 };
 
 } // namespace

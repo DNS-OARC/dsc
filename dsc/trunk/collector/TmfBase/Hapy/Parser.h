@@ -33,7 +33,6 @@ class Parser {
 
 	private:
 		Rule theStartRule;
-		Rule theSkipRule;
 
 		Buffer theBuffer;
 		Result theResult;

@@ -15,6 +15,10 @@ class EmptyRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 };
@@ -30,8 +34,12 @@ class SeqRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
 
 		virtual bool isA(const string &s) const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -54,8 +62,12 @@ class OrRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
 
 		virtual bool isA(const string &s) const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -77,6 +89,10 @@ class DiffRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -96,6 +112,10 @@ class StarRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -116,6 +136,10 @@ class ProxyRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -135,6 +159,10 @@ class StringRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -150,6 +178,10 @@ class CharSetRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 
@@ -202,10 +234,15 @@ class EndRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
+
+		virtual bool compile();
+		virtual void spreadTrim(const Rule &itrimmer);
 
 		virtual ostream &print(ostream &os) const;
 };
 
+#if 0
 // aggregates images from all result nodes into one
 class AggrRule: public RuleAlg {
 	public:
@@ -214,6 +251,7 @@ class AggrRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
 
 		virtual ostream &print(ostream &os) const;
 
@@ -232,12 +270,15 @@ class CommitRule: public RuleAlg {
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode resume(Buffer &buf, PreeNode &pree) const;
+		virtual bool terminal() const;
 
 		virtual ostream &print(ostream &os) const;
 
 	private:
 		Rule theRule;
 };
+#endif
+
 
 } // namespace
 

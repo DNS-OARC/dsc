@@ -19,16 +19,21 @@ class PreeNode {
 	public:
 		PreeNode();
 
-
 		// these are usually used by interpreters; they skip trimmings
+		int rid() const;
 		Children::size_type count() const;
 		const_iterator begin() const;
 		const_iterator end() const;
 		const PreeNode &operator [](int idx) const;
+		const string &image() const;
+		void image(const string &anImage);
 
 		// these raw interfaces are usually used by parsers
+		int rawRid() const;
+		void rawRid(int aRid);
 		Children::size_type rawCount() const;
 		const PreeNode &backChild() const;
+		const PreeNode &rawChild(int idx) const;
 		PreeNode &backChild();
 		PreeNode &newChild();
 		void popChild();
@@ -36,26 +41,28 @@ class PreeNode {
 		size_type rawImageSize() const;
 		string rawImage() const;
 
-		const string &image() const;
-		void image(const string &anImage);
-
 		ostream &print(ostream &os) const;
 		ostream &print(ostream &os, const string &pfx) const;
+		ostream &rawPrint(ostream &os, const string &pfx) const;
 
 	public:
-		int rid;                   // rule ID
 		string::size_type idata;   // used by parsing rules to keep state
+		Children theChildren;
+
 		bool trimming;
+		bool leaf;
 
 	protected:
 		void aboutToModify();
 		int trimFactor(int n) const;
+		const PreeNode &coreNode() const;
+		const string &trimmedImage() const;
 
 	private:
+		int theRid;                // rule ID
 		mutable string theImage;   // assigned or original image
 		mutable enum { isKids, isOriginal, isCached } theImageState;
 
-		Children theChildren;
 };
 
 } // namespace

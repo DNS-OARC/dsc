@@ -21,21 +21,17 @@ class Buffer {
 
 		bool empty() const { return pos() >= theData.size(); }
 		size_type contentSize() const { return theData.size() - pos(); }
-		string content(const size_type off = 0) const { return theData.substr(pos() + off); }
+		string content(const size_type off = 0) const { return theData.size() ? theData.substr(pos() + off) : theData; }
 		char peek(const size_type off = 0) const { return theData[pos() + off]; }
 		bool atEnd() const { return isAtEnd; }
 
 		void append(const string &aData);
 		void atEnd(bool be) { isAtEnd = be; } // may still have data
 
-		void prep();
-		void pauseSkip();
-		void resumeSkip();
-
 		void advance(size_type delta);
-		void backtrack();
+		void backtrack(size_type delta);
 
-		void reset() { while (!theProgress.empty()) backtrack(); }
+		void reset();
 
 		string parsedContent() const { return theData.substr(0, pos()); }
 		size_type parsedSize() const { return pos(); }
@@ -45,16 +41,9 @@ class Buffer {
 		size_type pos() const;
 
 	protected:
-		typedef vector<size_type> Progress;
-
 		string theData;
-		Progress theProgress;
-		Rule theSkipper;
+		size_type thePos;
 		size_type theMaxProgress;
-		size_type theSkippedSize;
-		bool isPrepped;
-		bool isSkipPaused;
-
 		bool isAtEnd;
 };
 
