@@ -159,7 +159,8 @@ which {\tt dsc\/} outputs its XML files.  For example:
 \section{The Archiver}
 
 Getting everything installed on the Archiver is a little more complicated.
-Here are the directories you need to visit:
+In addition to the prerequisites, you need to run {\tt make install\/} in
+six subdirectories.
 
 \section{Prerequisites}
 
@@ -318,6 +319,17 @@ is invalid, the PUT request is denied.  This script reads environment
 variables to get X509 parameters.  The uploaded-data is stored in
 a directory based on the X509 Organizational Unit (server) and
 Common Name fields (node).
+
+\section{/usr/local/dsc symlinks}
+
+{\dsc} uses hard-coded directory names under {\em /usr/local/dsc\/}.
+Incoming XML files are stored under {\em /usr/local/dsc/data\/}.
+You can either create it as a directory, or make it a symbolic link
+to another parition with more storage.
+
+Scripts that create graphs and HTML pages use {\em /usr/local/dsc/htdocs\/}
+as {\dsc}'s document root.  Again, this can either be a real directory
+or a symbolic link to the correct location.
 
 \chapter{Configuring the {\dsc} Collector}
 
@@ -659,6 +671,10 @@ the {\tt dataset\/} line:
 	Count only DNS messages where the query name is within
 	the {\em root-servers.net\/} domain.
 \end{description}
+
+\noindent
+Note that multiple filters are ANDed together.  That is, they
+narrow the input stream, rather than broaden it.
 
 \subsection{Parameters}
 
