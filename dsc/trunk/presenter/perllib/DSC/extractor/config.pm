@@ -180,6 +180,7 @@ my $client_subnet2_keys =   [ qw(
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
 	data_writer => \&DSC::extractor::write_data3,
+	data_trimer => \&main::trim_accum2d,
       },
     },
   },
@@ -219,7 +220,8 @@ my $client_subnet2_keys =   [ qw(
     type1	=> 'Rcode',
     type2	=> 'ClientAddr',
     outputs	=> {
-      client_addr_vs_rcode => {
+      client_addr_vs_rcode_accum => {
+	data_munger => \&main::swap_dimensions,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
 	data_writer => \&DSC::extractor::write_data3,
