@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <string.h>
+#include <arpa/nameser.h>
+#ifndef T_A6
+#define T_A6 38
+#endif
 
 
 #include "dns_message.h"
@@ -64,10 +68,31 @@ popular_qtypes_filter(const void *vp)
 }
 
 static int
+aaaa_or_a6_filter(const void *vp)
+{
+    const dns_message *m = vp;
+    switch (m->qtype) {
+    case T_AAAA:
+    case T_A6:
+	return 1;
+    default:
+	return 0;
+    }
+    return 0;
+}
+
+static int
 idn_qname_filter(const void *vp)
 {
     const dns_message *m = vp;
     return (0 == strncmp(m->qname, "xn--", 4));
+}
+
+static int
+root_servers_net_filter(const void *vp)
+{
+    const dns_message *m = vp;
+    return (0 == strcmp(m->qname + 1, ".root-servers.net"));
 }
 
 static int
@@ -183,6 +208,14 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 	}
 	if (0 == strcmp(t, "idn-only")) {
 	    fl = md_array_filter_list_append(fl, idn_qname_filter);
+	    continue;
+	}
+	if (0 == strcmp(t, "aaaa-or-a6-only")) {
+	    fl = md_array_filter_list_append(fl, aaaa_or_a6_filter);
+	    continue;
+	}
+	if (0 == strcmp(t, "root-servers-net-only")) {
+	    fl = md_array_filter_list_append(fl, root_servers_net_filter);
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);

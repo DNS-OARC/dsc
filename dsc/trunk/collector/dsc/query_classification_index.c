@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <arpa/nameser.h>
+#ifndef T_A6
+#define T_A6 38
+#endif
 
 #include "dns_message.h"
 #include "md_array.h"
@@ -134,6 +137,7 @@ funny_qtype(const dns_message * m)
     case T_PX:
     case T_GPOS:
     case T_AAAA:
+    case T_A6:
     case T_LOC:
     case T_NXT:
     case T_EID:
