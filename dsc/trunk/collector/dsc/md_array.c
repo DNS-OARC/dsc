@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "md_array.h"
 #include "dns_message.h"
@@ -13,12 +14,13 @@ void md_array_grow_d2(md_array * a);
 
 
 md_array *
-md_array_create(FLTR * filter,
+md_array_create(const char *name, FLTR * filter,
     const char *type1, IDXR * idx1, HITR * itr1,
     const char *type2, IDXR * idx2, HITR * itr2)
 {
     int i1;
     md_array *a = calloc(1, sizeof(*a));
+    a->name = strdup(name);
     a->filter = filter;
     a->d1.type = type1;
     a->d1.indexer = idx1;

@@ -15,7 +15,9 @@ static md_array *direction_vs_ipproto;
 void
 ip_message_handle(const struct ip *ip)
 {
+#if 0
     md_array_count(direction_vs_ipproto, ip);
+#endif
 }
 
 void
@@ -30,5 +32,7 @@ ip_message_init(void)
 void
 ip_message_report(void)
 {
+#if 0
     md_array_print(direction_vs_ipproto, &xml_printer);
+#endif
 }

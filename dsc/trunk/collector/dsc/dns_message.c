@@ -43,30 +43,6 @@ replies_only_filter(const void *vp)
 void
 dns_message_init(void)
 {
-    assert(Arrays == NULL);
-
-#if 0
-    qtype = md_array_create(
-	queries_only_filter,
-	"All", null_indexer, null_iterator,
-	"Qtype", qtype_indexer, qtype_iterator);
-
-    rcode = md_array_create(
-	replies_only_filter,
-	"All", null_indexer, null_iterator,
-	"Rcode", rcode_indexer, rcode_iterator);
-
-    client_subnet = md_array_create(
-	queries_only_filter,
-	"All", null_indexer, null_iterator,
-	"ClientSubnet", cip4_net_indexer, cip4_net_iterator);
-
-    qtype_vs_qnamelen = md_array_create(
-	queries_only_filter,
-	"Qtype", qtype_indexer, qtype_iterator,
-	"QnameLen", qnamelen_indexer, qnamelen_iterator);
-#endif
-
 }
 
 
@@ -160,7 +136,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 	return 0;
 
     a = calloc(1, sizeof(*a));
-    a->theArray = md_array_create(filter,
+    a->theArray = md_array_create(name, filter,
 	fn, indexer1, iterator1,
 	sn, indexer2, iterator2);
     assert(a->theArray);
@@ -173,6 +149,8 @@ void
 dns_message_report(void)
 {
     md_array_list *a;
-    for (a = Arrays; a; a = a->next)
+    for (a = Arrays; a; a = a->next) {
+	syslog(LOG_DEBUG, "reporting %s", a->theArray->name);
 	md_array_print(a->theArray, &xml_printer);
+    }
 }
