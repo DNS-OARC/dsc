@@ -776,7 +776,7 @@ sub cache_image_path {
 sub check_image_cache {
 	my $prefix = shift;
 	my @sb = stat(cache_image_path($prefix));
-	return 0 unless (defined(@sb));
+	return 0 unless (@sb);
 	return 0 unless (time - $sb[9] < $CacheImageTTL);
 	return 1;
 }
