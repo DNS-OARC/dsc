@@ -9,6 +9,7 @@ OBJS=\
 	dns_message.o \
 	daemon.o \
 	md_array.o \
+	null_index.o \
 	qtype_index.o \
 	qclass_index.o \
 	tld_index.o \

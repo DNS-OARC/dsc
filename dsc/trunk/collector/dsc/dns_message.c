@@ -5,15 +5,19 @@
 
 #include "dns_message.h"
 #include "md_array.h"
+#include "null_index.h"
 #include "qtype_index.h"
 #include "qclass_index.h"
 #include "tld_index.h"
 #include "rcode_index.h"
+#include "client_ipv4_addr_index.h"
+#include "client_ipv4_net_index.h"
 
 extern md_array_printer xml_printer;
 static md_array *qclass_vs_qtype;
 static md_array *qtype_vs_tld;
 static md_array *rcode_vs_tld;
+static md_array *client_ip;
 
 void
 dns_message_handle(dns_message * m)
@@ -21,6 +25,7 @@ dns_message_handle(dns_message * m)
     md_array_count(qclass_vs_qtype, m);
     md_array_count(qtype_vs_tld, m);
     md_array_count(rcode_vs_tld, m);
+    md_array_count(client_ip, m);
 }
 
 static int
@@ -53,6 +58,11 @@ dns_message_init(void)
 	"Rcode", rcode_indexer, rcode_iterator,
 	"TLD", tld_indexer, tld_iterator);
 
+    client_ip = md_array_create(
+	queries_only_filter,
+	"ClientIP", cip4_indexer, cip4_iterator,
+	"All", null_indexer, null_iterator);
+
 }
 
 void
@@ -61,4 +71,5 @@ dns_message_report(void)
     md_array_print(qclass_vs_qtype, &xml_printer, "qclass_vs_qtype");
     md_array_print(qtype_vs_tld, &xml_printer, "qtype_vs_tld");
     md_array_print(rcode_vs_tld, &xml_printer, "rcode_vs_tld");
+    md_array_print(client_ip, &xml_printer, "clientIP");
 }

@@ -40,8 +40,9 @@ md_array_count(md_array * a, dns_message * m)
     int i1;
     int i2;
 
-    if (0 == a->filter(m))
-	return -1;
+    if (a->filter)
+	if (0 == a->filter(m))
+	    return -1;
 
     i1 = a->d1.indexer(m);
     i2 = a->d2.indexer(m);
@@ -134,7 +135,7 @@ md_array_print(md_array * a, md_array_printer * pr, const char *name)
 
 
 /* [1]
- * Its okay (not a bug) for the indexer's index might be larger
+ * Its okay (not a bug) for the indexer's index to be larger
  * than the array size.  The indexer may have grown for use in a
  * different array, but the filter prevented it from growing this
  * particular array so far.
