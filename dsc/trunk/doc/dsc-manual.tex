@@ -22,15 +22,28 @@ a DNS server.
 \section{Components}
 
 {\dsc} consists of the following components:
+\begin{itemize}
+\item A data collector
+\item A secure channel for transferring data from the collector
+	to the archiver
+\item A set of utilities/scripts that parse XML files from the collector
+\item A set of utilities/scripts that generate graphs and HTML pages
+\end{itemize}
 
 \subsection{The Collector}
 
-The collector is a binary program, named {\tt dsc\/}, which snoops on 
-DNS messages.  It is written in C and uses {\em libpcap\/} for packet capture.
+The collector is a binary program, named {\tt dsc\/}, which snoops
+on DNS messages.  It is written in C and uses {\em libpcap\/} for
+packet capture.
 
-{\tt dsc\/} uses a relatively simple configuration file {\em dsc.conf\/} to define certain
-parameters and options.  The configuration file also determines the {\em datasets\/}
-that {\tt dsc\/} collects.
+{\tt dsc\/} uses a relatively simple configuration file {\em
+dsc.conf\/} to define certain parameters and options.  The configuration
+file also determines the {\em datasets\/} that {\tt dsc\/} collects.
+
+A Datasets is a 2-D array of counters of IP/DNS message properties.
+You can define each dimension of the arrray independently.  For
+example you might define a dataset categorized by DNS query type
+along one dimension and TLD along the other.
 
 {\tt dsc\/} dumps the datasets to XML files every 60 seconds.
 
@@ -84,16 +97,20 @@ Figure~\ref{fig-architecture} shows the {\dsc} architecture.
 
 \begin{figure}
 \centerline{\psfig{figure=dsc-arch.eps,width=3.5in}}
-\label{fig-architecture}
-\caption{The {\dsc} architecture.}
+\caption{\label{fig-architecture}The {\dsc} architecture.}
 \end{figure}
 
 Note that {\dsc} supports the concept of {\em servers\/} and {\em
 nodes\/}.  A server is generally a logical service, which may
-actually consist of multiple nodes.
+actually consist of multiple nodes.  Figure~\ref{fig-architecture}
+shows six collectors (the circles) and two servers (the rounded
+rectangles).
 
-The {\tt dsc\/} collector program runs on or near the remote nodes.
-Its XML output is transferred to the archive via HTTPS PUTs.
+The {\tt dsc\/} collector program runs on or near\footnote{by
+``near'' we mean that packets may be sniffed remotely via switch
+port mirroring, or a SPAN port.} the remote nodes.  Its XML output
+is transferred to the archive via HTTPS PUTs or something simpler
+if you prefer).
 
 The archiver runs the HTTPS server, the XML extractors, and the
 Ploticus graphers.
@@ -503,8 +520,7 @@ dataset the_dataset dns Foo:foo Bar:bar queries-only;
   </data>
 </array>
 \end{verbatim}\end{small}
-\label{fig-sample-xml}
-\caption{Sample XML output}
+\caption{\label{fig-sample-xml}Sample XML output}
 \end{figure}
 
 In theory you are free to choose any label that you like, however,
@@ -515,7 +531,6 @@ currently-defined indexers for DNS messages.  Similarly,
 Table~\ref{tbl-ip-indexers} shows the indexers for IP packets.
 
 \begin{table}
-\label{tbl-dns-indexers}
 \begin{center}
 \begin{tabular}{|lll|}
 \hline
@@ -539,12 +554,11 @@ rd\_bit & RD & Check if Recursion Desired bit set \\
 tld & TLD & TLD of the query name \\
 \hline
 \end{tabular}
-\caption{DNS message indexers}
+\caption{\label{tbl-dns-indexers}DNS message indexers}
 \end{center}
 \end{table}
 
 \begin{table}
-\label{tbl-ip-indexers}
 \begin{center}
 \begin{tabular}{|lll|}
 \hline
@@ -554,7 +568,7 @@ ip\_direction & Direction & one of sent, recv, or other \\
 ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
 \hline
 \end{tabular}
-\caption{IP packet indexers}
+\caption{\label{tbl-ip-indexers}IP packet indexers}
 \end{center}
 \end{table}
 
@@ -763,17 +777,9 @@ configuration to do.  You do need to configure the HTTP server, however.
 
 \section{Apache Configuration}
 
-You will need to configure Apache (or another HTTP server) to call
-{\em put-file.pl\/} for PUT requests.  For Apache, add these lines
-to {\em httpd.conf\/}:
-
-\begin{verbatim}
-SSLOptions +CompatEnvVars
-Script PUT /cgi-bin/put-file.pl
-\end{verbatim}
-
 \noindent
-You also need to configure Apache for SSL.  Here is what our configuration looks like:
+You need to configure Apache for SSL.  Here is what our configuration
+looks like:
 
 \begin{verbatim}
 SSLRandomSeed startup builtin
@@ -798,6 +804,14 @@ SSLOptions +CompatEnvVars
 Script PUT /cgi-bin/put-file.pl
 </VirtualHost>
 \end{verbatim}
+
+\noindent
+Note the last line of the configuration specifies the CGI script
+that accepts PUT requests.  The <emphasis>SSLOptions</emphasis>
+line is necessary so that the CGI script receives certain HTTP
+headers as environment variables.  Those headers/variables convey
+the X509 information to the script so it knows where to store
+received XML files.
 
 \section{Generating X509 Certificates}
 
@@ -835,21 +849,179 @@ that uses this key, it will store the data in the {\em x-root/bldr\/} directory.
 
 \chapter{Data Storage}
 
-[Describe the format for archived data]
+\section{XML Structure}
+
+A dataset XML file has the following structure:
+
+\begin{verbatim}
+<array name="dataset-name" dimensions="2" start_time="unix-seconds"
+        stop_time="unix-seconds">
+  <dimension number="1" type="Label1"/>
+  <dimension number="2" type="Label2"/>
+  <data>
+    <Label1 val="D1-V1">
+      <Label2 val="D2-V1" count="N1"/>
+      <Label2 val="D2-V2" count="N2"/>
+      <Label2 val="D2-V3" count="N3"/>
+    </Label1>
+    <Label1 val="D1-V2">
+      <Label2 val="D2-V1" count="N1"/>
+      <Label2 val="D2-V2" count="N2"/>
+      <Label2 val="D2-V3" count="N3"/>
+    </Label1>
+  </data>
+</array>
+\end{verbatim}
+
+\noindent
+{\em dataset-name\/},
+{\em Label1\/}, and
+{\em Label2\/} come from the dataset definition in {\em dsc.conf\/}.
+
+\noindent
+The {\em start\_time\/} and {\em stop\_time\/} attributes
+are given in Unix seconds.  They are normally 60-seconds apart.
+
+\noindent
+{\em D1-V1\/}, {\em D1-V2\/}, etc are values for the
+first dimension indexer.  For some indexers these values are
+numeric, for others they are strings.  If the value contains
+certain non-printable characters, the string is base64-encoded
+and the optional {\em base64\/} attribute is set to 1.
+
+\noindent
+Similarly, {\em D1-V1\/}, {\em D1-V2\/}, {\em D1-V2\/} are
+values for the second dimension indexer.
+
+\noindent
+The {\em count\/} values are always integers.
+
+\noindent
+Here is a possibly-valid DTD for the dataset XML format.
+Note, however, that the <emphasis>LABEL1</emphasis>
+and <emphasis>LABEL2</emphasis> strings are different
+for each dataaset:
+
+\begin{verbatim}
+<!DOCTYPE ARRAY [  
+
+<!ELEMENT ARRAY (DIMENSION+, DATA))>
+<!ELEMENT DIMENSION>
+<!ELEMENT DATA (LABEL1+)>
+<!ELEMENT LABEL1 (LABEL2+)>
+
+<!ATTLIST ARRAY NAME CDATA #REQUIRED>
+<!ATTLIST ARRAY DIMENSIONS CDATA #REQUIRED>
+<!ATTLIST ARRAY START_TIME CDATA #REQUIRED>
+<!ATTLIST ARRAY STOP_TIME CDATA #REQUIRED>
+<!ATTLIST DIMENSION NUMBER CDATA #REQUIRED>
+<!ATTLIST DIMENSION TYPE CDATA #REQUIRED>
+<!ATTLIST LABEL1 VAL CDATA #REQUIRED>
+<!ATTLIST LABEL2 VAL CDATA #REQUIRED>
+<!ATTLIST LABEL2 COUNT CDATA #REQUIRED>
+
+]> 
+\end{verbatim}
 
 \chapter{Bugs}
 
 \begin{itemize}
 
 \item
-	Seems too confusing to have an opaque name for indexers in dsc.conf dataset
-	line.  The names are pre-determined anyway since they must match what the
-	XML extractors look for.
+	Seems too confusing to have an opaque name for indexers in
+	dsc.conf dataset line.  The names are pre-determined anyway
+	since they must match what the XML extractors look for.
 
 \item
-	``OARC::'' is perhaps a poor name for the Perl module directory.  DSC:: might
-	be better.
+	``OARC::'' is perhaps a poor name for the Perl module
+	directory.  DSC:: might be better.
 
 \end{itemize}
+
+\section{Archived Data Format}
+
+{\dsc} actually uses four different file formats for archived
+datasets.  These are all text-based and designed to be quickly
+read from, and written to, by Perl scripts.  
+
+\subsection{Format 1}
+
+\noindent
+\begin{tt}time $k1$ $N_{k1}$ $k2$ $N_{k2}$ $k3$ $N_{k3}$ ...
+\end{tt}
+
+\vspace{1ex}\noindent
+This is a one-dimensional time-series format.\footnote{Which means
+it can only be used for datasets where one of the indexers is set
+to the Null indexer.}  The first column is a timestamp (unix seconds).
+The remaining space-separated fields are key-value pairs.  For
+example:
+
+\begin{footnotesize}\begin{verbatim}
+1093219980 root-servers.net 122 rfc1918-ptr 112 a-for-a 926 funny-qclass 16
+1093220040 root-servers.net 121 rfc1918-ptr 104 a-for-a 905 funny-qclass 15
+1093220100 root-servers.net 137 rfc1918-ptr 116 a-for-a 871 funny-qclass 12
+\end{verbatim}\end{footnotesize}
+
+\subsection{Format 2}
+
+\noindent
+\begin{tt}time $j1$ $k1$:$N_{j1,k1}$:$k2$:$N_{j1,k2}$:... $j2$ $k1$:$N_{j2,k1}$:$k2$:$N_{j2,k2}$:... ...
+\end{tt}
+
+\vspace{1ex}\noindent
+This is a two-dimensional time-series format.  In the above,
+$j$ represents the first dimension indexer and $k$ represents
+the second.  Key-value pairs for the second dimension are
+separated by colons, rather than space.  For example:
+
+\begin{footnotesize}\begin{verbatim}
+1093220160 recv icmp:2397:udp:136712:tcp:428 sent icmp:819:udp:119191:tcp:323
+1093220220 recv icmp:2229:udp:124708:tcp:495 sent icmp:716:udp:107652:tcp:350
+1093220280 recv udp:138212:icmp:2342:tcp:499 sent udp:120788:icmp:819:tcp:364
+1093220340 recv icmp:2285:udp:137107:tcp:468 sent icmp:733:udp:118522:tcp:341
+\end{verbatim}\end{footnotesize}
+
+\subsection{Format 3}
+
+\noindent
+\begin{tt}$k$ $N_{k}$
+\end{tt}
+
+\vspace{1ex}\noindent
+This format is used for one-dimensional datasets where the key space
+is (potentially) very large.  That is, putting all the key-value pairs
+on a single line would result in a very long line in the datafile.
+Furthermore, for these larger datasets, it is prohibitive to
+store the data as a time series.  Instead the counters are incremented
+over time.  For example:
+
+\begin{verbatim}
+10.0.160.0 3024
+10.0.20.0 92
+10.0.244.0 5934
+\end{verbatim}
+
+\subsection{Format 4}
+
+\noindent
+\begin{tt}$j$ $k$ $N_{j,k}$
+\end{tt}
+
+\vspace{1ex}\noindent
+This format is used for two-dimensional datasets where one or both
+key spaces are very large.  Again, counters are incremented over
+time, rather than storing the data as a time series.
+For example:
+
+\begin{verbatim}
+10.0.0.0 non-auth-tld 105
+10.0.0.0 ok 37383
+10.0.0.0 rfc1918-ptr 5941
+10.0.0.0 root-servers.net 1872
+10.0.1.0 a-for-a 6
+10.0.1.0 non-auth-tld 363
+10.0.1.0 ok 144
+\end{verbatim}
 
 \end{document}

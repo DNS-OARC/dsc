@@ -17,3 +17,11 @@ $(DOC).dvi: $(DOC).tex $(FIGS)
 
 .fig.eps:
 	fig2dev -L eps $< > $@
+
+clean:
+	rm -f $(FIGS)
+	rm -f $(DOC).aux
+	rm -f $(DOC).dvi
+	rm -f $(DOC).log
+	rm -f $(DOC).pdf
+	rm -f $(DOC).ps
