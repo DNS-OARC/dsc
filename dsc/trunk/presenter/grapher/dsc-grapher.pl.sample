@@ -240,11 +240,16 @@ sub accum1d_data_to_tmpfile {
 	my $data = shift;
 	my $tf = shift;
 	my $start = time;
-	my $accum_win = time % 86400;	# time since midnight;
+	my $accum_win;
 	my $n;
 	delete $data->{$SKIPPED_KEY};
         delete $data->{$SKIPPED_SUM_KEY};
 	$n = 0;
+	if ($PLOT->{yaxes}{$ARGS{yaxis}}{divideflag}) {
+		$accum_win = time % 86400;	# time since midnight;
+	} else {
+		$accum_win = 1;
+	}
 	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
 		print $tf join(' ',
 			$k1,
@@ -266,8 +271,13 @@ sub accum2d_data_to_tmpfile {
 	my $tf = shift;
 	my $start = time;
 	my %accum_sum;
-	my $accum_win = time % 86400;	# time since midnight;
+	my $accum_win;
 	my $n;
+	if ($PLOT->{yaxes}{$ARGS{yaxis}}{divideflag}) {
+		$accum_win = time % 86400;	# time since midnight;
+	} else {
+		$accum_win = 1;
+	}
 	delete $data->{$SKIPPED_KEY};
         delete $data->{$SKIPPED_SUM_KEY};
 	foreach my $k1 (keys %$data) {
@@ -561,6 +571,15 @@ sub convert_to_percentage {
 			foreach my $k2 (keys %{$data->{$k1}}) {
 				$newdata{$k1}{$k2} = $data->{$k1}{$k2} / $S;
 			}
+		}
+	} elsif ('accum1d' eq $type) {
+		$S = 0;
+		foreach my $k1 (keys %$data) {
+			$S += $data->{$k1};
+		}
+		$S /= 100;
+		foreach my $k1 (keys %$data) {
+			$newdata{$k1} = $data->{$k1} / $S;
 		}
 	} else {
 		die "dont know how to percentify plot type $type";
