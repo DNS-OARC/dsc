@@ -67,8 +67,8 @@ sub extract {
 		# trim
 		#
 		if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
-			print STDERR "trimming db\n";
-			&{$O->{data_trimer}}(\%db);
+			my $ntrim = &{$O->{data_trimer}}(\%db);
+			print STDERR "trimmed $ntrim records from $xmlfile\n" if ($ntrim);
 		}
 
 		# write out the new data file
@@ -217,6 +217,5 @@ sub trim_accum2d {
 			$ndel++;
 		}
 	}
-	print STDERR "trimmed $ndel records\n";
 	$ndel;
 }
