@@ -4,6 +4,7 @@
 use Data::Dumper;
 use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
+use File::Temp qw(tempfile);
 
 my $putlog = "/httpd/logs/put-file.log";
 my $TOPDIR = "/data/dns-oarc";
@@ -11,7 +12,7 @@ my $SERVER = undef;
 my $NODE = undef;
 
 my $filename = '-';
-my $tfilename = '-';
+my $tempname = '-';
 my $clength = $ENV{CONTENT_LENGTH} || '-';
 my $method = $ENV{REQUEST_METHOD} || '-';
 my $remaddr = $ENV{REMOTE_ADDR} || '-';
@@ -31,14 +32,14 @@ $SERVER =~ tr/A-Z/a-z/;
 $NODE =~ tr/A-Z/a-z/;
 mkdir("$TOPDIR/$SERVER", 0700) unless (-d "$TOPDIR/$SERVER");
 mkdir("$TOPDIR/$SERVER/$NODE", 0700) unless (-d "$TOPDIR/$SERVER/$NODE");
+chdir "$TOPDIR/$SERVER/$NODE" || die;
 
 # Check we got a destination filename
 my $path = $ENV{PATH_TRANSLATED};
 &reply(500, "No PATH_TRANSLATED") if (!$path);
 my @F = split('/', $path);
-my $last = pop @F;
-$filename = join("/", $TOPDIR, $SERVER, $NODE, $last);
-$tfilename = join("/", $TOPDIR, $SERVER, $NODE, ".$last.$$");
+$filename = pop @F;
+$tempname = new File::Temp(TEMPLATE=>"put.XXXXXXXXXXXXXXXX", UNLINK=>0);
 
 &reply(409, "File Exists") if (-f $filename);
 
@@ -58,14 +59,22 @@ while ($toread > 0)
 # exists, whether it is a special file, directory or link. Does not
 # set the access permissions. Does not handle subdirectories that
 # need creating.
-&reply(500, "Cannot write to $tfilename") unless open(OUT, "> $tfilename");
+&reply(500, "Cannot write to $tempname") unless open(OUT, "> $tempname");
 print OUT $content;
 close(OUT);
-&reply(500, "$!") unless rename($tfilename, $filename);
 
-# Everything seemed to work, reply with 204 (or 200). Should reply with 201
-# if content was created, not updated.
-&reply(201);
+if ($filename =~ /\.xml$/) {
+	&reply(500, "$filename Exists") if (-f $filename);
+	&reply(500, "$!") unless rename($tempname, $filename);
+	&reply(201, "Stored $filename\n");
+} elsif ($filename =~ /\.tar$/) {
+	my $tar_output = '';
+	open(CMD, "tar -xzvf $tempname|") || die;
+	$tar_output .= "Stored $_" while (<CMD>);
+	close(CMD);
+	unlink($tempname);
+	&reply(201, $tar_output);
+}
 
 exit(0);
 
@@ -79,19 +88,20 @@ sub reply
     my $message = shift;
     my $logline;
 
+    $logline = "$remaddr - - $timestamp \"$method $TOPDIR/$SERVER/$NODE/$filename\" $status $clength";
+
     print "Status: $status\n";
     print "Content-Type: text/plain\n\n";
 
     if ($status >= 200 && $status < 300) {
-	print "Stored $filename\n";
+	print $message;
     } else {
         print "Error Transferring File\n";
 	print "An error occurred publishing this file: $message\n";
+	$logline .= " ($message)" if defined($message);
 	#print Dumper(\%ENV);
     }
     
-    $logline = "$remaddr - - $timestamp \"$method $filename\" $status $clength";
-    $logline .= " ($message)" if defined($message);
     &log($logline);
     exit(0);
 }
