@@ -13,7 +13,12 @@ null_indexer(dns_message * m)
 int
 null_iterator(char **label)
 {
-    if (label)
-        *label = "ALL";
-    return 0;
+    static int state = 0;
+    if (NULL == label) {
+	state = 0;
+	return 0;
+    }
+    *label = "ALL";
+    state++;
+    return state == 1 ? 0 : -1;
 }
