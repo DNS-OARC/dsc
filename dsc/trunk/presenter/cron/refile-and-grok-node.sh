@@ -22,11 +22,10 @@ fi
 trap "rm -f $PIDF" EXIT
 echo $$ > $PIDF
 
- exec >$PROG.stdout
- exec 2>$PROG.stderr
-#set -x
+exec >$PROG.stdout
+exec 2>$PROG.stderr
+#et -x
 date
-
 
 	xmls=`ls | grep "\.xml$" | head -100 | sort -t. +1` || true
 	if test -n "$xmls" ; then
