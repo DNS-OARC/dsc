@@ -20,6 +20,8 @@ $(DOC).dvi: $(DOC).tex $(FIGS)
 .fig.eps:
 	fig2dev -L eps $< > $@
 
+all: $(DOC).ps $(DOC).pdf
+
 clean-junk:
 	rm -f $(FIGS)
 	rm -f $(DOC).aux

@@ -5,6 +5,11 @@
 
 \def\dsc{{\sc dsc}}
 
+\DefineVerbatimEnvironment%
+  {MyVerbatim}{Verbatim}
+  {frame=lines,framerule=0.8mm,fontsize=\small}
+
+
 \begin{document}
 
 \begin{titlepage}
@@ -192,10 +197,10 @@ All of the extractor and grapher tools are Perl or {\tt /bin/sh}
 scripts, so there is no need to compile anything.  Still,
 you should run {\tt make} first:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > cd presenter
 > make
-\end{verbatim}
+\end{MyVerbatim}
 
 If you see errors missing Perl prerequisites, you may want
 to correct those before continuing.
@@ -204,10 +209,10 @@ The next step is to install the files.  Recall that
 \path|/usr/local/dsc| is the hard-coded installation prefix.
 You must create it manually:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > mkdir /usr/local/dsc
 > make install
-\end{verbatim}
+\end{MyVerbatim}
 
 Note that {\dsc}'s Perl modules are installed in the 
 ``site\_perl'' directory.  You'll probably need {\em root\/}
@@ -222,11 +227,11 @@ these scripts.
 
 Both of these scripts have been designed to be mod\_perl-friendly.
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > cd /usr/local/apache/cgi-bin
 > ln -s /usr/local/dsc/libexec/put-file.pl
 > ln -s /usr/local/dsc/libexec/dsc-grapher.pl
-\end{verbatim}
+\end{MyVerbatim}
 
 If you cannot create symbolic links, you'll need to manually
 copy the scripts to the appropriate directory.
@@ -241,75 +246,52 @@ parameters.  If you want \path|put-file.pl| to automatically create
 the subdirectories, the \path|data| directory must be writable by
 the process owner:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > mkdir /usr/local/dsc/data/
 > chgrp nobody /usr/local/dsc/data/
 > chmod 2775 /usr/local/dsc/data/
-\end{verbatim}
+\end{MyVerbatim}
 
 Alternatively, you can create {\em server\/} and {\em node\/} directories
 in advance and make those writable.
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > mkdir /usr/local/dsc/data/
 > mkdir /usr/local/dsc/data/x-root/
 > mkdir /usr/lodal/dsc/data/x-root/blah/
 > chgrp nobody /usr/local/dsc/data/x-root/blah/
 > chmod 2775 /usr/local/dsc/data/x-root/blah/
-\end{verbatim}
+\end{MyVerbatim}
 
 Make sure that \path|/usr/local/dsc/data/| is on a large partition with
 plenty of free space.  You can make it a symbolic link to another
 parition if necessary.
 
 
-\section{\tt cron}
+\section{\tt Cron Jobs}
 
-The {\em cron\/} directory contains a handful of useful scripts that you can
-call from {\tt cron\/}.  When you type {\tt make install\/} these are copied
-to {\em /usr/local/dsc/libexec\/}.
+{\dsc} requires two cron jobs on the Presenter.  The first
+is the one that processes incoming XML files.  It is called
+\path|refile-and-grok.sh|.  We recommend running it every
+minute.  You also may want to run the jobs at a lowerer priority
+with {\tt nice\/}.  Here is the cron job that we use:
 
-The {\em refile-and-grok.sh\/} script should be called every 1--5 minutes to process
-incoming XML files:
+\begin{MyVerbatim}
+* * * * * /usr/bin/nice -10 /usr/local/dsc/libexec/refile-and-grok.sh
+\end{MyVerbatim}
 
-\begin{verbatim}
-* * * * * /usr/local/dsc/libexec/refile-and-grok.sh
-\end{verbatim}
+The other useful cron script is \path|remove-xmls.pl|.  It removes
+XML files older than a specified number of days.  Since most of the
+information in the XML files is archived into easier-to-parse 
+data files, you can remove the XML files after a few days.  This is
+the job that we use:
 
-That script looks for subdirectories in {\em /usr/local/dsc/data\/}
-and then calls {\em refile-and-grok-node.sh\/} for each server,node tuple.
-This separate script helps improve performance by processing all nodes
-in parallel.  
-
-The {\em refile-and-grok-node.sh\/} script looks for new XML files and passes
-them to the appropriate XML extractor.  
-
-The {\em mk-plots.sh\/} script may be called every 5--30 minutes to generate
-the graphs.  It simply iterates through directories in
-{\em /usr/local/dsc/htdocs\/} and calls the Makefiles for each server and node.
-
-The {\em remove-xmls.pl\/} script may be executed daily to 
-remove old XML files.  For example, if you want to keep only 10 days
-worth of XML files, use this cron entry:
-
-\begin{verbatim}
-0 0 * * * /usr/local/dsc/libexec/remove-xmls.pl 10
-\end{verbatim}
-
-
-
-\section{/usr/local/dsc symlinks}
-
-{\dsc} uses hard-coded directory names under {\em /usr/local/dsc\/}.
-Incoming XML files are stored under {\em /usr/local/dsc/data\/}.
-You can either create it as a directory, or make it a symbolic link
-to another parition with more storage.
-
-Scripts that create graphs and HTML pages use {\em /usr/local/dsc/htdocs\/}
-as {\dsc}'s document root.  Again, this can either be a real directory
-or a symbolic link to the correct location.
+\begin{MyVerbatim}
+@midnight find /usr/local/dsc/data/ | /usr/local/dsc/libexec/remove-xmls.pl 7
+\end{MyVerbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \chapter{Configuring the {\dsc} Presenter}
 
 After installation of the {\dsc} files, there is not much additional
@@ -321,7 +303,7 @@ configuration to do.  You do need to configure the HTTP server, however.
 You need to configure Apache for SSL.  Here is what our configuration
 looks like:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 SSLRandomSeed startup builtin
 SSLRandomSeed startup file:/dev/random
 SSLRandomSeed startup file:/dev/urandom 1024
@@ -343,7 +325,7 @@ SSLVerifyClient require
 SSLOptions +CompatEnvVars
 Script PUT /cgi-bin/put-file.pl
 </VirtualHost>
-\end{verbatim}
+\end{MyVerbatim}
 
 \noindent
 Note the last line of the configuration specifies the CGI script
@@ -372,7 +354,7 @@ we use X.509 fields to store the collector's server and node name.
 The Organizational Unit Name (OU) becomes the server name and
 the Common Name (CN) becomes the node name:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 % openssl req -newkey rsa:1024 -keyout new.key -out new.req
 ...
 Country Name (2 letter code) [AU]:US
@@ -382,7 +364,7 @@ Organization Name (eg, company) [Internet Widgits Pty Ltd]:TMF
 Organizational Unit Name (eg, section) []:x-root
 Common Name (eg, YOUR name) []:BLDR
 Email Address []:wessels@measurement-factory.com
-\end{verbatim}
+\end{MyVerbatim}
 
 When the {\em put-file.pl\/} script receives an XML file over an SSL session
 that uses this key, it will store the data in the {\em x-root/bldr\/} directory.
@@ -397,7 +379,7 @@ script for creating the CA, and Figure~\ref{fig-openssl-conf} is
 a sample \path|openssl.conf| file.
 
 \begin{figure}
-\begin{verbatim}
+\begin{MyVerbatim}
 #!/bin/sh
 set -e
 
@@ -418,13 +400,13 @@ if test ! -f $CA_CRT ; then
         env OPENSSL_CONF=$X_OPENSSL_CONF \
         openssl req -x509 -days 3000 -newkey rsa -out $CA_CRT
 fi
-\end{verbatim}
+\end{MyVerbatim}
 \caption{\label{fig-create-ca-cert-sh}A script to create a CA}
 \end{figure}
 
 
 \begin{figure}
-\begin{verbatim}
+\begin{MyVerbatim}
 [ ca ]
 default_ca              = foo_ca
 
@@ -469,7 +451,7 @@ organizationName        = FOO
 
 [ foo_ca_extensions ]
 basicConstraints        = CA:true
-\end{verbatim}
+\end{MyVerbatim}
 \caption{\label{fig-openssl-conf}A sample openssl.conf file}
 \end{figure}
 
@@ -477,7 +459,7 @@ basicConstraints        = CA:true
 \subsection{Client Certificates}
 
 \begin{figure}
-\begin{verbatim}
+\begin{MyVerbatim}
 #!/bin/sh
 set -e
 
@@ -519,7 +501,7 @@ openssl rsa -in client/$OU/$CN/client.key   > client/$OU/$CN/client.pem
 openssl x509 -in client/$OU/$CN/client.crt >> client/$OU/$CN/client.pem
 
 exit 0
-\end{verbatim}
+\end{MyVerbatim}
 \caption{\label{fig-create-client-cert-sh}A script to create client certificates}
 \end{figure}
 
@@ -530,7 +512,7 @@ After running the {\tt create-client-cert.sh} script,
 you should find a number of files under the
 \path|client| directory.   For example:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > ls -R client/
 x-root
 
@@ -539,7 +521,7 @@ bldr
 
 client/f-root/bldr:
 client.crt      client.csr      client.key      client.pem
-\end{verbatim}
+\end{MyVerbatim}
 
 The \path|client.pem| files should be copied to their respective
 collector machines.
@@ -572,17 +554,17 @@ scp\/} or {\tt rsync\/} if you prefer.
 
 You can compile {\tt dsc\/} from the {\tt collector\/} directory:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 % cd collector
 % make
-\end{verbatim}
+\end{MyVerbatim}
 
 Assuming there are no errors or problems during compliation, install
 the {\tt dsc\/} binary and other scripts with:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 % make install
-\end{verbatim}
+\end{MyVerbatim}
 
 This installs three files:
 \path|/usr/local/dsc/bin/dsc|,
@@ -609,9 +591,9 @@ In general we want to be able to upload XML files to multiple
 presenters.  This is the reason behind the {\tt upload-prep.sh}
 script.  This script runs every 60 seconds from cron:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 * * * * * /usr/local/dsc/libexec/upload-prep.sh
-\end{verbatim}
+\end{MyVerbatim}
 
 {\tt upload-prep.sh} looks for \path|dsc.conf| files in
 \path|/usr/local/dsc/etc| by default.  For each config file
@@ -625,14 +607,14 @@ in advance.   For example, if you are collecting stats on
 your nameserver named {\em ns0\/} the directory structure might
 look like:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > set prefix=/usr/local/dsc
 > mkdir $prefix/run
 > mkdir $prefix/run/ns0
 > mkdir $prefix/run/ns0/upload
 > mkdir $prefix/run/ns0/upload/oarc
 > mkdir $prefix/run/ns0/upload/archive
-\end{verbatim}
+\end{MyVerbatim}
 
 With that directory structure, the {\tt upload-prep.sh} script moves
 XML files from the \path|ns0| directory to the two
@@ -644,9 +626,9 @@ to the remote server.    This script creates a {\em tar\/} archive
 of XML files and then uploads it to the remote server with
 {\tt curl}.  The script takes three commandline arguments:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 > upload-data.sh NODE DEST URI
-\end{verbatim}
+\end{MyVerbatim}
 
 {\em NODE\/} must match the name of a directory under
 \path|/usr/local/dsc/run|.  Similarly, {\em DEST\/} must match the
@@ -656,10 +638,10 @@ it is just an https URL with the name of the destination server.
 We also recommend running this from cron every 60 seconds.  For
 example:
 
-\begin{Verbatim}[formatcom={\footnotesize\setlength{\baselineskip}{3ex}}]
+\begin{MyVerbatim}
 * * * * * /usr/local/dsc/libexec/upload-data.sh ns0 oarc https://collect.oarc.isc.org/
 * * * * * /usr/local/dsc/libexec/upload-data.sh ns0 archive https://archive.example.com/
-\end{Verbatim}
+\end{MyVerbatim}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -815,12 +797,12 @@ as an attribute in the XML output.  For example,
 Figure~\ref{fig-sample-xml} shows the XML corresponding to this
 {\em dataset\/} line:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 dataset the_dataset dns Foo:foo Bar:bar queries-only;
-\end{verbatim}
+\end{MyVerbatim}
 
 \begin{figure}
-\begin{small}\begin{verbatim}
+\begin{MyVerbatim}
 <array name="the_dataset" dimensions="2" start_time="1091663940" ...
   <dimension number="1" type="Foo"/>
   <dimension number="2" type="Bar"/>
@@ -835,7 +817,7 @@ dataset the_dataset dns Foo:foo Bar:bar queries-only;
     </Foo>
   </data>
 </array>
-\end{verbatim}\end{small}
+\end{MyVerbatim}
 \caption{\label{fig-sample-xml}Sample XML output}
 \end{figure}
 
@@ -1027,7 +1009,7 @@ Here's how your entire {\em dsc.conf\/} file might look:
 \noindent\hrulefill
 
 \begin{footnotesize}
-\begin{verbatim}
+\begin{MyVerbatim}
 #bpf_program
 interface em0;
 
@@ -1059,7 +1041,7 @@ dataset ipv6_rsn_abusers dns All:null ClientAddr:client
         queries-only,aaaa-or-a6-only,root-servers-net-only min-count=27;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
-\end{verbatim}
+\end{MyVerbatim}
 \end{footnotesize}
 
 \noindent\hrulefill
@@ -1093,7 +1075,7 @@ necessary so that {\tt curl\/} can authenticate the server.
 
 A dataset XML file has the following structure:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 <array name="dataset-name" dimensions="2" start_time="unix-seconds"
         stop_time="unix-seconds">
   <dimension number="1" type="Label1"/>
@@ -1111,7 +1093,7 @@ A dataset XML file has the following structure:
     </Label1>
   </data>
 </array>
-\end{verbatim}
+\end{MyVerbatim}
 
 \noindent
 {\em dataset-name\/},
@@ -1142,7 +1124,7 @@ Note, however, that the <emphasis>LABEL1</emphasis>
 and <emphasis>LABEL2</emphasis> strings are different
 for each dataaset:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 <!DOCTYPE ARRAY [  
 
 <!ELEMENT ARRAY (DIMENSION+, DATA))>
@@ -1161,7 +1143,7 @@ for each dataaset:
 <!ATTLIST LABEL2 COUNT CDATA #REQUIRED>
 
 ]> 
-\end{verbatim}
+\end{MyVerbatim}
 
 \section{Archived Data Format}
 
@@ -1182,11 +1164,11 @@ to the Null indexer.}  The first column is a timestamp (unix seconds).
 The remaining space-separated fields are key-value pairs.  For
 example:
 
-\begin{footnotesize}\begin{verbatim}
+\begin{MyVerbatim}
 1093219980 root-servers.net 122 rfc1918-ptr 112 a-for-a 926 funny-qclass 16
 1093220040 root-servers.net 121 rfc1918-ptr 104 a-for-a 905 funny-qclass 15
 1093220100 root-servers.net 137 rfc1918-ptr 116 a-for-a 871 funny-qclass 12
-\end{verbatim}\end{footnotesize}
+\end{MyVerbatim}
 
 \subsection{Format 2}
 
@@ -1200,12 +1182,12 @@ $j$ represents the first dimension indexer and $k$ represents
 the second.  Key-value pairs for the second dimension are
 separated by colons, rather than space.  For example:
 
-\begin{footnotesize}\begin{verbatim}
+\begin{MyVerbatim}
 1093220160 recv icmp:2397:udp:136712:tcp:428 sent icmp:819:udp:119191:tcp:323
 1093220220 recv icmp:2229:udp:124708:tcp:495 sent icmp:716:udp:107652:tcp:350
 1093220280 recv udp:138212:icmp:2342:tcp:499 sent udp:120788:icmp:819:tcp:364
 1093220340 recv icmp:2285:udp:137107:tcp:468 sent icmp:733:udp:118522:tcp:341
-\end{verbatim}\end{footnotesize}
+\end{MyVerbatim}
 
 \subsection{Format 3}
 
@@ -1221,11 +1203,11 @@ Furthermore, for these larger datasets, it is prohibitive to
 store the data as a time series.  Instead the counters are incremented
 over time.  For example:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 10.0.160.0 3024
 10.0.20.0 92
 10.0.244.0 5934
-\end{verbatim}
+\end{MyVerbatim}
 
 \subsection{Format 4}
 
@@ -1239,7 +1221,7 @@ key spaces are very large.  Again, counters are incremented over
 time, rather than storing the data as a time series.
 For example:
 
-\begin{verbatim}
+\begin{MyVerbatim}
 10.0.0.0 non-auth-tld 105
 10.0.0.0 ok 37383
 10.0.0.0 rfc1918-ptr 5941
@@ -1247,7 +1229,7 @@ For example:
 10.0.1.0 a-for-a 6
 10.0.1.0 non-auth-tld 363
 10.0.1.0 ok 144
-\end{verbatim}
+\end{MyVerbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Bugs}
