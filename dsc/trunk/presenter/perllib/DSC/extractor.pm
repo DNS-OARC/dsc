@@ -52,7 +52,7 @@ $SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
 $SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 
 #my $lockfile_template = '/tmp/%F.lck';
-my $lockfile_template = '%f.lck';
+#my $lockfile_template = '%f.lck';
 my $LOCK_RETRY_DURATION = 45;
 
 sub yymmdd {
@@ -61,10 +61,10 @@ sub yymmdd {
 	POSIX::strftime "%Y%m%d", @t;
 }
 
-#sub lockfile_format {
-#        my @x = split(/\//, shift);
-#        '/tmp/' . join(':', reverse(pop @x, pop @x, pop @x)) . '.lck';
-#}
+sub lockfile_format {
+        my @x = stat (shift);
+        '/tmp/' . join('.', $x[0], $x[1], 'lck');
+}
 
 #
 # time k1 v1 k2 v2 ...
@@ -75,7 +75,7 @@ sub read_data {
 	my $nl = 0;
 	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -100,7 +100,7 @@ sub write_data {
 	my $nl = 0;
 	my $B;
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -125,7 +125,7 @@ sub read_data2 {
 	my $nl = 0;
 	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -151,7 +151,7 @@ sub write_data2 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -174,7 +174,7 @@ sub read_data3 {
 	my $nl = 0;
 	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -199,7 +199,7 @@ sub write_data3 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -225,7 +225,7 @@ sub read_data4 {
 	my $nl = 0;
 	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION,
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
@@ -252,7 +252,7 @@ sub write_data4 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lockmgr = LockFile::Simple->make(
-		-format => $lockfile_template,
+		-format => &lockfile_format($fn),
 		-max => $LOCK_RETRY_DURATION, 
 		-delay => 1);
 	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
