@@ -298,4 +298,7 @@ my $client_subnet2_keys =   [ qw(
 
 );
 
+$DATASETS{d0_bit} = $DATASETS{do_bit};
+$DATASETS{d0_bit}{dataset_dir} = 'do_bit';
+
 1;
