@@ -17,5 +17,5 @@ ${RM} update-tmfbase.sh
 ${RM} mk-release.sh
 ${RM} junk
 
-(cd dsc-$TS/doc; make dsc-manual.ps dsc-manual.pdf clean-release)
+(cd dsc-$TS/doc; make all clean-release)
 tar czvf ../dsc-$TS.tar.gz dsc-$TS

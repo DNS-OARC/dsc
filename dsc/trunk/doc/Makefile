@@ -32,6 +32,7 @@ clean-junk:
 	rm -f $(DOC).aux
 	rm -f $(DOC).dvi
 	rm -f $(DOC).log
+	rm -f $(DOC).toc
 
 clean: clean-junk
 	rm -f $(DOC).pdf
