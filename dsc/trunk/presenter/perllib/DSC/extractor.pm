@@ -109,7 +109,7 @@ sub write_data {
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a <=> $b} keys %$A) {
-		$B = $A->{$k};
+		next unless defined($B = $A->{$k});
 		my $line = join(' ', $k, %$B) . "\n";
 		next unless ($line =~ /\S/);
 		print OUT $line;
