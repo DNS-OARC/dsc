@@ -63,6 +63,13 @@ popular_qtypes_filter(const void *vp)
 }
 
 static int
+idn_qname_filter(const void *vp)
+{
+    const dns_message *m = vp;
+    return (0 == strncmp(m->qname, "xn--", 4));
+}
+
+static int
 replies_only_filter(const void *vp)
 {
     const dns_message *m = vp;
@@ -166,6 +173,10 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 	}
 	if (0 == strcmp(t, "popular-qtypes")) {
 	    fl = md_array_filter_list_append(fl, popular_qtypes_filter);
+	    continue;
+	}
+	if (0 == strcmp(t, "idn-only")) {
+	    fl = md_array_filter_list_append(fl, idn_qname_filter);
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
