@@ -1,5 +1,10 @@
 
-SCRIPTS != ls *.sh *.pl
+SCRIPTS += mk-plots.sh
+SCRIPTS += push-data.sh
+SCRIPTS += refile-and-grok-node.sh
+SCRIPTS += refile-and-grok.sh
+SCRIPTS += remove-xmls.pl
+
 INSTALLDIR=/usr/local/dsc
 
 all:
