@@ -13,6 +13,7 @@ use Data::Dumper;
 use Digest::MD5;
 use Text::Template;
 use Hash::Merge;
+use Math::Calc::Units;
 
 use strict;
 use warnings;
@@ -1127,14 +1128,18 @@ sub a_markup {
 	my $h = shift;
 	my $a = shift;
 	my $c = shift;
+	my $t = shift;
 	die "no h" unless (defined($h));
 	die "no a" unless (defined($a));
-	"<a" . (defined($c) ? " class=\"$c\"" : '') . " href=\"$h\">$a</a>";
+	html_markup('a',
+		{ class => $c, href => $h, title => $t },
+		$a);
 }
 
 sub img_markup {
 	my $s = shift;
 	my $c = shift;
+	my $a = shift;
 	if ($use_data_uri) {
 		$IconData{$s} = load_icon_data($s) unless defined($IconData{$s});
 		my $t;
@@ -1142,7 +1147,9 @@ sub img_markup {
 		$t .= encode_base64($IconData{$s});
 		$s = $t;
 	}
-	"<img" . (defined($c) ? " class=\"$c\"" : '') . " src=\"$s\">";
+	html_markup('img',
+		{ class => $c, src => $s, alt => $a },
+		undef);
 }
 
 sub navbar_item {
@@ -1159,7 +1166,11 @@ sub navbar_item {
 sub navbar_arrow_item {
 	my $delta = shift;
 	my $icon = shift;
-	a_markup(urlpath(merge_args(end=>$ARGS{end} + $delta)), img_markup("/dsc-icons/$icon.png"));
+	my $alt = shift;
+	a_markup(urlpath(merge_args(end=>$ARGS{end} + $delta)),
+		img_markup("/dsc-icons/$icon.png", undef, $alt),
+		undef,	# class
+		$alt);	# title
 }
 
 sub sublist_item { '&rsaquo;&nbsp;'; }
@@ -1228,23 +1239,29 @@ sub navbar_window {
 	my $PLOT = $DSC::grapher::config::PLOTS{$pn};
 	if (defined($PLOT->{plot_type}) && $PLOT->{plot_type} =~ /^accum/) {
 		foreach my $w (@{$CFG->{accum_windows}}) {
-			push(@items, navbar_item('window',window_secs($w),$w));
+			push(@items, navbar_item('window',units_to_seconds($w),$w));
 		}
 		my @arrows;
-		push(@arrows, navbar_arrow_item(-$ARGS{window}, '1leftarrow'));
-		push(@arrows, navbar_arrow_item($ARGS{window}, '1rightarrow'));
-		push(@items, join("", @arrows));
+		push(@arrows, navbar_arrow_item(-$ARGS{window}, '1leftarrow',
+			"Backward " . seconds_to_units($ARGS{window})));
+		push(@arrows, navbar_arrow_item($ARGS{window}, '1rightarrow',
+			"Forward " . seconds_to_units($ARGS{window})));
+		push(@items, html_markup("div", {class=>'center'}, join("&nbsp;&nbsp;", @arrows)));
 	} else {
 		# trace
 		foreach my $w (@{$CFG->{trace_windows}}) {
-			push(@items, navbar_item('window',window_secs($w),$w));
+			push(@items, navbar_item('window',units_to_seconds($w),$w));
 		}
 		my @arrows;
-		push(@arrows, navbar_arrow_item(-$ARGS{window}, '2leftarrow'));
-		push(@arrows, navbar_arrow_item(-$ARGS{window}/2, '1leftarrow'));
-		push(@arrows, navbar_arrow_item($ARGS{window}/2, '1rightarrow'));
-		push(@arrows, navbar_arrow_item($ARGS{window}, '2rightarrow'));
-		push(@items, join("", @arrows));
+		push(@arrows, navbar_arrow_item(-$ARGS{window}, '2leftarrow',
+			"Backward " . seconds_to_units($ARGS{window})));
+		push(@arrows, navbar_arrow_item(-$ARGS{window}/2, '1leftarrow',
+			"Backward " . seconds_to_units($ARGS{window}/2)));
+		push(@arrows, navbar_arrow_item($ARGS{window}/2, '1rightarrow',
+			"Forward " . seconds_to_units($ARGS{window}/2)));
+		push(@arrows, navbar_arrow_item($ARGS{window}, '2rightarrow',
+			"Forward " . seconds_to_units($ARGS{window})));
+		push(@items, html_markup("div", {class=>'center'}, join("&nbsp;&nbsp;", @arrows)));
 	}
 	join('<br>', @items);
 }
@@ -1262,7 +1279,7 @@ sub navbar_yaxis {
 	join('<br>', @items);
 }
 
-sub window_secs {
+sub units_to_seconds {
 	my $win = shift;
 	die unless ($win =~ /(\d+)(\w+)/);
 	my $n = $1;
@@ -1279,6 +1296,20 @@ sub window_secs {
 		die "unknown unit: $unit";
 	}
 	$n;
+}
+
+sub seconds_to_units {
+	my $s = shift;
+	my $a;
+	my $v;
+	foreach my $u qw(years weeks days hours minutes) {
+		$a = Math::Calc::Units::convert("$s seconds", $u);
+		$a =~ /^([-\.\de]+)/ or die "bad units $a";
+		$v = $1;
+		last if ($v >= 1);
+	}
+	$a =~ s/s$// if ($v == 1);
+	$a;
 }
 
 sub load_icon_data {
@@ -1300,6 +1331,7 @@ sub html_markup {
 	my $buf = '';
 	$buf .= "<$tag";
 	while (my($k,$v) = each %$attrs) {
+		next unless defined($v);
 		$buf .= " $k=" . '"' . $v . '"';
 	}
 	$buf .= ">";
