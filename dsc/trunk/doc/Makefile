@@ -33,3 +33,4 @@ clean: clean-junk
 clean-release: clean-junk
 	rm -f $(DOC).tex
 	rm -f dsc-arch.fig
+	rm -f Makefile
