@@ -8,21 +8,18 @@
 static int largest = 0;
 
 int
-qnamelen_indexer(const void *vp)
+msglen_indexer(const void *vp)
 {
     const dns_message *m = vp;
-    int i = strlen(m->qname);
-    if (i >= MAX_QNAME_SZ)
-	i = MAX_QNAME_SZ - 1;
-    if (i > largest)
-	largest = i;
-    return i;
+    if (m->msglen > largest)
+	largest = m->msglen;
+    return m->msglen;
 }
 
 static int next_iter;
 
 int
-qnamelen_iterator(char **label)
+msglen_iterator(char **label)
 {
     static char label_buf[10];
     if (NULL == label) {

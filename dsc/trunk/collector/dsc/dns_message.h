@@ -12,6 +12,7 @@ struct _dns_message {
     struct in_addr client_ipv4_addr;
     unsigned short qtype;
     unsigned short qclass;
+    unsigned short msglen;
     char qname[MAX_QNAME_SZ];
     unsigned char rcode;
     unsigned int qr:1;

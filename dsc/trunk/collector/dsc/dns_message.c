@@ -15,6 +15,7 @@
 #include "client_ipv4_addr_index.h"
 #include "client_ipv4_net_index.h"
 #include "qnamelen_index.h"
+#include "msglen_index.h"
 
 extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;
@@ -92,14 +93,14 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 	*it = qnamelen_iterator;
 	return 1;
     }
+    if (0 == strcmp(in, "msglen")) {
+	*ix = msglen_indexer;
+	*it = msglen_iterator;
+	return 1;
+    }
     if (0 == strcmp(in, "qtype")) {
 	*ix = qtype_indexer;
 	*it = qtype_iterator;
-	return 1;
-    }
-    if (0 == strcmp(in, "qnamelen")) {
-	*ix = qnamelen_indexer;
-	*it = qnamelen_iterator;
 	return 1;
     }
     if (0 == strcmp(in, "rcode")) {

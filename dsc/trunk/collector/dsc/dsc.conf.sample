@@ -52,6 +52,7 @@ dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
 dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only;
 dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
+dataset rcode_vs_replylen dns Rcode:rcode MsgLen:msglen replies-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 

@@ -74,6 +74,7 @@ handle_dns(const char *buf, int len)
     char *t;
     int x;
     dns_message *m = calloc(1, sizeof(*m));
+    m->msglen = (unsigned short) len;
 
     if (len < DNS_MSG_HDR_SZ) {
 	free(m);
