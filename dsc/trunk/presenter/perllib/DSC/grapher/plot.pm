@@ -502,6 +502,7 @@ my $std_accum_yaxes = {
 	},
     },
     plottitle	=> 'Query Name Lengths',
+    xaxislabel	=> 'Query Name Length',
     map_legend	=> 1,
   },
 
@@ -525,6 +526,7 @@ my $std_accum_yaxes = {
 	},
     },
     plottitle	=> 'Reply Code Message Lengths',
+    xaxislabel	=> 'DNS Message Size',
     map_legend	=> 1,
  },
 

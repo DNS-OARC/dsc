@@ -727,7 +727,7 @@ sub hist2d_plot {
 		-grid => 'yes',
 	};
 	my $xaxis_opts = {
-		-label => 'FIXME',
+		-label => $PLOT->{xaxislabel},
 	};
 	my $bars_opts = {
 		-labelsarrayref => \@plotnames,
