@@ -55,12 +55,10 @@ add_dataset(const char *name, const char *layer,
 	return dns_message_add_array(name, firstname, firstindexer,
 	    secondname, secondindexer, filtername);
     }
-#if 0
     if (0 == strcmp(layer, "ip")) {
 	return ip_message_add_array(name, firstname, firstindexer,
 	    secondname, secondindexer, filtername);
     }
-#endif
     syslog(LOG_ERR, "%s:%d: unknown message layer '%s'", __FILE__,__LINE__,layer);
     return 0;
 }

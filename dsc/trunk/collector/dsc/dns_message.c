@@ -40,13 +40,8 @@ replies_only_filter(const void *vp)
     return m->qr ? 1 : 0;
 }
 
-void
-dns_message_init(void)
-{
-}
 
-
-int
+static int
 dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 {
     if (0 == strcmp(in, "client")) {
@@ -98,7 +93,7 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     return 0;
 }
 
-int
+static int
 dns_message_find_filter(const char *fn, FLTR ** f)
 {
     if (0 == strcmp(fn, "any")) {
@@ -149,8 +144,6 @@ void
 dns_message_report(void)
 {
     md_array_list *a;
-    for (a = Arrays; a; a = a->next) {
-	syslog(LOG_DEBUG, "reporting %s", a->theArray->name);
+    for (a = Arrays; a; a = a->next)
 	md_array_print(a->theArray, &xml_printer);
-    }
 }
