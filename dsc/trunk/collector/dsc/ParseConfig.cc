@@ -47,12 +47,12 @@ remove_quotes(const string &s)
 }
 
 
-/* my_parse
+/* interpret()
  *
  * I'm a recursive function.
  */
 static int
-my_parse(const PreeNode &tree, int level)
+interpret(const PreeNode &tree, int level)
 {
 	int x;
         switch (tree.rid()) {
@@ -89,13 +89,13 @@ my_parse(const PreeNode &tree, int level)
 			return 0;
 		break;
 	case ctMatchVlan:
-		for(unsigned int i = 1; i<tree.count(); i++) {
-			if (set_match_vlan(tree[i].image().c_str()) != 1)
+		for(unsigned int i = 0; i<tree[1].count(); i++) {
+			if (set_match_vlan(tree[1][i].image().c_str()) != 1)
 				return 0;
 		}
         default:
                 for (unsigned int i = 0; i < tree.count(); i++) {
-                        if (my_parse(tree[i], level + 1) != 1)
+                        if (interpret(tree[i], level + 1) != 1)
 				return 0;
                 }
         }
@@ -149,7 +149,7 @@ ParseConfig(const char *fn)
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>";" ;
 	rBVTBO = rBVTBO.name() >>rHostOrNet >>";" ;
-	rMatchVlan = rMatchVlan.name() >> +(rDecimalNumber) >>";" ;
+	rMatchVlan = rMatchVlan.name() >> +rDecimalNumber >>";" ;
 
 	// the whole config
 	rConfig = *(
@@ -162,18 +162,19 @@ ParseConfig(const char *fn)
 		rMatchVlan
 	) >> end_r();
 
-	// trimming
+	// trimming - do not allow whitespace INSIDE these objects
 	rConfig.trim(*(space_r() | rComment));
 	rQuotedToken.verbatim(true);
 	rBareToken.verbatim(true);
+	rDecimalNumber.verbatim(true);
 	rIPv4Address.verbatim(true);
 
 	// parse tree shaping
 	rQuotedToken.leaf(true);
 	rBareToken.leaf(true);
+	rDecimalNumber.leaf(true);
 	rIPv4Address.leaf(true);
 	rHostOrNet.leaf(true);
-	rDecimalNumber.leaf(true);
 
 	// commit points
         rInterface.committed(true);
@@ -203,6 +204,6 @@ ParseConfig(const char *fn)
 		       << endl;
 		exit(1);
 	}
-	if (my_parse(parser.result().pree, 0) != 1)
+	if (interpret(parser.result().pree, 0) != 1)
 		abort();
 }
