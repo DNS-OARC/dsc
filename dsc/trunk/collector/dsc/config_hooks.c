@@ -57,8 +57,6 @@ add_dataset(const char *name, const char *layer,
     const char *filtername, int min_count, int max_cells)
 {
     syslog(LOG_INFO, "creating dataset %s", name);
-    if (max_cells)
-	syslog(LOG_INFO, "max_cells = %d", max_cells);
     if (0 == strcmp(layer, "dns")) {
 	return dns_message_add_array(name, firstname, firstindexer,
 	    secondname, secondindexer, filtername, min_count, max_cells);
