@@ -12,6 +12,7 @@ OBJS=\
 	qtype_index.o \
 	qclass_index.o \
 	tld_index.o \
+	rcode_index.o \
 	md_array_xml_printer.o
 
 LIBS=\
