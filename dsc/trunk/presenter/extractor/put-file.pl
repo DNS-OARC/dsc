@@ -6,7 +6,7 @@ use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
 use File::Temp qw(tempfile);
 
-my $putlog = "/usr/local/dsc/var/log/put-file.log';
+my $putlog = "/usr/local/dsc/var/log/put-file.log";
 my $TOPDIR = "/usr/local/dsc/data";
 my $SERVER = undef;
 my $NODE = undef;
@@ -76,8 +76,17 @@ if ($filename =~ /\.xml$/) {
 	&reply(201, "Stored $filename\n");
 } elsif ($filename =~ /\.tar$/) {
 	my $tar_output = '';
-	open(CMD, "tar -xzvf $tempname|") || die;
-	$tar_output .= "Stored $_" while (<CMD>);
+	open(CMD, "tar -xzvf $tempname 2>&1 |") || die;
+	#
+	# gnutar prints extracted files on stdout, bsdtar prints
+	# to stderr and adds "x" to beginning of each line.  F!
+	#
+	while (<CMD>) {
+		my @x = split;
+		my $f = pop(@x);
+		$tar_output .= "Stored $f\n";
+		#print STDERR "Stored $f";
+	}
 	close(CMD);
 	unlink($tempname);
 	&reply(201, $tar_output);
