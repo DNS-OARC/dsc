@@ -44,18 +44,6 @@ END { }
 my $plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
 my $strftimefmt = '%D.%T';
 
-#sub plotdata_tmp {
-#	my $label = shift;
-#	my $tf;
-#	my $fh;
-#	if (defined($label)) {
-#		($fh, $tf) = tempfile(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
-#	} else {
-#		($fh, $tf) = tempfile(TEMPLATE => $plotdata_tmp);
-#	}
-#	($fh, $tf);
-#}
-
 sub plotdata_tmp {
 	my $label = shift;
 	my $obj;
@@ -110,7 +98,7 @@ sub Ploticus_create_datafile {
 		foreach my $qt (@$keysarrayref) {
 			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / ($DF*$newhash{$tokey}{$qt . '_COUNT'}): '-');
 		}
-		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v);
+		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v), "\n";
 	}
 	close($FH);
 }
@@ -140,7 +128,7 @@ sub Ploticus_create_datafile_type2 {
 	#
 	foreach my $tokey (sort {$a <=> $b} keys %newhash) {
 		my $timestr = POSIX::strftime($strftimefmt, gmtime($tokey));
-		print $FH $timestr, ' ', defined($newhash{$tokey}) ? $newhash{$tokey} / ($COUNT{$tokey}) : '-';
+		print $FH $timestr, ' ', defined($newhash{$tokey}) ? $newhash{$tokey} / ($COUNT{$tokey}) : '-', "\n";
 	}
 	close($FH);
 }
@@ -266,15 +254,15 @@ sub Ploticus_xaxis {
 		}
 		P("autodays: yes");
 		P("stubformat: hh:mm");
-		P("label: Time");
+		P("label: Time, UTC");
 	} elsif ($window > 2*3600) {
 		P("stubs: inc 30 minutes");
 		P("stubformat: hh:mm");
-		P("label: Time");
+		P("label: Time, UTC");
 	} else {
 		P("stubs: inc 10 minutes");
 		P("stubformat: hh:mm");
-		P("label: Time");
+		P("label: Time, UTC");
 	}
 	PO($ropts, 'label');
 	PO($ropts, 'grid');
@@ -366,7 +354,7 @@ sub PO {
 
 sub P {
 	my $line = shift;
-	print STDERR "$line" if defined($main::ploticus_debug);
+	print STDERR "$line\n" if ($main::ploticus_debug);
 	Chart::Ploticus::ploticus_execline($line);
 }
 
