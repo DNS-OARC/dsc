@@ -14,14 +14,12 @@ struct _md_array {
 	HITR *iterator;
 	char *type;
 	int alloc_sz;
-	int max_idx;
     } d1;
     struct {
 	IDXR *indexer;
 	HITR *iterator;
 	char *type;
 	int alloc_sz;
-	int max_idx;
     } d2;
     int **array;
 };

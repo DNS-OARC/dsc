@@ -22,12 +22,10 @@ md_array_create(FLTR *filter,
     a->d1.indexer = idx1;
     a->d1.iterator = itr1;
     a->d1.alloc_sz = 2;
-    a->d1.max_idx = 0;
     a->d2.type = type2;
     a->d2.indexer = idx2;
     a->d2.iterator = itr2;
     a->d2.alloc_sz = 2;
-    a->d2.max_idx = 0;
     a->array = calloc(a->d1.alloc_sz, sizeof(int *));
     for (i1 = 0; i1 < a->d1.alloc_sz; i1++) {
 	a->array[i1] = calloc(a->d2.alloc_sz, sizeof(int));
@@ -47,9 +45,9 @@ md_array_count(md_array * a, dns_message * m)
     i1 = a->d1.indexer(m);
     i2 = a->d2.indexer(m);
 
-    if (i1 >= a->d1.alloc_sz)
+    while (i1 >= a->d1.alloc_sz)
 	md_array_grow_d1(a);
-    if (i2 >= a->d2.alloc_sz)
+    while (i2 >= a->d2.alloc_sz)
 	md_array_grow_d2(a);
 
     assert(i1 < a->d1.alloc_sz);
