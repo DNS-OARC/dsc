@@ -1,5 +1,6 @@
 
 GRAPHERS != ls *-grapher.pl whois.pl hostinfo.pl
+INSTALLDIR=/usr/local/dsc
 
 all:
 

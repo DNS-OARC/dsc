@@ -1,5 +1,6 @@
 
-EXTRACTORS != ls *extractor.pl
+EXTRACTORS != ls *extractor.pl tables-cfg.pl
+INSTALLDIR=/usr/local/dsc
 
 all:
 
