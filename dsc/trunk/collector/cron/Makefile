@@ -1,5 +1,5 @@
 
-SCRIPTS += push-data.sh
+SCRIPTS += upload-data.sh
 SCRIPTS += upload-prep.sh
 
 INSTALLDIR=/usr/local/dsc
