@@ -56,7 +56,6 @@ A Dataset is a 2-D array of counters of IP/DNS message properties.
 You can define each dimension of the array independently.  For
 example you might define a dataset categorized by DNS query type
 along one dimension and TLD along the other.
-
 {\tt dsc\/} dumps the datasets from memory to XML files every 60 seconds.
 
 \subsection{XML Data Transfer}
@@ -67,7 +66,7 @@ data is archived and displayed.  {\dsc} includes some Perl and {\tt /bin/sh}
 scripts that enable transporting XML files over a secure HTTP
 connection.
 
-To make this work, Apache+mod\_ssl should run on the machine where data
+To make this work, Apache/mod\_ssl should run on the machine where data
 is archived and presented.
 Data transfer is authenticated via SSL X.509 certificates.  A Perl
 CGI script handles all PUT requests on the server.  If the client
@@ -78,8 +77,7 @@ A shell script runs on the collector to upload the XML files.  It
 uses {\tt curl\/}\footnote{http://curl.haxx.se} to establish an
 HTTPS connection.  XML files are bundled together with {\tt tar\/}
 before transfer to eliminate per-connection delays.
-
-You could use {\tt scp\/} or {\tt rsync\/}/{\tt ssh\/} instead of
+You could use {\tt scp\/} or {\tt rsync\/} instead of
 {\tt curl\/} if you like.
 
 \path|put-file.pl| is the script that accepts PUT requests on the
@@ -144,7 +142,7 @@ the HTTP server to display graphs and other information.
 
 You'll probably want to get the Presenter working before the Collector.
 If you're using the secure XML data transfer, you'll need to
-generate X.509 both client- and server-side X.509 certificates.
+generate both client- and server-side X.509 certificates.
 
 Installing the Presenter involves the following steps:
 \begin{itemize}
@@ -202,7 +200,7 @@ you should run {\tt make} first:
 % make
 \end{MyVerbatim}
 
-If you see errors missing Perl prerequisites, you may want
+If you see errors about missing Perl prerequisites, you may want
 to correct those before continuing.
 
 The next step is to install the files.  Recall that
@@ -268,7 +266,7 @@ plenty of free space.  You can make it a symbolic link to another
 partition if necessary.
 
 
-\section{\tt Cron Jobs}
+\section{Cron Jobs}
 
 {\dsc} requires two cron jobs on the Presenter.  The first
 is the one that processes incoming XML files.  It is called
@@ -302,7 +300,7 @@ technique (such as scp or rsync) you can skip these instructions.
 
 We use X.509 certificates to authenticate both sides
 of an SSL connection when uploading XML data files from 
-the collector to the archiver.
+the collector to the presenter.
 
 Certificate generation is a tricky thing.  We use three different
 types of certificates:
@@ -315,25 +313,10 @@ types of certificates:
 In the client certificates
 we use X.509 fields to store the collector's server and node name.
 The Organizational Unit Name (OU) becomes the server name and
-the Common Name (CN) becomes the node name:
+the Common Name (CN) becomes the node name.
 
-\begin{MyVerbatim}
-% openssl req -newkey rsa:1024 -keyout new.key -out new.req
-...
-Country Name (2 letter code) [AU]:US
-State or Province Name (full name) [Some-State]:Colorado
-Locality Name (eg, city) []:Boulder
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:TMF
-Organizational Unit Name (eg, section) []:x-root
-Common Name (eg, YOUR name) []:BLDR
-Email Address []:wessels@measurement-factory.com
-\end{MyVerbatim}
-
-When the {\em put-file.pl\/} script receives an XML file over an
-SSL session that uses this key, it will store the data in the {\em
-x-root/bldr\/} directory.
-
-The {\dsc} distribution includes some shell scripts that we have
+The {\dsc} source code distribution includes some shell scripts
+that we have
 used to create X.509 certificates.  You can find them in the
 \path|presenter/certs| directory.  Note these are not installed
 into \path|/usr/local/dsc|.  You should edit \path|openssl.conf|
@@ -586,7 +569,7 @@ the {\tt dsc\/} binary and other scripts with:
 % make install
 \end{MyVerbatim}
 
-This installs three files:
+This installs four files:
 \begin{Verbatim}
 /usr/local/dsc/bin/dsc
 /usr/local/dsc/etc/dsc.conf.sample
@@ -608,10 +591,12 @@ the collector to one or more Presenter systems.
 As we'll see in the next chapter, each {\tt dsc} process
 has its own {\em run directory\/}.  This is the directory
 where {\tt dsc} leaves its XML files.  It usually has a
-name like \path|/usr/local/dsc/run/NODENAME|.  XML files
+name like \path|/usr/local/dsc/run/NODENAME|\@.  XML files
 are removed after they are successfully transferred.  If the
 Presenter is unreachable, XML files accumulate here until
-they can be transferred.
+they can be transferred.  Make sure that you have
+enough disk space to queue a lot of XML files in the
+event of an outage.
 
 In general we want to be able to upload XML files to multiple
 presenters.  This is the reason behind the {\tt upload-prep.sh}
@@ -630,8 +615,9 @@ are named \path|upload/dest1|, \path|upload/dest2|, and so on.
 
 In order for all this to work, you must create the directories
 in advance.   For example, if you are collecting stats on
-your nameserver named {\em ns0\/} the directory structure might
-look like:
+your nameserver named {\em ns0\/}, and want to send the XML files
+to two presenters (named oarc and archive), the directory structure
+might look like:
 
 \begin{MyVerbatim}
 % set prefix=/usr/local/dsc
@@ -682,7 +668,7 @@ command line arguments.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Configuring the {\dsc} Collector}
+\chapter{Configuring and Running the {\dsc} Collector}
 
 \section{dsc.conf}
 
@@ -776,7 +762,7 @@ interface em0;
 
 local_address 192.5.5.241;
 
-run_dir "/udir/wessels/dsc/run-pao1";
+run_dir "/usr/local/dsc/run/foo";
 
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
@@ -813,7 +799,8 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
 the name of the configuration file.  For example:
 
 \begin{MyVerbatim}
-% /usr/local/dsc/bin/dsc /usr/local/dsc/etc/foo.conf
+% cd /usr/local/dsc
+% bin/dsc etc/foo.conf
 \end{MyVerbatim}
 
 If you run {\tt ps} when {\tt dsc} is running, you'll see two processes:
@@ -831,7 +818,66 @@ Please use NTP or another technique to keep the collector's
 clock synchronized to the correct time.
 
 
-\chapter{DSC Datasets}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Viewing {\dsc} Graphs}
+
+To view {\dsc} data in a web browser, simply enter the
+URL to the \path|dsc-grapher.pl| CGI.   But before you
+do that, you'll need to create a grapher configuration file.
+
+\path|dsc-grapher.pl| uses a simple configuration file to set certain
+menu options.  This  configuration file is
+\path|/usr/local/dsc/etc/dsc-grapher.cfg|.  You should find
+a sample version in the same directory.  For example:
+
+\begin{MyVerbatim}
+server f-root pao1 sfo2
+server isc senna+piquet
+server tmf hq sc lgh
+trace_windows 1hour 4hour 1day 1week 1month
+accum_windows 1day 2days 3days 1week
+\end{MyVerbatim}
+
+Refer to Figure~\ref{fig-screenshot1} to see how
+the directives affect the visual display.
+The configuration file has three directives:
+
+\begin{figure}
+\centerline{\psfig{figure=screenshot1.eps,width=6.5in}}
+\caption{\label{fig-screenshot1}A sample graph}
+\end{figure}
+
+\begin{description}
+\item[server]
+	This directive tells \path|dsc-grapher.pl| to list
+	the given server and its associated nodes in the
+	``Servers/Nodes'' section of its navigation menu.
+	You can repeat this directive for each server that
+	the Presenter has.
+\item[trace\_windows]
+	Specifies the ``Time Scale'' menu options for
+	trace-based plots.
+\item[accum\_windows]
+	Specifies the ``Time Scale'' menu options for
+	``cumulative'' plots, such as the Classification plot.
+\end{description}
+
+Note that the \path|dsc-grapher.cfg| only affects what
+may appear in the navigation window.  It does NOT prevent users
+from entering other values in the URL parameters.  For example,
+if you have data for a server/node in your
+\path|/usr/local/dsc/data/| directory that is not listed in
+\path|dsc-grapher.cfg|, a user may still be able to view that
+data by manually setting the URL query parameters.
+
+
+The first few times you try \path|dsc-grapher.pl|, be sure to run
+{\tt tail -f} on the HTTP server error.log file.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{{\dsc} Datasets}
 
 A {\em dataset\/} is a 2-D array of counters.  For example, you
 might have a dataset with ``Query Type'' along one dimension and
@@ -862,6 +908,7 @@ A dataset is defined by the following parameters:
 \item A protocol layer (IP or DNS)
 \item An indexer for the first dimension
 \item An indexer for the second dimension
+\item One or more filters
 \item Zero or more options and parameters
 \end{itemize}
 
@@ -873,7 +920,7 @@ The {\em dataset\/} definition syntax in \path|dsc.conf| is:
 {\em protocol\/}
 {\em Label1:Indexer1\/}
 {\em Label2:Indexer2\/}
-{\em [filters]\/} 
+{\em filter\/} 
 {\em [parameters]\/};
 \vspace{2ex}
 
@@ -972,14 +1019,14 @@ Here are their longer descriptions:
 	based on the setting for {\em local\_address\/} in the configuration file.
 \item[ip\_proto]
 	The IP protocol type, e.g.: tcp, udp, icmp.
-	Note that the {\em bpf\_filter\/} setting affects all traffic
-	seen by {\dsc}.  If the filter contains the word ``udp''
+	Note that the {\em bpf\_program\/} setting affects all traffic
+	seen by {\dsc}.  If the program contains the word ``udp''
 	then you won't see any counts for non-UDP traffic.
 \end{description}
 
 \subsection{IP Filters}
 
-Currently there is only one IP protocol filter: {\em any\/}.
+Currently there is only one IP protocol filter: {\tt any\/}.
 It includes all received packets.
 
 
@@ -1059,7 +1106,7 @@ for DNS messages, and here are their descriptions:
 	query class values include: CHAOS, HS, NONE, and ANY.
 \item[qname]
 	The full QNAME string from the first (and usually only)
-	QNAME in question section of a DNS message.
+	QNAME in the question section of a DNS message.
 \item[qnamelen]
 	The length of the first (and usually only) QNAME in a DNS
 	message question section.  Note this is the ``expanded''
@@ -1335,7 +1382,7 @@ For example:
 	the XML file.
 
 \item
-	DSC perl modules are installed in the ``site\_perl'' directory
+	{\dsc} perl modules are installed in the ``site\_perl'' directory
 	but they should probably be installed under /usr/local/dsc.
 
 \end{itemize}

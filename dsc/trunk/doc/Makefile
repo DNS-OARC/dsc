@@ -1,8 +1,9 @@
 
-.SUFFIXES: .fig .eps
+.SUFFIXES: .fig .eps .png
 
 FIGS=\
-	dsc-arch.eps
+	dsc-arch.eps \
+	screenshot1.eps
 
 DOC=dsc-manual
 
@@ -19,6 +20,10 @@ $(DOC).dvi: $(DOC).tex $(FIGS)
 
 .fig.eps:
 	fig2dev -L eps $< > $@
+
+.png.eps:
+	pngtopnm $< | pnmtops -noturn > $@
+	
 
 all: $(DOC).ps $(DOC).pdf
 
