@@ -49,7 +49,8 @@ for type in $TYPES ; do
 				echo "removing empty $SERVER/$NODE/$yymmdd/$type/$h" 1>&2
 				rm -f $yymmdd/$type/$h
 			fi
-			if $EXECDIR/$type-extractor.pl $h ; then
+			#if $EXECDIR/$type-extractor.pl $h ; then
+			if $EXECDIR/dsc-xml-extractor.pl $h ; then
 				mv $h $yymmdd/$type
 			else
 				case $? in
