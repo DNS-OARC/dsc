@@ -213,9 +213,9 @@ sub load_data {
 			# XXX yes, wasteful repetition
 			$PLOT->{keys} = [ @{$CFG->{servers}{$ARGS{server}}} ];
 			$PLOT->{names} = [ @{$CFG->{servers}{$ARGS{server}}} ];
-		} elsif ('all' ne $ARGS{node}) {
-			$nl = &{$PLOT->{data_reader}}(\%hash, $datafile);
 		} else {
+			# note that 'summing' is important for 'accum'
+			# plots, even for a single node
 			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
 			&{$PLOT->{data_summer}}(\%thash, \%hash);
 		}
@@ -245,20 +245,29 @@ sub trace_data_to_tmpfile {
 		$nl;
 }
 
+# calculate the amount of time in an 'accum' dataset.
+#
+sub calc_accum_win {
+	my $last = $ARGS{end};
+	my $first = $ARGS{end} - $ARGS{window};
+	$first += (86400 - ($ARGS{end} % 86400));
+	printf STDERR "accum window = %.2f days\n",
+		($last - $first) / 86400;
+	$last - $first;
+}
+
 sub accum1d_data_to_tmpfile {
 	my $data = shift;
 	my $tf = shift;
 	my $start = time;
-	my $accum_win;
+	my $accum_win = $PLOT->{yaxes}{$ARGS{yaxis}}{divideflag} ?
+		calc_accum_win() : 1;
 	my $n;
 	delete $data->{$SKIPPED_KEY};
         delete $data->{$SKIPPED_SUM_KEY};
 	$n = 0;
-	if ($PLOT->{yaxes}{$ARGS{yaxis}}{divideflag}) {
-		$accum_win = time % 86400;	# time since midnight;
-	} else {
-		$accum_win = 1;
-	}
+print STDERR "data->{'63.209.180.0'} = $data->{'63.209.180.0'}\n";
+print STDERR "accum_win=$accum_win\n";
 	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
 		print $tf join(' ',
 			$k1,
@@ -280,13 +289,9 @@ sub accum2d_data_to_tmpfile {
 	my $tf = shift;
 	my $start = time;
 	my %accum_sum;
-	my $accum_win;
+	my $accum_win = $PLOT->{yaxes}{$ARGS{yaxis}}{divideflag} ?
+		calc_accum_win() : 1;
 	my $n;
-	if ($PLOT->{yaxes}{$ARGS{yaxis}}{divideflag}) {
-		$accum_win = time % 86400;	# time since midnight;
-	} else {
-		$accum_win = 1;
-	}
 	delete $data->{$SKIPPED_KEY};
         delete $data->{$SKIPPED_SUM_KEY};
 	foreach my $k1 (keys %$data) {
