@@ -119,6 +119,7 @@ md_array_print(md_array * a, md_array_printer * pr)
     pr->start_data(fp);
     while ((i1 = a->d1.iterator(&label1)) > -1) {
 	int skipped = 0;
+	int skipped_sum = 0;
 	if (i1 >= a->d1.alloc_sz)
 	    continue;		/* see [1] */
 	pr->d1_begin(fp, label1);
@@ -129,14 +130,14 @@ md_array_print(md_array * a, md_array_printer * pr)
 	    if (0 == a->array[i1][i2])
 		continue;
 	    if (a->opts.min_count && (a->opts.min_count > a->array[i1][i2])) {
-		// skipped += a->array[i1][i2];
 		skipped++;
+		skipped_sum += a->array[i1][i2];
 		continue;
 	    }
-	    pr->print_element(fp, label2, a->array[i1][i2]);
+	    pr->print_element(fp, label2, a->array[i1][i2], -1);
 	}
 	if (skipped)
-		pr->print_element(fp, "-:SKIPPED:-", skipped);
+		pr->print_element(fp, "-:SKIPPED:-", skipped, skipped_sum);
 	pr->d1_end(fp, label1);
     }
     pr->finish_data(fp);
