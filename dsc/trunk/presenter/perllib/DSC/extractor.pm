@@ -24,6 +24,7 @@ BEGIN {
 		&grok_rcode_xml
 		&grok_qtype_xml
 		&grok_cltsub_xml
+		&grok_ipv6_rsn_abusers_xml
 		&grok_client_subnet2_xml
 		&grok_tld_xml
 		&grok_idn_vs_tld_xml
@@ -35,6 +36,7 @@ BEGIN {
 		&grok_edns_version_xml
 		&grok_idn_qname_xml
 		&grok_d0_bit_xml
+		&grok_rd_bit_xml
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
         );
@@ -62,7 +64,12 @@ sub yymmdd {
 }
 
 sub lockfile_format {
-        my @x = stat (shift);
+	my $fn = shift;
+        my @x = stat ($fn);
+	unless (defined (@x)) {
+		warn "$fn: $!";
+		@x = qw(unknown unknown);
+	}
         '/tmp/' . join('.', $x[0], $x[1], 'lck');
 }
 
@@ -344,6 +351,11 @@ sub grok_d0_bit_xml {
 	&grok_1d_xml($fname, 'D0');
 }
 
+sub grok_rd_bit_xml {
+	my $fname = shift || die;
+	&grok_1d_xml($fname, 'RD');
+}
+
 sub grok_qtype_xml {
 	my $fname = shift || die;
 	&grok_array_xml($fname, 'Qtype');
@@ -352,6 +364,11 @@ sub grok_qtype_xml {
 sub grok_cltsub_xml {
 	my $fname = shift || die;
 	&grok_1d_xml($fname, 'ClientSubnet');
+}
+
+sub grok_ipv6_rsn_abusers_xml {
+	my $fname = shift || die;
+	&grok_1d_xml($fname, 'ClientAddr');
 }
 
 sub grok_client_subnet2_xml {
