@@ -131,12 +131,18 @@ void Hapy::Rule::leaf(bool be) {
 
 // set trimming if no trimming was configured
 void Hapy::Rule::implicitTrim(const Rule &skipper) {
-	if (theBase->trimMode == RuleBase::tmDefault || theBase->trimMode == RuleBase::tmVerbatim) {
+	if (theBase->trimMode == RuleBase::tmDefault) {
 		Should(theBase->itrimmer == 0);
-		theBase->itrimmer = new Rule(skipper); // XXX: leaking trimmers
-		if (theBase->trimMode == RuleBase::tmDefault)
-			theBase->trimMode = RuleBase::tmImplicit;
+		theBase->trimMode = RuleBase::tmImplicit;
+	} else
+	if (theBase->trimMode == RuleBase::tmVerbatim) {
+		if (theBase->itrimmer)
+			return; // XXX: assume this is the same trimming rule
+	} else {
+		return;
 	}
+
+	theBase->itrimmer = new Rule(skipper); // XXX: leaking trimmers
 }
 
 bool Hapy::Rule::compileTrim() {
