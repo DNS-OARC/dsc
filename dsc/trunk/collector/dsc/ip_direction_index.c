@@ -54,7 +54,7 @@ ip_direction_iterator(char **label)
     static int next_iter = 0;
     if (NULL == label) {
 	next_iter = 0;
-	return LARGEST;
+	return LARGEST + 1;
     }
     if (0 == next_iter)
 	*label = "sent";

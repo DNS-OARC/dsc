@@ -31,6 +31,7 @@ struct _md_array {
     } d2;
     struct {
 	int min_count;
+	int max_cells;
     } opts;
     int **array;
 };

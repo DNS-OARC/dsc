@@ -55,7 +55,8 @@ ip_message_find_filters(const char *fn, filter_list ** fl)
         
 int
 ip_message_add_array(const char *name, const char *fn, const char *fi,
-    const char *sn, const char *si, const char *f, int min_count)
+    const char *sn, const char *si, const char *f, int min_count,
+    int max_cells)
 {
     filter_list *filters = NULL;
     IDXR *indexer1;
@@ -76,6 +77,7 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
         fn, indexer1, iterator1, 
         sn, indexer2, iterator2);
     a->theArray->opts.min_count = min_count;
+    a->theArray->opts.max_cells = max_cells;
     assert(a->theArray);
     a->next = Arrays;
     Arrays = a;

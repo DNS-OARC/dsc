@@ -30,45 +30,21 @@ tld_indexer(const void *vp)
 }
 
 static int next_iter;
-struct _foo {
-    char *key;
-    int idx;
-};
-
-static int
-compare(const void *A, const void *B)
-{
-    const struct _foo *a = A;
-    const struct _foo *b = B;
-    return strcmp(a->key, b->key);
-}
-
 
 int
 tld_iterator(char **label)
 {
     static char label_buf[MAX_QNAME_SZ];
-    static struct _foo *sortme = NULL;
     if (0 == next_idx)
 	return -1;
     if (NULL == label) {
-	int i;
-	sortme = calloc(next_idx, sizeof(*sortme));
-	for (i = 0; i < next_idx; i++) {
-	    sortme[i].key = idx_to_tld[i];
-	    sortme[i].idx = i;
-	}
-	qsort(sortme, next_idx, sizeof(*sortme), compare);
 	next_iter = 0;
 	return next_idx;
     }
-    assert(sortme);
     if (next_iter == next_idx) {
-	free(sortme);
-	sortme = NULL;
 	return -1;
     }
-    snprintf(label_buf, MAX_QNAME_SZ, "%s", sortme[next_iter].key);
+    snprintf(label_buf, MAX_QNAME_SZ, "%s", idx_to_tld[next_iter]);
     *label = label_buf;
-    return sortme[next_iter++].idx;
+    return next_iter++;
 }

@@ -13,7 +13,7 @@ extern "C" int set_run_dir(const char *);
 extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
 	const char *secondname, const char *secondindexer,
-	const char *filtername, int min_count);
+	const char *filtername, int min_count, int max_cells);
 extern "C" int set_bpf_vlan_tag_byte_order(const char *);
 extern "C" int set_bpf_program(const char *);
 extern "C" int set_match_vlan(const char *);
@@ -114,8 +114,12 @@ interpret(const Pree &tree, int level)
         } else
 	if (tree.rid() == rDataset.id()) {
 		int min_count = 0;
+		int max_cells = 0;
 		assert(tree.count() > 10);
-		getDatasetOptVal(tree[10], "min-count", min_count);
+		for (unsigned int i=10; i<tree.count(); i++) {
+			getDatasetOptVal(tree[i], "min-count", min_count);
+			getDatasetOptVal(tree[i], "max-cells", max_cells);
+		}
 		x = add_dataset(tree[1].image().c_str(),	// name
 			tree[2].image().c_str(),		// layer
 			tree[3].image().c_str(),		// 1st dim name
@@ -123,7 +127,8 @@ interpret(const Pree &tree, int level)
 			tree[6].image().c_str(),		// 2nd dim name
 			tree[8].image().c_str(),		// 2nd dim indexer
 			tree[9].image().c_str(),		// filter name
-			min_count);				// min cell count to report
+			min_count,				// min cell count to report
+			max_cells);				// max 2nd dim cells to print
 		if (x != 1) {
 			cerr << "interpret() failure in dataset" << endl;
 			return 0;

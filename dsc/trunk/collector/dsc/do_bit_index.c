@@ -26,7 +26,7 @@ do_bit_iterator(char **label)
     static int next_iter = 0;
     if (NULL == label) {
         next_iter = DO_BIT_CLR;
-        return DO_BIT_CLR;
+        return DO_BIT_SET + 1;
     }
     if (DO_BIT_CLR == next_iter)
         *label = "clr";

@@ -223,7 +223,7 @@ query_classification_iterator(char **label)
     static int next_iter = 0;
     if (NULL == label) {
         next_iter = 0;
-	return CLASS_OK;
+	return CLASS_MALFORMED+1;
     }
     if (CLASS_OK == next_iter)
         *label = "ok";

@@ -29,7 +29,7 @@ certain_qnames_iterator(char **label)
     static int next_iter = 0;
     if (NULL == label) {
         next_iter = 0;
-        return QNAME_OTHER;
+        return QNAME_OTHER + 1;
     }
     if (QNAME_LOCALHOST == next_iter)
         *label = "localhost";

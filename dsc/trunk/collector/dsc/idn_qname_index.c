@@ -26,7 +26,7 @@ idn_qname_iterator(char **label)
     static int next_iter = 0;
     if (NULL == label) {
         next_iter = QNAME_NORMAL;
-        return QNAME_NORMAL;
+        return QNAME_IDN + 1;
     }
     if (QNAME_NORMAL == next_iter)
         *label = "normal";

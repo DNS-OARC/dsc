@@ -29,7 +29,7 @@ qnamelen_iterator(char **label)
     static char label_buf[10];
     if (NULL == label) {
 	next_iter = 0;
-	return largest;
+	return largest + 1;
     }
     if (next_iter > largest)
 	return -1;
