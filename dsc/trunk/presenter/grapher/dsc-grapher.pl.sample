@@ -162,6 +162,10 @@ sub make_image {
 	} elsif ($PLOT->{plot_type} eq 'accum2d') {
 		accum2d_data_to_tmpfile($data, $datafile);
 		accum2d_plot($datafile, $ARGS{binsize}, $cache_image_path);
+	} elsif ($PLOT->{plot_type} eq 'hist2d') {
+		# like for qtype_vs_qnamelen
+		hist2d_data_to_tmpfile($data, $datafile);
+		hist2d_plot($datafile, $ARGS{binsize}, $cache_image_path);
 	} else {
 		error("Unknown plot type: $PLOT->{plot_type}");
 	}
@@ -186,7 +190,6 @@ sub datafile_path {
 
 sub load_data {
 	my $datadir;
-	my $yymmdd;
 	my %hash;
 	my $start = time;
 	my $last = $ARGS{end};
@@ -198,6 +201,13 @@ sub load_data {
 		# to the beginning of the next 24hour period
 		#
 		$first += (86400 - ($ARGS{end} % 86400));
+	}
+	if (($last - $first < 86400) && yymmdd($last) ne yymmdd($first)) {
+		# check if first and last fall on different days (UTC)
+		# and the window is less than a day.  If so, we need
+		# to make sure that the datafile that 'last' lies in
+		# gets read.
+		$last = $first + 86400;
 	}
 	foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
 	    next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
@@ -318,6 +328,57 @@ sub accum2d_data_to_tmpfile {
 	close($tf);
 	my $stop = time;
 	printf STDERR "[$$] writing tmpfile took %d seconds\n", $stop-$start;
+}
+
+sub hist2d_data_to_tmpfile {
+	my $data = shift;
+	my $tf = shift;
+	my $start = time;
+	delete $data->{$SKIPPED_KEY};
+        delete $data->{$SKIPPED_SUM_KEY};
+	
+	# find 5th,95th percentile for auto x-axis scaling
+	my $min_k2 = 1000000;
+	my $max_k2 = 0;
+	my $sum = 0;
+	# first find min,max k2 range, and calc sum
+	foreach my $k1 (@{$PLOT->{keys}}) {
+		foreach my $k2 (keys %{$data->{$k1}}) {
+			$min_k2 = $k2 if ($k2 < $min_k2);
+			$max_k2 = $k2 if ($k2 > $max_k2);
+			$sum += $data->{$k1}{$k2};
+		}
+	}
+	my $sum2 = 0;
+	my $p1 = 0;
+	my $p2 = undef;
+	# now calc %iles
+	foreach my $k2 ($min_k2..$max_k2) {
+		foreach my $k1 (@{$PLOT->{keys}}) {
+			$sum2 += $data->{$k1}{$k2} || 0;
+		}
+		$p1 = $k2 if ($sum2 / $sum < 0.05);
+		$p2 = $k2 if ($sum2 / $sum > 0.95);
+		last if (defined($p1) && defined($p2));
+	}
+	
+	foreach my $k2 ($p1..$p2) {
+		my @vals;
+		foreach my $k1 (@{$PLOT->{keys}}) {
+			my $val;
+			if (defined($data->{$k1}{$k2})) {
+				$val = sprintf "%f", $data->{$k1}{$k2};
+			} else {
+				$val = 0;
+			}
+			push (@vals, $val);
+		}
+		print $tf join(' ', $k2, @vals), "\n";
+	}
+	close($tf);
+	my $stop = time;
+	printf STDERR "[$$] writing tmpfile took %d seconds\n", $stop-$start;
+	#system "cat $tf 1>&2";
 }
 
 sub time_descr
@@ -515,6 +576,58 @@ sub accum2d_plot {
 	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
 }
 
+sub hist2d_plot {
+	my $tf = shift;
+	my $binsize = shift;	# ignored
+	my $pngfile = shift;
+	my $plotnames = $PLOT->{plotnames} || $PLOT->{names};
+	my $ntypes = @$plotnames;
+	my $start = time;
+
+	ploticus_init("png", "$pngfile.new");
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	Ploticus_categories(1);
+	my $areadef_opts = {
+		-title => $PLOT->{plottitle} . "\n" . time_descr(),
+		-rectangle => '1 1 6 4',
+		-ystackfields => join(',', 2..($ntypes+1)),
+	};
+	my $yaxis_opts = {
+		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
+		-grid => 'yes',
+	};
+	my $xaxis_opts = {
+		-label => 'FIXME',
+	};
+	my $bars_opts = {
+		-labelsarrayref => $plotnames,
+		-colorsarrayref => $PLOT->{colors},
+		-keysarrayref => $PLOT->{keys},
+		-indexesarrayref => [0..$ntypes-1],
+	};
+	my $legend_opts = {
+		-reverseorder => 'no',
+	};
+
+	if ($ARGS{mini}) {
+		$areadef_opts->{-title} = $PLOT->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 3 4';
+		delete($xaxis_opts->{-label});
+	}
+
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	Ploticus_bars($bars_opts);
+	Ploticus_legend() unless ($ARGS{mini});
+	ploticus_end();
+
+	rename("$pngfile.new", $pngfile);
+	my $stop = time;
+	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+}
+
 sub error {
 	my $msg = shift;
 	print $cgi->header(-type=>'text/html',-expires=>'+15m');
@@ -573,7 +686,7 @@ sub convert_to_percentage {
 			$newdata{$t}{$k1} = $data->{$t}{$k1} / $S;
 		}
 	    }
-	} elsif ('accum2d' eq $type) {
+	} elsif ('accum2d' eq $type || 'hist2d' eq $type) {
 		$S = 0;
 		foreach my $k1 (keys %$data) {
 			foreach my $k2 (keys %{$data->{$k1}}) {
@@ -894,9 +1007,9 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
 	}
 	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
-	push(@items, navbar_item('plot','X','Qname Length'));
+	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
 	push(@items, navbar_item('plot','rcode','Rcodes'));
-	push(@items, navbar_item('plot','X','Reply Lengths'));
+	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
 	push(@items, navbar_item('plot','opcode','Opcodes'));
 	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
 	if ($ARGS{plot} =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
