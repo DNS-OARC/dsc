@@ -237,6 +237,7 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 	return;
     m->ts = hdr->ts;
     dns_message_callback(m);
+    free(m);
 }
 
 
