@@ -149,7 +149,7 @@ int
 dns_message_add_array(const char *name, const char *fn, const char *fi,
     const char *sn, const char *si, const char *f)
 {
-    filter_list *filters;
+    filter_list *filters = NULL;
     IDXR *indexer1;
     HITR *iterator1;
     IDXR *indexer2;
