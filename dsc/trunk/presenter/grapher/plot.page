@@ -5,6 +5,13 @@
 :visited	{ color: inherit; text-decoration: none; }
 
 .center		{ text-align: center; }
+DIV.notice	{
+		  width: 640px;
+		  height: 480px;
+		  display: table-cell;
+		  vertical-align: middle;
+		  text-align: center;
+		}
 DIV.clickinst	{ text-align: center; font-size: smaller; }
 DIV.border	{
 		margin: 1px;
