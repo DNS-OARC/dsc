@@ -1,5 +1,6 @@
 PROG=dnsstatd
 CFLAGS=-g -Wall
+TODAY != date +%Y%m%d
 
 OBJS=\
 	generic_counter.o \
@@ -31,6 +32,9 @@ $(PROG): $(OBJS)
 clean:
 	rm -f $(OBJS)
 	rm -f $(PROG)
+
+tar:
+	cd /tmp; cvs checkout -d $(PROG)-$(TODAY) $(PROG) ; tar czvf $(PROG)-$(TODAY).tar.gz $(PROG)-$(TODAY)
 
 
 # client_ipv4_addr_index.c client_ipv4_net_index.c daemon.c dns_message.c dns_protocol.c generic_counter.c md_array.c md_array_xml_printer.c pcap.c qclass_index.c qtype_index.c rcode_index.c string_counter.c tld_index.c
