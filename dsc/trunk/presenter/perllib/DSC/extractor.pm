@@ -26,6 +26,7 @@ BEGIN {
 		&grok_2d_xml
 		&grok_array_xml
 		&elsify_unwanted_keys
+		&replace_keys
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
         );
@@ -272,8 +273,8 @@ sub write_data4 {
 ##############################################################################
 
 sub grok_1d_xml {
-	my $fname = shift || die;
-	my $L2 = shift || die;
+	my $fname = shift || die "grok_1d_xml() expected fname";
+	my $L2 = shift || die "grok_1d_xml() expected L2";
 	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
 	my $XML = $XS->XMLin($fname);
 	my %result;
@@ -331,6 +332,15 @@ sub elsify_unwanted_keys {
                 $$hashref{else} += $$hashref{$k};
                 delete $$hashref{$k};
         }
+}
+
+sub replace_keys {
+        my $oldhash = shift;
+	my $oldkeys = shift;
+	my $newkeys = shift;
+	my @newkeycopy = @$newkeys;
+	my %newhash = map { $_ => $$oldhash{shift @$oldkeys}} @newkeycopy;
+	\%newhash;
 }
 
 ##############################################################################
