@@ -231,9 +231,10 @@ sub Ploticus_yaxis{
 }
 
 sub Ploticus_legend {
+	my $ropts = shift;
 	P("#proc legend");
 	P("location: max+0.5 max");
-	P("reverseorder: yes");
+	PO($ropts, 'reverseorder', 'yes');
 	P("outlinecolors: yes");
 }
 
