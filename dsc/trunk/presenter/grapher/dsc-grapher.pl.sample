@@ -61,7 +61,7 @@ $PLOT = Plot($ARGS{plot});
 error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 #print STDERR "[$$] PLOT=" . Dumper($PLOT);
 
-if (!defined($ARGS{yaxis})) {
+if (!defined($ARGS{yaxis}) || !defined($PLOT->{yaxes}{$ARGS{yaxi}})) {
 	$ARGS{yaxis} = find_default_yaxis_type();
 }
 
