@@ -113,6 +113,11 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 	*it = tld_iterator;
 	return 1;
     }
+    if (0 == strcmp(in, "certain_qnames")) {
+	*ix = certain_qnames_indexer;
+	*it = certain_qnames_iterator;
+	return 1;
+    }
     syslog(LOG_ERR, "unknown indexer '%s'", in);
     return 0;
 }
