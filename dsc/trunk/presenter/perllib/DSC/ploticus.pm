@@ -73,10 +73,14 @@ sub Ploticus_create_datafile {
 		# note $fromkey is a time_t.
 		next if ($fromkey < $cutoff);
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
-		foreach my $qt (@$keysarrayref) {
-			next unless defined($$hashref{$fromkey}{$qt});
-			$newhash{$tokey}{$qt} += $$hashref{$fromkey}{$qt};
-			$newhash{$tokey}{$qt . '_COUNT'}++;
+		foreach my $k1 (@$keysarrayref) {
+			if (defined($$hashref{$fromkey}{$k1})) {
+				$newhash{$tokey}{$k1} += $$hashref{$fromkey}{$k1};
+			}
+			# always increment the denominator, even for undef values
+			# otherwise averaging comes out wrong, and really creates
+			# problems with missing data on percentage plots
+			$newhash{$tokey}{$k1 . '_COUNT'}++;
 		}
 	}
 	#
@@ -84,9 +88,9 @@ sub Ploticus_create_datafile {
 	# so that ploticus doesn't puke
 	#
 	unless ((keys %newhash)) {
-		foreach my $qt (@$keysarrayref) {
-			$newhash{$cutoff}{$qt} = 0;
-			$newhash{$cutoff}{$qt . '_COUNT'} = 1;
+		foreach my $k1 (@$keysarrayref) {
+			$newhash{$cutoff}{$k1} = 0;
+			$newhash{$cutoff}{$k1 . '_COUNT'} = 1;
 		}
 	}
 	#
@@ -96,8 +100,8 @@ sub Ploticus_create_datafile {
 	my $DF = $divideflag ? 60 : 1;
 	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
 		my @v = ();
-		foreach my $qt (@$keysarrayref) {
-			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / ($DF*$newhash{$tokey}{$qt . '_COUNT'}): '-');
+		foreach my $k1 (@$keysarrayref) {
+			push (@v, defined($newhash{$tokey}{$k1}) ? $newhash{$tokey}{$k1} / ($DF*$newhash{$tokey}{$k1 . '_COUNT'}): '-');
 		}
 		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v), "\n";
 		$nl++;
