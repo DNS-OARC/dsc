@@ -12,6 +12,7 @@
 #include "rcode_index.h"
 #include "client_ipv4_addr_index.h"
 #include "client_ipv4_net_index.h"
+#include "qnamelen_index.h"
 
 extern md_array_printer xml_printer;
 #if USE_QCLASS_VS_QTYPE
@@ -20,6 +21,7 @@ static md_array *qclass_vs_qtype;
 static md_array *qtype;
 static md_array *rcode;
 static md_array *client_subnet;
+static md_array *qtype_vs_qnamelen;
 
 void
 dns_message_handle(dns_message * m)
@@ -30,6 +32,7 @@ dns_message_handle(dns_message * m)
     md_array_count(qtype, m);
     md_array_count(rcode, m);
     md_array_count(client_subnet, m);
+    md_array_count(qtype_vs_qnamelen, m);
 }
 
 static int
@@ -69,6 +72,11 @@ dns_message_init(void)
 	"All", null_indexer, null_iterator,
 	"ClientSubnet", cip4_net_indexer, cip4_net_iterator);
 
+    qtype_vs_qnamelen = md_array_create(
+	queries_only_filter,
+	"Qtype", qtype_indexer, qtype_iterator,
+	"QnameLen", qnamelen_indexer, qnamelen_iterator);
+
 }
 
 void
@@ -80,4 +88,5 @@ dns_message_report(void)
     md_array_print(qtype, &xml_printer, "qtype");
     md_array_print(rcode, &xml_printer, "rcode");
     md_array_print(client_subnet, &xml_printer, "client_subnet");
+    md_array_print(qtype_vs_qnamelen, &xml_printer, "qtype_vs_qnamelen");
 }
