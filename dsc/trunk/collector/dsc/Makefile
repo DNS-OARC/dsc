@@ -34,7 +34,7 @@ LIBS=\
 all:  $(PROG)
 
 
-$(PROG): $(OBJS)
+$(PROG): $(OBJS) $(LIBS)
 	$(CXX) -o $@ $(OBJS) $(LIBS)
 
 install:
@@ -43,9 +43,24 @@ install:
 clean:
 	rm -f $(OBJS)
 	rm -f $(PROG)
+	cd TmfBase/xstd; $(MAKE) $@
+	cd TmfBase/Hapy; $(MAKE) $@
 
 tar:
 	cd /tmp; cvs checkout -d $(PROG)-$(TODAY) $(PROG) ; tar czvf $(PROG)-$(TODAY).tar.gz $(PROG)-$(TODAY)
+
+TmfBase/xstd/libxstd.a: TmfBase/xstd/Makefile
+	@echo $@ is out of date
+	cd TmfBase/xstd; $(MAKE)
+
+TmfBase/xstd/Makefile:
+	@echo $@ is out of date
+	cd TmfBase/xstd; ./configure
+
+TmfBase/Hapy/libHapy.a: TmfBase/Hapy/Makefile TmfBase/xstd/libxstd.a
+	@echo $@ is out of date
+	cd TmfBase/Hapy; $(MAKE)
+
 
 # base64.c client_ipv4_addr_index.c client_ipv4_net_index.c daemon.c dns_message.c dns_protocol.c generic_counter.c md_array.c md_array_xml_printer.c null_index.c pcap.c qclass_index.c qnamelen_index.c qtype_index.c rcode_index.c string_counter.c tld_index.c
 base64.o: base64.c /usr/include/stdlib.h /usr/include/sys/cdefs.h \
