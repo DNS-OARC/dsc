@@ -97,6 +97,13 @@ root_servers_net_filter(const void *vp)
 }
 
 static int
+chaos_class_filter(const void *vp)
+{
+    const dns_message *m = vp;
+    return m->qclass == C_CHAOS;
+}
+
+static int
 replies_only_filter(const void *vp)
 {
     const dns_message *m = vp;
@@ -232,6 +239,10 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 	}
 	if (0 == strcmp(t, "root-servers-net-only")) {
 	    fl = md_array_filter_list_append(fl, root_servers_net_filter);
+	    continue;
+	}
+	if (0 == strcmp(t, "chaos-class")) {
+	    fl = md_array_filter_list_append(fl, chaos_class_filter);
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
