@@ -124,15 +124,33 @@ my $client_subnet2_keys =   [ qw(
     },
   },
 
-  d0_bit => {
+  do_bit => {
     ndim	=> 1,
     type1	=> 'D0',	## legacy typo!
     outputs	=> {
-      d0_bit => {
+      do_bit => {
         keys	=> [ qw(set clr) ],
 	data_merger => \&main::merge_trace,
         data_reader => \&DSC::extractor::read_data,
         data_writer => \&DSC::extractor::write_data,
+      },
+    },
+  },
+
+  client_subnet => {
+    ndim	=> 1,
+    type1	=> 'ClientSubnet',
+    outputs	=> {
+      client_subnet_count => {
+	data_munger	=> \&main::accum1d_to_count,
+        data_reader	=> \&DSC::extractor::read_data2,
+	data_merger	=> \&main::merge_trace,
+        data_writer	=> \&DSC::extractor::write_data2,
+      },
+      client_subnet_accum => {
+	data_merger	=> \&main::merge_accum1d,
+        data_reader	=> \&DSC::extractor::read_data2,
+        data_writer	=> \&DSC::extractor::write_data2,
       },
     },
   },
@@ -161,6 +179,118 @@ my $client_subnet2_keys =   [ qw(
 	data_munger => \&main::swap_dimensions,
 	data_merger => \&main::merge_accum2d,
         data_reader => \&DSC::extractor::read_data3,
+        data_writer => \&DSC::extractor::write_data3,
+      },
+    },
+  },
+
+  certain_qnames_vs_qtype => {
+    ndim	=> 2,
+    type1	=> 'CertainQnames',
+    type2	=> 'Qtype',
+    outputs	=> {
+      certain_qnames_vs_qtype => {
+        keys2	=> [ qw(1 2 5 6 12 15 28 33 38 255) ],
+	data_munger => \&main::munge_elsify,
+        data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+        data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
+  qtype_vs_tld => {
+    ndim	=> 2,
+    type1	=> 'Qtype',
+    type2	=> 'TLD',
+    outputs	=> {
+      qtype_vs_tld => {
+        data_reader	=> \&DSC::extractor::read_data3,
+	data_merger	=> \&main::merge_accum2d,
+        data_writer	=> \&DSC::extractor::write_data3,
+      },
+    },
+  },
+
+  client_addr_vs_rcode => {
+    ndim	=> 2,
+    type1	=> 'Rcode',
+    type2	=> 'ClientAddr',
+    outputs	=> {
+      client_addr_vs_rcode => {
+        data_reader => \&DSC::extractor::read_data3,
+	data_merger => \&main::merge_accum2d,
+        data_writer => \&DSC::extractor::write_data3,
+      },
+    },
+  },
+
+  direction_vs_ipproto => {
+    ndim	=> 2,
+    type1	=> 'Direction',
+    type2	=> 'IPProto',
+    outputs	=> {
+      direction_vs_ipproto => {
+        keys2	=> [ qw(icmp tcp udp) ],
+	data_munger => \&main::munge_elsify,
+        data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+        data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
+  idn_vs_tld => {
+    ndim	=> 1,
+    type1	=> 'TLD',
+    outputs	=> {
+      idn_vs_tld => {
+        data_reader	=> \&DSC::extractor::read_data2,
+	data_merger	=> \&main::merge_accum1d,
+        data_writer	=> \&DSC::extractor::write_data2,
+      },
+    },
+  },
+
+  ipv6_rsn_abusers => {
+    ndim	=> 1,
+    type1	=> 'ClientAddr',
+    outputs	=> {
+      ipv6_rsn_abusers_count => {
+	data_munger	=> \&main::accum1d_to_count,
+        data_reader	=> \&DSC::extractor::read_data2,
+	data_merger	=> \&main::merge_trace,
+        data_writer	=> \&DSC::extractor::write_data2,
+      },
+      ipv6_rsn_abusers_accum => {
+        data_reader	=> \&DSC::extractor::read_data2,
+	data_merger	=> \&main::merge_accum1d,
+        data_writer	=> \&DSC::extractor::write_data2,
+      },
+    },
+  },
+
+  qtype_vs_qnamelen => {
+    ndim	=> 2,
+    type1	=> 'Qtype',
+    type2	=> 'QnameLen',
+    outputs	=> {
+      qtype_vs_qnamelen => {
+        data_reader => \&DSC::extractor::read_data3,
+	data_merger => \&main::merge_accum2d,
+        data_writer => \&DSC::extractor::write_data3,
+      },
+    },
+  },
+
+  rcode_vs_replylen => {
+    ndim	=> 2,
+    type1	=> 'Rcode',
+    type2	=> 'ReplyLen',
+    outputs	=> {
+      rcode_vs_replylen => {
+        data_reader => \&DSC::extractor::read_data3,
+	data_merger => \&main::merge_accum2d,
         data_writer => \&DSC::extractor::write_data3,
       },
     },
