@@ -3,7 +3,7 @@ package DSC::extractor;
 use XML::Simple;
 use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
-use Data::Dumper;
+use File::Flock;
 
 use strict;
 
@@ -53,6 +53,8 @@ sub yymmdd {
 	POSIX::strftime "%Y%m%d", @t;
 }
 
+# was used by old LockFile::Simple code
+#
 sub lockfile_format {
 	my $fn = shift;
         my @x = stat ($fn);
@@ -73,11 +75,7 @@ sub read_data {
 	my $fn = shift;
 	my $nl = 0;
 	return 0 unless (-f $fn);
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
+	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		my ($k, %B) = split;
@@ -86,7 +84,6 @@ sub read_data {
 	    }
 	    close(IN);
 	}
-	$lock->release;
 	$nl;
 }
 
@@ -98,19 +95,15 @@ sub write_data {
 	my $fn = shift;
 	my $nl = 0;
 	my $B;
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
-	open(OUT, ">$fn") || die $!;
+	my $lock = new File::Flock($fn);
+	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a <=> $b} keys %$A) {
 		$B = $$A{$k};
 		print OUT join(' ', $k, %$B);
 		$nl++;
 	}
 	close(OUT);
-	$lock->release;
+	rename "$fn.new", $fn || die "$fn.new: $!";
 	print "wrote $nl lines to $fn";
 }
 
@@ -123,11 +116,7 @@ sub read_data2 {
 	my $fn = shift;
 	my $nl = 0;
 	return 0 unless (-f $fn);
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
+	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		my ($k, $v) = split;
@@ -136,7 +125,6 @@ sub read_data2 {
 	    }
 	    close(IN);
 	}
-	$lock->release;
 	$nl;
 }
 
@@ -149,18 +137,14 @@ sub write_data2 {
 	my $A = shift;
 	my $fn = shift;
 	my $nl = 0;
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
-	open(OUT, ">$fn") || die $!;
+	my $lock = new File::Flock($fn);
+	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a cmp $b} keys %$A) {
 		print OUT "$k $$A{$k}";
 		$nl++;
 	}
 	close(OUT);
-	$lock->release;
+	rename "$fn.new", $fn || die "$fn.new: $!";
 	print "wrote $nl lines to $fn";
 }
 
@@ -172,11 +156,7 @@ sub read_data3 {
 	my $fn = shift;
 	my $nl = 0;
 	return 0 unless (-f $fn);
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
+	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		my ($k1, $k2, $v) = split;
@@ -186,7 +166,6 @@ sub read_data3 {
 	    }
 	    close(IN);
 	}
-	$lock->release;
 	$nl;
 }
 
@@ -197,12 +176,8 @@ sub write_data3 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
-	open(OUT, ">$fn") || return;
+	my $lock = new File::Flock($fn);
+	open(OUT, ">$fn.new") || return;
 	foreach my $k1 (keys %$href) {
 		foreach my $k2 (keys %{$href->{$k1}}) {
 			print OUT "$k1 $k2 $href->{$k1}->{$k2}";
@@ -210,7 +185,7 @@ sub write_data3 {
 		}
 	}
 	close(OUT);
-	$lock->release;
+	rename "$fn.new", $fn || die "$fn.new: $!";
 	print "wrote $nl lines to $fn";
 }
 
@@ -223,11 +198,7 @@ sub read_data4 {
 	my $fn = shift;
 	my $nl = 0;
 	return 0 unless (-f $fn);
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION,
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
+	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		my ($ts, %foo) = split;
@@ -239,7 +210,6 @@ sub read_data4 {
 	    }
 	    close(IN);
 	}
-	$lock->release;
 	$nl;
 }
 
@@ -250,12 +220,8 @@ sub write_data4 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	my $lockmgr = LockFile::Simple->make(
-		-format => &lockfile_format($fn),
-		-max => $LOCK_RETRY_DURATION, 
-		-delay => 1);
-	my $lock = $lockmgr->lock($fn) || die "could not lock $fn";
-	open(OUT, ">$fn") || return;
+	my $lock = new File::Flock($fn);
+	open(OUT, ">$fn.new") || return;
 	foreach my $ts (sort {$a <=> $b} keys %$href) {
 		my @foo = ();
 		foreach my $k1 (keys %{$$href{$ts}}) {
@@ -266,7 +232,7 @@ sub write_data4 {
 		$nl++;
 	}
 	close(OUT);
-	$lock->release;
+	rename "$fn.new", $fn || die "$fn.new: $!";
 	print "wrote $nl lines to $fn";
 }
 
