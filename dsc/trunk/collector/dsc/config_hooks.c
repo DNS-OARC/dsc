@@ -1,7 +1,9 @@
+#include <stdio.h>
 #include <syslog.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/errno.h>
 
 #include "dns_message.h"
 #include "ip_message.h"
@@ -38,8 +40,11 @@ int
 set_run_dir(const char *dir)
 {
     syslog(LOG_INFO, "setting current directory to %s", dir);
-    if (chdir(dir) < 0)
+    if (chdir(dir) < 0) {
+	perror(dir);
+	syslog(LOG_ERR, "chdir: %s: %s", dir, strerror(errno));
 	return 0;
+    }
     return 1;
 }
 
