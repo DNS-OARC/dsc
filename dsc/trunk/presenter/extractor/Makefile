@@ -14,6 +14,7 @@ EXTRACTORS += qtype_vs_qnamelen-extractor.pl
 EXTRACTORS += qtype_vs_tld-extractor.pl
 EXTRACTORS += rcode-extractor.pl
 EXTRACTORS += rcode_vs_replylen-extractor.pl
+EXTRACTORS += client_addr_vs_rcode-extractor.pl
 EXTRACTORS += rd_bit-extractor.pl
 EXTRACTORS += tlds-extractor.pl
 EXTRACTORS += tables-cfg.pl
