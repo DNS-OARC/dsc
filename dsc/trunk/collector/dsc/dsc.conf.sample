@@ -46,6 +46,7 @@ bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 #	any
 #	queries-only
 #	replies-only
+#	popular-qtypes
 
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;

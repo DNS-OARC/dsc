@@ -34,6 +34,30 @@ queries_only_filter(const void *vp)
 }
 
 static int
+popular_qtypes_queries_only_filter(const void *vp)
+{
+    const dns_message *m = vp;
+    if (1 == m->qr)
+	return 0;
+    switch (m->qtype) {
+    case 1:
+    case 2:
+    case 5:
+    case 6:
+    case 12:
+    case 15:
+    case 28:
+    case 33:
+    case 38:
+    case 255:
+	return 1;
+    default:
+	return 0;
+    }
+    return 0;
+}
+
+static int
 replies_only_filter(const void *vp)
 {
     const dns_message *m = vp;
@@ -106,6 +130,10 @@ dns_message_find_filter(const char *fn, FLTR ** f)
     }
     if (0 == strcmp(fn, "replies-only")) {
 	*f = replies_only_filter;
+	return 1;
+    }
+    if (0 == strcmp(fn, "popular-qtypes")) {
+	*f = popular_qtypes_queries_only_filter;
 	return 1;
     }
     syslog(LOG_ERR, "unknown filter '%s'", fn);
