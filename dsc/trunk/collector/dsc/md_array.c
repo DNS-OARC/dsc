@@ -127,7 +127,8 @@ md_array_print(md_array * a, md_array_printer * pr)
 	    if (i2 >= a->d2.alloc_sz)
 		continue;
 	    if (a->opts.min_count > a->array[i1][i2]) {
-		skipped += a->array[i1][i2];
+		// skipped += a->array[i1][i2];
+		skipped++;
 		continue;
 	    }
 	    pr->print_element(fp, label2, a->array[i1][i2]);
