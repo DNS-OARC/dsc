@@ -1,0 +1,4 @@
+
+server f-root pao1 sfo2
+server k-root A B C
+windows 1hour 4hour 1day 1week
