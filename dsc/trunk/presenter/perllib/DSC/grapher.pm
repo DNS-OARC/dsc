@@ -1198,7 +1198,9 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','qtype_vs_invalid_tld', 'invalid'));
 		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
 	}
+	push(@items, navbar_item('plot','client_addr_vs_rcode_accum','Rcodes by Client Address'));
 	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
+	push(@items, navbar_item('plot','ipv6_rsn_abusers_accum','IPv6 root abusers'));
 	push(@items, navbar_item('plot','opcode','Opcodes'));
 	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
 	if ($pn =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
