@@ -24,13 +24,14 @@ class Result {
 				int theCode;
 		};
 
-		Result(): statusCode(scNone) {}
+		Result(): statusCode(scNone), maxPos(0) {}
 
 		bool known() const { return statusCode != scNone; }
 
 	public:
 		PreeNode pree;   // parsing tree
 		StatusCode statusCode;  // final status code
+		string::size_type maxPos; // maximum input position reached
 };
 
 } // namespace

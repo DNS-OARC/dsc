@@ -89,6 +89,7 @@ bool Hapy::Parser::end() {
 }
 
 bool Hapy::Parser::last() {
+	theResult.maxPos = theBuffer.maxProgress().size();
 	switch (theResult.statusCode.sc()) {
 		case Result::scError:
 		case Result::scMatch:

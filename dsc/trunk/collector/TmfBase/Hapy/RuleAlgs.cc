@@ -771,20 +771,24 @@ string shortStr(const string &str) {
 
 static
 RuleAlg::StatusCode ApplyRule(const Rule &r, Buffer &buf, PreeNode &pree, const char *defName) {
-//	static int lastId = 0;
-//	static int level = 0;
-//	const int id = ++lastId;
-//	++level;
-//	const string pfx = string(2*level, ' ');
-//	const char *name = r.name().size() ? r.name().c_str() : defName;
-//r.print(cerr << endl << id << '/' << level << '-' << pfx << "try rule: ") << " (" << name << "/" << defName << ")" << endl;
-//cerr << id << '/' << level << '-' << pfx << "try buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
-//cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rawRid() << " pree: " << &pree << " children: " << pree.rawCount() << endl;
+#if HAPY_DEBUG
+	static int lastId = 0;
+	static int level = 0;
+	const int id = ++lastId;
+	++level;
+	const string pfx = string(2*level, ' ');
+	const char *name = r.name().size() ? r.name().c_str() : defName;
+r.print(cerr << endl << id << '/' << level << '-' << pfx << "try rule: ") << " (" << name << "/" << defName << ")" << endl;
+cerr << id << '/' << level << '-' << pfx << "try buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
+cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rawRid() << " pree: " << &pree << " children: " << pree.rawCount() << endl;
+#endif
 	const RuleAlg::StatusCode res = r.firstMatch(buf, pree);
-//r.print(cerr << endl << id << '/' << level << '-' << pfx << '#' << res.sc() << " rule: ") << " (" << name << "/" << defName << ")" << endl;
-//cerr << id << '/' << level << '-' << pfx << '#' << res.sc() << " buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
-//cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rawRid() << " pree: " << &pree << " children: " << pree.rawCount() << endl;
-//	--level;
+#if HAPY_DEBUG
+r.print(cerr << endl << id << '/' << level << '-' << pfx << '#' << res.sc() << " rule: ") << " (" << name << "/" << defName << ")" << endl;
+cerr << id << '/' << level << '-' << pfx << '#' << res.sc() << " buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
+cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rawRid() << " pree: " << &pree << " children: " << pree.rawCount() << endl;
+	--level;
+#endif
 	return res;
 }
 

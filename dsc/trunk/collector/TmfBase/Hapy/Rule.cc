@@ -121,7 +121,6 @@ void Hapy::Rule::trim(const Rule &skipper) {
 
 // remember explicit no-internal-trimming request
 void Hapy::Rule::verbatim(bool be) {
-	theBase->itrimmer = 0;
 	theBase->trimMode = RuleBase::tmVerbatim;
 }
 
@@ -132,10 +131,11 @@ void Hapy::Rule::leaf(bool be) {
 
 // set trimming if no trimming was configured
 void Hapy::Rule::implicitTrim(const Rule &skipper) {
-	if (theBase->trimMode == RuleBase::tmDefault) {
+	if (theBase->trimMode == RuleBase::tmDefault || theBase->trimMode == RuleBase::tmVerbatim) {
 		Should(theBase->itrimmer == 0);
 		theBase->itrimmer = new Rule(skipper); // XXX: leaking trimmers
-		theBase->trimMode = RuleBase::tmImplicit;
+		if (theBase->trimMode == RuleBase::tmDefault)
+			theBase->trimMode = RuleBase::tmImplicit;
 	}
 }
 
@@ -144,9 +144,6 @@ bool Hapy::Rule::compileTrim() {
 		return false;
 
 	if (!Should(theBase->itrimmer))
-		return false;
-
-	if (!Should(theBase->trimMode != RuleBase::tmVerbatim))
 		return false;
 
 	Rule *trimmer = theBase->itrimmer;
@@ -172,12 +169,14 @@ bool Hapy::Rule::compileTrim() {
 }
 
 bool Hapy::Rule::compile() {
-//print(cerr << here << "pre rule:  ") << endl;
-
 	// prevent infinite recursion
 	if (theBase->compiling) 
 		return true;
 	theBase->compiling = true;
+
+#if HAPY_DEBUG
+print(cerr << here << "pre rule:  ") << endl;
+#endif
 
 	if (!Should(theBase->alg))
 		return false;
@@ -191,9 +190,11 @@ bool Hapy::Rule::compile() {
 	if (theBase->itrimmer && terminal() && !compileTrim())
 		return false;
 
-//print(cerr << here << "comp rule: ") << endl;
-//if (theBase->core)
-//theBase->core->print(cerr << here << "comp core: ") << endl;
+#if HAPY_DEBUG
+print(cerr << here << "comp rule: ") << endl;
+if (theBase->core)
+theBase->core->print(cerr << here << "comp core: ") << endl;
+#endif
 	return true;
 }
 
