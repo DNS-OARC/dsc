@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-require '/usr/local/dsc/cgi-bin/put-file-lib.pl';
+use DSC::putfile;
 
-run();
+DSC::putfile::run();
 exit 0;
