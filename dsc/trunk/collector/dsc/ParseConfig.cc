@@ -13,6 +13,7 @@ extern "C" int add_dataset(const char *name, const char *layer,
 	const char *secondname, const char *secondindexer,
 	const char *filtername);
 extern "C" int set_bpf_vlan_tag_byte_order(const char *);
+extern "C" int set_match_vlan(const char *);
 
 extern "C" void ParseConfig(const char *);
 
@@ -32,6 +33,7 @@ enum {
 	ctPacketFilterProg,
 	ctDataset,
 	ctBVTBO,		// bpf_vlan_tag_byte_order
+	ctMatchVlan,
 	ctConfig = 30,
 	ctMax
 } configToken;
@@ -86,6 +88,11 @@ my_parse(const PreeNode &tree, int level)
 		if (set_bpf_vlan_tag_byte_order(tree[1].image().c_str()) != 1)
 			return 0;
 		break;
+	case ctMatchVlan:
+		for(unsigned int i = 1; i<tree.count(); i++) {
+			if (set_match_vlan(tree[i].image().c_str()) != 1)
+				return 0;
+		}
         default:
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (my_parse(tree[i], level + 1) != 1)
@@ -107,12 +114,13 @@ ParseConfig(const char *fn)
 	Rule rIPv4Address("ipv4-address", ctIPv4Address);
 	Rule rHostOrNet("host-or-net", ctHostOrNet);
 
-	Rule rInterface("Interface", ctInterface);
-	Rule rRunDir("RunDir", ctRunDir);
-	Rule rLocalAddr("LocalAddr", ctLocalAddr);
-	Rule rPacketFilterProg("PacketFilter", ctPacketFilterProg);
-	Rule rDataset("Dataset", ctDataset);
+	Rule rInterface("interface", ctInterface);
+	Rule rRunDir("run_dir", ctRunDir);
+	Rule rLocalAddr("local_address", ctLocalAddr);
+	Rule rPacketFilterProg("bpf_program", ctPacketFilterProg);
+	Rule rDataset("dataset", ctDataset);
 	Rule rBVTBO("bpf_vlan_tag_byte_order", ctBVTBO);
+	Rule rMatchVlan("match_vlan", ctMatchVlan);
 
 	Rule rConfig("Config", ctConfig);
 
@@ -132,15 +140,16 @@ ParseConfig(const char *fn)
 
 
 	// rule/line level
-	rInterface = "interface" >>rBareToken >>";" ;
-	rRunDir = "run_dir" >>rQuotedToken >>";" ;
-	rLocalAddr = "local_address" >>rIPv4Address >>";" ;
-	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
-	rDataset = "dataset" >>rBareToken >>rBareToken
+	rInterface = rInterface.name() >>rBareToken >>";" ;
+	rRunDir = rRunDir.name() >>rQuotedToken >>";" ;
+	rLocalAddr = rLocalAddr.name() >>rIPv4Address >>";" ;
+	rPacketFilterProg = rPacketFilterProg.name() >>rQuotedToken >>";" ;
+	rDataset = rDataset.name() >>rBareToken >>rBareToken
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>";" ;
-	rBVTBO = "bpf_vlan_tag_byte_order" >>rHostOrNet >>";" ;
+	rBVTBO = rBVTBO.name() >>rHostOrNet >>";" ;
+	rMatchVlan = rMatchVlan.name() >> +(rDecimalNumber) >>";" ;
 
 	// the whole config
 	rConfig = *(
@@ -149,7 +158,8 @@ ParseConfig(const char *fn)
 		rLocalAddr |
 		rPacketFilterProg |
 		rDataset |
-		rBVTBO
+		rBVTBO |
+		rMatchVlan
 	) >> end_r();
 
 	// trimming
@@ -171,6 +181,7 @@ ParseConfig(const char *fn)
         rPacketFilterProg.committed(true);
         rDataset.committed(true);
 	rBVTBO.committed(true);
+	rMatchVlan.committed(true);
 
 	string config;
 	char c;

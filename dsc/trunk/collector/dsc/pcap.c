@@ -78,6 +78,9 @@ static IPC *ip_message_callback;
 static struct timeval last_ts;
 static struct timeval start_ts;
 static struct timeval finish_ts;
+#define MAX_VLAN_IDS 100
+static int n_vlan_ids = 0;
+static int vlan_ids[MAX_VLAN_IDS];
 
 dns_message *
 handle_udp(const struct udphdr *udp, int len)
@@ -178,10 +181,27 @@ handle_raw(const u_char * pkt, int len)
 
 #endif
 
+int
+match_vlan(const char *pkt)
+{
+	unsigned short vlan;
+	int i;
+	if (0 == n_vlan_ids)
+		return 1;
+	memcpy(&vlan, pkt, 2);
+	if (vlan_tag_needs_byte_conversion)
+		vlan = ntohs(vlan) & 0xfff;
+	else
+		vlan = vlan & 0xfff;
+	for (i=0; i<n_vlan_ids; i++)
+		if (vlan_ids[i] == vlan)
+			return 1;
+	return 0;
+}
+
 dns_message *
 handle_ether(const u_char * pkt, int len)
 {
-    static int f = 10;
     char buf[PCAP_SNAPLEN];
     struct ether_header *e = (void *) pkt;
     unsigned short etype = ntohs(e->ether_type);
@@ -190,18 +210,8 @@ handle_ether(const u_char * pkt, int len)
     pkt += ETHER_HDR_LEN;
     len -= ETHER_HDR_LEN;
     if (ETHERTYPE_8021Q == etype) {
-	if (f) {
-		unsigned int ui;
-		unsigned short vid;
-		memcpy(&ui, pkt, 4);
-		memcpy(&vid, pkt, 2);
-		if (vlan_tag_needs_byte_conversion)
-			vid = ntohs(vid) & 0xfff;
-		else
-			vid = vid & 0xfff;
-		syslog(LOG_DEBUG, "got 8021Q packet: %08X, vlan=%d", ui, vid);
-		f--;
-	}
+	if (!match_vlan(pkt))
+		return NULL;
 	etype = ntohs(*(unsigned short *)(pkt + 2));
 	pkt += 4;
 	len -= 4;
@@ -366,4 +376,11 @@ int
 Pcap_finish_time(void)
 {
     return (int) finish_ts.tv_sec;
+}
+
+void
+pcap_set_match_vlan(int vlan)
+{
+	assert(n_vlan_ids < MAX_VLAN_IDS);
+	vlan_ids[n_vlan_ids++] = vlan;
 }

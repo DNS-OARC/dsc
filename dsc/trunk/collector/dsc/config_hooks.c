@@ -66,3 +66,16 @@ set_bpf_vlan_tag_byte_order(const char *which)
 	syslog(LOG_ERR, "unknown bpf_vlan_tag_byte_order '%s'", which);
 	return 0;
 }
+
+int
+set_match_vlan(const char *s)
+{
+	extern void pcap_set_match_vlan(int);
+	int i;
+	syslog(LOG_INFO, "match_vlan %s", s);
+	i = atoi(s);
+	if (0 == i && 0 != strcmp(s, "0"))
+		return 0;
+	pcap_set_match_vlan(i);
+	return 1;
+}

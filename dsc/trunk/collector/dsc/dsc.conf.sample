@@ -36,3 +36,5 @@ dataset qtype dns All:null Qtype:qtype queries-only;
 #	Set this to 'host' on FreeBSD-4 where the VLAN id that we
 #	get from BPF appears to already be in host byte order.
 bpf_vlan_tag_byte_order host;
+
+match_vlan 100 200;
