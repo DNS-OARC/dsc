@@ -98,49 +98,27 @@ Its XML output is transferred to the archive via HTTPS PUTs.
 The archiver runs the HTTPS server, the XML extractors, and the
 Ploticus graphers.
 
-\chapter{Prerequisites}
-
-\begin{itemize}
-\item
-	A C/C++ Compiler
-\item
-	Perl
-\item
-	Apache with mod\_ssl
-\item
-	At least the following Perl modules:
-	\begin{itemize}
-	\item CGI-Untaint (CGI::Untaint)
-	\item CGI.pm
-	\item (Chart::Ploticus)
-	\item File-Spec (File::Spec)
-	\item File-Temp (File::Temp)
-	\item Geography-Countries (Geography::Countries)
-	\item IP-Country (IP::Country)
-	\item Lockfile-Simple (LockFile::Simple)
-	\item Net-IRR (Net::IRR)
-	\item Net-Whois (Net::Whois)
-	\item Scalar-List-Utils (List::Util)
-	\item URI
-	\item XML-Parser (XML::Parser)
-	\item XML-Simple (XML::Simple)
-	\end{itemize}
-\item
-	expat (needed by XML::Parser)
-\end{itemize}
-
 
 \chapter{Installation}
 
-At this point, {\dsc} lacks certain things such as a {\tt ./configure\/}
-script and many pathnames are currently hard-coded.  The package
-also lacks a top-level makefile that supports {\tt make install\/}.
+At this point, {\dsc} lacks certain niceties such as a {\tt ./configure\/}
+script. Many pathnames are currently hard-coded.  The package
+also lacks a top-level Makefile that supports {\tt make install\/}.
 Therefore, we will install it one subdirectory at a time.
 
 \section{On the Collector}
 
 A collector machine needs only the {\em dsc\/} binary, a configuration file,
 and a cron job script.
+
+\subsection{Prerequisites}
+
+You'll need a C/C++ compiler to compile the {\tt dsc\/} source code.
+
+If the collector and archiver are different systems, you'll need a
+way to transfer data files.  We recommend that you use the {\tt
+curl\/} HTTP/SSL client You may use another technique, such as {\tt
+scp\/} or {\tt rsync\/} if you prefer.
 
 \subsection{\tt src}
 
@@ -160,6 +138,7 @@ Alternatively you can manually copy the {\em dsc\/} binary and {\em
 dsc.conf.sample\/} file to a location of your choosing.
 
 \subsection{\tt cron}
+\label{sec-install-collector-cron}
 
 The collector needs only one file from this directory: {\em
 push-data.sh\/}.  This script uses {\tt curl\/} to upload XML files
@@ -179,22 +158,170 @@ which {\tt dsc\/} outputs its XML files.  For example:
 
 \section{The Archiver}
 
+Getting everything installed on the Archiver is a little more complicated.
+Here are the directories you need to visit:
+
+\section{Prerequisites}
+
+The XML-extractors and Ploticus-graphers are written in Perl.  In addition the
+standard Perl installation, you will also need the folowing Perl modules:
+
+\begin{itemize}
+	\item CGI-Untaint (CGI::Untaint)
+	\item CGI.pm
+	\item (Chart::Ploticus)
+	\item File-Spec (File::Spec)
+	\item File-Temp (File::Temp)
+	\item Geography-Countries (Geography::Countries)
+	\item IP-Country (IP::Country)
+	\item Lockfile-Simple (LockFile::Simple)
+	\item Net-IRR (Net::IRR)
+	\item Net-Whois (Net::Whois)
+	\item Net-Whois-IP (Whois::IP)
+	\item Scalar-List-Utils (List::Util)
+	\item URI
+	\item XML-Parser (XML::Parser)
+	\item XML-Simple (XML::Simple)
+\end{itemize}
+
+\noindent
+Also note that the XML::Parser module requires the {\em expat\/} package
+
+If you are using {\tt curl\/} to securely transport data files from
+collector to archiver, you'll need an HTTP server with SSL and CGI support.
+We recommend Apache with mod\_ssl.
+
+\subsection{\tt perllib}
+
+The {\em perllib\/} subdirectory contains some Perl modules
+used by the XML extractors and Ploticus graphers.  To install
+these type:
+
+\begin{verbatim}
+% cd perllib
+% ln -s . lib
+% perl Makefile.PL
+% make
+% su
+# make install
+\end{verbatim}
+
+\noindent
+The files will be intalled in your standard ``site\_perl'' directory.
+
 \subsection{\tt xml-extractors}
 
+The XML extractor Perl scripts are simply copied to the
+{\em /usr/local/dsc/libexec\/} directory with this command:
+
+\begin{verbatim}
+% cd xml-extractors
+% make install
+\end{verbatim}
 
 \subsection{\tt ploticus-graphers}
 
+The Ploticus grapher Perl scripts are simply copied to the
+{\em /usr/local/dsc/libexec\/} directory with this command:
+
+\begin{verbatim}
+% cd ploticus-graphers
+% make install
+\end{verbatim}
+
+\noindent
+Note that this directory currently contains some files that are not
+actually grapher scripts: {\em whois.pl\/} and {\em hostinfo.pl\/}
+are CGI scripts that display information about IP networks and hosts.
+They are linked from certain graphs with HTML imagemaps.  These are
+installed in {\em /usr/local/dsc/libexec\/}, but you may need to manually
+link to them from your {\em cgi-bin\/} directory:
+
+\begin{verbatim}
+# cd /usr/local/apache/cgi-bin
+# ln -s /usr/local/dsc/libexec/hostinfo.pl .
+# ln -s /usr/local/dsc/libexec/whois.pl .
+\end{verbatim}
+
+\noindent
+The other non-grapher files in this directory are {\em server-plots.mk\/}
+and {\em node-plots.mk\/}.  These are Makefiles that you can use to create
+the necessary graphs and HTML pages.  They should be symbolicly linked
+from the HTTP server document tree:
+
+\begin{verbatim}
+# cd /usr/local/apache/htdocs
+# mkdir server-name ; cd server-name
+# ln -s /usr/local/dsc/share/server-plots.mk Makefile
+# mkdir node-name ; cd node-name
+# ln -s /usr/local/dsc/share/node-plots.mk Makefile
+\end{verbatim}
+
 \subsection{\tt HTML}
+
+The {\em HTML\/} directory contains HTML template files for the graphs.
+When you type {\tt make install\/} these are copied to
+{\em /usr/local/dsc/share/html\/}.  The Makefiles discussed in
+the previous subsection look for the HTML files in that directory.
+You do not need to make any symbolic links.
 
 \subsection{\tt cron}
 
+The {\em cron\/} directory contains a handful of useful scripts that you can
+call from {\tt cron\/}.  When you type {\tt make install\/} these are copied
+to {\em /usr/local/dsc/libexec\/}.
+
+The {\em refile-and-grok.sh\/} script should be called every 1--5 minutes to process
+incoming XML files:
+
+\begin{verbatim}
+* * * * * /usr/local/dsc/libexec/refile-and-grok.sh
+\end{verbatim}
+
+That script looks for subdirectories in {\em /usr/local/dsc/data\/}
+and then calls {\em refile-and-grok-node.sh\/} for each server,node tuple.
+This separate script helps improve performance by processing all nodes
+in parallel.  
+
+The {\em refile-and-grok-node.sh\/} script looks for new XML files and passes
+them to the appropriate XML extractor.  
+
+The {\em mk-plots.sh\/} script may be called every 5--30 minutes to generate
+the graphs.  It simply iterates through directories in
+{\em /usr/local/dsc/htdocs\/} and calls the Makefiles for each server and node.
+
+The {\em remove-xmls.pl\/} script may be executed daily to 
+remove old XML files.  For example, if you want to keep only 10 days
+worth of XML files, use this cron entry:
+
+\begin{verbatim}
+0 0 * * * /usr/local/dsc/libexec/remove-xmls.pl 10
+\end{verbatim}
+
+
+
 \subsection{\tt cgi}
 
-\chapter{Running {\dsc}}
+The {\em cgi\/} directory contains a single file: {\em put-file.pl\/}.
+When you type {\tt make install\/} this script is copied to
+{\em /usr/local/dsc/libexec\/}.  You should then make a symbolic link
+to the installed script from your server's {\em cgi-bin\/} directory:
 
-\section{On the Collector}
+\begin{verbatim}
+# cd /usr/local/apache/cgi-bin
+# ln -s /usr/local/dsc/libexec/put-file.pl .
+\end{verbatim}
 
-\subsection{dsc.conf}
+This script accepts PUT requests on the HTTP server.  The HTTP
+server valdiates the client's X509 certificate.  If the certificate
+is invalid, the PUT request is denied.  This script reads environment
+variables to get X509 parameters.  The uploaded-data is stored in
+a directory based on the X509 Organizational Unit (server) and
+Common Name fields (node).
+
+\chapter{Configuring the {\dsc} Collector}
+
+\section{dsc.conf}
 
 Before running {\tt dsc\/} you need to create a configuration file.
 Note that configuration directive lines are terminated with a semi-colon.
@@ -305,10 +432,11 @@ A dataset is defined by the following parameters:
 {\em protocol\/}
 {\em Label1:Indexer1\/}
 {\em Label2:Indexer2\/}
-{\em options\/};
+{\em [filters]\/} 
+{\em [parameters]\/};
 \vspace{2ex}
 
-\subsubsection{Dataset Name}
+\subsection{Dataset Name}
 
 The dataset name is used in the filename for {\tt dsc\/}'s XML
 files.  Although this is an opaque string, the dataset name is also
@@ -316,12 +444,12 @@ used as the name for the XML extractors.  That is, if {\dsc} finds
 an XML file named {\em 1092180200.foo.xml\/}, it passes that file
 to {\em foo-extractor.pl\/}.
 
-\subsubsection{Protocol}
+\subsection{Protocol}
 
 {\dsc} currently knows about two protocol layers: IP and DNS.
 On the {\tt dataset\/} line they are written as {\tt ip\/} and {\tt dns\/}.
 
-\subsubsection{Indexers}
+\subsection{Indexers}
 
 An {\em indexer\/} is simply a function that transforms the attributes
 of an IP/DNS message into an array index.  For some attributes the
@@ -506,6 +634,193 @@ Here are some longer descriptions of the IP indexers:
 \item[ip\_proto]
 	The IP protocol type, e.g.: tcp, udp, icmp.
 \end{description}
+
+\subsection{Filters}
+
+You may specify zero or more of the following filters (separated by commas) on
+the {\tt dataset\/} line:
+
+\begin{description}
+\item[queries-only]
+	Count only DNS query messages.  A query is a DNS message
+	where the QR bit is set to 0.
+\item[replies-only]
+	Count only DNS reply messages.  A query is a DNS message 
+        where the QR bit is set to 1.
+\item[popular-qtypes]
+	Count only DNS messages where the query type is one of:
+	A, NS, CNAME, SOA, PTR, MX, AAAA, A6, ANY.
+\item[idn-only]
+	Count only DNS messages where the query name is in the
+	internationalized domain name format.
+\item[aaaa-or-a6-only]
+	Count only DNS Messages where the query type is AAAA or A6.
+\item[root-servers-net-only]
+	Count only DNS messages where the query name is within
+	the {\em root-servers.net\/} domain.
+\end{description}
+
+\subsection{Parameters}
+
+\noindent
+{\tt dsc\/} currently supports the following optional parameters:
+
+\begin{description}
+\item[min-count={\em NN\/}]
+	Cells with counts less than {\em NN\/} are not included
+	in the output.  Instead, they are aggregated into the special
+	values {\tt -:SKIPPED:-\/} and {\tt -:SKIPPED\_SUM:-\/}.  This helps reduce
+	the size of datasets with a large number of small counts.
+\end{description}
+
+\section{A Complete Sample dsc.conf}
+
+Here's how your entire {\em dsc.conf\/} file might look:
+
+\noindent\hrulefill
+
+\begin{footnotesize}
+\begin{verbatim}
+#bpf_program
+interface em0;
+
+local_address 192.5.5.241;
+
+run_dir "/udir/wessels/dsc/run-pao1";
+
+dataset qtype dns All:null Qtype:qtype queries-only;
+dataset rcode dns All:null Rcode:rcode replies-only;
+dataset opcode dns All:null Opcode:opcode queries-only;
+dataset rcode_vs_replylen dns Rcode:rcode ReplyLen:msglen replies-only;
+dataset client_subnet dns All:null ClientSubnet:cip4_net
+        queries-only min-count=10;
+dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
+dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes
+        min-count=3;
+dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype
+        queries-only;
+dataset client_subnet2 dns Class:query_classification ClientSubnet:cip4_net
+        queries-only min-count=5;
+
+dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
+dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
+dataset do_bit dns All:null DO:do_bit queries-only;
+dataset rd_bit dns All:null RD:rd_bit queries-only;
+
+dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
+dataset ipv6_rsn_abusers dns All:null ClientAddr:client
+        queries-only,aaaa-or-a6-only,root-servers-net-only min-count=27;
+
+dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
+\end{verbatim}
+\end{footnotesize}
+
+\noindent\hrulefill
+
+\section{Pushing XML files to the Archiver}
+
+The {\tt dsc\/} process writes XML files to its current directory
+(which you probably set with the {\em run\_dir\/} directive.  Back
+in Section~\ref{sec-install-collector-cron} we talked about the
+cron job that pushes XML files to the Archiver.
+
+The script that we provide ({\em push-data.sh\/}) uses {\tt curl\/}
+and X509 certificates.  This is a somewhat-complex technique.  You
+may want to start of with something simpler, such as {\tt rsync\/}
+or {\em scp\/}, then come back and attempt HTTPS PUT later.
+
+If you go with HTTPS PUT, the collector needs copies of the client
+X509 certificates.  The next chapter explains how to generate these
+certificates.  If you use our {\em push-data.sh\/} script, make
+sure that the certificate file location matches the {\em SRVAUTH\/}
+setting in the script.  You need two certificate files: one contains
+the Certificate Authority (CA) certificate ({\em cacert.pem\/}) and the
+other contains the client (collector) certificate and private key
+({\em node-cert.pem\/}).  The CA certificate is
+necessary so that {\tt curl\/} can authenticate the server.
+
+
+\chapter{Configuring the {\dsc} Archiver}
+
+After installation of the {\dsc} files, there is not much additional
+configuration to do.  You do need to configure the HTTP server, howerver.
+
+\section{Apache Configuration}
+
+You will need to configure Apache (or another HTTP server) to call
+{\em put-file.pl\/} for PUT requests.  For Apache, add these lines
+to {\em httpd.conf\/}:
+
+\begin{verbatim}
+SSLOptions +CompatEnvVars
+Script PUT /cgi-bin/put-file.pl
+\end{verbatim}
+
+\noindent
+You also need to configure Apache for SSL.  Here is what our configuration looks like:
+
+\begin{verbatim}
+SSLRandomSeed startup builtin
+SSLRandomSeed startup file:/dev/random
+SSLRandomSeed startup file:/dev/urandom 1024
+SSLRandomSeed connect builtin
+SSLRandomSeed connect file:/dev/random
+SSLRandomSeed connect file:/dev/urandom 1024
+
+<VirtualHost _default_:443>
+DocumentRoot "/httpd/htdocs-ssl"
+SSLEngine on
+SSLCertificateFile /httpd/conf/SSL/server/server.crt
+SSLCertificateKeyFile /httpd/conf/SSL/server/server.key
+SSLCertificateChainFile /httpd/conf/SSL/cacert.pem
+
+# For client-validation
+SSLCACertificateFile /httpd/conf/SSL/cacert.pem
+SSLVerifyClient require
+
+SSLOptions +CompatEnvVars
+Script PUT /cgi-bin/put-file.pl
+</VirtualHost>
+\end{verbatim}
+
+\section{Generating X509 Certificates}
+
+We use X509 certificates to authenticate both sides
+of an SSL connection when uploading XML data files from 
+the collector to the archiver.
+
+Certificate generation is a tricky thing.  We use three different
+types of certificates:
+\begin{enumerate}
+\item A self-signed root CA certificate
+\item A server certificate
+\item Client certificates for each collector node
+\end{enumerate}
+
+In the client certificates
+we use X509 fields to store the collector's server and node name.
+The Organizational Unit Name (OU) becomes the server name and
+the Common Name (CN) becomes the node name:
+
+\begin{verbatim}
+% openssl req -newkey rsa:1024 -keyout new.key -out new.req
+...
+Country Name (2 letter code) [AU]:US
+State or Province Name (full name) [Some-State]:Colorado
+Locality Name (eg, city) []:Boulder
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:TMF
+Organizational Unit Name (eg, section) []:x-root
+Common Name (eg, YOUR name) []:BLDR
+Email Address []:wessels@measurement-factory.com
+\end{verbatim}
+
+When the {\em put-file.pl\/} script recieves an XML file over an SSL session
+that uses this key, it will store the data in the {\em x-root/bldr\/} directory.
+
+\chapter{Data Storage}
+
+[Describe the format for archived data]
+
 \chapter{Bugs}
 
 \begin{itemize}
@@ -514,6 +829,10 @@ Here are some longer descriptions of the IP indexers:
 	Seems too confusing to have an opaque name for indexers in dsc.conf dataset
 	line.  The names are pre-determined anyway since they must match what the
 	XML extractors look for.
+
+\item
+	``OARC::'' is perhaps a poor name for the Perl module directory.  DSC:: might
+	be better.
 
 \end{itemize}
 
