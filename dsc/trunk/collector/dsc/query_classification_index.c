@@ -31,7 +31,7 @@ nonauth_tld(const dns_message * m)
 static int
 root_servers_net(const dns_message * m)
 {
-    if (0 == strstr(m->qname, "root-servers.net"))
+    if (strstr(m->qname, "root-servers.net"))
 	return CLASS_ROOT_SERVERS_NET;
     return 0;
 }
@@ -40,7 +40,9 @@ static int
 a_for_a(const dns_message *m)
 {
 	struct in_addr a;
-	if (m->qtype == T_A && inet_aton(m->qname, &a))
+	if (m->qtype != T_A)
+		return 0;
+	if (inet_aton(m->qname, &a))
 		return CLASS_A_FOR_A;
 	return 0;
 }
@@ -148,11 +150,11 @@ query_classification_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int x;
+    if ((x = a_for_a(m)))
+	return x;
     if ((x = nonauth_tld(m)))
 	return x;
     if ((x = root_servers_net(m)))
-	return x;
-    if ((x = a_for_a(m)))
 	return x;
     if ((x = rfc1918_ptr(m)))
 	return x;
