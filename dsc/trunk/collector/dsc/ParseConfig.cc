@@ -7,6 +7,8 @@
 #include <Hapy/Rules.h>
 #include <Hapy/IoStream.h>
 
+#include <errno.h>
+
 extern "C" int add_local_address(const char *);
 extern "C" int open_interface(const char *);
 extern "C" int set_run_dir(const char *);
