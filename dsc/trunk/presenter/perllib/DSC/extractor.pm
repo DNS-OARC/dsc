@@ -28,6 +28,7 @@ BEGIN {
 		&grok_qtype_vs_qnamelen_xml
 		&grok_rcode_vs_replylen_xml
 		&grok_qtype_vs_tld_xml
+		&grok_certain_qnames_vs_qtype_xml
 		&grok_direction_vs_ipproto_xml
 		$SKIPPED_KEY
         );
@@ -138,7 +139,7 @@ sub write_data2 {
 	}
 	close(OUT);
 	$lock->release;
-	#print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn";
 }
 
 # reads a 2-level hash database with no time dimension
@@ -187,7 +188,7 @@ sub write_data3 {
 	}
 	close(OUT);
 	$lock->release;
-	#print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn";
 }
 
 
@@ -242,7 +243,7 @@ sub write_data4 {
 	}
 	close(OUT);
 	$lock->release;
-	#print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn";
 }
 
 ##############################################################################
@@ -388,6 +389,28 @@ sub grok_qtype_vs_tld_xml {
 	}
 
 	($XML->{start_time}, %result);
+}
+
+sub grok_certain_qnames_vs_qtype_xml {
+	my $fname = shift || die;
+	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
+	my $XML = $XS->XMLin($fname);
+	my $n = 0;
+	my %result;
+
+	my $aref = $XML->{data}[0]->{CertainQnames};
+	foreach my $qnamehref (@$aref) {
+		my $qt = $qnamehref->{val};
+		#print Dumper($qnamehref);
+		foreach my $href (@{$qnamehref->{Qtype}}) {
+			die if defined ($href->{base64});
+			my $ql = $href->{val};
+			$result{$qt}->{$ql} = $href->{count};
+			#print "  result{$qt}->{$ql} = $href->{count}";
+		}
+	}
+
+	($XML->{start_time}, \%result);
 }
 
 
