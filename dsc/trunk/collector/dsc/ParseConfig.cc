@@ -12,6 +12,7 @@ extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
 	const char *secondname, const char *secondindexer,
 	const char *filtername);
+extern "C" int set_bpf_vlan_tag_byte_order(const char *);
 
 extern "C" void ParseConfig(const char *);
 
@@ -54,14 +55,17 @@ my_parse(const PreeNode &tree, int level)
 	int x;
         switch (tree.rid()) {
         case ctInterface:
+		assert(tree.count() > 1);
                 if (open_interface(tree[1].image().c_str()) != 1)
 			return 0;
                 break;
         case ctRunDir:
+		assert(tree.count() > 1);
                 if (set_run_dir(remove_quotes(tree[1].image()).c_str()) != 1)
                     return 0;
                 break;
         case ctLocalAddr:
+		assert(tree.count() > 1);
 		if (add_local_address(tree[1].image().c_str()) != 1)
 			return 0;
                 break;
@@ -77,6 +81,11 @@ my_parse(const PreeNode &tree, int level)
 		if (x != 1)
 			return 0;
                 break;
+	case ctBVTBO:
+		assert(tree.count() > 1);
+		if (set_bpf_vlan_tag_byte_order(tree[1].image().c_str()) != 1)
+			return 0;
+		break;
         default:
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (my_parse(tree[i], level + 1) != 1)

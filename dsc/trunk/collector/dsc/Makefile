@@ -37,7 +37,7 @@ all:  $(PROG)
 $(PROG): $(OBJS) $(LIBS)
 	$(CXX) -o $@ $(OBJS) $(LIBS)
 
-install:
+install: $(PROG)
 	@if test -n "$(INSTALLDIR)" ; then echo "installing in $$INSTALLDIR" ; else echo "set INSTALLDIR first"; false ; fi
 	install -m 755 $(PROG) $(INSTALLDIR)/bin
 	install -m 644 $(PROG).conf.sample $(INSTALLDIR)/etc

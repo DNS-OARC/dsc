@@ -47,6 +47,9 @@
 #define ETHER_TYPE_LEN 2
 #define ETHER_HDR_LEN (ETHER_ADDR_LEN * 2 + ETHER_TYPE_LEN)
 #endif
+#ifndef ETHERTYPE_8021Q
+#define ETHERTYPE_8021Q	0x8100
+#endif
 
 #if USE_PPP
 #include <net/if_ppp.h>
@@ -63,14 +66,11 @@ static int n_pcap = 0;
 static pcap_t **pcap = NULL;
 static fd_set pcap_fdset;
 static int max_pcap_fds = 0;
+static unsigned short port53;
 
-#if 0
-char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0"; */
-char *bpf_program_str = "udp port 53";
-#endif
 char *bpf_program_str = NULL;
 dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
-static unsigned short port53;
+int vlan_tag_needs_byte_conversion = 0;
 
 extern dns_message *handle_dns(const char *buf, int len);
 static DMC *dns_message_callback;
@@ -181,24 +181,51 @@ handle_raw(const u_char * pkt, int len)
 dns_message *
 handle_ether(const u_char * pkt, int len)
 {
+    static int f = 10;
     char buf[PCAP_SNAPLEN];
     struct ether_header *e = (void *) pkt;
-    if (ETHERTYPE_IP != ntohs(e->ether_type))
+    unsigned short etype = ntohs(e->ether_type);
+    if (len < ETHER_HDR_LEN)
 	return NULL;
-    memcpy(buf, pkt + ETHER_HDR_LEN, len - ETHER_HDR_LEN);
-    return handle_ip((struct ip *) buf, len - ETHER_HDR_LEN);
+    pkt += ETHER_HDR_LEN;
+    len -= ETHER_HDR_LEN;
+    if (ETHERTYPE_8021Q == etype) {
+	if (f) {
+		unsigned int ui;
+		unsigned short vid;
+		memcpy(&ui, pkt, 4);
+		memcpy(&vid, pkt, 2);
+		if (vlan_tag_needs_byte_conversion)
+			vid = ntohs(vid) & 0xfff;
+		else
+			vid = vid & 0xfff;
+		syslog(LOG_DEBUG, "got 8021Q packet: %08X, vlan=%d", ui, vid);
+		f--;
+	}
+	etype = ntohs(*(unsigned short *)(pkt + 2));
+	pkt += 4;
+	len -= 4;
+    }
+    if (len < 0)
+	return NULL;
+    if (ETHERTYPE_IP == etype) {
+	memcpy(buf, pkt, len);
+	return handle_ip((struct ip *) buf, len);
+    }
+    return NULL;
 }
 
 void
 handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     dns_message *m;
+    last_ts = hdr->ts;
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
     m = handle_datalink(pkt, hdr->caplen);
     if (NULL == m)
 	return;
-    last_ts = m->ts = hdr->ts;
+    m->ts = hdr->ts;
     dns_message_callback(m);
 }
 

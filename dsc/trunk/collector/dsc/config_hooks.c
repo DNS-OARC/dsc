@@ -49,3 +49,20 @@ add_dataset(const char *name, const char *layer,
 	syslog(LOG_INFO, "creating dataset %s", name);
 	return 1;
 }
+
+int
+set_bpf_vlan_tag_byte_order(const char *which)
+{
+	extern int vlan_tag_needs_byte_conversion;
+	syslog(LOG_INFO, "bpf_vlan_tag_byte_order is %s", which);
+	if (0 == strcmp(which, "host")) {
+		vlan_tag_needs_byte_conversion = 0;
+		return 1;
+	}
+	if (0 == strcmp(which, "net")) {
+		vlan_tag_needs_byte_conversion = 1;
+		return 1;
+	}
+	syslog(LOG_ERR, "unknown bpf_vlan_tag_byte_order '%s'", which);
+	return 0;
+}
