@@ -8,4 +8,4 @@ install:
 	@test -d $(INSTALLDIR)/libexec/ || mkdir $(INSTALLDIR)/libexec/
 	install -m 755 $(GRAPHERS) $(INSTALLDIR)/libexec/
 	@test -d $(INSTALLDIR)/share/ || mkdir $(INSTALLDIR)/share/
-	install -m 644 plots.mk $(INSTALLDIR)/share/
+	install -m 644 node-plots.mk $(INSTALLDIR)/share/
