@@ -88,6 +88,7 @@ main(int argc, char *argv[])
 	    Pcap_run(dns_message_handle, ip_message_handle);
 	    if (0 == fork())
 	        dns_message_report();
+	        ip_message_report();
 	    _exit(0);
 	} else {
 	    int cstatus = 0;
