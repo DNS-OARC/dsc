@@ -407,7 +407,7 @@ sub ploticus_arg {
 sub ploticus_begin {
 	die "wrong state" unless (1 == $ploticus_state);
 	my $cmd = join(" ",
-		"/usr/local/bin/pl" ,
+		"/usr/local/bin/ploticus" ,
 		"-stdin",
 		(map { "$_ $ploticus_args{$_}" } keys %ploticus_args),
 		"-$ploticus_type",
