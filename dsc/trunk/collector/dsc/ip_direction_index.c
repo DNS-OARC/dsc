@@ -36,7 +36,7 @@ ip_direction_indexer(const void *vp)
 }
 
 int
-add_local_address(const char *dotted)
+ip_local_address(const char *dotted)
 {
 	struct _foo *n = calloc(1, sizeof(*n));
 	n->next = local_addrs;

@@ -17,10 +17,18 @@ int
 set_bpf_program(const char *s)
 {
 	extern char *bpf_program_str;
+        syslog(LOG_INFO, "BPF program is: %s", s);
 	bpf_program_str = strdup(s);
 	return 1;
 }
 
+int 
+add_local_address(const char *s)
+{
+	extern int ip_local_address(const char *);
+        syslog(LOG_INFO, "adding local address %s", s);
+        return ip_local_address(s);    
+}
 
 int
 set_run_dir(const char *dir)
@@ -31,3 +39,13 @@ set_run_dir(const char *dir)
 	return 1;
 }
 
+
+int
+add_dataset(const char *name, const char *layer,
+        const char *firstname, const char *firstindexer,
+        const char *secondname, const char *secondindexer,
+        const char *filtername)
+{
+	syslog(LOG_INFO, "creating dataset %s", name);
+	return 1;
+}

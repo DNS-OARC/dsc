@@ -8,23 +8,27 @@
 extern "C" int add_local_address(const char *);
 extern "C" int open_interface(const char *);
 extern "C" int set_run_dir(const char *);
+extern "C" int add_dataset(const char *name, const char *layer,
+	const char *firstname, const char *firstindexer,
+	const char *secondname, const char *secondindexer,
+	const char *filtername);
 
 extern "C" void ParseConfig(const char *);
 
 using namespace Hapy;
 
 enum {
-	ctWhiteSpace = 1,
-	ctBareToken,
+	ctBareToken = 1,
 	ctQuotedToken,
 	ctToken,
 	ctDecimalNumber,
-	ctInterfaceName = 11,
-	ctIPv4Address,
+	ctComment,
+	ctIPv4Address = 11,
 	ctInterface = 21,
 	ctRunDir,
 	ctLocalAddr,
 	ctPacketFilterProg,
+	ctDataset,
 	ctConfig = 30,
 	ctMax
 } configToken;
@@ -45,6 +49,7 @@ remove_quotes(const string &s)
 static int
 my_parse(const PreeNode &tree, int level)
 {
+	int x;
         switch (tree.rid()) {
         case ctInterface:
                 if (open_interface(tree[1].image().c_str()) != 1)
@@ -56,6 +61,18 @@ my_parse(const PreeNode &tree, int level)
                 break;
         case ctLocalAddr:
 		if (add_local_address(tree[1].image().c_str()) != 1)
+			return 0;
+                break;
+	case ctDataset:
+		assert(tree.count() > 9);
+		x = add_dataset(tree[1].image().c_str(),	// name
+			tree[2].image().c_str(),		// layer
+			tree[3].image().c_str(),		// 1st dim name
+			tree[5].image().c_str(),		// 1st dim indexer
+			tree[6].image().c_str(),		// 2nd dim name
+			tree[8].image().c_str(),		// 2nd dim indexer
+			tree[9].image().c_str());		// filter name
+		if (x != 1)
 			return 0;
                 break;
         default:
@@ -74,28 +91,26 @@ ParseConfig(const char *fn)
 	Rule rQuotedToken("quoted-token", ctQuotedToken);
 	Rule rToken("token", ctToken);
 	Rule rDecimalNumber("decimal-number", ctDecimalNumber);
-	Rule rWS("whitespace", ctWhiteSpace);
+	Rule rComment("comment", ctComment);
 
-	Rule rInterfaceName("interfrace-name", ctInterfaceName);
 	Rule rIPv4Address("ipv4-address", ctIPv4Address);
 
 	Rule rInterface("Interface", ctInterface);
 	Rule rRunDir("RunDir", ctRunDir);
 	Rule rLocalAddr("LocalAddr", ctLocalAddr);
 	Rule rPacketFilterProg("PacketFilter", ctPacketFilterProg);
+	Rule rDataset("Dataset", ctDataset);
 
 	Rule rConfig("Config", ctConfig);
 
-
-	// token level
-	rWS = *space_r();
+	// primitive token level
 	rBareToken = +(anychar_r() - space_r() - "\"" - ";");
 	rQuotedToken = quoted_r('"', anychar_r(), '"');
 	rToken = rBareToken | rQuotedToken;
-	rDecimalNumber = +(digit_r());
+	rDecimalNumber = +digit_r();
+	rComment = quoted_r("#", anychar_r(), eol_r());
 
-	// special token level
-	rInterfaceName = rBareToken;
+	// fancy token level
 	rIPv4Address = rDecimalNumber >> "." >>
 		rDecimalNumber >> "." >>
 		rDecimalNumber >> "." >>
@@ -103,16 +118,26 @@ ParseConfig(const char *fn)
 
 
 	// rule/line level
-	rInterface = "interface" >>rWS >>rInterfaceName >>rWS >>";" >>rWS;
-	rRunDir = "run_dir" >>rWS >>rQuotedToken >>rWS >>";" >>rWS;
-	rLocalAddr = "local_address" >>rWS >>rIPv4Address >>rWS >>";" >>rWS;
-	rPacketFilterProg = "bpf_program" >>rWS >>rQuotedToken >>rWS >>";" >>rWS;
+	rInterface = "interface" >>rBareToken >>";" ;
+	rRunDir = "run_dir" >>rQuotedToken >>";" ;
+	rLocalAddr = "local_address" >>rIPv4Address >>";" ;
+	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
+	rDataset = "dataset" >>rBareToken >>rBareToken
+		>>rBareToken >>":" >>rBareToken
+		>>rBareToken >>":" >>rBareToken
+		>>rBareToken >>";" ;
 
 	// the whole config
-	rConfig = *(rInterface | rRunDir | rLocalAddr | rPacketFilterProg) >> end_r();
+	rConfig = *(
+		rInterface |
+		rRunDir |
+		rLocalAddr |
+		rPacketFilterProg |
+		rDataset
+	) >> end_r();
 
 	// trimming
-	rConfig.trim(*space_r());
+	rConfig.trim(*(space_r() | rComment));
 	rQuotedToken.verbatim(true);
 	rBareToken.verbatim(true);
 	rIPv4Address.verbatim(true);

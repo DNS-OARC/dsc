@@ -62,7 +62,7 @@ daemonize(void)
 void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [opts] netdevice [netdevice ...]\n",
+    fprintf(stderr, "usage: %s [opts] dsc.conf\n",
 	progname);
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode\n");
     exit(1);
