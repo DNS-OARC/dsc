@@ -371,7 +371,6 @@ my $std_accum_yaxes = {
   direction_vs_ipproto => {
     dataset => 'direction_vs_ipproto',
     plot_type => 'trace',
-    yaxes	=> $std_trace_yaxes,
     keys	=> [qw(recv:icmp recv:tcp recv:udp recv:else)],
     names	=> [qw(ICMP TCP UDP Other)],
     colors	=> [qw(red brightgreen purple orange)],
@@ -384,7 +383,7 @@ my $std_accum_yaxes = {
             default => 1,
         },
         percent => {
-            label => 'Percent of Pakcets',
+            label => 'Percent of Packets',
             divideflag => 0,
             default => 0,
         },
@@ -401,7 +400,6 @@ my $std_accum_yaxes = {
     dataset => 'direction_vs_ipproto',
     datafile => 'direction_vs_ipproto',
     plot_type => 'trace',
-    yaxes	=> $std_trace_yaxes,
     keys	=> [qw(sent:icmp sent:tcp sent:udp sent:else)],
     names	=> [qw(ICMP TCP UDP Other)],
     colors	=> [qw(red brightgreen purple orange)],
@@ -414,7 +412,7 @@ my $std_accum_yaxes = {
             default => 1,
         },
         percent => {
-            label => 'Percent of Pakcets',
+            label => 'Percent of Packets',
             divideflag => 0,
             default => 0,
         },
@@ -556,6 +554,22 @@ my $std_accum_yaxes = {
     yaxes	=> $std_accum_yaxes,
     plottitle	=> 'Clients sending excessive root-servers.net queries',
     map_legend	=> 1,
+  },
+
+  chaos_types_and_names => {
+    plot_type => 'trace',
+    yaxes	=> $std_trace_yaxes,
+    keys	=> [qw(16:version.bind 16:hostname.bind Other)],
+    names	=> ['TXT version.bind', 'TXT hostname.bind', 'Other'],
+    colors	=> [qw(red brightgreen purple)],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    plottitle   => 'CHAOS Queries',
+    map_legend	=> 1,
+    munge_func  => sub {
+	# XXX: 'shift' represents the old data hashref
+	DSC::grapher::munge_2d_to_1d(shift, [qw(16)], [qw(version.bind hostname.bind else)])
+   }
   },
 
 );
