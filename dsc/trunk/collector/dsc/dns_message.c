@@ -127,8 +127,6 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 	*fl = calloc(1, sizeof(**fl));
 	assert(*fl);
 	if (0 == strcmp(t, "any")) {
-	    (*fl)->filter = NULL;
-	    fl = &(*fl)->next;
 	    continue;
 	}
 	if (0 == strcmp(t, "queries-only")) {

@@ -47,8 +47,6 @@ ip_message_find_filters(const char *fn, filter_list ** fl)
 	*fl = calloc(1, sizeof(**fl));
 	assert(*fl);
 	if (0 == strcmp(t, "any")) {
-	    (*fl)->filter = NULL;
-	    fl = &(*fl)->next;
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
