@@ -14,13 +14,13 @@ struct _md_array {
     struct {
 	IDXR *indexer;
 	HITR *iterator;
-	char *type;
+	const char *type;
 	int alloc_sz;
     } d1;
     struct {
 	IDXR *indexer;
 	HITR *iterator;
-	char *type;
+	const char *type;
 	int alloc_sz;
     } d2;
     int **array;

@@ -9,8 +9,8 @@
 #include "pcap.h"
 #include "base64.h"
 
-static char *d1_type_s;		/* XXX barf */
-static char *d2_type_s;		/* XXX barf */
+static const char *d1_type_s;		/* XXX barf */
+static const char *d2_type_s;		/* XXX barf */
 
 static const char *b64 = " base64=\"1\"";
 
@@ -35,7 +35,7 @@ finish_array(void *pr_data)
 }
 
 static void
-d1_type(void *pr_data, char *t)
+d1_type(void *pr_data, const char *t)
 {
     FILE *fp = pr_data;
     fprintf(fp, "  <dimension number=\"1\" type=\"%s\"/>\n", t);
@@ -43,7 +43,7 @@ d1_type(void *pr_data, char *t)
 }
 
 static void
-d2_type(void *pr_data, char *t)
+d2_type(void *pr_data, const char *t)
 {
     FILE *fp = pr_data;
     fprintf(fp, "  <dimension number=\"2\" type=\"%s\"/>\n", t);

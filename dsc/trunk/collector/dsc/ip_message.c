@@ -30,5 +30,5 @@ ip_message_init(void)
 void
 ip_message_report(void)
 {
-    md_array_print(direction_vs_ipproto, &xml_printer, "direction_vs_ipproto");
+    md_array_print(direction_vs_ipproto, &xml_printer);
 }
