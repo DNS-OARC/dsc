@@ -13,9 +13,9 @@ fi
 cd $TD
 TS=`date +%Y%m%d%H%M`
 cvs export -r HEAD -d dsc-$TS dsc
-${RM} update-tmfbase.sh
-${RM} mk-release.sh
-${RM} junk
+
+${RM} collector/update-tmfbase.sh
+${RM} dsc-$TS/mk-release.sh
 
 (cd dsc-$TS/doc; make all clean-release)
 tar czvf ../dsc-$TS.tar.gz dsc-$TS
