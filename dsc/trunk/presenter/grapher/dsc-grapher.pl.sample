@@ -195,7 +195,7 @@ sub load_data {
 	my $start = time;
 	my $last = $ARGS{end};
 	my $first = $ARGS{end} - $ARGS{window};
-	my $nl = 1;
+	my $nl = 0;
 	if ($PLOT->{plot_type} =~ /^accum/) {
 		#
 		# for 'accum' plots, round up the start time
@@ -219,7 +219,7 @@ sub load_data {
 		warn "[$$] $!\n" unless (-f $datafile);
 		if ('bynode' eq $ARGS{plot}) {
 			# XXX ugly special case
-			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
+			$nl += &{$PLOT->{data_reader}}(\%thash, $datafile);
 			bynode_summer(\%thash, \%hash, $node);
 			# XXX yes, wasteful repetition
 			$PLOT->{keys} = [ @{$CFG->{servers}{$ARGS{server}}} ];
@@ -227,7 +227,7 @@ sub load_data {
 		} else {
 			# note that 'summing' is important for 'accum'
 			# plots, even for a single node
-			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
+			$nl += &{$PLOT->{data_reader}}(\%thash, $datafile);
 			&{$PLOT->{data_summer}}(\%thash, \%hash);
 		}
 	    }
@@ -428,6 +428,7 @@ sub trace_plot {
 	};
 	my $xaxis_opts = {
 		-window => $ARGS{window},
+		-stubcull => '0.5',
 	};
 	my $yaxis_opts = {
 		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
@@ -803,7 +804,7 @@ sub data_summer_0d {
 		$to->{$k0} += $from->{$k0};
 	}
 	my $stop = time;
-	printf STDERR "[$$] data_summer_0d took %d seconds\n", $stop-$start;
+	#printf STDERR "[$$] data_summer_0d took %d seconds\n", $stop-$start;
 }
 
 sub data_summer_1d {
@@ -816,7 +817,7 @@ sub data_summer_1d {
 		}
 	}
 	my $stop = time;
-	printf STDERR "[$$] data_summer_1d took %d seconds\n", $stop-$start;
+	#printf STDERR "[$$] data_summer_1d took %d seconds\n", $stop-$start;
 }
 
 sub data_summer_2d {
@@ -831,7 +832,7 @@ sub data_summer_2d {
 		}
 	}
 	my $stop = time;
-	printf STDERR "[$$] data_summer_2d took %d seconds\n", $stop-$start;
+	#printf STDERR "[$$] data_summer_2d took %d seconds\n", $stop-$start;
 }
 
 # XXX special hack for "bynode" plots
@@ -849,7 +850,7 @@ sub bynode_summer {
 		}
 	}
 	my $stop = time;
-	printf STDERR "[$$] bynode_summer took %d seconds\n", $stop-$start;
+	#printf STDERR "[$$] bynode_summer took %d seconds\n", $stop-$start;
 }
 
 sub Plot {
@@ -1074,6 +1075,8 @@ sub window_secs {
 		$n *= 86400;
 	} elsif ($unit =~ /^week/) {
 		$n *= 7*86400;
+	} elsif ($unit =~ /^month/) {
+		$n *= 30*86400;
 	} else {
 		die "unknown unit: $unit";
 	}
