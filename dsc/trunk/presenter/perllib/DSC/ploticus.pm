@@ -44,16 +44,27 @@ END { }
 my $plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
 my $strftimefmt = '%D.%T';
 
+#sub plotdata_tmp {
+#	my $label = shift;
+#	my $tf;
+#	my $fh;
+#	if (defined($label)) {
+#		($fh, $tf) = tempfile(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
+#	} else {
+#		($fh, $tf) = tempfile(TEMPLATE => $plotdata_tmp);
+#	}
+#	($fh, $tf);
+#}
+
 sub plotdata_tmp {
 	my $label = shift;
-	my $tf;
-	my $fh;
+	my $obj;
 	if (defined($label)) {
-		($fh, $tf) = tempfile(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
+		$obj = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
 	} else {
-		($fh, $tf) = tempfile(TEMPLATE => $plotdata_tmp);
+		$obj = new File::Temp(TEMPLATE => $plotdata_tmp);
 	}
-	($fh, $tf);
+	$obj;
 }
 
 sub Ploticus_create_datafile {
