@@ -61,7 +61,9 @@ $PLOT = Plot($ARGS{plot});
 error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 #print STDERR "[$$] PLOT=" . Dumper($PLOT);
 
-if (!defined($ARGS{yaxis}) || !defined($PLOT->{yaxes}{$ARGS{yaxi}})) {
+if (!defined($ARGS{yaxis})) {
+	$ARGS{yaxis} = find_default_yaxis_type();
+} elsif (!defined($PLOT->{yaxes}{$ARGS{yaxis}})) {
 	$ARGS{yaxis} = find_default_yaxis_type();
 }
 
@@ -138,7 +140,7 @@ sub make_image {
 	}
 	if ($ARGS{yaxis} eq 'percent') {
 		print STDERR "[$$] converting to percentage\n";
-		$data = convert_to_percentage($data);
+		$data = convert_to_percentage($data, $PLOT->{plot_type});
 	}
 	print STDERR Dumper($data) if ($PLOT->{debugflag});
 	$datafile = plotdata_tmp($ARGS{plot});
@@ -533,15 +535,35 @@ sub munge_2d_to_1d {
 
 sub convert_to_percentage {
 	my $data = shift;
+	my $type = shift;
 	my %newdata;
-	foreach my $t (keys %$data) {
+	my $S;
+	if ('trace' eq $type) {
+	    foreach my $t (keys %$data) {
 		$S = 0;
 		foreach my $k1 (keys %{$data->{$t}}) {
 			$S += $data->{$t}{$k1};
 		}
+		$S /= 100;
 		foreach my $k1 (keys %{$data->{$t}}) {
-			$newdata{$t}{$k1} = 100 * $data->{$t}{$k1} / $S;
+			$newdata{$t}{$k1} = $data->{$t}{$k1} / $S;
 		}
+	    }
+	} elsif ('accum2d' eq $type) {
+		$S = 0;
+		foreach my $k1 (keys %$data) {
+			foreach my $k2 (keys %{$data->{$k1}}) {
+				$S += $data->{$k1}{$k2};
+			}
+		}
+		$S /= 100;
+		foreach my $k1 (keys %$data) {
+			foreach my $k2 (keys %{$data->{$k1}}) {
+				$newdata{$k1}{$k2} = $data->{$k1}{$k2} / $S;
+			}
+		}
+	} else {
+		die "dont know how to percentify plot type $type";
 	}
 	\%newdata;
 }
