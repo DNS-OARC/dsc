@@ -1292,6 +1292,8 @@ sub units_to_seconds {
 		$n *= 7*86400;
 	} elsif ($unit =~ /^month/) {
 		$n *= 30*86400;
+	} elsif ($unit =~ /^year/) {
+		$n *= 365*86400;
 	} else {
 		die "unknown unit: $unit";
 	}
