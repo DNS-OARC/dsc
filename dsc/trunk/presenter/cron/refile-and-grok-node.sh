@@ -36,7 +36,7 @@ for type in $TYPES ; do
 			secs=`echo $h | awk -F. '{print $1}'`
 			secs=`expr $secs - 60`
 			#yymmdd=`date -u -r $secs +%Y%m%d`
-			yymmdd=`perl -e 'use POSIX; print strftime "%Y%m%d", localtime(time)'`
+			yymmdd=`perl -e 'use POSIX; print strftime "%Y%m%d", localtime(shift)' $secs`
 			test -d $yymmdd || mkdir $yymmdd
 			test -d $yymmdd/$type || mkdir $yymmdd/$type
 			#echo "Doing $type-extractor.pl $h"
