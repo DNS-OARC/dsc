@@ -60,11 +60,11 @@ sub Ploticus_create_datafile {
 	my $keysarrayref = shift;
 	my $FH = shift;
 	my $time_bin_size = shift || 60;
+	my $end = shift;
 	my $window = shift;
 	my $divideflag = shift;
 	my %newhash;
-	my $now = $main::now || time;
-	my $cutoff = $now - $window;
+	my $cutoff = $end - $window;
 	$divideflag = 0 unless defined($divideflag);
 	#
 	# convert the original data into possibly larger bins
@@ -92,6 +92,7 @@ sub Ploticus_create_datafile {
 	#
 	# now write the new data
 	#
+	my $nl = 0;
 	my $DF = $divideflag ? 60 : 1;
 	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
 		my @v = ();
@@ -99,8 +100,10 @@ sub Ploticus_create_datafile {
 			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / ($DF*$newhash{$tokey}{$qt . '_COUNT'}): '-');
 		}
 		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v), "\n";
+		$nl++;
 	}
 	close($FH);
+	$nl;
 }
 
 sub Ploticus_create_datafile_type2 {
@@ -147,11 +150,12 @@ sub Ploticus_areadef{
 	PO($ropts, 'rectangle', '1 1 6 4');
 	PO($ropts, 'xscaletype');
 	my $window = $ropts->{-window};
+	my $end = $ropts->{-end};
 	if (defined($window)) {
-		my $then = $main::now - $window;
+		my $then = $end - $window;
 	#	   $then -= ($then % &window2increment($window));
 		my $range_begin = POSIX::strftime($strftimefmt, gmtime($then));
-		my $range_end = POSIX::strftime($strftimefmt, gmtime($main::now));
+		my $range_end = POSIX::strftime($strftimefmt, gmtime($end));
 		P("xrange: $range_begin $range_end");
 	} elsif (defined($ropts->{-xstackfields})) {
 		P("xautorange: datafield=$ropts->{-xstackfields} combomode=stack lowfix=0");
@@ -242,7 +246,7 @@ sub Ploticus_xaxis {
 	P("#proc xaxis");
 	if (!defined($window)) {
 		P("stubs: inc");
-	} elsif ($window > 3*24*3600) {
+	} elsif ($window >= 3*24*3600) {
 		P("stubs: inc 1 day");
 		P("stubformat: Mmmdd");
 		P("label: Date");
