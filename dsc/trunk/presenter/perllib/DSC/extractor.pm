@@ -8,11 +8,11 @@ use Digest::MD5;
 use strict;
 
 BEGIN {
-        use Exporter   ();
-        use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-        $VERSION     = 1.00;
-        @ISA         = qw(Exporter);
-        @EXPORT      = qw(
+	use Exporter   ();
+	use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+	$VERSION     = 1.00;
+	@ISA	 = qw(Exporter);
+	@EXPORT      = qw(
 		&yymmdd
 		&read_data
 		&write_data
@@ -29,9 +29,9 @@ BEGIN {
 		&replace_keys
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
-        );
-        %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-        @EXPORT_OK   = qw();
+	);
+	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
+	@EXPORT_OK   = qw();
 }
 use vars      @EXPORT;
 use vars      @EXPORT_OK;
@@ -58,14 +58,14 @@ sub yymmdd {
 #
 sub lockfile_format {
 	my $fn = shift;
-        my @x = stat ($fn);
+	my @x = stat ($fn);
 	unless (defined ($x[0]) && defined($x[1])) {
 		open(X, ">$fn");
 		close(X);
 	}
-        @x = stat ($fn);
+	@x = stat ($fn);
 	die "$fn: $!" unless (defined ($x[0]) && defined($x[1]));
-        '/tmp/' . join('.', $x[0], $x[1], 'lck');
+	'/tmp/' . join('.', $x[0], $x[1], 'lck');
 }
 
 #
@@ -137,15 +137,15 @@ sub read_data2 {
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
-                if (/^#MD5 (\S+)/) {
-                        if ($1 ne $md->hexdigest) {
-                                warn "MD5 checksum error in $fn at line $nl, exiting";
-                                #return -1;
-                        }
-                        next;
-                }
-                $md->add($_);
-                chomp;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl, exiting";
+				#return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
 		my ($k, $v) = split;
 		$$href{$k} = $v;
 		$nl++;
@@ -192,15 +192,15 @@ sub read_data3 {
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
-                if (/^#MD5 (\S+)/) {
-                        if ($1 ne $md->hexdigest) {
-                                warn "MD5 checksum error in $fn at line $nl, exiting";
-                                #return -1;
-                        }
-                        next;
-                }
-                $md->add($_);
-                chomp;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl, exiting";
+				#return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
 		my ($k1, $k2, $v) = split;
 		next unless defined($v);
 		$$href{$k1}->{$k2} = $v;
@@ -227,10 +227,10 @@ sub write_data3 {
 			print OUT $line;
 			$md->add($line);
 			$nl++;
-                	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
+			print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
 		}
 	}
-        print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
+	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
 	close(OUT);
 	rename "$fn.new", $fn || die "$fn.new: $!";
 	print "wrote $nl lines to $fn\n";
@@ -244,20 +244,20 @@ sub read_data4 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-        my $md = Digest::MD5->new;
+	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
-                if (/^#MD5 (\S+)/) {
-                        if ($1 ne $md->hexdigest) {
-                                warn "MD5 checksum error in $fn at line $nl, exiting";
-                                #return -1;
-                        }
-                        next;
-                }
-                $md->add($_);
-                chomp;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl, exiting";
+				#return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
 		my ($ts, %foo) = split;
 		while (my ($k,$v) = each %foo) {
 			my %bar = split(':', $v);
@@ -278,7 +278,7 @@ sub write_data4 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lock = new File::Flock($fn);
-        my $md = Digest::MD5->new;
+	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || return;
 	foreach my $ts (sort {$a <=> $b} keys %$href) {
 		my @foo = ();
@@ -290,9 +290,9 @@ sub write_data4 {
 		print OUT $line;
 		$md->add($line);
 		$nl++;
-                print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
+		print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
 	}
-        print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
+	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
 	close(OUT);
 	rename "$fn.new", $fn || die "$fn.new: $!";
 	print "wrote $nl lines to $fn\n";
@@ -352,18 +352,18 @@ sub grok_array_xml {
 }
 
 sub elsify_unwanted_keys {
-        my $hashref = shift;
-        my $keysref = shift;
-        foreach my $k (keys %{$hashref}) {
-                next if ('else' eq $k);
-                next if (grep {$k eq $_} @$keysref);
-                $$hashref{else} += $$hashref{$k};
-                delete $$hashref{$k};
-        }
+	my $hashref = shift;
+	my $keysref = shift;
+	foreach my $k (keys %{$hashref}) {
+		next if ('else' eq $k);
+		next if (grep {$k eq $_} @$keysref);
+		$$hashref{else} += $$hashref{$k};
+		delete $$hashref{$k};
+	}
 }
 
 sub replace_keys {
-        my $oldhash = shift;
+	my $oldhash = shift;
 	my $oldkeys = shift;
 	my $newkeys = shift;
 	my @newkeycopy = @$newkeys;
