@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "md_array.h"
 #include "dns_message.h"
@@ -155,6 +156,11 @@ md_array_print(md_array * a, md_array_printer * pr)
     }
     pr->finish_data(fp);
     pr->finish_array(fp);
+    /*
+     * XXX need chmod because files are written as root, but
+     * may be processed by a non-priv user
+     */
+    fchmod(fd, 0664);
     fclose(fp);
     rename(tname, fname);
     return 0;
