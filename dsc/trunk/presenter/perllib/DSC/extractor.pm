@@ -79,9 +79,10 @@ sub read_data {
 	return 0 unless (-f $fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, exiting";
+				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
 				return -1;
 			}
 			next;
@@ -90,7 +91,6 @@ sub read_data {
 		chomp;
 		my ($k, %B) = split;
 		$href->{$k} = \%B;
-		$nl++;
 	    }
 	    close(IN);
 	}
@@ -135,9 +135,10 @@ sub read_data2 {
 	return 0 unless (-f $fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, exiting";
+				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
 				return -1;
 			}
 			next;
@@ -146,7 +147,6 @@ sub read_data2 {
 		chomp;
 		my ($k, $v) = split;
 		$href->{$k} = $v;
-		$nl++;
 	    }
 	    close(IN);
 	}
@@ -189,9 +189,10 @@ sub read_data3 {
 	return 0 unless (-f $fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, exiting";
+				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
 				return -1;
 			}
 			next;
@@ -201,7 +202,6 @@ sub read_data3 {
 		my ($k1, $k2, $v) = split;
 		next unless defined($v);
 		$href->{$k1}{$k2} = $v;
-		$nl++;
 	    }
 	    close(IN);
 	}
@@ -245,9 +245,10 @@ sub read_data4 {
 	return 0 unless (-f $fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, exiting";
+				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
 				return -1;
 			}
 			next;
@@ -259,7 +260,6 @@ sub read_data4 {
 			my %bar = split(':', $v);
 			$href->{$ts}{$k} = \%bar;
 		}
-		$nl++;
 	    }
 	    close(IN);
 	}
