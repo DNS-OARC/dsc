@@ -24,7 +24,7 @@ BEGIN {
 		&grok_rcode_xml
 		&grok_qtype_xml
 		&grok_cltsub_xml
-		&grok_cltsub2_xml
+		&grok_client_subnet2_xml
 		&grok_tld_xml
 		&grok_qtype_vs_qnamelen_xml
 		&grok_rcode_vs_replylen_xml
@@ -32,6 +32,7 @@ BEGIN {
 		&grok_certain_qnames_vs_qtype_xml
 		&grok_direction_vs_ipproto_xml
 		$SKIPPED_KEY
+		$SKIPPED_SUM_KEY
         );
         %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
         @EXPORT_OK   = qw();
@@ -44,6 +45,7 @@ END { }
 
 # globals
 $SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
+$SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 
 my $lockfile_template = '/var/tmp/%F.lck';
 my $LOCK_RETRY_DURATION = 45;
@@ -323,7 +325,7 @@ sub grok_cltsub_xml {
 	&grok_1d_xml($fname, 'ClientSubnet');
 }
 
-sub grok_cltsub2_xml {
+sub grok_client_subnet2_xml {
 	my $fname = shift || die;
 	&grok_2d_xml($fname, 'Class', 'ClientSubnet');
 }
