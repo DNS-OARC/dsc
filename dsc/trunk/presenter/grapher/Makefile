@@ -1,9 +1,6 @@
 
 GRAPHERS += dsc-grapher.pl
 
-GRAPHERS += whois.pl
-GRAPHERS += hostinfo.pl
-
 CONFIGS  += dsc-grapher.cfg.sample
 
 INSTALLDIR=/usr/local/dsc
