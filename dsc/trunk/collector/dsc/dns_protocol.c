@@ -118,7 +118,7 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
     if (sometype == T_OPT) {
 	m->edns.found = 1;
 	memcpy(&m->edns.version, buf + offset + 5, 1);
-	memcpy(&us, buf + 6, 2);
+	memcpy(&us, buf + offset + 6, 2);
 	us = ntohs(us);
 	m->edns.d0 = (us >> 15) & 0x01;
     }
