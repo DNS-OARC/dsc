@@ -57,6 +57,7 @@ $ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
 $ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
 $ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $main::now;
 $ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis');
+$ARGS{key} = $untaint->extract(-as_printable => 'key');
 
 $PLOT = Plot($ARGS{plot});
 error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
@@ -76,6 +77,21 @@ if ($PLOT->{plot_type} =~ /^accum/ && $ARGS{window} < 86400) {
 
 $ARGS{end} = $main::now if ($ARGS{end} > $main::now);
 
+if (defined($ARGS{key})) {
+	my @newkeys;
+	my @newcolors;
+	my @newnames;
+	for (my $i = 0; $i<int(@{$PLOT->{keys}}); $i++) {
+		next unless ($ARGS{key} eq ${$PLOT->{keys}}[$i]);
+print STDERR "found key $ARGS{key}\n";
+		push(@newkeys, ${$PLOT->{keys}}[$i]);
+		push(@newcolors, ${$PLOT->{colors}}[$i]);
+		push(@newnames, ${$PLOT->{names}}[$i]);
+	}
+	$PLOT->{keys} = \@newkeys;
+	$PLOT->{colors} = \@newcolors;
+	$PLOT->{names} = \@newnames;
+}
 
 
 #print STDERR "[$$] " . Dumper(\%ARGS);
@@ -86,7 +102,8 @@ my $cache_name = cache_name($ARGS{server},
 	$ARGS{window},
 	$ARGS{binsize},
 	$ARGS{mini},
-	$ARGS{yaxis});
+	$ARGS{yaxis},
+	$ARGS{key});
 
 my $ACCUM_TOP_N = $ARGS{mini} ? 20 : 40;
 my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
