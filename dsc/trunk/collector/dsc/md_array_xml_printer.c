@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/time.h>
 
 #include "dns_message.h"
 #include "md_array.h"
@@ -10,10 +12,14 @@ static char *d2_type_s;		/* XXX barf */
 static void
 start_array(void *pr_data)
 {
+    extern struct timeval start_ts;
+    extern struct timeval finish_ts;
     FILE *fp = pr_data;
     assert(fp);
-    fprintf(fp, "<array ");
-    fprintf(fp, "dimensions=\"%d\"", 2);
+    fprintf(fp, "<array");
+    fprintf(fp, " dimensions=\"%d\"", 2);
+    fprintf(fp, " start_time=\"%d\"", (int) start_ts.tv_sec);
+    fprintf(fp, " stop_time=\"%d\"", (int) finish_ts.tv_sec);
     fprintf(fp, ">\n");
 }
 

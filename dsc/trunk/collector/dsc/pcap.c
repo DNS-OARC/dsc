@@ -63,11 +63,8 @@ static unsigned short port53;
 extern dns_message *handle_dns(const char *buf, int len);
 static DMC *dns_message_callback;
 static struct timeval last_ts;
-
-
-
-
-
+struct timeval start_ts;
+struct timeval finish_ts;
 
 dns_message *
 handle_udp(const struct udphdr *udp, int len)
@@ -279,15 +276,12 @@ Pcap_init(char *device, int promisc)
 void
 Pcap_run(DMC * callback)
 {
-    struct timeval finish_ts;
     dns_message_callback = callback;
-    gettimeofday(&finish_ts, NULL);
-    finish_ts.tv_sec /= 60;
-    finish_ts.tv_sec += 1;
-    finish_ts.tv_sec *= 60;
+    gettimeofday(&start_ts, NULL);
+    finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
     finish_ts.tv_usec = 0;
     while (last_ts.tv_sec < finish_ts.tv_sec) {
-	if (Pcap_select(pcap, 1, 0))
+	if (Pcap_select(pcap, 0, 250000))
 	    pcap_dispatch(pcap, 50, handle_pcap, NULL);
 	else
 	    gettimeofday(&last_ts, NULL);
