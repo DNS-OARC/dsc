@@ -56,18 +56,27 @@ zw aero biz com coop info museum name net org pro gov edu mil int
 arpa .
 );
 
-my $use_data_uri = 1;
+my $use_data_uri;
 my %ARGS;	# from CGI
 my $CFG;	# from dsc-cfg.pl
 my $PLOT;	# = $DSC::grapher::config::PLOTS{name}
-my $ACCUM_TOP_N = 40;
-my $cgi = new CGI();
+my $ACCUM_TOP_N;
+my $cgi;
 my $now;
 
 sub cgi { $cgi; }
 
 sub run {
+
+	# initialize vars
+	$use_data_uri = 1;
+	%ARGS = ();
+	$CFG = ();	# from dsc-cfg.pl
+	$PLOT = undef;
+	$ACCUM_TOP_N = 40;
+	$cgi = new CGI();
 	$now = time;
+
 	debug(1, "===> starting at " . strftime('%+', localtime($now)));
 	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
 	debug(3, "ENV=" . Dumper(\%ENV));
