@@ -47,12 +47,13 @@ my $strftimefmt = '%D.%T';
 sub plotdata_tmp {
 	my $label = shift;
 	my $tf;
+	my $fh;
 	if (defined($label)) {
-		$tf = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
+		($fh, $tf) = tempfile(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
 	} else {
-		$tf = new File::Temp(TEMPLATE => $plotdata_tmp);
+		($fh, $tf) = tempfile(TEMPLATE => $plotdata_tmp);
 	}
-	$tf;
+	($fh, $tf);
 }
 
 sub Ploticus_create_datafile {
