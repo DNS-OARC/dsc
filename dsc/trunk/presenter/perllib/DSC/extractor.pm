@@ -1,6 +1,7 @@
 use XML::Simple;
 use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
+use Data::Dumper;
 
 package OARC::extractor;
 use strict;
@@ -351,16 +352,17 @@ sub grok_rcode_vs_replylen_xml {
 	my $fname = shift || die;
 	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
 	my $XML = $XS->XMLin($fname);
+	#print Data::Dumper($XML);
 	my $n = 0;
 	my %result;
 	my $aref = $XML->{data}[0]->{Rcode};
-	foreach my $qtypehref (@$aref) {
-		my $qt = $qtypehref->{val};
-		#print Dumper($qtypehref);
-		foreach my $href (@{$qtypehref->{ReplyLen}}) {
-			my $ql = $href->{val};
-			$result{$qt}->{$ql} = $href->{count};
-			#print "  result{$qt}->{$ql} = $href->{count}";
+	foreach my $rcodehref (@$aref) {
+		my $rc = $rcodehref->{val};
+		#print main::Dumper($rcodehref);
+		foreach my $href (@{$rcodehref->{ReplyLen}}) {
+			my $rl = $href->{val};
+			$result{$rc}->{$rl} = $href->{count};
+			#print "  result{$rc}->{$rl} = $href->{count}";
 		}
 	}
 	($XML->{start_time}, %result);

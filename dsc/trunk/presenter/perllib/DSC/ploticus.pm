@@ -14,6 +14,7 @@ BEGIN {
         @ISA         = qw(Exporter);
         @EXPORT      = qw(
 		&Ploticus_create_datafile
+		&Ploticus_create_datafile_type2
 		&Ploticus_getdata
 		&Ploticus_areadef
 		&Ploticus_bars_vstacked
@@ -280,7 +281,7 @@ sub PO {
 sub P {
 	my $line = shift;
 	#print STDERR "$line";
-	ploticus_execline($line);
+	Chart::Ploticus::ploticus_execline($line);
 }
 
 1;
