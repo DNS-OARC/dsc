@@ -22,11 +22,11 @@ md_array_create(const char *name, filter_list * fl,
     md_array *a = calloc(1, sizeof(*a));
     a->name = strdup(name);
     a->filter_list = fl;
-    a->d1.type = type1;
+    a->d1.type = strdup(type1);
     a->d1.indexer = idx1;
     a->d1.iterator = itr1;
     a->d1.alloc_sz = 2;
-    a->d2.type = type2;
+    a->d2.type = strdup(type2);
     a->d2.indexer = idx2;
     a->d2.iterator = itr2;
     a->d2.alloc_sz = 2;
