@@ -1,0 +1,19 @@
+lib xstd = [
+	Assert,
+	Base64Encoding,
+	Clock,
+	Checksum,
+	Error,
+	Math,
+	NetAddr,
+	Select,
+	Size,
+	Socket,
+	UniqueNum,
+	StringToAny,
+	AnyToString,
+	Time,
+	FuzzyTime,
+];
+
+	

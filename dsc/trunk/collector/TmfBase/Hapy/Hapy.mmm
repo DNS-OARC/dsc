@@ -1,0 +1,23 @@
+lib Hapy = [
+	Pree,
+	Parser,
+	Buffer,
+	Rule,
+	Rules,
+	RuleAlg,
+	RuleAlgs,
+];
+
+exe Test = [
+	Test,
+
+	Hapy/Hapy.lib,
+	xstd/xstd.lib,
+];
+
+exe TestMaker = [
+	TestMaker,
+
+	Hapy/Hapy.lib,
+	xstd/xstd.lib,
+];
