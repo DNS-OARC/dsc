@@ -122,7 +122,7 @@ handle_ipv4(const struct ip * ip, int len)
 dns_message *
 handle_ipv6(const struct ip6_hdr * ip6, int len)
 {
-    syslog(LOG_ERR, "Ignoring IPv6 packet");
+    /* syslog(LOG_ERR, "Ignoring IPv6 packet"); */
     return NULL;
 }
 
