@@ -25,6 +25,7 @@ BEGIN {
 		&grok_1d_xml
 		&grok_2d_xml
 		&grok_array_xml
+		&elsify_unwanted_keys
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
         );
@@ -319,6 +320,17 @@ sub grok_array_xml {
 		}
 	}
 	($XML->{start_time}, @result);
+}
+
+sub elsify_unwanted_keys {
+        my $hashref = shift;
+        my $keysref = shift;
+        foreach my $k (keys %{$hashref}) {
+                next if ('else' eq $k);
+                next if (grep {$k eq $_} @$keysref);
+                $$hashref{else} += $$hashref{$k};
+                delete $$hashref{$k};
+        }
 }
 
 ##############################################################################
