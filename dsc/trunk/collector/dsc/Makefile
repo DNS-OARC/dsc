@@ -20,7 +20,9 @@ OBJS=\
 	qnamelen_index.o \
 	client_ipv4_addr_index.o \
 	client_ipv4_net_index.o \
-	md_array_xml_printer.o
+	md_array_xml_printer.o \
+	ip_direction_index.o \
+	ip_proto_index.o
 
 LIBS=\
 	-lpcap

@@ -21,6 +21,7 @@ char *progname = NULL;
 int promisc_flag = 1;
 
 extern void cip4_net_indexer_init(void);
+extern void add_local_address(const char *);
 
 
 void
@@ -28,11 +29,9 @@ usage(void)
 {
     fprintf(stderr, "usage: %s [opts] netdevice|savefile\n",
 	progname);
-    fprintf(stderr, "\t-a\tAnonymize IP Addrs\n");
     fprintf(stderr, "\t-b expr\tBPF program code\n");
-    fprintf(stderr, "\t-i addr\tIgnore this source IP address\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode\n");
-    fprintf(stderr, "\t-s\tEnable 2nd level domain stats collection\n");
+    fprintf(stderr, "\t-l addr\tspecify a local IP address\n");
     exit(1);
 }
 
@@ -47,13 +46,16 @@ main(int argc, char *argv[])
     progname = strdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     srandom(time(NULL));
 
-    while ((x = getopt(argc, argv, "b:p")) != -1) {
+    while ((x = getopt(argc, argv, "b:pl:")) != -1) {
 	switch (x) {
 	case 'p':
 	    promisc_flag = 0;
 	    break;
 	case 'b':
 	    bpf_program_str = strdup(optarg);
+	    break;
+	case 'l':
+	    add_local_address(optarg);
 	    break;
 	default:
 	    usage();
