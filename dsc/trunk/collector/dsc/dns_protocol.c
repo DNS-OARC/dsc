@@ -63,7 +63,8 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 	    *(name + (no++)) = '.';
 	}
     } while (c > 0);
-    *(name + no - 1) = '\0';
+    if (no > 0)
+        *(name + no - 1) = '\0';
     /* make sure we didn't allow someone to overflow the name buffer */
     assert(no <= ns);
     return 0;
@@ -110,19 +111,17 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
     sometype = ntohs(us);
     memcpy(&us, buf + offset + 2, 2);
     someclass = ntohs(us);
-    offset += 4;
     if (sometype == T_OPT) {
 	m->edns.found = 1;
-	memcpy(&m->edns.version, buf + 1, 1);
-	memcpy(&us, buf + 2, 2);
+	memcpy(&m->edns.version, buf + offset + 5, 1);
+	memcpy(&us, buf + 6, 2);
 	us = ntohs(us);
 	m->edns.d0 = (us >> 15) & 0x01;
     }
-    offset += 4;
     /* get rdlength */
-    memcpy(&us, buf + offset, 2);
+    memcpy(&us, buf + offset + 8, 2);
     us = ntohs(us);
-    offset += (2 + us);
+    offset += (10 + us);
     return offset;
 }
 
