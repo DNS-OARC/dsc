@@ -5,10 +5,15 @@ set -e
 PATH=/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 export PATH
 PROG=`basename $0`
+PREFIX=/usr/local/dsc
 
 NODE=$1; shift
 DEST=$1; shift
 URI=$1; shift
+
+CURL="curl --silent"
+CLTAUTH="--cert $PREFIX/etc/certs/$DEST/$NODE.pem"
+SRVAUTH="--cacert $PREFIX/etc/certs/$DEST/cacert.pem"
 
 PIDF="/tmp/$PROG.pid"
 if test -f $PIDF; then
@@ -22,12 +27,9 @@ fi
 echo $$ >$PIDF
 trap "rm -f $PIDF" EXIT
 
-CURL="curl --silent"
-CLTAUTH="--cert $HOME/dsc/etc/$DEST-certs/$NODE-cert.pem"
-SRVAUTH="--cacert /usr/local/dsc/etc/cacert.pem"
 perl -e 'sleep((rand 10) + 5)'
 
-cd /usr/local/dsc/run/$NODE
+cd $PREFIX/run/$NODE/upload/$DEST
 
 exec > $PROG.out
 exec 2>&1
