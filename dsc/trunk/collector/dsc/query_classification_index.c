@@ -31,7 +31,7 @@ nonauth_tld(const dns_message * m)
 static int
 root_servers_net(const dns_message * m)
 {
-    if (0 == strcmp(m->qname + 1, ".root-servers.net"))
+    if (0 == strstr(m->qname, "root-servers.net"))
 	return CLASS_ROOT_SERVERS_NET;
     return 0;
 }
