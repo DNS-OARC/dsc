@@ -1,14 +1,30 @@
 #!/bin/sh
 
-# move incoming XML files into a filesystem hierarchy
-# then pre-process them
-
 set -e
+EXECDIR=/usr/local/dsc/libexec
 
-sleep 20
 cd /data/dns-oarc
 
+PROG=`basename $0`
+PIDF="/var/tmp/$PROG.pid"
+if test -f $PIDF ; then
+	PID=`cat $PIDF`
+	if test -n "$PID" ; then
+		if kill -0 $PID ; then
+			exit 0
+		fi
+	fi
+fi
+
+trap "rm -f $PIDF" EXIT
+echo $$ > $PIDF
+
 exec >`basename $0`.stdout
+#exec 2>&1
+#set -x
+date
+
+uptime >> /httpd/htdocs/loadav/loadav.log
 
 for server in * ; do
 	test -d $server || continue;
@@ -27,8 +43,10 @@ for server in * ; do
 			yymmdd=`date -u -r $secs +%Y%m%d`
 			test -d $yymmdd || mkdir $yymmdd
 			test -d $yymmdd/$type || mkdir $yymmdd/$type
-			$HOME/Edit/dsc/perl-gd/$type-extractor.pl $h
-			mv $h $yymmdd/$type
+			if test -f $EXECDIR/$type-extractor.pl ; then
+				$EXECDIR/$type-extractor.pl $h
+				mv $h $yymmdd/$type
+			fi
 
 		    done
 		fi
@@ -38,3 +56,4 @@ for server in * ; do
 	done
 	cd ..	# server
 done
+date
