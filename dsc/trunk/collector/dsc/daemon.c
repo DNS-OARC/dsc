@@ -85,6 +85,7 @@ main(int argc, char *argv[])
 	pid_t cpid = fork();
 	if (0 == cpid) {
 	    dns_message_init();
+	    ip_message_init();
 	    Pcap_run(dns_message_handle, ip_message_handle);
 	    if (0 == fork())
 	        dns_message_report();

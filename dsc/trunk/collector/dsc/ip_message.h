@@ -10,3 +10,4 @@ typedef void (IPC) (const struct ip *);
 IPC ip_message_handle;
 
 void ip_message_report(void);
+void ip_message_init(void);
