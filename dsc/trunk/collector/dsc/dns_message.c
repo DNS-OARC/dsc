@@ -16,6 +16,7 @@
 #include "client_ipv4_net_index.h"
 #include "qnamelen_index.h"
 #include "msglen_index.h"
+#include "certain_qnames_index.h"
 
 extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;
