@@ -9,11 +9,12 @@ static char *d1_type_s;		/* XXX barf */
 static char *d2_type_s;		/* XXX barf */
 
 static void
-start_array(void *pr_data)
+start_array(void *pr_data, const char *name)
 {
     FILE *fp = pr_data;
     assert(fp);
     fprintf(fp, "<array");
+    fprintf(fp, " name=\"%s\"", name);
     fprintf(fp, " dimensions=\"%d\"", 2);
     fprintf(fp, " start_time=\"%d\"", Pcap_start_time());
     fprintf(fp, " stop_time=\"%d\"", Pcap_finish_time());
@@ -31,7 +32,7 @@ static void
 d1_type(void *pr_data, char *t)
 {
     FILE *fp = pr_data;
-    fprintf(fp, "  <dimension number=\"1\" type=\"%s\">\n", t);
+    fprintf(fp, "  <dimension number=\"1\" type=\"%s\"/>\n", t);
     d1_type_s = t;
 }
 
@@ -39,7 +40,7 @@ static void
 d2_type(void *pr_data, char *t)
 {
     FILE *fp = pr_data;
-    fprintf(fp, "  <dimension number=\"2\" type=\"%s\">\n", t);
+    fprintf(fp, "  <dimension number=\"2\" type=\"%s\"/>\n", t);
     d2_type_s = t;
 }
 

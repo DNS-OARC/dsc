@@ -108,7 +108,7 @@ md_array_print(md_array * a, md_array_printer * pr, const char *name)
     if (NULL == fp)
 	return -1;
     a->d1.iterator(NULL);
-    pr->start_array(fp);
+    pr->start_array(fp, name);
     pr->d1_type(fp, a->d1.type);
     pr->d2_type(fp, a->d2.type);
     pr->start_data(fp);
