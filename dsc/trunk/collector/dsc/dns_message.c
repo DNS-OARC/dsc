@@ -152,13 +152,6 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     HITR *iterator2;
     md_array_list *a;
 
-syslog(LOG_DEBUG, "%s:%d, name=%s\n", __FILE__,__LINE__,name);
-syslog(LOG_DEBUG, "%s:%d, fn=%s\n", __FILE__,__LINE__,fn);
-syslog(LOG_DEBUG, "%s:%d, fi=%s\n", __FILE__,__LINE__,fi);
-syslog(LOG_DEBUG, "%s:%d, sn=%s\n", __FILE__,__LINE__,sn);
-syslog(LOG_DEBUG, "%s:%d, si=%s\n", __FILE__,__LINE__,si);
-syslog(LOG_DEBUG, "%s:%d, f=%s\n", __FILE__,__LINE__,f);
-
     if (0 == dns_message_find_indexer(fi, &indexer1, &iterator1))
 	return 0;
     if (0 == dns_message_find_indexer(si, &indexer2, &iterator2))
