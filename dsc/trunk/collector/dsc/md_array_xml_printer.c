@@ -86,6 +86,13 @@ print_element(void *pr_data, char *l, int val)
 }
 
 static void
+print_skipped(void *pr_data, int val)
+{
+    FILE *fp = pr_data;
+    fprintf(fp, "      <%s SKIPPED count=\"%d\"/>\n", d2_type_s, val);
+}
+
+static void
 d1_end(void *pr_data, char *l)
 {
     FILE *fp = pr_data;
@@ -116,5 +123,6 @@ md_array_printer xml_printer =
     finish_data,
     d1_begin,
     d1_end,
-    print_element
+    print_element,
+    print_skipped
 };

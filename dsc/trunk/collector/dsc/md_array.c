@@ -107,6 +107,7 @@ md_array_print(md_array * a, md_array_printer * pr)
     char *label2;
     int i1;
     int i2;
+    int skipped = 0;
 
     snprintf(fname, 128, "%d.%s.xml", Pcap_finish_time(), a->name);
     fp = fopen(fname, "w");
@@ -125,10 +126,13 @@ md_array_print(md_array * a, md_array_printer * pr)
 	while ((i2 = a->d2.iterator(&label2)) > -1) {
 	    if (i2 >= a->d2.alloc_sz)
 		continue;
-	    if (a->opts.min_count > a->array[i1][i2])
+	    if (a->opts.min_count > a->array[i1][i2]) {
+		skipped += a->array[i1][i2];
 		continue;
+	    }
 	    pr->print_element(fp, label2, a->array[i1][i2]);
 	}
+	pr->print_skipped(fp, skipped);
 	pr->d1_end(fp, label1);
     }
     pr->finish_data(fp);
