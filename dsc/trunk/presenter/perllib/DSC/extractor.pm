@@ -87,7 +87,7 @@ sub read_data {
 	    close(IN);
 	}
 	$lock->release;
-	#print "read $nl lines from $fn";
+	$nl;
 }
 
 #
@@ -137,7 +137,7 @@ sub read_data2 {
 	    close(IN);
 	}
 	$lock->release;
-	#print "read $nl lines from $fn";
+	$nl;
 }
 
 
@@ -187,7 +187,7 @@ sub read_data3 {
 	    close(IN);
 	}
 	$lock->release;
-	#print "read $nl lines from $fn";
+	$nl;
 }
 
 # writes a 2-level hash database with no time dimension
@@ -240,7 +240,7 @@ sub read_data4 {
 	    close(IN);
 	}
 	$lock->release;
-	#print "read $nl lines from $fn";
+	$nl;
 }
 
 # writes a 2-level hash database WITH time dimension
