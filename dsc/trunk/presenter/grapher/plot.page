@@ -1,0 +1,25 @@
+<head>
+<link rel="stylesheet" type="text/css" href="/oarc-html.css" title="OARC">
+</head>
+
+<table>
+ <tr>
+  <td valign="top">
+   <div class="border">
+   <div class="center"><u>Servers</u>/<u>Nodes</u></div>
+   [navbar_servers_nodes()]
+   </div>
+   <div class="border">
+   <div class="center"><u>Plots</u></div>
+   [navbar_plot()]
+   </div>
+   <div class="border">
+   <div class="center"><u>Time Scale</u></div>
+   [navbar_window()]
+   </div>
+  </td>
+  <td valign="top">
+   [img_with_map()]
+  </td>
+ </tr>
+</table>
