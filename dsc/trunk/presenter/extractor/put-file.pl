@@ -1,6 +1,9 @@
 #!/usr/bin/perl -w
 # from http://www.apacheweek.com/features/put
 
+use strict;
+use warnings;
+
 use Data::Dumper;
 use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
@@ -12,28 +15,18 @@ my $TOPDIR = "/usr/local/dsc/data";
 
 my $filename = '-';
 my $tempname = '-';
+my $OUT;	# filehandle ref
 my $clength = $ENV{CONTENT_LENGTH};
 my $method = $ENV{REQUEST_METHOD} || '-';
 my $remaddr = $ENV{REMOTE_ADDR} || '-';
 my $timestamp = strftime("[%d/%b/%Y:%H:%M:%S %z]", localtime(time));
 my $SERVER = get_envar(qw(SSL_CLIENT_S_DN_OU REDIRECT_SSL_CLIENT_OU));
 my $NODE = get_envar(qw(SSL_CLIENT_S_DN_CN SSL_CLIENT_CN));
+my %MD5;
 
 my $debug = 0;
 
 umask 022;
-
-if ($debug) {
-	print STDERR "SERVER   : $SERVER\n";
-	print STDERR "NODE     : $NODE\n";
-	print STDERR "status   : $status\n";
-	print STDERR "message  : $message\n";
-	print STDERR "remaddr  : $remaddr\n";
-	print STDERR "timestamp: $timestamp\n";
-	print STDERR "method   : $method\n";
-	print STDERR "filename : $filename\n";
-	print STDERR "clength  : $clength\n";
-}
 
 # Check we are using PUT method
 &reply(500, "No request method") unless defined ($method);
@@ -60,11 +53,12 @@ $filename = pop @F;
 &reply(409, "File Exists") if (-f $filename);
 
 # Read the content itself
-$toread = $clength;
-$content = "";
+my $toread = $clength;
+my $content = "";
 while ($toread > 0)
 {
-    $nread = read(STDIN, $data, $toread);
+    my $data;
+    my $nread = read(STDIN, $data, $toread);
     &reply(500, "Error reading content") if !defined($nread);
     $toread -= $nread;
     $content .= $data;
@@ -187,7 +181,7 @@ sub md5_file {
 	my $fn = shift;
 	my $ctx = Digest::MD5->new;
 	open(F, $fn) || return "$!";
-	$ctx->addfile(F);
+	$ctx->addfile(*F{IO});
 	close(F);
 	$ctx->hexdigest;
 }
