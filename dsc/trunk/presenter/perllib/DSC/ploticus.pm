@@ -50,6 +50,7 @@ sub Ploticus_create_datafile {
 	my $divideflag = shift;
 	my %newhash;
 	my $cutoff = time - $window;
+	$divideflag = 0 unless defined($divideflag);
 	#
 	# convert the original data into possibly larger bins
 	#
@@ -76,14 +77,11 @@ sub Ploticus_create_datafile {
 	#
 	# now write the new data
 	#
+	my $DF = $divideflag ? 60 : 1;
 	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
 		my @v = ();
 		foreach my $qt (@$keysarrayref) {
-			if (defined($divideflag) && $divideflag) {
-				push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / (60*$newhash{$tokey}{$qt . '_COUNT'}): '-');
-			} else {
-				push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} : '-');
-			}
+			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / ($DF*$newhash{$tokey}{$qt . '_COUNT'}): '-');
 		}
 		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v);
 	}
