@@ -38,8 +38,6 @@ static int
 popular_qtypes_filter(const void *vp)
 {
     const dns_message *m = vp;
-    if (1 == m->qr)
-	return 0;
     switch (m->qtype) {
     case 1:
     case 2:
