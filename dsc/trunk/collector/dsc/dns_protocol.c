@@ -109,6 +109,8 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
     x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
     if (0 != x)
 	return 0;
+    if (offset + 10 > len)
+	return 0;
     memcpy(&us, buf + offset, 2);
     sometype = ntohs(us);
     memcpy(&us, buf + offset + 2, 2);
@@ -123,7 +125,10 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
     /* get rdlength */
     memcpy(&us, buf + offset + 8, 2);
     us = ntohs(us);
-    offset += (10 + us);
+    offset += 10;
+    if (offset + us > len)
+	return 0;
+    offset += us;
     return offset;
 }
 
