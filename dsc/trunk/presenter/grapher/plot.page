@@ -13,6 +13,8 @@ DIV.notice	{
 		  text-align: center;
 		}
 DIV.clickinst	{ text-align: center; font-size: smaller; }
+DIV.smallerfont	{ font-size: smaller; }
+DIV.alignright	{ text-align: right; }
 DIV.border	{
 		margin: 1px;
 		border: 1px solid grey;
@@ -52,5 +54,11 @@ A.current	{ color: red; }
   </td>
  </tr>
 </table>
+<p>
+<div class="alignright">
+ <div class="smallerfont">
+  &#91;<a href="http://dns.measurement-factory.com/tools/dsc/">DSC</a>&#93;
+ </div>
+</div>
 </body>
 </html>
