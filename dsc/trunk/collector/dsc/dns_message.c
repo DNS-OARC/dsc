@@ -54,10 +54,10 @@ dns_message_init(void)
 	"Qtype", qtype_indexer, qtype_iterator);
 #endif
 
-    qtype= md_array_create(
+    qtype = md_array_create(
 	queries_only_filter,
-	"Qtype", qtype_indexer, qtype_iterator,
-	"TLD", tld_indexer, tld_iterator);
+	"All", null_indexer, null_iterator,
+	"Qtype", qtype_indexer, qtype_iterator);
 
     rcode = md_array_create(
 	replies_only_filter,
