@@ -88,6 +88,8 @@ grok_question(const char *buf, int len, off_t offset, char *qname, unsigned shor
 	*t = ' ';
     for (t = qname; *t; t++)
 	*t = tolower(*t);
+    if (offset + 4 > len)
+	return 0;
     memcpy(&us, buf + offset, 2);
     *qtype = ntohs(us);
     memcpy(&us, buf + offset + 2, 2);
