@@ -45,7 +45,7 @@ arpa .
 $main::use_data_uri = 1;
 
 
-my $cgi = CGI->new();
+my $cgi = new CGI();
 my $untaint = CGI::Untaint->new($cgi->Vars);
 my %ARGS;
 $ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
