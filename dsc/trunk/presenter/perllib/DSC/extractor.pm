@@ -77,7 +77,6 @@ sub read_data {
 	my $nl = 0;
 	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
-	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		if (/^#MD5 (\S+)/) {
@@ -134,7 +133,6 @@ sub read_data2 {
 	my $nl = 0;
 	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
-	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		if (/^#MD5 (\S+)/) {
@@ -189,7 +187,6 @@ sub read_data3 {
 	my $nl = 0;
 	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
-	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		if (/^#MD5 (\S+)/) {
@@ -246,7 +243,6 @@ sub read_data4 {
 	my $nl = 0;
 	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
-	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
 		if (/^#MD5 (\S+)/) {
