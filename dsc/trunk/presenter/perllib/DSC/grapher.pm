@@ -37,6 +37,7 @@ use vars      @EXPORT_OK;
 END { }
 
 # constants
+my $dbg_lvl = 2;
 my $DATAROOT = '/usr/local/dsc/data';
 my $CacheImageTTL = 600; # 10 min
 my @valid_tlds = qw(
@@ -67,6 +68,9 @@ sub cgi { $cgi; }
 
 sub run {
 	$now = time;
+	debug(1, "===> starting at " . strftime('%+', localtime($now)));
+	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
+	debug(3, "ENV=" . Dumper(\%ENV));
 	my $untaint = CGI::Untaint->new($cgi->Vars);
 	$ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
 	$ARGS{node} = $untaint->extract(-as_printable => 'node')	|| 'all';
@@ -81,7 +85,8 @@ sub run {
 
 	$PLOT = $DSC::grapher::config::PLOTS{$ARGS{plot}};
 	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
-	#print STDERR "[$$] PLOT=" . Dumper($PLOT);
+	debug(3, "PLOT=" . Dumper($PLOT));
+	$dbg_lvl = $PLOT->{debugflag} if defined($PLOT->{debugflag});
 
 	# Sanity checking on CGI args
 	#
@@ -116,7 +121,7 @@ sub run {
 	}
 
 
-	#print STDERR "[$$] " . Dumper(\%ARGS);
+	debug(1, "ARGS=" . Dumper(\%ARGS));
 	my $cache_name = cache_name($ARGS{server},
 		$ARGS{node},
 		$ARGS{plot},
@@ -129,14 +134,14 @@ sub run {
 
 	$ACCUM_TOP_N = 20 if ($ARGS{mini});
 	$CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
-	#print STDERR Dumper($CFG);
+	debug(3, 'CFG=' . Dumper($CFG));
 
 	if ('html' eq $ARGS{content}) {
 		if ($use_data_uri) {
 			if (!reason_to_not_plot()) {
-				print STDERR "[$$] no reason to not plot\n";
+				debug(1, "no reason to not plot");
 				if (!check_image_cache($cache_name)) {
-					print STDERR "[$$] need to make cached image\n";
+					debug(1, "need to make cached image");
 					make_image($cache_name);
 				}
 			}
@@ -161,7 +166,6 @@ sub run {
 			PACKAGE => 'DSC::grapher::template',
 			HASH => \%vars_to_pass,
 			);
-		exit 0;
 	} else {
 		make_image($cache_name) unless (!reason_to_not_plot() && check_image_cache($cache_name));
 		if (-f cache_image_path($cache_name)) {
@@ -169,6 +173,7 @@ sub run {
 			cat_image($cache_name);
 		}
 	}
+	debug(1, "<=== finished at " . strftime('%+', localtime($now)));
 }
 
 sub reason_to_not_plot {
@@ -189,19 +194,19 @@ sub make_image {
 
 	return unless defined($PLOT);
 	return if ($PLOT->{plot_type} eq 'none');
-	print STDERR "[$$] Plotting $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}\n";
+	debug(1, "Plotting $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}");
 	$start = time;
 	$data = load_data();
-	print STDERR Dumper($data) if ($PLOT->{debugflag});
+	debug(5, 'data=' . Dumper($data));
 	if (defined($PLOT->{munge_func})) {
-		print STDERR "[$$] munging\n";
+		debug(1, "munging");
 		$data = &{$PLOT->{munge_func}}($data);
 	}
 	if ($ARGS{yaxis} eq 'percent') {
-		print STDERR "[$$] converting to percentage\n";
+		debug(1, "converting to percentage");
 		$data = convert_to_percentage($data, $PLOT->{plot_type});
 	}
-	print STDERR Dumper($data) if ($PLOT->{debugflag});
+	debug(5, 'data=' . Dumper($data));
 	$datafile = plotdata_tmp($ARGS{plot});
 	if ($PLOT->{plot_type} eq 'trace') {
 		trace_data_to_tmpfile($data, $datafile);
@@ -220,7 +225,7 @@ sub make_image {
 		error("Unknown plot type: $PLOT->{plot_type}");
 	}
 	$stop = time;
-	printf STDERR "[$$] graph took %d seconds\n", $stop-$start;
+	debug(1, "graph took %d seconds", $stop-$start);
 }
 
 sub datafile_path {
@@ -264,8 +269,8 @@ sub load_data {
 	    for (my $t = $first; $t <= $last; $t += 86400) {
 		my %thash;
 		my $datafile = datafile_path($ARGS{plot}, $node, $t);
-		print STDERR "[$$] reading $datafile\n";
-		warn "[$$] $!\n" unless (-f $datafile);
+		debug(1, "reading $datafile");
+		#warn "$datafile: $!\n" unless (-f $datafile);
 		if ('bynode' eq $ARGS{plot}) {
 			# XXX ugly special case
 			$nl += &{$PLOT->{data_reader}}(\%thash, $datafile);
@@ -282,9 +287,9 @@ sub load_data {
 	    }
 	}
 	my $stop = time;
-	printf STDERR "[$$] reading datafile took %d seconds, %d lines\n",
+	debug(1, "reading datafile took %d seconds, %d linesn",
 		$stop-$start,
-		$nl;
+		$nl);
 	\%hash;
 }
 
@@ -300,9 +305,9 @@ sub trace_data_to_tmpfile {
 		$ARGS{window},
 		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
 	my $stop = time;
-	printf STDERR "[$$] writing tmpfile took %d seconds, %d lines\n",
+	debug(1, "writing tmpfile took %d seconds, %d lines",
 		$stop-$start,
-		$nl;
+		$nl);
 }
 
 # calculate the amount of time in an 'accum' dataset.
@@ -311,8 +316,7 @@ sub calc_accum_win {
 	my $last = $ARGS{end};
 	my $first = $ARGS{end} - $ARGS{window};
 	$first += (86400 - ($ARGS{end} % 86400));
-	#printf STDERR "[$$] accum window = %.2f days\n",
-	#	($last - $first) / 86400;
+	debug(1, "accum window = %.2f days", ($last - $first) / 86400);
 	$last - $first;
 }
 
@@ -337,9 +341,9 @@ sub accum1d_data_to_tmpfile {
 	}
 	close($tf);
 	my $stop = time;
-	printf STDERR "[$$] writing tmpfile took %d seconds, %d lines\n",
+	debug(1, "writing tmpfile took %d seconds, %d lines",
 		$stop-$start,
-		$n;
+		$n);
 }
 
 sub accum2d_data_to_tmpfile {
@@ -376,7 +380,7 @@ sub accum2d_data_to_tmpfile {
 	}
 	close($tf);
 	my $stop = time;
-	printf STDERR "[$$] writing tmpfile took %d seconds\n", $stop-$start;
+	debug(1, "writing tmpfile took %d seconds", $stop-$start);
 }
 
 sub hist2d_data_to_tmpfile {
@@ -426,12 +430,11 @@ sub hist2d_data_to_tmpfile {
 	}
 	close($tf);
 	my $stop = time;
-	printf STDERR "[$$] writing tmpfile took %d seconds\n", $stop-$start;
+	debug(1, "writing tmpfile took %d seconds", $stop-$start);
 	#system "cat $tf 1>&2";
 }
 
-sub time_descr
-{
+sub time_descr {
 	my $from_t = $ARGS{end} - $ARGS{window};
 	my $to_t = $ARGS{end};
 	if ($PLOT->{plot_type} =~ /^accum/) {
@@ -505,7 +508,7 @@ sub trace_plot {
 
 	rename("$pngfile.new", $pngfile);
 	my $stop = time;
-	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+	debug(1, "ploticus took %d seconds", $stop-$start);
 }
 
 sub accum1d_plot {
@@ -568,7 +571,7 @@ sub accum1d_plot {
 
 	rename("$pngfile.new", $pngfile);
 	my $stop = time;
-	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+	debug(1, "ploticus took %d seconds", $stop-$start);
 }
 
 sub accum2d_plot {
@@ -623,7 +626,7 @@ sub accum2d_plot {
 
 	rename("$pngfile.new", $pngfile);
 	my $stop = time;
-	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+	debug(1, "ploticus took %d seconds", $stop-$start);
 }
 
 sub hist2d_plot {
@@ -675,7 +678,7 @@ sub hist2d_plot {
 
 	rename("$pngfile.new", $pngfile);
 	my $stop = time;
-	printf STDERR "[$$] ploticus took %d seconds\n", $stop-$start;
+	debug(1, "ploticus took %d seconds", $stop-$start);
 }
 
 sub error {
@@ -689,7 +692,6 @@ sub dumpdata {
 	my $ref = shift;
 	print $cgi->header(-type=>'text/plain',-expires=>'+15m');
 	print Dumper($ref);
-	exit 0;
 }
 
 
@@ -852,7 +854,7 @@ sub data_summer_0d {
 		$to->{$k0} += $from->{$k0};
 	}
 	my $stop = time;
-	#printf STDERR "[$$] data_summer_0d took %d seconds\n", $stop-$start;
+	debug(1, "data_summer_0d took %d seconds", $stop-$start);
 }
 
 sub data_summer_1d {
@@ -865,7 +867,7 @@ sub data_summer_1d {
 		}
 	}
 	my $stop = time;
-	#printf STDERR "[$$] data_summer_1d took %d seconds\n", $stop-$start;
+	debug(1, "data_summer_1d took %d seconds", $stop-$start);
 }
 
 sub data_summer_2d {
@@ -880,7 +882,7 @@ sub data_summer_2d {
 		}
 	}
 	my $stop = time;
-	#printf STDERR "[$$] data_summer_2d took %d seconds\n", $stop-$start;
+	debug(2, "data_summer_2d took %d seconds", $stop-$start);
 }
 
 # XXX special hack for "bynode" plots
@@ -898,7 +900,16 @@ sub bynode_summer {
 		}
 	}
 	my $stop = time;
-	#printf STDERR "[$$] bynode_summer took %d seconds\n", $stop-$start;
+	debug(2, "bynode_summer took %d seconds", $stop-$start);
+}
+
+sub debug {
+	my $l = shift;
+	if ($dbg_lvl >= $l) {
+		print STDERR "[$$] ";
+		printf STDERR @_;
+		print STDERR "\n";
+	}
 }
 
 1;
