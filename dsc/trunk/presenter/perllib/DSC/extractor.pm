@@ -82,7 +82,7 @@ sub read_data {
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
 				warn "MD5 checksum error in $fn at line $nl, exiting";
-				#return -1;
+				return -1;
 			}
 			next;
 		}
@@ -138,7 +138,7 @@ sub read_data2 {
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
 				warn "MD5 checksum error in $fn at line $nl, exiting";
-				#return -1;
+				return -1;
 			}
 			next;
 		}
@@ -192,7 +192,7 @@ sub read_data3 {
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
 				warn "MD5 checksum error in $fn at line $nl, exiting";
-				#return -1;
+				return -1;
 			}
 			next;
 		}
@@ -248,7 +248,7 @@ sub read_data4 {
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
 				warn "MD5 checksum error in $fn at line $nl, exiting";
-				#return -1;
+				return -1;
 			}
 			next;
 		}
