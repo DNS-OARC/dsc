@@ -161,6 +161,7 @@ sub Ploticus_bars {
 			if (defined($ropts->{-legend_clickmapurl_tmpl})) {
 				my $URI = $ropts->{-legend_clickmapurl_tmpl};
 				$URI =~ s/\@LEGEND\@/${$ropts->{-labelsarrayref}}[$i]/;
+				$URI =~ s/\@KEY\@/${$ropts->{-keysarrayref}}[$i]/;
 				$legendlabel .= "url:$URI ";
 			}
 			$legendlabel .= ${$ropts->{-labelsarrayref}}[$i];
