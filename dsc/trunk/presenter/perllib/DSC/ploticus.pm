@@ -251,6 +251,14 @@ sub Ploticus_legendentry {
 	PO($ropts, 'tag');
 }
 
+sub Ploticus_annotate {
+	my $ropts = shift;
+	P("#proc annotate");
+	PO($ropts, 'text');
+	PO($ropts, 'textdetails');
+	PO($ropts, 'location');
+}
+
 sub window2increment {
 	my $window = shift;
 	return 10*60 if ($window == 3600);
