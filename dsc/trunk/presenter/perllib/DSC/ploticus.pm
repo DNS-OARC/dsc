@@ -25,6 +25,7 @@ BEGIN {
 		&Ploticus_legend
 		&Ploticus_categories
 		&Ploticus_legendentry
+		&Ploticus_annotate
 		&window2increment
 		&extract_server_from_datafile_path
 		&extract_node_from_datafile_path
@@ -254,9 +255,10 @@ sub Ploticus_legendentry {
 sub Ploticus_annotate {
 	my $ropts = shift;
 	P("#proc annotate");
-	PO($ropts, 'text');
 	PO($ropts, 'textdetails');
 	PO($ropts, 'location');
+	PO($ropts, 'text');
+	P("");
 }
 
 sub window2increment {
