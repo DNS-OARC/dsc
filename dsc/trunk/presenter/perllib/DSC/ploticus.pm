@@ -29,6 +29,7 @@ BEGIN {
 		&window2increment
 		&extract_server_from_datafile_path
 		&extract_node_from_datafile_path
+		&index_in_array
 	 );
         %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
         @EXPORT_OK   = qw();
@@ -295,6 +296,15 @@ sub extract_node_from_datafile_path {
 	my $fn = shift;
 	die "$fn" unless ($fn =~ m@/[^/]+/([^/]+)/\d\d\d\d\d\d\d\d/@);
 	return $1;
+}
+
+sub index_in_array {
+	my $arrayref = shift;
+	my $val = shift;
+	for(my $i=0; $i<@$arrayref; $i++) {
+		return $i if ($$arrayref[$i] eq $val);
+	}
+	-1;
 }
 
 sub PO {
