@@ -79,6 +79,7 @@ date
 date
 
 if test -s $PROG.stderr ; then
-	/usr/bin/head $PROG.stderr \
+	/usr/bin/uniq $PROG.stderr \
+		| head -20 \
 		| /usr/bin/Mail -s "Cron <${USER}@`hostname -s`> $0" $USER
 fi
