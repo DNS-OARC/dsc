@@ -158,7 +158,6 @@ sub Ploticus_areadef{
 	PO($ropts, 'title');
 	PO($ropts, 'rectangle', '1 1 6 4');
 	PO($ropts, 'xscaletype');
-	PO($ropts, 'xscaletype');
 	my $window = $ropts->{-window};
 	if (defined($window)) {
 		my $then = $main::now - $window;
@@ -367,7 +366,7 @@ sub PO {
 
 sub P {
 	my $line = shift;
-	#print STDERR "$line";
+	print STDERR "$line" if defined($main::ploticus_debug);
 	Chart::Ploticus::ploticus_execline($line);
 }
 
