@@ -29,16 +29,16 @@ edns_version_iterator(char **label)
     static int next_iter = 0;
     static char buf[12];
     if (NULL == label) {
-        next_iter = 0;
-        return 0;
+	next_iter = 0;
+	return 0;
     }
     if (next_iter > edns_version_max) {
 	return -1;
     } else if (0 == next_iter) {
 	*label = "none";
     } else {
-        snprintf(buf, 12, "%d", next_iter - 1);
-        *label = buf;
+	snprintf(buf, 12, "%d", next_iter - 1);
+	*label = buf;
     }
     return next_iter++;
 }

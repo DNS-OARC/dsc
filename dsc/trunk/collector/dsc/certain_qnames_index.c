@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -28,16 +29,16 @@ certain_qnames_iterator(char **label)
 {
     static int next_iter = 0;
     if (NULL == label) {
-        next_iter = 0;
-        return QNAME_OTHER + 1;
+	next_iter = 0;
+	return QNAME_OTHER + 1;
     }
     if (QNAME_LOCALHOST == next_iter)
-        *label = "localhost";
+	*label = "localhost";
     else if (QNAME_RSN == next_iter)
-        *label = "X.root-servers.net";
+	*label = "X.root-servers.net";
     else if (QNAME_OTHER == next_iter)
-        *label = "else";
+	*label = "else";
     else
-        return -1;
+	return -1;
     return next_iter++;
 }

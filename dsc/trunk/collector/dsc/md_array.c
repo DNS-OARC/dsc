@@ -47,7 +47,7 @@ md_array_count(md_array * a, const void *vp)
     int i2;
     filter_list *fl;
 
-    for (fl = a->filter_list; fl; fl=fl->next)
+    for (fl = a->filter_list; fl; fl = fl->next)
 	if (0 == fl->filter(vp))
 	    return -1;
 
@@ -104,8 +104,8 @@ md_array_grow_d2(md_array * a)
 }
 
 struct _foo {
-	char *label;
-	int val;
+    char *label;
+    int val;
 };
 
 /*
@@ -175,9 +175,9 @@ md_array_print(md_array * a, md_array_printer * pr)
 	assert(si <= nvals);
 	nvals = si;
 	qsort(sortme, nvals, sizeof(*sortme), compare);
-	for (si = 0; si<nvals; si++) {
+	for (si = 0; si < nvals; si++) {
 	    if (0 == a->opts.max_cells || si < a->opts.max_cells) {
-	        pr->print_element(fp, sortme[si].label, sortme[si].val);
+		pr->print_element(fp, sortme[si].label, sortme[si].val);
 	    } else {
 		skipped++;
 		skipped_sum += sortme[si].val;
@@ -186,8 +186,8 @@ md_array_print(md_array * a, md_array_printer * pr)
 	    sortme[si].label = NULL;
 	}
 	if (skipped) {
-		pr->print_element(fp, "-:SKIPPED:-", skipped);
-		pr->print_element(fp, "-:SKIPPED_SUM:-", skipped_sum);
+	    pr->print_element(fp, "-:SKIPPED:-", skipped);
+	    pr->print_element(fp, "-:SKIPPED_SUM:-", skipped_sum);
 	}
 	pr->d1_end(fp, label1);
 	free(sortme);
@@ -215,10 +215,10 @@ md_array_print(md_array * a, md_array_printer * pr)
 
 
 filter_list **
-md_array_filter_list_append(filter_list **fl, FLTR *f)
+md_array_filter_list_append(filter_list ** fl, FLTR * f)
 {
-        *fl = calloc(1, sizeof(**fl));
-        assert(fl);
-        (*fl)->filter = f;
-        return(&(*fl)->next);
+    *fl = calloc(1, sizeof(**fl));
+    assert(fl);
+    (*fl)->filter = f;
+    return (&(*fl)->next);
 }

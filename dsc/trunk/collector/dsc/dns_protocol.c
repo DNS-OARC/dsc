@@ -22,9 +22,9 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
     size_t len;
     static int loop_detect = 0;
     if (loop_detect > 2)
-	return 4;  /* compression loop */
+	return 4;		/* compression loop */
     if (ns <= 0)
-	return 4; /* probably compression loop */
+	return 4;		/* probably compression loop */
     do {
 	if ((*off) >= sz)
 	    break;
@@ -64,7 +64,7 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 	    if (len > (ns - 1))
 		len = ns - 1;
 	    if ((*off) + len > sz)
-		return 4;		/* message is too short */
+		return 4;	/* message is too short */
 	    memcpy(name + no, buf + (*off), len);
 	    (*off) += len;
 	    no += len;
@@ -72,7 +72,7 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 	}
     } while (c > 0);
     if (no > 0)
-        *(name + no - 1) = '\0';
+	*(name + no - 1) = '\0';
     /* make sure we didn't allow someone to overflow the name buffer */
     assert(no <= ns);
     return 0;
