@@ -24,6 +24,7 @@ OBJS=\
 	md_array_xml_printer.o \
 	ip_direction_index.o \
 	ip_proto_index.o \
+	certain_qnames_index.o \
 	ParseConfig.o \
 	config_hooks.o
 
