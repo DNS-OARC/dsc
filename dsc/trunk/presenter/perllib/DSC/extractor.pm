@@ -31,6 +31,9 @@ BEGIN {
 		&grok_qtype_vs_tld_xml
 		&grok_certain_qnames_vs_qtype_xml
 		&grok_direction_vs_ipproto_xml
+		&grok_edns_version_xml
+		&grok_idn_qname_xml
+		&grok_d0_bit_xml
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
         );
@@ -313,6 +316,21 @@ sub grok_array_xml {
 sub grok_rcode_xml {
 	my $fname = shift || die;
 	&grok_array_xml($fname, 'Rcode');
+}
+
+sub grok_edns_version_xml {
+	my $fname = shift || die;
+	&grok_1d_xml($fname, 'EDNSVersion');
+}
+
+sub grok_idn_qname_xml {
+	my $fname = shift || die;
+	&grok_1d_xml($fname, 'IDNQname');
+}
+
+sub grok_d0_bit_xml {
+	my $fname = shift || die;
+	&grok_1d_xml($fname, 'D0');
 }
 
 sub grok_qtype_xml {

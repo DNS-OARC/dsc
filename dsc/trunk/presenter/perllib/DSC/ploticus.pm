@@ -19,6 +19,7 @@ BEGIN {
 		&Ploticus_areadef
 		&Ploticus_bars_vstacked
 		&Ploticus_bars
+		&Ploticus_lines
 		&Ploticus_lines_stacked
 		&Ploticus_xaxis
 		&Ploticus_yaxis
@@ -41,7 +42,7 @@ use vars      @EXPORT_OK;
 END { }
 
 # globals
-my $plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
+$plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
 
 my $strftimefmt = '%D.%T';
 
@@ -192,6 +193,22 @@ sub Ploticus_bars {
 	P("labelzerovalue: yes") if defined($ropts->{-labelfield});
 }
 
+sub Ploticus_lines {
+	my $ropts = shift;
+
+	foreach my $i (@{$ropts->{-indexesarrayref}}) {
+		my $field = $i+2;
+		P("#proc lineplot");
+		PO($ropts, 'xfield', '1');
+		P("yfield: $field");
+		P("linedetails: color=${$ropts->{-colorsarrayref}}[$i]");
+		if (defined($ropts->{-labelsarrayref})) {
+			P("legendlabel: ${$ropts->{-labelsarrayref}}[$i]");
+		}
+	}
+	P("gapmissing: yes");
+}
+
 sub Ploticus_lines_stacked {
 	my $cloneref = shift;
 	my $labelsarrayref = shift;
@@ -252,7 +269,7 @@ sub Ploticus_yaxis{
 sub Ploticus_legend {
 	my $ropts = shift;
 	P("#proc legend");
-	P("location: max+0.5 max");
+	PO($ropts, 'location', 'max+0.5 max');
 	PO($ropts, 'reverseorder', 'yes');
 	P("outlinecolors: yes");
 }
