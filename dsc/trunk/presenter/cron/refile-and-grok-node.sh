@@ -24,13 +24,13 @@ trap "rm -f $PIDF" EXIT
 echo $$ > $PIDF
 
  exec >$PROG.stdout
-#exec 2>&1
+ exec 2>$PROG.stderr
 #set -x
 date
 
 
 for type in $TYPES ; do
-	xmls=`ls -r | grep "\.$type\.xml$" | head -5` || true
+	xmls=`ls -r | grep "\.$type\.xml$" | head -10` || true
 	if test -n "$xmls" ; then
 		for h in $xmls ; do
 			secs=`echo $h | awk -F. '{print $1}'`
@@ -52,11 +52,21 @@ for type in $TYPES ; do
 			if $EXECDIR/$type-extractor.pl $h ; then
 				mv $h $yymmdd/$type
 			else
-				echo "error processing $SERVER/$NODE/$h" 1>&2
-				test -d errors || mkdir errors
-				mv $h errors
+				case $? in
+				254)
+					echo "problem reading $type data file for $SERVER/$NODE"
+					exit 254
+					;;
+				*)
+					test -d errors || mkdir errors
+					echo "error processing $SERVER/$NODE/$h" 1>&2
+					mv $h errors
+					;;
+				esac
 			fi
 		done
 	fi
 done
 date
+
+/usr/bin/head $PROG.stderr
