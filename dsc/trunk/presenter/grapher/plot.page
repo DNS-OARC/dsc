@@ -17,6 +17,10 @@
    <div class="center"><u>Time Scale</u></div>
    [navbar_window()]
    </div>
+   <div class="border">
+   <div class="center"><u>Y-Axis</u></div>
+   [navbar_yaxis()]
+   </div>
   </td>
   <td valign="top">
    [img_with_map()]
