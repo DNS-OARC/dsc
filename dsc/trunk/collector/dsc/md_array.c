@@ -107,7 +107,6 @@ md_array_print(md_array * a, md_array_printer * pr)
     char *label2;
     int i1;
     int i2;
-    int skipped = 0;
 
     snprintf(fname, 128, "%d.%s.xml", Pcap_finish_time(), a->name);
     fp = fopen(fname, "w");
@@ -119,6 +118,7 @@ md_array_print(md_array * a, md_array_printer * pr)
     pr->d2_type(fp, a->d2.type);
     pr->start_data(fp);
     while ((i1 = a->d1.iterator(&label1)) > -1) {
+	int skipped = 0;
 	if (i1 >= a->d1.alloc_sz)
 	    continue;		/* see [1] */
 	pr->d1_begin(fp, label1);
