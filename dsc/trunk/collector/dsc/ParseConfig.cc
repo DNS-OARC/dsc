@@ -225,6 +225,8 @@ ParseConfig(const char *fn)
 		       << endl;
 		exit(1);
 	}
-	if (interpret(parser.result().pree, 0) != 1)
+	if (interpret(parser.result().pree, 0) != 1) {
+		cerr << "Failed to correctly INTERPRET parsed config file" << endl;
 		abort();
+	}
 }
