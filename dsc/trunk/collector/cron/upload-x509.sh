@@ -1,48 +1,42 @@
 #!/bin/sh
 set -e
 
-# sample cron job for pushing data from a collector to the analysis
-# box.  Run every minute.
-
-SERVICE="f-root"
-NODES="sfo2"
-HOME="dns-oarc.measurement-factory.com:/data/dns-oarc"
-
-
 PATH=/usr/bin:/bin:/usr/local/ssh2/bin:/usr/local/bin:/udir/wessels/bin:/usr/local/bin:/udir/wessels/bin
 export PATH
 PROG=`basename $0`
 
 PIDF="/tmp/$PROG.pid"
 if test -f $PIDF; then
-        PID=`cat $PIDF`
-        if kill -0 $PID ; then
-                exit 0
-        else
-                true
-        fi
+	PID=`cat $PIDF`
+	if kill -0 $PID ; then
+		exit 0
+	else
+		true
+	fi
 fi
 echo $$ >$PIDF
 trap "rm -f $PIDF" EXIT
 
-cd `dirname $0`
-sleep 5
+CURL=curl
+SRVAUTH="--cacert $HOME/dsc/etc/cacert.pem"
+URI="https://dns-oarc.measurement-factory.com"
 
-exec > $PROG.out
-exec 2>&1
+for d in pao1 ; do
 
-for d in $NODES ; do
+	CLTAUTH="--cert $HOME/dsc/etc/$d-cert.pem"
+	cd $HOME/dsc/run-$d
+	sleep 5
 
-        test -d $d || continue;
-        cd $d
+	exec > $PROG.out
+	exec 2>&1
 
-        k=`ls | grep xml$ | head -20` || true
-        if test -n "$k" ; then
-                rsync -az -e ssh $k ${HOME}/${SERVICE}/$d
-                rm -f $k
-        fi
-
-        cd ..
+	k=`ls | grep xml$ | head -50` || true
+	if test -n "$k" ; then
+		for f in $k ; do
+			UPLOAD="--upload $f"
+			$CURL $SRVAUTH $CLTAUTH $UPLOAD $URI
+			rm -f $f
+		done
+	fi
 
 done
-rm -f $PIDF
