@@ -24,7 +24,7 @@
 #include "idn_qname_index.h"
 #include "query_classification_index.h"
 #include "edns_version_index.h"
-#include "d0_bit_index.h"
+#include "do_bit_index.h"
 #include "rd_bit_index.h"
 #include "opcode_index.h"
 
@@ -172,9 +172,14 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 	*it = edns_version_iterator;
 	return 1;
     }
-    if (0 == strcmp(in, "d0_bit")) {
-	*ix = d0_bit_indexer;
-	*it = d0_bit_iterator;
+    if (0 == strcmp(in, "do_bit")) {
+	*ix = do_bit_indexer;
+	*it = do_bit_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "d0_bit")) {	/* compat for bug */
+	*ix = do_bit_indexer;
+	*it = do_bit_iterator;
 	return 1;
     }
     if (0 == strcmp(in, "rd_bit")) {

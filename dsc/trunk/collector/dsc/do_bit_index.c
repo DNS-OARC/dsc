@@ -10,18 +10,18 @@
 #define D0_BIT_SET 1
 
 int
-d0_bit_indexer(const void *vp)
+do_bit_indexer(const void *vp)
 {
     const dns_message *m = vp;
     if (m->malformed)
 	return -1;
-    if (m->edns.found && m->edns.d0)
+    if (m->edns.found && m->edns.do)
 	return D0_BIT_SET;
     return D0_BIT_CLR;
 }
 
 int
-d0_bit_iterator(char **label)
+do_bit_iterator(char **label)
 {
     static int next_iter = 0;
     if (NULL == label) {

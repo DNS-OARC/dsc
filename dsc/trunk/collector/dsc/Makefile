@@ -2,6 +2,7 @@ PROG=dsc
 HAPY=../TmfBase/Hapy
 CFLAGS=-g -Wall -I $(HAPY)/src/include
 TODAY != date +%Y%m%d
+INSTALLDIR=/usr/local/dsc
 
 OBJS=\
 	base64.o \
@@ -29,7 +30,7 @@ OBJS=\
 	query_classification_index.o \
 	idn_qname_index.o \
 	edns_version_index.o \
-	d0_bit_index.o \
+	do_bit_index.o \
 	rd_bit_index.o \
 	opcode_index.o \
 	ParseConfig.o \

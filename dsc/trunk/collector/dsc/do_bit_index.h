@@ -1,2 +1,2 @@
-int d0_bit_indexer(const void *);
-int d0_bit_iterator(char **label);
+int do_bit_indexer(const void *);
+int do_bit_iterator(char **label);
