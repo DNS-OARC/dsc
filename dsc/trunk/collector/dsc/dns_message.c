@@ -24,15 +24,15 @@ dns_message_handle(dns_message * m)
 }
 
 static int
-queries_only_filter(dns_message *m)
+queries_only_filter(dns_message * m)
 {
-	return m->qr ? 0 : 1;
+    return m->qr ? 0 : 1;
 }
 
 static int
-replies_only_filter(dns_message *m)
+replies_only_filter(dns_message * m)
 {
-	return m->qr ? 1 : 0;
+    return m->qr ? 1 : 0;
 }
 
 void

@@ -55,7 +55,7 @@
 #endif
 
 static pcap_t *pcap = NULL;
-/*static char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0";*/
+/*static char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0"; */
 char *bpf_program_str = "udp port 53";
 dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
 static unsigned short port53;
@@ -286,7 +286,7 @@ Pcap_run(DMC * callback)
     finish_ts.tv_sec += 1;
     finish_ts.tv_sec *= 60;
     finish_ts.tv_usec = 0;
-    while(last_ts.tv_sec < finish_ts.tv_sec) {
+    while (last_ts.tv_sec < finish_ts.tv_sec) {
 	if (Pcap_select(pcap, 1, 0))
 	    pcap_dispatch(pcap, 50, handle_pcap, NULL);
 	else

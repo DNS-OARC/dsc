@@ -7,5 +7,5 @@ struct _StringCounter {
     StringCounter *next;
 };
 
-StringCounter * StringCounter_lookup_or_add(StringCounter **, const char *);
+StringCounter *StringCounter_lookup_or_add(StringCounter **, const char *);
 void StringCounter_sort(StringCounter **);

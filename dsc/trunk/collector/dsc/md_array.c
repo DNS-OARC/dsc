@@ -11,9 +11,9 @@ void md_array_grow_d2(md_array * a);
 
 
 md_array *
-md_array_create(FLTR *filter,
-	char *type1, IDXR * idx1, HITR * itr1,
-	char *type2, IDXR * idx2, HITR * itr2)
+md_array_create(FLTR * filter,
+    char *type1, IDXR * idx1, HITR * itr1,
+    char *type2, IDXR * idx2, HITR * itr2)
 {
     int i1;
     md_array *a = calloc(1, sizeof(*a));
