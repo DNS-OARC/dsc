@@ -36,7 +36,7 @@ main(int argc, char *argv[])
 {
     int x;
     char *device = NULL;
-    char *bpf_program_str = "port 53";
+    extern char *bpf_program_str;
     extern DMC dns_message_handle;
 
     progname = strdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
@@ -66,5 +66,6 @@ main(int argc, char *argv[])
     Pcap_init(device, promisc_flag);
     Pcap_run(dns_message_handle);
     Pcap_close();
+    dns_message_report();
     return 0;
 }

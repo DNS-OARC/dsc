@@ -55,13 +55,14 @@
 #endif
 
 static pcap_t *pcap = NULL;
-static char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0";
+/*static char *bpf_program_str = "udp dst port 53 and udp[10:2] & 0x8000 = 0";*/
+char *bpf_program_str = "udp port 53";
 dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
 static unsigned short port53;
 
 extern dns_message *handle_dns(const char *buf, int len);
 static DMC *dns_message_callback;
-
+static struct timeval last_ts;
 
 
 
@@ -73,7 +74,8 @@ handle_udp(const struct udphdr *udp, int len)
 {
     char buf[PCAP_SNAPLEN];
     dns_message *m;
-    if (port53 != udp->uh_dport)
+fprintf(stderr, "dport=%d, sport=%d\n", ntohs(udp->uh_dport), ntohs(udp->uh_sport));
+    if (port53 != udp->uh_dport && port53 != udp->uh_sport)
 	return NULL;
     memcpy(buf, udp + 1, len - sizeof(*udp));
     m = handle_dns(buf, len - sizeof(*udp));
@@ -186,7 +188,7 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
     m = handle_datalink(pkt, hdr->caplen);
     if (NULL == m)
 	return;
-    m->ts = hdr->ts;
+    last_ts = m->ts = hdr->ts;
     dns_message_callback(m);
 }
 
@@ -221,6 +223,7 @@ Pcap_init(char *device, int promisc)
 
 
     port53 = htons(53);
+    last_ts.tv_sec = last_ts.tv_usec = 0;
 
     if (0 == stat(device, &sb))
 	readfile_state = 1;
@@ -277,8 +280,12 @@ Pcap_init(char *device, int promisc)
 void
 Pcap_run(DMC * callback)
 {
+    struct timeval finish_ts;
     dns_message_callback = callback;
-    for (;;) {
+    gettimeofday(&finish_ts, NULL);
+    finish_ts.tv_sec += 10;
+    finish_ts.tv_usec = 0;
+    while(last_ts.tv_sec < finish_ts.tv_sec) {
 	if (Pcap_select(pcap, 1, 0))
 	    pcap_dispatch(pcap, 50, handle_pcap, NULL);
     }

@@ -5,8 +5,10 @@ typedef struct _md_array_printer md_array_printer;
 
 typedef int (IDXR) (dns_message *);
 typedef int (HITR) (char **);
+typedef int (FLTR) (dns_message *);
 
 struct _md_array {
+    FLTR *filter;
     struct {
 	IDXR *indexer;
 	HITR *iterator;
@@ -25,17 +27,19 @@ struct _md_array {
 };
 
 struct _md_array_printer {
-	void (*start_array)(void);
-	void (*finish_array)(void);
-	void (*d1_type)(char *);
-	void (*d2_type)(char *);
-	void (*start_data)(void);
-	void (*finish_data)(void);
-	void (*d1_begin)(char *);
-	void (*d1_end)(char *);
-	void (*print_element)(char *label, int);
+	void (*start_array)(void *);
+	void (*finish_array)(void *);
+	void (*d1_type)(void *, char *);
+	void (*d2_type)(void *, char *);
+	void (*start_data)(void *);
+	void (*finish_data)(void *);
+	void (*d1_begin)(void *,char *);
+	void (*d1_end)(void *,char *, int);
+	void (*print_element)(void *,char *label, int);
 };
 
 int md_array_count(md_array *, dns_message *);
-md_array *md_array_create(char *, IDXR *, HITR *, char *, IDXR *, HITR *);
-int md_array_print(md_array * a, md_array_printer * pr);
+md_array *md_array_create(FLTR *,
+	char *, IDXR *, HITR *,
+	char *, IDXR *, HITR *);
+int md_array_print(md_array * a, md_array_printer * pr, void *pr_data);

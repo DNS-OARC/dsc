@@ -4,14 +4,13 @@
 #include "dns_message.h"
 #include "md_array.h"
 
-static FILE *fp;
 static char *d1_type_s;		/* XXX barf */
 static char *d2_type_s;		/* XXX barf */
 
 static void
-start_array(void)
+start_array(void *pr_data)
 {
-    fp = fopen("out.xml", "w");
+    FILE *fp = pr_data;
     assert(fp);
     fprintf(fp, "<array ");
     fprintf(fp, "dimensions=\"%d\"", 2);
@@ -19,55 +18,60 @@ start_array(void)
 }
 
 static void
-finish_array(void)
+finish_array(void *pr_data)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "</array>\n");
-    if (stderr != fp)
-	fclose(fp);
-    fp = NULL;
 }
 
 static void
-d1_type(char *t)
+d1_type(void *pr_data, char *t)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "  <dimension number=\"1\" type=\"%s\">\n", t);
     d1_type_s = t;
 }
 
 static void
-d2_type(char *t)
+d2_type(void *pr_data, char *t)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "  <dimension number=\"2\" type=\"%s\">\n", t);
     d2_type_s = t;
 }
 
 static void
-d1_begin(char *l)
+d1_begin(void *pr_data, char *l)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "    <%s=\"%s\">\n", d1_type_s, l);
 }
 
 static void
-print_element(char *l, int val)
+print_element(void *pr_data, char *l, int val)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "      <%s=\"%s\" count=\"%d\"/>\n", d2_type_s, l, val);
 }
 
 static void
-d1_end(char *l)
+d1_end(void *pr_data, char *l, int n)
 {
-    fprintf(fp, "    </%s>\n", d1_type_s);
+    FILE *fp = pr_data;
+    fprintf(fp, "    </%s total=\"%d\">\n", d1_type_s, n);
 }
 
 static void
-start_data(void)
+start_data(void *pr_data)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "  <data>\n");
 }
 
 static void
-finish_data(void)
+finish_data(void *pr_data)
 {
+    FILE *fp = pr_data;
     fprintf(fp, "  </data>\n");
 }
 

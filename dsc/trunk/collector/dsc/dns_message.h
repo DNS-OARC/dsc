@@ -21,3 +21,4 @@ struct _dns_message {
 typedef void (DMC) (dns_message *);
 
 void dns_message_init(void);
+void dns_message_report(void);
