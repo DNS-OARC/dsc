@@ -48,13 +48,13 @@ Rule rComment;
 Rule rIPv4Address;
 Rule rHostOrNet;
 
-Rule rInterface;
-Rule rRunDir;
-Rule rLocalAddr;
-Rule rPacketFilterProg;
-Rule rDataset;
-Rule rBVTBO;
-Rule rMatchVlan;
+Rule rInterface("Interface", 0);
+Rule rRunDir("RunDir", 0);
+Rule rLocalAddr("LocalAddr", 0);
+Rule rPacketFilterProg("PacketFilterProg", 0);
+Rule rDataset("Dataset", 0);
+Rule rBVTBO("BVTBO", 0);
+Rule rMatchVlan("MatchVlan", 0);
 
 Rule rConfig;
 
@@ -125,31 +125,12 @@ interpret(const Pree &tree, int level)
 void
 ParseConfig(const char *fn)
 {
-//	Rule rBareToken("bare-token", ctBareToken);
-//	Rule rQuotedToken("quoted-token", ctQuotedToken);
-//	Rule rToken("token", ctToken);
-//	Rule rDecimalNumber("decimal-number", ctDecimalNumber);
-//	Rule rComment("comment", ctComment);
-//
-//	Rule rIPv4Address("ipv4-address", ctIPv4Address);
-//	Rule rHostOrNet("host-or-net", ctHostOrNet);
-//
-//	Rule rInterface("interface", ctInterface);
-//	Rule rRunDir("run_dir", ctRunDir);
-//	Rule rLocalAddr("local_address", ctLocalAddr);
-//	Rule rPacketFilterProg("bpf_program", ctPacketFilterProg);
-//	Rule rDataset("dataset", ctDataset);
-//	Rule rBVTBO("bpf_vlan_tag_byte_order", ctBVTBO);
-//	Rule rMatchVlan("match_vlan", ctMatchVlan);
-//
-//	Rule rConfig("Config", ctConfig);
-
 	// primitive token level
 	rBareToken = +(anychar_r - space_r - "\"" - ";");
-	rQuotedToken = quoted_r('"', anychar_r, '"');
+	rQuotedToken = quoted_r(anychar_r);
 	rToken = rBareToken | rQuotedToken;
 	rDecimalNumber = +digit_r;
-	rComment = quoted_r("#", anychar_r, eol_r);
+	rComment = quoted_r(anychar_r, '#', eol_r);
 
 	// fancy token level
 	rIPv4Address = rDecimalNumber >> "." >>
@@ -205,9 +186,9 @@ ParseConfig(const char *fn)
 	rBVTBO.committed(true);
 	rMatchVlan.committed(true);
 
-	string config;
+	std::string config;
 	char c;
-	ifstream in(fn);
+	std::ifstream in(fn);
 	while (in.get(c))
 		config += c;
 	in.close();
