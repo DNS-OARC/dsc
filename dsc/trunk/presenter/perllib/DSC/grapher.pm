@@ -422,6 +422,7 @@ sub hist2d_data_to_tmpfile {
 			$sum += $data->{$k1}{$k2};
 		}
 	}
+	return 0 if ($max_k2 < $min_k2);
 	my $sum2 = 0;
 	my $p1 = 0;
 	my $p2 = undef;
