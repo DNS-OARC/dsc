@@ -34,6 +34,9 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
+#include <syslog.h>
+#include <stdarg.h>
+
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
@@ -245,18 +248,18 @@ Pcap_init(char *device, int promisc)
 	new_pcap = pcap_open_live(device, PCAP_SNAPLEN, promisc, 1000, errbuf);
     }
     if (NULL == new_pcap) {
-	fprintf(stderr, "pcap_open_*: %s\n", errbuf);
+	syslog(LOG_ERR, "pcap_open_*: %s\n", errbuf);
 	exit(1);
     }
     memset(&fp, '\0', sizeof(fp));
     x = pcap_compile(new_pcap, &fp, bpf_program_str, 1, 0);
     if (x < 0) {
-	fprintf(stderr, "pcap_compile failed\n");
+	syslog(LOG_ERR, "pcap_compile failed\n");
 	exit(1);
     }
     x = pcap_setfilter(new_pcap, &fp);
     if (x < 0) {
-	fprintf(stderr, "pcap_setfilter failed\n");
+	syslog(LOG_ERR, "pcap_setfilter failed\n");
 	exit(1);
     }
     switch (pcap_datalink(new_pcap)) {
@@ -282,7 +285,7 @@ Pcap_init(char *device, int promisc)
 	handle_datalink = handle_null;
 	break;
     default:
-	fprintf(stderr, "unsupported data link type %d\n",
+	syslog(LOG_ERR, "unsupported data link type %d\n",
 	    pcap_datalink(new_pcap));
 	exit(1);
 	break;
