@@ -21,6 +21,7 @@ OBJS=\
 	tld_index.o \
 	rcode_index.o \
 	qnamelen_index.o \
+	qname_index.o \
 	msglen_index.o \
 	client_ipv4_addr_index.o \
 	client_ipv4_net_index.o \

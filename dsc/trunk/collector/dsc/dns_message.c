@@ -19,6 +19,7 @@
 #include "client_ipv4_addr_index.h"
 #include "client_ipv4_net_index.h"
 #include "qnamelen_index.h"
+#include "qname_index.h"
 #include "msglen_index.h"
 #include "certain_qnames_index.h"
 #include "idn_qname_index.h"
@@ -142,6 +143,11 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "qnamelen")) {
 	*ix = qnamelen_indexer;
 	*it = qnamelen_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "qname")) {
+	*ix = qname_indexer;
+	*it = qname_iterator;
 	return 1;
     }
     if (0 == strcmp(in, "msglen")) {
