@@ -198,8 +198,8 @@ scripts, so there is no need to compile anything.  Still,
 you should run {\tt make} first:
 
 \begin{MyVerbatim}
-> cd presenter
-> make
+% cd presenter
+% make
 \end{MyVerbatim}
 
 If you see errors missing Perl prerequisites, you may want
@@ -210,8 +210,8 @@ The next step is to install the files.  Recall that
 You must create it manually:
 
 \begin{MyVerbatim}
-> mkdir /usr/local/dsc
-> make install
+% mkdir /usr/local/dsc
+% make install
 \end{MyVerbatim}
 
 Note that {\dsc}'s Perl modules are installed in the 
@@ -228,9 +228,9 @@ these scripts.
 Both of these scripts have been designed to be mod\_perl-friendly.
 
 \begin{MyVerbatim}
-> cd /usr/local/apache/cgi-bin
-> ln -s /usr/local/dsc/libexec/put-file.pl
-> ln -s /usr/local/dsc/libexec/dsc-grapher.pl
+% cd /usr/local/apache/cgi-bin
+% ln -s /usr/local/dsc/libexec/put-file.pl
+% ln -s /usr/local/dsc/libexec/dsc-grapher.pl
 \end{MyVerbatim}
 
 If you cannot create symbolic links, you'll need to manually
@@ -247,20 +247,20 @@ the subdirectories, the \path|data| directory must be writable by
 the process owner:
 
 \begin{MyVerbatim}
-> mkdir /usr/local/dsc/data/
-> chgrp nobody /usr/local/dsc/data/
-> chmod 2775 /usr/local/dsc/data/
+% mkdir /usr/local/dsc/data/
+% chgrp nobody /usr/local/dsc/data/
+% chmod 2775 /usr/local/dsc/data/
 \end{MyVerbatim}
 
 Alternatively, you can create {\em server\/} and {\em node\/} directories
 in advance and make those writable.
 
 \begin{MyVerbatim}
-> mkdir /usr/local/dsc/data/
-> mkdir /usr/local/dsc/data/x-root/
-> mkdir /usr/local/dsc/data/x-root/blah/
-> chgrp nobody /usr/local/dsc/data/x-root/blah/
-> chmod 2775 /usr/local/dsc/data/x-root/blah/
+% mkdir /usr/local/dsc/data/
+% mkdir /usr/local/dsc/data/x-root/
+% mkdir /usr/local/dsc/data/x-root/blah/
+% chgrp nobody /usr/local/dsc/data/x-root/blah/
+% chmod 2775 /usr/local/dsc/data/x-root/blah/
 \end{MyVerbatim}
 
 Make sure that \path|/usr/local/dsc/data/| is on a large partition with
@@ -348,7 +348,7 @@ collector sites.  Here is how to use our \path|create-ca-cert.sh|
 script:
 
 \begin{MyVerbatim}
-> sh create-ca-cert.sh 
+% sh create-ca-cert.sh 
 CREATING CA CERT
 Generating a 2048 bit RSA private key
 ..............................................................................
@@ -370,7 +370,7 @@ Use the \path|create-srv-cert.sh| script to create a server
 certificate:
 
 \begin{MyVerbatim}
-> sh create-srv-cert.sh 
+% sh create-srv-cert.sh 
 CREATING SERVER REQUEST
 Generating a 1024 bit RSA private key
 ..........................++++++
@@ -441,7 +441,7 @@ the Organizational Unit Name and Common Name correspond to the
 collector's {\em server\/} and {\em node\/} names.   For example:
 
 \begin{MyVerbatim}
-> sh create-clt-cert.sh
+% sh create-clt-cert.sh
 CREATING CLIENT REQUEST
 Generating a 1024 bit RSA private key
 ................................++++++
@@ -498,7 +498,7 @@ The client's key and certificate will be placed in a directory
 based on the server and node names.  For example:
 
 \begin{MyVerbatim}
-> ls -l client/x-root/LAX
+% ls -l client/x-root/LAX
 total 10
 -rw-r--r--  1 wessels  wessels  3311 Mar 17 13:17 client.crt
 -rw-r--r--  1 wessels  wessels   712 Mar 17 13:17 client.csr
@@ -634,12 +634,12 @@ your nameserver named {\em ns0\/} the directory structure might
 look like:
 
 \begin{MyVerbatim}
-> set prefix=/usr/local/dsc
-> mkdir $prefix/run
-> mkdir $prefix/run/ns0
-> mkdir $prefix/run/ns0/upload
-> mkdir $prefix/run/ns0/upload/oarc
-> mkdir $prefix/run/ns0/upload/archive
+% set prefix=/usr/local/dsc
+% mkdir $prefix/run
+% mkdir $prefix/run/ns0
+% mkdir $prefix/run/ns0/upload
+% mkdir $prefix/run/ns0/upload/oarc
+% mkdir $prefix/run/ns0/upload/archive
 \end{MyVerbatim}
 
 With that directory structure, the {\tt upload-prep.sh} script moves
@@ -653,7 +653,7 @@ of XML files and then uploads it to the remote server with
 {\tt curl}.  The script takes three commandline arguments:
 
 \begin{MyVerbatim}
-> upload-data.sh NODE DEST URI
+% upload-data.sh NODE DEST URI
 \end{MyVerbatim}
 
 {\em NODE\/} must match the name of a directory under
@@ -813,7 +813,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
 the name of the configuration file.  For example:
 
 \begin{MyVerbatim}
-> /usr/local/dsc/bin/dsc /usr/local/dsc/etc/foo.conf
+% /usr/local/dsc/bin/dsc /usr/local/dsc/etc/foo.conf
 \end{MyVerbatim}
 
 If you run {\tt ps} when {\tt dsc} is running, you'll see two processes:
