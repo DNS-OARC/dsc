@@ -14,6 +14,8 @@ $(DOC).ps: $(DOC).dvi
 
 $(DOC).dvi: $(DOC).tex $(FIGS)
 	latex $(DOC).tex
+	latex $(DOC).tex
+	latex $(DOC).tex
 
 .fig.eps:
 	fig2dev -L eps $< > $@
