@@ -1,5 +1,5 @@
 PROG=dsc
-CFLAGS=-g -Wall -I TmfBase
+CFLAGS=-g -Wall -I TmfBase/Hapy/src/include
 TODAY != date +%Y%m%d
 
 OBJS=\
@@ -27,10 +27,10 @@ OBJS=\
 	ParseConfig.o \
 	config_hooks.o
 
+LIBHAPY=TmfBase/Hapy/src/.libs/libHapy.a
 LIBS=\
 	-lpcap \
-	TmfBase/Hapy/libHapy.a \
-	TmfBase/xstd/libxstd.a
+	$(LIBHAPY)
 
 all:  $(PROG)
 
@@ -60,9 +60,13 @@ TmfBase/xstd/Makefile:
 	@echo $@ is out of date
 	cd TmfBase/xstd; ./configure
 
-TmfBase/Hapy/libHapy.a: TmfBase/Hapy/Makefile TmfBase/xstd/libxstd.a
+$(LIBHAPY): TmfBase/Hapy/Makefile
 	@echo $@ is out of date
-	cd TmfBase/Hapy; $(MAKE) libHapy.a
+	cd TmfBase/Hapy; $(MAKE) all
+
+TmfBase/Hapy/Makefile:
+	@echo $@ is out of date
+	cd TmfBase/Hapy; ./configure
 
 
 # base64.c client_ipv4_addr_index.c client_ipv4_net_index.c daemon.c dns_message.c dns_protocol.c generic_counter.c md_array.c md_array_xml_printer.c null_index.c pcap.c qclass_index.c qnamelen_index.c qtype_index.c rcode_index.c string_counter.c tld_index.c

@@ -2,8 +2,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "Hapy/Parser.h"
-#include "Hapy/Rules.h"
+#include <Hapy/Parser.h>
+#include <Hapy/Rules.h>
+#include <Hapy/IoStream.h>
 
 extern "C" int add_local_address(const char *);
 extern "C" int open_interface(const char *);
@@ -38,6 +39,25 @@ enum {
 	ctMax
 } configToken;
 
+Rule rBareToken;
+Rule rQuotedToken;
+Rule rToken;
+Rule rDecimalNumber;
+Rule rComment;
+
+Rule rIPv4Address;
+Rule rHostOrNet;
+
+Rule rInterface;
+Rule rRunDir;
+Rule rLocalAddr;
+Rule rPacketFilterProg;
+Rule rDataset;
+Rule rBVTBO;
+Rule rMatchVlan;
+
+Rule rConfig;
+
 string
 remove_quotes(const string &s) 
 {
@@ -52,26 +72,25 @@ remove_quotes(const string &s)
  * I'm a recursive function.
  */
 static int
-interpret(const PreeNode &tree, int level)
+interpret(const Pree &tree, int level)
 {
 	int x;
-        switch (tree.rid()) {
-        case ctInterface:
+        if (tree.rid() == rInterface.id()) {
 		assert(tree.count() > 1);
                 if (open_interface(tree[1].image().c_str()) != 1)
 			return 0;
-                break;
-        case ctRunDir:
+	} else
+        if (tree.rid() == rRunDir.id()) {
 		assert(tree.count() > 1);
                 if (set_run_dir(remove_quotes(tree[1].image()).c_str()) != 1)
                     return 0;
-                break;
-        case ctLocalAddr:
+	} else
+        if (tree.rid() == rLocalAddr.id()) {
 		assert(tree.count() > 1);
 		if (add_local_address(tree[1].image().c_str()) != 1)
 			return 0;
-                break;
-	case ctDataset:
+        } else
+	if (tree.rid() == rDataset.id()) {
 		assert(tree.count() > 9);
 		x = add_dataset(tree[1].image().c_str(),	// name
 			tree[2].image().c_str(),		// layer
@@ -82,18 +101,19 @@ interpret(const PreeNode &tree, int level)
 			tree[9].image().c_str());		// filter name
 		if (x != 1)
 			return 0;
-                break;
-	case ctBVTBO:
+        } else
+	if (tree.rid() == rBVTBO.id()) {
 		assert(tree.count() > 1);
 		if (set_bpf_vlan_tag_byte_order(tree[1].image().c_str()) != 1)
 			return 0;
-		break;
-	case ctMatchVlan:
+	} else
+	if (tree.rid() == rMatchVlan.id()) {
 		for(unsigned int i = 0; i<tree[1].count(); i++) {
 			if (set_match_vlan(tree[1][i].image().c_str()) != 1)
 				return 0;
 		}
-        default:
+	} else
+        {
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (interpret(tree[i], level + 1) != 1)
 				return 0;
@@ -105,31 +125,31 @@ interpret(const PreeNode &tree, int level)
 void
 ParseConfig(const char *fn)
 {
-	Rule rBareToken("bare-token", ctBareToken);
-	Rule rQuotedToken("quoted-token", ctQuotedToken);
-	Rule rToken("token", ctToken);
-	Rule rDecimalNumber("decimal-number", ctDecimalNumber);
-	Rule rComment("comment", ctComment);
-
-	Rule rIPv4Address("ipv4-address", ctIPv4Address);
-	Rule rHostOrNet("host-or-net", ctHostOrNet);
-
-	Rule rInterface("interface", ctInterface);
-	Rule rRunDir("run_dir", ctRunDir);
-	Rule rLocalAddr("local_address", ctLocalAddr);
-	Rule rPacketFilterProg("bpf_program", ctPacketFilterProg);
-	Rule rDataset("dataset", ctDataset);
-	Rule rBVTBO("bpf_vlan_tag_byte_order", ctBVTBO);
-	Rule rMatchVlan("match_vlan", ctMatchVlan);
-
-	Rule rConfig("Config", ctConfig);
+//	Rule rBareToken("bare-token", ctBareToken);
+//	Rule rQuotedToken("quoted-token", ctQuotedToken);
+//	Rule rToken("token", ctToken);
+//	Rule rDecimalNumber("decimal-number", ctDecimalNumber);
+//	Rule rComment("comment", ctComment);
+//
+//	Rule rIPv4Address("ipv4-address", ctIPv4Address);
+//	Rule rHostOrNet("host-or-net", ctHostOrNet);
+//
+//	Rule rInterface("interface", ctInterface);
+//	Rule rRunDir("run_dir", ctRunDir);
+//	Rule rLocalAddr("local_address", ctLocalAddr);
+//	Rule rPacketFilterProg("bpf_program", ctPacketFilterProg);
+//	Rule rDataset("dataset", ctDataset);
+//	Rule rBVTBO("bpf_vlan_tag_byte_order", ctBVTBO);
+//	Rule rMatchVlan("match_vlan", ctMatchVlan);
+//
+//	Rule rConfig("Config", ctConfig);
 
 	// primitive token level
-	rBareToken = +(anychar_r() - space_r() - "\"" - ";");
-	rQuotedToken = quoted_r('"', anychar_r(), '"');
+	rBareToken = +(anychar_r - space_r - "\"" - ";");
+	rQuotedToken = quoted_r('"', anychar_r, '"');
 	rToken = rBareToken | rQuotedToken;
-	rDecimalNumber = +digit_r();
-	rComment = quoted_r("#", anychar_r(), eol_r());
+	rDecimalNumber = +digit_r;
+	rComment = quoted_r("#", anychar_r, eol_r);
 
 	// fancy token level
 	rIPv4Address = rDecimalNumber >> "." >>
@@ -140,16 +160,16 @@ ParseConfig(const char *fn)
 
 
 	// rule/line level
-	rInterface = rInterface.name() >>rBareToken >>";" ;
-	rRunDir = rRunDir.name() >>rQuotedToken >>";" ;
-	rLocalAddr = rLocalAddr.name() >>rIPv4Address >>";" ;
-	rPacketFilterProg = rPacketFilterProg.name() >>rQuotedToken >>";" ;
-	rDataset = rDataset.name() >>rBareToken >>rBareToken
+	rInterface = "interface" >>rBareToken >>";" ;
+	rRunDir = "run_dir" >>rQuotedToken >>";" ;
+	rLocalAddr = "local_address" >>rIPv4Address >>";" ;
+	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
+	rDataset = "dataset" >>rBareToken >>rBareToken
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>";" ;
-	rBVTBO = rBVTBO.name() >>rHostOrNet >>";" ;
-	rMatchVlan = rMatchVlan.name() >> +rDecimalNumber >>";" ;
+	rBVTBO = "bpf_vlan_tag_byte_order" >>rHostOrNet >>";" ;
+	rMatchVlan = "match_vlan" >> +rDecimalNumber >>";" ;
 
 	// the whole config
 	rConfig = *(
@@ -160,10 +180,10 @@ ParseConfig(const char *fn)
 		rDataset |
 		rBVTBO |
 		rMatchVlan
-	) >> end_r();
+	) >> end_r;
 
 	// trimming - do not allow whitespace INSIDE these objects
-	rConfig.trim(*(space_r() | rComment));
+	rConfig.trim(*(space_r | rComment));
 	rQuotedToken.verbatim(true);
 	rBareToken.verbatim(true);
 	rDecimalNumber.verbatim(true);
