@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <arpa/nameser.h>
+#include <syslog.h>
 
 #include "string_counter.h"
 #include "dns_message.h"
@@ -84,6 +85,8 @@ grok_question(const char *buf, int len, off_t offset, char *qname, unsigned shor
     char *t;
     int x;
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
+    if (4 == x)
+	syslog(LOG_NOTICE, "Loop detected while unpacking QNAME");
     if (0 != x)
 	return 0;
     if ('\0' == *qname)
