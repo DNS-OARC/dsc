@@ -36,16 +36,16 @@ dns_message_handle(dns_message * m)
 }
 
 static int
-queries_only_filter(void * vp)
+queries_only_filter(const void * vp)
 {
-    dns_message * m = vp;
+    const dns_message * m = vp;
     return m->qr ? 0 : 1;
 }
 
 static int
-replies_only_filter(void * vp)
+replies_only_filter(const void * vp)
 {
-    dns_message * m = vp;
+    const dns_message * m = vp;
     return m->qr ? 1 : 0;
 }
 

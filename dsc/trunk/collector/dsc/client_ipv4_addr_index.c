@@ -10,9 +10,9 @@ static struct in_addr idx_to_cip4[MAX_ARRAY_SZ];	/* XXX replace with hash */
 static int next_idx = 0;
 
 int
-cip4_indexer(void *vp)
+cip4_indexer(const void *vp)
 {
-    dns_message * m = vp;
+    const dns_message * m = vp;
     int i;
     assert(next_idx < MAX_ARRAY_SZ);
     for (i = 0; i < next_idx; i++) {

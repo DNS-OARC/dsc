@@ -36,17 +36,17 @@ md_array_create(FLTR * filter,
 }
 
 int
-md_array_count(md_array * a, void * m)
+md_array_count(md_array * a, const void * vp)
 {
     int i1;
     int i2;
 
     if (a->filter)
-	if (0 == a->filter(m))
+	if (0 == a->filter(vp))
 	    return -1;
 
-    i1 = a->d1.indexer(m);
-    i2 = a->d2.indexer(m);
+    i1 = a->d1.indexer(vp);
+    i2 = a->d2.indexer(vp);
 
     while (i1 >= a->d1.alloc_sz)
 	md_array_grow_d1(a);

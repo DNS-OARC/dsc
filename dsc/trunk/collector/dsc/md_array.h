@@ -3,9 +3,9 @@
 typedef struct _md_array md_array;
 typedef struct _md_array_printer md_array_printer;
 
-typedef int (IDXR) (void *);
+typedef int (IDXR) (const void *);
 typedef int (HITR) (char **);
-typedef int (FLTR) (void *);
+typedef int (FLTR) (const void *);
 
 struct _md_array {
     FLTR *filter;
@@ -36,7 +36,7 @@ struct _md_array_printer {
     void (*print_element) (void *, char *label, int);
 };
 
-int md_array_count(md_array *, void *);
+int md_array_count(md_array *, const void *);
 md_array *md_array_create(FLTR *,
     char *, IDXR *, HITR *,
     char *, IDXR *, HITR *);
