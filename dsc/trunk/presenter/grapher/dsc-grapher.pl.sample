@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+use strict;
+use warnings;
 use vars qw(%PLOTS $PLOT %ARGS $CFG);
 
 use OARC::ploticus;
@@ -130,7 +132,7 @@ if ('html' eq $ARGS{content}) {
 	);
 	error("Text::Template failed for plot.page") unless defined ($t);
 	print $cgi->header(-type=>'text/html',-expires=>'+15m');
-	print $t->fill_in(PACKAGE => TEMPLATE);
+	print $t->fill_in(PACKAGE => 'TEMPLATE');
 	exit 0;
 } else {
 	make_image($cache_name) unless (!reason_to_not_plot() && check_image_cache($cache_name));
@@ -524,7 +526,7 @@ sub accum1d_plot {
 	Ploticus_xaxis($xaxis_opts);
 	Ploticus_yaxis($yaxis_opts);
 	unless ($ARGS{mini}) {
-		for($i=0;$i<$ntypes;$i++) {
+		for(my $i=0;$i<$ntypes;$i++) {
 			Ploticus_legendentry({
 				-label => $PLOT->{names}->[$i],
 				-details => $PLOT->{colors}->[$i],
@@ -736,7 +738,7 @@ sub convert_to_percentage {
 
 sub cache_name {
 	my $ctx = Digest::MD5->new;
-	$ctx->add(@_);
+	$ctx->add(grep {defined($_)} @_);
 	$ctx->hexdigest;
 }
 
@@ -890,7 +892,7 @@ sub img_with_map {
 		$imgsrc .= main::encode_base64(main::image_to_buf($cache_name));
 	} else {
 		my %own_args = %ARGS;	# copy
-		while ($k = shift) { $own_args{$k} = shift; }
+		while (my $k = shift) { $own_args{$k} = shift; }
 		$own_args{content} = 'image';
 		$imgsrc = urlpath(%own_args);
 	}
@@ -899,7 +901,7 @@ sub img_with_map {
 
 sub img {
 	my %own_args = %ARGS;	# copy
-	while ($k = shift) { $own_args{$k} = shift; }
+	while (my $k = shift) { $own_args{$k} = shift; }
 	$own_args{content} = 'image';
 	my $p = urlpath(%own_args);
 	my $q = "<img src=\"$p\">";
@@ -909,7 +911,7 @@ sub img {
 
 sub page {
 	my %own_args = %ARGS;	# copy
-	while ($k = shift) { $own_args{$k} = shift; }
+	while (my $k = shift) { $own_args{$k} = shift; }
 	my $p = urlpath(%own_args);
 	#print STDERR "[$$] page() ret '$p'\n";
 	$p;
