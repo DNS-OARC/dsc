@@ -22,7 +22,7 @@ for SERVER in * ; do
 		test -d $NODE || continue;
 		cd $NODE
 		echo "$SERVER/$NODE:"
-		sh ../../refile-and-grok-node.sh &
+		sh $EXECDIR/refile-and-grok-node.sh &
 		cd ..	# NODE
 	done
 	cd ..	# SERVER
