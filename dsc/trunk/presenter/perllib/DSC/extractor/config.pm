@@ -300,6 +300,21 @@ my $client_subnet2_keys =   [ qw(
     },
   },
 
+  chaos_types_and_names => {
+    ndim	=> 2,
+    type1	=> 'Qtype',
+    type2	=> 'Qname',
+    outputs	=> {
+      chaos_types_and_names => {
+	keys2	=> [ qw(hostname.bind version.bind other) ],
+	data_munger => \&main::munge_elsify,
+	data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
 );
 
 1;
