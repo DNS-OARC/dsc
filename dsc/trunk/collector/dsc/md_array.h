@@ -29,8 +29,8 @@ struct _md_array {
 struct _md_array_printer {
     void (*start_array) (void *, const char *);
     void (*finish_array) (void *);
-    void (*d1_type) (void *, char *);
-    void (*d2_type) (void *, char *);
+    void (*d1_type) (void *, const char *);
+    void (*d2_type) (void *, const char *);
     void (*start_data) (void *);
     void (*finish_data) (void *);
     void (*d1_begin) (void *, char *);
