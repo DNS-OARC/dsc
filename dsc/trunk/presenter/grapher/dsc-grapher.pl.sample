@@ -51,7 +51,7 @@ $ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
 $ARGS{node} = $untaint->extract(-as_printable => 'node')	|| 'all';
 $ARGS{window} = $untaint->extract(-as_integer => 'window')	|| 3600*4;
 $ARGS{binsize} = $untaint->extract(-as_integer => 'binsize')	|| TEMPLATE::default_binsize($ARGS{window});
-$ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'none';
+$ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'bynode';
 $ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
 $ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
 $ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $main::now;
@@ -71,6 +71,16 @@ $PLOT = Plot($ARGS{plot});
 my $ACCUM_TOP_N = $ARGS{mini} ? 20 : 40;
 my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
 #print STDERR Dumper($CFG);
+
+unless (defined ($PLOT)) {
+	print $cgi->header(-type=>'text/html',-expires=>'+15m');
+	print "<h2>Error</h2>";
+	print "<p>Unknown plot: $ARGS{plot}</p>\n";
+	print "<p>CGI args:\n";
+	$Data::Dumper::Terse = 1;
+	print "<pre>", Dumper(\%ARGS), "</pre>\n";
+	exit 0;
+}
 
 if ('html' eq $ARGS{content}) {
 	if ($main::use_data_uri) {
@@ -150,7 +160,7 @@ sub load_data {
 	my $start = time;
 	my $last = $ARGS{end};
 	my $first = $ARGS{end} - $ARGS{window};
-	my $nl = -1;
+	my $nl = 1;
 	if ($PLOT->{plot_type} =~ /^accum/) {
 		#
 		# for 'accum' plots, round up the start time
@@ -165,7 +175,14 @@ sub load_data {
 		my $datafile = datafile_path($ARGS{plot}, $node, $t);
 		print STDERR "[$$] reading $datafile\n";
 		warn "[$$] $!\n" unless (-f $datafile);
-		if ('all' ne $ARGS{node}) {
+		if ('bynode' eq $ARGS{plot}) {
+			# XXX ugly special case
+			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
+			bynode_summer(\%thash, \%hash, $node);
+			# XXX yes, wasteful repetition
+			$PLOT->{keys} = [ @{$CFG->{servers}{$ARGS{server}}} ];
+			$PLOT->{names} = [ @{$CFG->{servers}{$ARGS{server}}} ];
+		} elsif ('all' ne $ARGS{node}) {
 			$nl = &{$PLOT->{data_reader}}(\%hash, $datafile);
 		} else {
 			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
@@ -595,6 +612,24 @@ sub data_summer_2d {
 	printf STDERR "[$$] data_summer_2d took %d seconds\n", $stop-$start;
 }
 
+# XXX special hack for "bynode" plots
+# XXX assume $from hash is 1D
+# NOTE this is very similar to data_summer_1d
+#
+sub bynode_summer {
+	my $from = shift;
+	my $to = shift;
+	my $newkey = shift;
+	my $start = time;
+	foreach my $k0 (keys %$from) {
+		foreach my $k1 (keys %{$from->{$k0}}) {
+			$to->{$k0}{$newkey} += $from->{$k0}{$k1};
+		}
+	}
+	my $stop = time;
+	printf STDERR "[$$] bynode_summer took %d seconds\n", $stop-$start;
+}
+
 sub Plot {
 	my $plotname = shift;
 	$PLOTS{$plotname};
@@ -726,21 +761,22 @@ sub navbar_arrow_item {
 	a_markup(urlpath(merge_args(end=>$ARGS{end} + $delta)), img_markup("/dsc-icons/$icon.png"));
 }
 
+sub sublist_item { '&rsaquo;&nbsp;'; }
+
 sub navbar_servers_nodes {
 	my $snippet = '';
-	$snippet .= '<ul>';
+	$snippet .= "<ul>\n";
 	my @items;
 	foreach my $server ( keys %{$CFG->{servers}} ) {
 		$snippet .= "<li>" . navbar_server_item($server,$server);
 		if ($ARGS{server} eq $server) {
-			$snippet .= "<ul>";
 			foreach my $node (@{$CFG->{servers}{$server}}) {
-				$snippet .= "<li>" . navbar_node_item($node,$node);
+				$snippet .= '<li>' . sublist_item();
+				$snippet .= navbar_node_item($node,$node);
 			}
-			$snippet .= "</ul>";
 		}
 	}
-	$snippet .= '</ul>';
+	$snippet .= "</ul>\n";
 	$snippet;
 }
 
@@ -774,18 +810,21 @@ sub navbar_window {
 
 sub navbar_plot {
 	my @items = ();
+	push(@items, navbar_plot_item('bynode','By Node')) if ($ARGS{node} eq 'all');
 	push(@items, navbar_plot_item('qtype','Qtypes'));
 	push(@items, navbar_plot_item('client_subnet2_accum','Classification'));
-	push(@items, navbar_plot_item('client_subnet2_trace','Classification Trace'));
-	push(@items, navbar_plot_item('client_subnet2_count','Classification Count'));
-	push(@items, navbar_plot_item('client_subnet_accum','Geography'));
+	if ($ARGS{plot} =~ /^client_subnet2/) {
+		push(@items, sublist_item() . navbar_plot_item('client_subnet2_trace', 'trace'));
+		push(@items, sublist_item() . navbar_plot_item('client_subnet2_count', 'count'));
+	}
+	push(@items, navbar_plot_item('client_subnet_accum','Client Geography'));
 	push(@items, navbar_plot_item('qtype_vs_all_tld','TLDs'));
 	if ($ARGS{plot} =~ /qtype_vs_.*_tld/) {
-		push(@items, navbar_plot_item('qtype_vs_valid_tld','&nbsp;valid'));
-		push(@items, navbar_plot_item('qtype_vs_invalid_tld','&nbsp;invalid'));
-		push(@items, navbar_plot_item('qtype_vs_numeric_tld','&nbsp;numeric'));
+		push(@items, sublist_item() . navbar_plot_item('qtype_vs_valid_tld', 'valid'));
+		push(@items, sublist_item() . navbar_plot_item('qtype_vs_invalid_tld', 'invalid'));
+		push(@items, sublist_item() . navbar_plot_item('qtype_vs_numeric_tld', 'numeric'));
 	}
-	push(@items, navbar_plot_item('certain_qnames_vs_qtype','Certain Names'));
+	push(@items, navbar_plot_item('certain_qnames_vs_qtype','Popular Names'));
 	push(@items, navbar_plot_item('X','Attributes'));
 	push(@items, navbar_plot_item('X','Qname Length'));
 	push(@items, navbar_plot_item('rcode','Rcodes'));
@@ -793,7 +832,7 @@ sub navbar_plot {
 	push(@items, navbar_plot_item('opcode','Opcodes'));
 	push(@items, navbar_plot_item('edns_version','EDNS Version'));
 	push(@items, navbar_plot_item('direction_vs_ipproto','IP Protocols'));
-	join('<br>', @items);
+	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 
 sub window_secs {
