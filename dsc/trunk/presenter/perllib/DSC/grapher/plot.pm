@@ -10,14 +10,11 @@ BEGIN {
         );
         %EXPORT_TAGS = ( );
         @EXPORT_OK   = qw();
-	print STDERR "this is DSC::grapher::config::BEGIN\n";
 }
 use vars      @EXPORT;
 use vars      @EXPORT_OK;
 
-END { 
-	print STDERR "this is DSC::grapher::config::END\n";
-}
+END { }
 
 use strict;
 use warnings;
