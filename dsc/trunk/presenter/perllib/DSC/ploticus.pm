@@ -47,6 +47,7 @@ sub Ploticus_create_datafile {
 	my $FH = shift;
 	my $time_bin_size = shift || 60;
 	my $window = shift;
+	my $divideflag = shift;
 	my %newhash;
 	my $cutoff = time - $window;
 	#
@@ -63,7 +64,8 @@ sub Ploticus_create_datafile {
 		}
 	}
 	#
-	# now write the new data
+	# if our dataset is empty, create some fake entries with zeros
+	# so that ploticus doesn't puke
 	#
 	unless ((keys %newhash)) {
 		foreach my $qt (@$keysarrayref) {
@@ -71,10 +73,17 @@ sub Ploticus_create_datafile {
 			$newhash{$cutoff}{$qt . '_COUNT'} = 1;
 		}
 	}
+	#
+	# now write the new data
+	#
 	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
 		my @v = ();
 		foreach my $qt (@$keysarrayref) {
-			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / (60*$newhash{$tokey}{$qt . '_COUNT'}): '-');
+			if (defined($divideflag) && $divideflag) {
+				push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / (60*$newhash{$tokey}{$qt . '_COUNT'}): '-');
+			} else {
+				push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} : '-');
+			}
 		}
 		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v);
 	}
