@@ -82,7 +82,9 @@ sub read_data {
 		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
 				return -1;
 			}
 			next;
@@ -138,7 +140,9 @@ sub read_data2 {
 		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
 				return -1;
 			}
 			next;
@@ -192,7 +196,9 @@ sub read_data3 {
 		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
 				return -1;
 			}
 			next;
@@ -248,7 +254,9 @@ sub read_data4 {
 		$nl++;
 		if (/^#MD5 (\S+)/) {
 			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl, found $1 expect $md->hexdigest, exiting";
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
 				return -1;
 			}
 			next;
