@@ -45,7 +45,7 @@ if ($debug) {
 
 mkdir("$TOPDIR/$SERVER", 0700) unless (-d "$TOPDIR/$SERVER");
 mkdir("$TOPDIR/$SERVER/$NODE", 0700) unless (-d "$TOPDIR/$SERVER/$NODE");
-chdir "$TOPDIR/$SERVER/$NODE" || die;
+chdir "$TOPDIR/$SERVER/$NODE" || die "$TOPDIR/$SERVER/$NODE: $!";
 
 # Check we got a destination filename
 my $path = $ENV{PATH_TRANSLATED};
