@@ -744,10 +744,12 @@ sub navbar_servers_nodes {
 	$snippet;
 }
 
+# This is function called from an "HTML" file by the template parser
+#
 sub navbar_window {
 	my @items = ();
 	my $PLOT = main::Plot($ARGS{plot});
-	if ($PLOT->{plot_type} =~ /^accum/) {
+	if (defined($PLOT->{plot_type}) && $PLOT->{plot_type} =~ /^accum/) {
 		foreach my $w (@{$CFG->{accum_windows}}) {
 			push(@items, navbar_window_item(window_secs($w),$w));
 		}
