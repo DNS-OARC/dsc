@@ -10,6 +10,7 @@ typedef struct _dns_message dns_message;
 struct _dns_message {
     struct timeval ts;
     struct in_addr client_ipv4_addr;
+    unsigned short src_port;
     unsigned short qtype;
     unsigned short qclass;
     unsigned short msglen;
