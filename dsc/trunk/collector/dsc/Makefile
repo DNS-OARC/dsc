@@ -46,7 +46,6 @@ install: $(PROG)
 clean:
 	rm -f $(OBJS)
 	rm -f $(PROG)
-	cd TmfBase/xstd; $(MAKE) $@
 	cd TmfBase/Hapy; $(MAKE) $@
 
 tar:
