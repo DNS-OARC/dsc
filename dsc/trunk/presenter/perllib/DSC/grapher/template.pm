@@ -1,6 +1,7 @@
 package DSC::grapher::template;
 
 use URI::Escape;
+use MIME::Base64;
 
 use strict;
 use warnings;
@@ -27,9 +28,9 @@ sub img_with_map {
 		return "<p>$reason";
 	}
 	
-	if ($DSC::grapher::use_data_uri) {
+	if ($DSC::grapher::template::use_data_uri) {
 		$imgsrc = "data:image/png;base64,\n";
-		$imgsrc .= encode_base64(DSC::grapher::image_to_buf($DSC::grapher::cache_name));
+		$imgsrc .= encode_base64(DSC::grapher::image_to_buf($DSC::grapher::template::cache_name));
 	} else {
 		my %own_args = %DSC::grapher::template::ARGS;	# copy
 		while (my $k = shift) { $own_args{$k} = shift; }

@@ -14,7 +14,6 @@ use DBI;
 use Data::Dumper;
 use Digest::MD5;
 use Text::Template;
-use MIME::Base64;
 use Hash::Merge;
 
 use strict;
@@ -149,9 +148,11 @@ sub run {
 		print $cgi->header(-type=>'text/html',-expires=>'+15m');
 		my %vars_to_pass = (
 			foo => "bar",
+			use_data_uri => $use_data_uri,
 			ARGS => \%ARGS,
 			CFG => \$CFG,
 			now => $now,
+			cache_name => $cache_name,
 		);
 		print $t->fill_in(
 			PACKAGE => 'DSC::grapher::template',
@@ -767,7 +768,7 @@ sub cache_name {
 }
 
 sub cache_image_path {
-	my $prefix = shift;
+	my $prefix = shift || die;
 	"/usr/local/dsc/cache/$prefix.png";
 }
 
