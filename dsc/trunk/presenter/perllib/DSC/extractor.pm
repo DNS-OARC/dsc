@@ -66,10 +66,12 @@ sub yymmdd {
 sub lockfile_format {
 	my $fn = shift;
         my @x = stat ($fn);
-	unless (defined (@x)) {
-		warn "$fn: $!";
-		@x = qw(unknown unknown);
+	unless (defined ($x[0]) && defined($x[1])) {
+		open(X, ">$fn");
+		close(X);
 	}
+        @x = stat ($fn);
+	die "$fn: $!" unless (defined ($x[0]) && defined($x[1]));
         '/tmp/' . join('.', $x[0], $x[1], 'lck');
 }
 
