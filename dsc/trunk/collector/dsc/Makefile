@@ -1,5 +1,6 @@
 PROG=dsc
-CFLAGS=-g -Wall -I TmfBase/Hapy/src/include
+HAPY=../TmfBase/Hapy
+CFLAGS=-g -Wall -I $(HAPY)/src/include
 TODAY != date +%Y%m%d
 
 OBJS=\
@@ -28,7 +29,7 @@ OBJS=\
 	ParseConfig.o \
 	config_hooks.o
 
-LIBHAPY=TmfBase/Hapy/src/.libs/libHapy.a
+LIBHAPY=$(HAPY)/src/.libs/libHapy.a
 LIBS=\
 	-lpcap \
 	$(LIBHAPY)
@@ -47,7 +48,7 @@ install: $(PROG)
 clean:
 	rm -f $(OBJS)
 	rm -f $(PROG)
-	cd TmfBase/Hapy; $(MAKE) $@
+	cd $(HAPY); $(MAKE) $@
 
 tar:
 	cd /tmp; cvs checkout -d $(PROG)-$(TODAY) $(PROG) ; tar czvf $(PROG)-$(TODAY).tar.gz $(PROG)-$(TODAY)
@@ -55,21 +56,13 @@ tar:
 
 ParseConfig.o: ParseConfig.cc $(LIBHAPY)
 
-TmfBase/xstd/libxstd.a: TmfBase/xstd/Makefile
+$(LIBHAPY): $(HAPY)/Makefile
 	@echo $@ is out of date
-	cd TmfBase/xstd; $(MAKE) libxstd.a
+	cd $(HAPY); $(MAKE) all
 
-TmfBase/xstd/Makefile:
+$(HAPY)/Makefile:
 	@echo $@ is out of date
-	cd TmfBase/xstd; ./configure
-
-$(LIBHAPY): TmfBase/Hapy/Makefile
-	@echo $@ is out of date
-	cd TmfBase/Hapy; $(MAKE) all
-
-TmfBase/Hapy/Makefile:
-	@echo $@ is out of date
-	cd TmfBase/Hapy; ./configure
+	cd $(HAPY); ./configure
 
 
 export:
