@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "dns_message.h"
 #include "pcap.h"
@@ -62,10 +63,31 @@ main(int argc, char *argv[])
 	usage();
     device = strdup(argv[0]);
 
-    dns_message_init();
+    /*
+     * I'm using fork() in this loop, (a) out of laziness, and (b)
+     * because I'm worried we might drop packets.  Making sure each
+     * child collector runs for a small amount of time (60 secodns)
+     * means I can be lazy about memory management (leaks).  To
+     * minimize the chance for dropped packets, I'd like to spawn
+     * a new collector as soon as (or even before) the current
+     * collector exits.
+     */
+
     Pcap_init(device, promisc_flag);
-    Pcap_run(dns_message_handle);
+    for (;;) {
+	pid_t cpid = fork();
+	if (0 == cpid) {
+    	    dns_message_init();
+            Pcap_run(dns_message_handle);
+    	    dns_message_report();
+	    _exit(0);
+	} else {
+	    int cstatus = 0;
+	    fprintf(stderr, "waiting for child pid %d\n", (int) cpid);
+	    while (waitpid(cpid, &cstatus, 0) < 0)
+		(void) 0;
+	}
+    }
     Pcap_close();
-    dns_message_report();
     return 0;
 }

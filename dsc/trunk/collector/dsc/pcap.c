@@ -74,7 +74,6 @@ handle_udp(const struct udphdr *udp, int len)
 {
     char buf[PCAP_SNAPLEN];
     dns_message *m;
-fprintf(stderr, "dport=%d, sport=%d\n", ntohs(udp->uh_dport), ntohs(udp->uh_sport));
     if (port53 != udp->uh_dport && port53 != udp->uh_sport)
 	return NULL;
     memcpy(buf, udp + 1, len - sizeof(*udp));
@@ -283,7 +282,9 @@ Pcap_run(DMC * callback)
     struct timeval finish_ts;
     dns_message_callback = callback;
     gettimeofday(&finish_ts, NULL);
-    finish_ts.tv_sec += 10;
+    finish_ts.tv_sec /= 60;
+    finish_ts.tv_sec += 1;
+    finish_ts.tv_sec *= 60;
     finish_ts.tv_usec = 0;
     while(last_ts.tv_sec < finish_ts.tv_sec) {
 	if (Pcap_select(pcap, 1, 0))

@@ -58,7 +58,10 @@ dns_message_init(void)
 void
 dns_message_report(void)
 {
-    FILE *fp = fopen("xml.out", "w");
+    char fname[128];
+    FILE *fp;
+    snprintf(fname, 128, "stats.%d.xml", (int) time(NULL));
+    fp = fopen(fname, "w");
     assert(fp);
     md_array_print(qclass_vs_qtype, &xml_printer, fp);
     md_array_print(qtype_vs_tld, &xml_printer, fp);
