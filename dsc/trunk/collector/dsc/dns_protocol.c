@@ -13,7 +13,7 @@
 #define RFC1035_MAXLABELSZ 63
 
 static int
-rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, size_t ns)
+rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 {
     off_t no = 0;
     unsigned char c;
