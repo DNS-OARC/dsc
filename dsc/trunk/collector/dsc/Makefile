@@ -27,6 +27,7 @@ OBJS=\
 	ip_proto_index.o \
 	certain_qnames_index.o \
 	query_classification_index.o \
+	idn_qname_index.o \
 	ParseConfig.o \
 	config_hooks.o
 

@@ -17,6 +17,7 @@
 #include "qnamelen_index.h"
 #include "msglen_index.h"
 #include "certain_qnames_index.h"
+#include "idn_qname_index.h"
 #include "query_classification_index.h"
 
 extern md_array_printer xml_printer;
@@ -123,6 +124,11 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "query_classification")) {
 	*ix = query_classification_indexer;
 	*it = query_classification_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "idn_qname")) {
+	*ix = idn_qname_indexer;
+	*it = idn_qname_iterator;
 	return 1;
     }
     syslog(LOG_ERR, "unknown indexer '%s'", in);
