@@ -71,3 +71,6 @@ TmfBase/Hapy/Makefile:
 	@echo $@ is out of date
 	cd TmfBase/Hapy; ./configure
 
+
+export:
+	CVSROOT=`cat CVS/Root`; cd /tmp; cvs -d $$CVSROOT export -r HEAD -d dsc-`date +%Y%m%d` dsc
