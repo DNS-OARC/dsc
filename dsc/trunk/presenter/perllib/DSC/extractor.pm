@@ -3,6 +3,7 @@ package DSC::extractor;
 use XML::Simple;
 use POSIX;
 use File::Flock;
+use Digest::MD5;
 
 use strict;
 
@@ -45,6 +46,7 @@ $SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 #my $lockfile_template = '/tmp/%F.lck';
 #my $lockfile_template = '%f.lck';
 my $LOCK_RETRY_DURATION = 45;
+my $MD5_frequency = 500;
 
 sub yymmdd {
 	my $t = shift;
@@ -73,10 +75,20 @@ sub read_data {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl, exiting";
+				#return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
 		my ($k, %B) = split;
 		$$href{$k} = \%B;
 		$nl++;
@@ -95,15 +107,21 @@ sub write_data {
 	my $nl = 0;
 	my $B;
 	my $lock = new File::Flock($fn);
+	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a <=> $b} keys %$A) {
 		$B = $$A{$k};
-		print OUT join(' ', $k, %$B);
+		my $line = join(' ', $k, %$B) . "\n";
+		next unless ($line =~ /\S/);
+		print OUT $line;
+		$md->add($line);
 		$nl++;
+		print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
 	}
+	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
 	close(OUT);
 	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn\n";
 }
 
 # a 1-level hash database with no time dimension
@@ -114,10 +132,20 @@ sub read_data2 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+                if (/^#MD5 (\S+)/) {
+                        if ($1 ne $md->hexdigest) {
+                                warn "MD5 checksum error in $fn at line $nl, exiting";
+                                #return -1;
+                        }
+                        next;
+                }
+                $md->add($_);
+                chomp;
 		my ($k, $v) = split;
 		$$href{$k} = $v;
 		$nl++;
@@ -137,14 +165,19 @@ sub write_data2 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lock = new File::Flock($fn);
+	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a cmp $b} keys %$A) {
-		print OUT "$k $$A{$k}";
+		my $line = "$k $$A{$k}\n";
+		print OUT $line;
+		$md->add($line);
 		$nl++;
+		print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
 	}
+	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
 	close(OUT);
 	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn\n";
 }
 
 # reads a 2-level hash database with no time dimension
@@ -154,10 +187,20 @@ sub read_data3 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+                if (/^#MD5 (\S+)/) {
+                        if ($1 ne $md->hexdigest) {
+                                warn "MD5 checksum error in $fn at line $nl, exiting";
+                                #return -1;
+                        }
+                        next;
+                }
+                $md->add($_);
+                chomp;
 		my ($k1, $k2, $v) = split;
 		next unless defined($v);
 		$$href{$k1}->{$k2} = $v;
@@ -176,16 +219,21 @@ sub write_data3 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lock = new File::Flock($fn);
+	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || return;
 	foreach my $k1 (keys %$href) {
 		foreach my $k2 (keys %{$href->{$k1}}) {
-			print OUT "$k1 $k2 $href->{$k1}->{$k2}";
+			my $line = "$k1 $k2 $href->{$k1}->{$k2}\n";
+			print OUT $line;
+			$md->add($line);
 			$nl++;
+                	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
 		}
 	}
+        print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
 	close(OUT);
 	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn\n";
 }
 
 
@@ -196,10 +244,20 @@ sub read_data4 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+        my $md = Digest::MD5->new;
 	return 0 unless (-f $fn);
 	#my $lock = new File::Flock($fn);
 	if (open(IN, "$fn")) {
 	    while (<IN>) {
+                if (/^#MD5 (\S+)/) {
+                        if ($1 ne $md->hexdigest) {
+                                warn "MD5 checksum error in $fn at line $nl, exiting";
+                                #return -1;
+                        }
+                        next;
+                }
+                $md->add($_);
+                chomp;
 		my ($ts, %foo) = split;
 		while (my ($k,$v) = each %foo) {
 			my %bar = split(':', $v);
@@ -220,6 +278,7 @@ sub write_data4 {
 	my $fn = shift;
 	my $nl = 0;
 	my $lock = new File::Flock($fn);
+        my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || return;
 	foreach my $ts (sort {$a <=> $b} keys %$href) {
 		my @foo = ();
@@ -227,12 +286,16 @@ sub write_data4 {
 			push(@foo, $k1);
 			push(@foo, join(':', %{$$href{$ts}{$k1}}));
 		}
-		print OUT join(' ', $ts, @foo);
+		my $line = join(' ', $ts, @foo) . "\n";
+		print OUT $line;
+		$md->add($line);
 		$nl++;
+                print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
 	}
+        print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
 	close(OUT);
 	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn";
+	print "wrote $nl lines to $fn\n";
 }
 
 ##############################################################################
