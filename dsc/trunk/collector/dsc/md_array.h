@@ -45,6 +45,6 @@ struct _md_array_list {
 
 int md_array_count(md_array *, const void *);
 md_array *md_array_create(FLTR *,
-    char *, IDXR *, HITR *,
-    char *, IDXR *, HITR *);
-int md_array_print(md_array * a, md_array_printer * pr, const char *);
+    const char *, IDXR *, HITR *,
+    const char *, IDXR *, HITR *);
+int md_array_print(md_array * a, md_array_printer * pr);

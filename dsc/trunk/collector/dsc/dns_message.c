@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <syslog.h>
 
 
 #include "dns_message.h"
@@ -15,16 +16,7 @@
 #include "qnamelen_index.h"
 
 extern md_array_printer xml_printer;
-
 static md_array_list *Arrays = NULL;
-
-#if USE_QCLASS_VS_QTYPE
-static md_array *qclass_vs_qtype;
-#endif
-static md_array *qtype;
-static md_array *rcode;
-static md_array *client_subnet;
-static md_array *qtype_vs_qnamelen;
 
 void
 dns_message_handle(dns_message * m)
@@ -82,8 +74,8 @@ int
 dns_message_find_indexer(const char *in, IDXR **ix, HITR **it)
 {
 	if (0 == strcmp(in, "client")) {
-		*ix = client_indexer;
-		*it = client_iterator;
+		*ix = cip4_indexer;
+		*it = cip4_iterator;
 		return 1;
 	}
 	if (0 == strcmp(in, "client_subnet")) {
@@ -133,19 +125,19 @@ dns_message_find_indexer(const char *in, IDXR **ix, HITR **it)
 int
 dns_message_find_filter(const char *fn, FLTR **f)
 {
-	if (0 == strcmp(in, "any")) {
+	if (0 == strcmp(fn, "any")) {
 		*f = NULL;
 		return 1;
 	}
-	if (0 == strcmp(in, "queries-only")) {
+	if (0 == strcmp(fn, "queries-only")) {
 		*f = queries_only_filter;
 		return 1;
 	}
-	if (0 == strcmp(in, "replies-only")) {
+	if (0 == strcmp(fn, "replies-only")) {
 		*f = replies_only_filter;
 		return 1;
 	}
-	syslog(LOG_ERR, "unknown indexer '%s'", in);
+	syslog(LOG_ERR, "unknown indexer '%s'", fn);
 	return 0;
 }
 
@@ -158,6 +150,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
         HITR *iterator1;
         IDXR *indexer2;
         HITR *iterator2;
+	md_array_list *a;
 
 	if (0 == dns_message_find_indexer(fn, &indexer1, &iterator1))
 		return 0;
@@ -166,7 +159,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 	if (0 == dns_message_find_filter(fn, &filter))
 		return 0;
 
-	md_array_list *a = calloc(1, sizeof(*a));
+	a = calloc(1, sizeof(*a));
 	a->theArray = md_array_create(filter,
 		fn, indexer1, iterator1,
 		sn, indexer2, iterator2);
@@ -181,5 +174,5 @@ dns_message_report(void)
 {
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
-	md_array_print(a->theArray, &mxl_printer);
+	md_array_print(a->theArray, &xml_printer);
 }

@@ -14,8 +14,8 @@ void md_array_grow_d2(md_array * a);
 
 md_array *
 md_array_create(FLTR * filter,
-    char *type1, IDXR * idx1, HITR * itr1,
-    char *type2, IDXR * idx2, HITR * itr2)
+    const char *type1, IDXR * idx1, HITR * itr1,
+    const char *type2, IDXR * idx2, HITR * itr2)
 {
     int i1;
     md_array *a = calloc(1, sizeof(*a));
@@ -96,7 +96,7 @@ md_array_grow_d2(md_array * a)
 }
 
 int
-md_array_print(md_array * a, md_array_printer * pr, const char *name)
+md_array_print(md_array * a, md_array_printer * pr)
 {
     FILE *fp;
     char fname[128];
@@ -105,12 +105,12 @@ md_array_print(md_array * a, md_array_printer * pr, const char *name)
     int i1;
     int i2;
 
-    snprintf(fname, 128, "%d.%s.xml", Pcap_finish_time(), name);
+    snprintf(fname, 128, "%d.%s.xml", Pcap_finish_time(), a->name);
     fp = fopen(fname, "w");
     if (NULL == fp)
 	return -1;
     a->d1.iterator(NULL);
-    pr->start_array(fp, name);
+    pr->start_array(fp, a->name);
     pr->d1_type(fp, a->d1.type);
     pr->d2_type(fp, a->d2.type);
     pr->start_data(fp);
