@@ -53,6 +53,8 @@ for type in $TYPES ; do
 				mv $h $yymmdd/$type
 			else
 				echo "error processing $SERVER/$NODE/$h" 1>&2
+				test -d errors || mkdir errors
+				mv $h errors
 			fi
 		done
 	fi
