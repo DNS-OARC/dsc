@@ -225,5 +225,8 @@ sub trim_accum2d {
 			$ndel++;
 		}
 	}
+	foreach my $k1 (keys %$data) {
+		delete $data->{$k1} unless (keys %{$data->{$k1}});
+	}
 	$ndel;
 }
