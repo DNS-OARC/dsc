@@ -206,10 +206,17 @@ sub swap_dimensions {
 
 sub trim_accum2d {
 	my $data = shift;
+	my $ndel = 0;
 	foreach my $k1 (keys %$data) {
 		my $n = 0;
 		foreach my $k2 (sort {$data->{$k1}{$b} <=> $data->{$k1}{$a}} keys %{$data->{$k1}}) {
-			delete $data->{$k1}{$k2} if (++$n > 1000);
+			next unless (++$n > 1000);
+			$data->{$k1}{$SKIPPED_KEY}++;
+			$data->{$k1}{$SKIPPED_SUM_KEY} += $data->{$k1}{$k2};
+			delete $data->{$k1}{$k2};
+			$ndel++;
 		}
 	}
+	print STDERR "trimmed $ndel records\n";
+	$ndel;
 }
