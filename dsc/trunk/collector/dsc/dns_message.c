@@ -146,7 +146,7 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 
 int
 dns_message_add_array(const char *name, const char *fn, const char *fi,
-    const char *sn, const char *si, const char *f)
+    const char *sn, const char *si, const char *f, int min_count)
 {
     filter_list *filters = NULL;
     IDXR *indexer1;
@@ -166,6 +166,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     a->theArray = md_array_create(name, filters,
 	fn, indexer1, iterator1,
 	sn, indexer2, iterator2);
+    a->theArray->opts.min_count = min_count;
     assert(a->theArray);
     a->next = Arrays;
     Arrays = a;

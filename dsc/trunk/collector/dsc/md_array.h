@@ -29,6 +29,9 @@ struct _md_array {
 	const char *type;
 	int alloc_sz;
     } d2;
+    struct {
+	int min_count;
+    } opts;
     int **array;
 };
 

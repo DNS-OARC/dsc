@@ -12,7 +12,7 @@ extern "C" int set_run_dir(const char *);
 extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
 	const char *secondname, const char *secondindexer,
-	const char *filtername);
+	const char *filtername, int min_count);
 extern "C" int set_bpf_vlan_tag_byte_order(const char *);
 extern "C" int set_match_vlan(const char *);
 
@@ -33,6 +33,7 @@ enum {
 	ctLocalAddr,
 	ctPacketFilterProg,
 	ctDataset,
+	ctDatasetOpt,
 	ctBVTBO,		// bpf_vlan_tag_byte_order
 	ctMatchVlan,
 	ctConfig = 30,
@@ -52,6 +53,7 @@ Rule rInterface("Interface", 0);
 Rule rRunDir("RunDir", 0);
 Rule rLocalAddr("LocalAddr", 0);
 Rule rPacketFilterProg("PacketFilterProg", 0);
+Rule rDatasetOpt("DatasetOpt", 0);
 Rule rDataset("Dataset", 0);
 Rule rBVTBO("BVTBO", 0);
 Rule rMatchVlan("MatchVlan", 0);
@@ -64,6 +66,18 @@ remove_quotes(const string &s)
 	string::size_type f = s.find_first_of('"');
 	string::size_type l = s.find_last_of('"');
 	return s.substr(f+1, l-f-1);
+}
+
+static int
+getDatasetOptVal(const Pree tree, string name, int &val)
+{
+	for (unsigned int i=0; i<tree.count(); i++) {
+		if (0 != tree[i][0].image().compare(name))
+			continue;
+		val = atoi(tree[i][2].image().c_str());
+		return true;
+	}
+	return false;
 }
 
 
@@ -91,14 +105,17 @@ interpret(const Pree &tree, int level)
 			return 0;
         } else
 	if (tree.rid() == rDataset.id()) {
-		assert(tree.count() > 9);
+		int min_count = 0;
+		assert(tree.count() > 10);
+		getDatasetOptVal(tree[10], "min-count", min_count);
 		x = add_dataset(tree[1].image().c_str(),	// name
 			tree[2].image().c_str(),		// layer
 			tree[3].image().c_str(),		// 1st dim name
 			tree[5].image().c_str(),		// 1st dim indexer
 			tree[6].image().c_str(),		// 2nd dim name
 			tree[8].image().c_str(),		// 2nd dim indexer
-			tree[9].image().c_str());		// filter name
+			tree[9].image().c_str(),		// filter name
+			min_count);				// min cell count to report
 		if (x != 1)
 			return 0;
         } else
@@ -145,10 +162,12 @@ ParseConfig(const char *fn)
 	rRunDir = "run_dir" >>rQuotedToken >>";" ;
 	rLocalAddr = "local_address" >>rIPv4Address >>";" ;
 	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
+	rDatasetOpt = rBareToken >> "=" >> rDecimalNumber;
 	rDataset = "dataset" >>rBareToken >>rBareToken
 		>>rBareToken >>":" >>rBareToken
 		>>rBareToken >>":" >>rBareToken
-		>>rBareToken >>";" ;
+		>>rBareToken
+		>>*rDatasetOpt >>";" ;
 	rBVTBO = "bpf_vlan_tag_byte_order" >>rHostOrNet >>";" ;
 	rMatchVlan = "match_vlan" >> +rDecimalNumber >>";" ;
 
@@ -162,6 +181,7 @@ ParseConfig(const char *fn)
 		rBVTBO |
 		rMatchVlan
 	) >> end_r;
+	rConfig.Debug(false);
 
 	// trimming - do not allow whitespace INSIDE these objects
 	rConfig.trim(*(space_r | rComment));

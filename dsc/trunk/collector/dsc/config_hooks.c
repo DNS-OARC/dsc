@@ -48,16 +48,17 @@ int
 add_dataset(const char *name, const char *layer,
     const char *firstname, const char *firstindexer,
     const char *secondname, const char *secondindexer,
-    const char *filtername)
+    const char *filtername, int min_count)
 {
     syslog(LOG_INFO, "creating dataset %s", name);
+syslog(LOG_ERR, "min_count=%d\n", min_count);
     if (0 == strcmp(layer, "dns")) {
 	return dns_message_add_array(name, firstname, firstindexer,
-	    secondname, secondindexer, filtername);
+	    secondname, secondindexer, filtername, min_count);
     }
     if (0 == strcmp(layer, "ip")) {
 	return ip_message_add_array(name, firstname, firstindexer,
-	    secondname, secondindexer, filtername);
+	    secondname, secondindexer, filtername, min_count);
     }
     syslog(LOG_ERR, "%s:%d: unknown message layer '%s'", __FILE__,__LINE__,layer);
     return 0;

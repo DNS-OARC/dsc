@@ -50,7 +50,7 @@ bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
-dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only;
+dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only min-count=10;
 dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
 dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes;
 dataset rcode_vs_replylen dns Rcode:rcode MsgLen:msglen replies-only;
