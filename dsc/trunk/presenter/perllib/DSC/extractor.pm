@@ -2,7 +2,6 @@ package DSC::extractor;
 
 use XML::Simple;
 use POSIX;
-use LockFile::Simple qw(lock trylock unlock);
 use File::Flock;
 
 use strict;
