@@ -66,21 +66,13 @@ my $cache_name = cache_name($ARGS{server},
 	$ARGS{binsize},
 	$ARGS{mini});
 $PLOT = Plot($ARGS{plot});
+error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 #print STDERR "[$$] PLOT=" . Dumper($PLOT);
 
 my $ACCUM_TOP_N = $ARGS{mini} ? 20 : 40;
 my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
 #print STDERR Dumper($CFG);
 
-unless (defined ($PLOT)) {
-	print $cgi->header(-type=>'text/html',-expires=>'+15m');
-	print "<h2>Error</h2>";
-	print "<p>Unknown plot: $ARGS{plot}</p>\n";
-	print "<p>CGI args:\n";
-	$Data::Dumper::Terse = 1;
-	print "<pre>", Dumper(\%ARGS), "</pre>\n";
-	exit 0;
-}
 
 if ('html' eq $ARGS{content}) {
 	if ($main::use_data_uri) {
@@ -112,6 +104,7 @@ sub make_image {
 	my $cache_image_path = cache_image_path($cache_name);
 
 	return unless defined($PLOT);
+	return if ($PLOT->{plot_type} eq 'none');
 	print STDERR "[$$] Plotting $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}\n";
 	$start = time;
 	$data = load_data();
@@ -475,7 +468,6 @@ sub dumpdata {
 
 
 
-
 sub munge_2d_to_1d {
 	# this function changes a 2D array into a 1D array
 	# by combining key values.   For example $dat{k1}{k2} becomes $dat{"k1:k2"}
@@ -495,6 +487,21 @@ sub munge_2d_to_1d {
 				$j2 = 'else' unless grep {$_ eq $j2} @$d2keys;
 				$newdata{$t}{"$j1:$j2"} += $data->{$t}{$k1}{$k2};
 			}
+		}
+	}
+	\%newdata;
+}
+
+sub munge_to_1d_to_percentage {
+	my $data = shift;
+	my %newdata;
+	foreach my $t (keys %$data) {
+		$S = 0;
+		foreach my $k1 (keys %{$data->{$t}}) {
+			$S += $data->{$t}{$k1};
+		}
+		foreach my $k1 (keys %{$data->{$t}}) {
+			$newdata{$t}{$k1} = 100 * $data->{$t}{$k1} / $S;
 		}
 	}
 	\%newdata;
@@ -522,17 +529,23 @@ sub check_image_cache {
 
 sub cat_image {
 	my $prefix = shift;
-	open(F, cache_image_path($prefix)) || die "$prefix: $!\n";
-	print while (<F>);
-	close(F);
+	if (open(F, cache_image_path($prefix))) {
+		print while (<F>);
+		close(F);
+	} else {
+		#die "$prefix: $!\n";
+	}
 }
 
 sub image_to_buf {
 	my $prefix = shift;
 	my $buf = '';
-	open(F, cache_image_path($prefix)) || die "$prefix: $!\n";
-	$buf .= $_ while (<F>);
-	close(F);
+	if (open(F, cache_image_path($prefix))) {
+		$buf .= $_ while (<F>);
+		close(F);
+	} else {
+		#die "$prefix: $!\n";
+	}
 	$buf;
 }
 
@@ -642,6 +655,8 @@ sub img_with_map {
 	my $imgsrc;
 	return '<p>Please select a server' if ($ARGS{server} eq 'none');
 	return '<p>Please select a plot' if ($ARGS{plot} eq 'none');
+	my $PLOT = main::Plot($ARGS{plot});
+	return '<p>Please select a Query Attributes sub-item' if ($PLOT->{plot_type} eq 'none');
 	
 	if ($main::use_data_uri) {
 		$imgsrc = "data:image/png;base64,\n";
@@ -830,7 +845,13 @@ sub navbar_plot {
 	push(@items, navbar_plot_item('rcode','Rcodes'));
 	push(@items, navbar_plot_item('X','Reply Lengths'));
 	push(@items, navbar_plot_item('opcode','Opcodes'));
-	push(@items, navbar_plot_item('edns_version','EDNS Version'));
+	push(@items, navbar_plot_item('query_attrs','Query Attributes'));
+	if ($ARGS{plot} =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
+		push(@items, sublist_item() . navbar_plot_item('idn_qname', 'IDN Qnames'));
+		push(@items, sublist_item() . navbar_plot_item('rd_bit', 'RD bit'));
+		push(@items, sublist_item() . navbar_plot_item('do_bit', 'DO bit'));
+		push(@items, sublist_item() . navbar_plot_item('edns_version', 'EDNS version'));
+	}
 	push(@items, navbar_plot_item('direction_vs_ipproto','IP Protocols'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
