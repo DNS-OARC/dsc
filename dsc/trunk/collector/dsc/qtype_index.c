@@ -11,14 +11,16 @@ static int next_idx = 0;
 int
 qtype_indexer(const void *vp)
 {
-    const dns_message *h = vp;
+    const dns_message *m = vp;
     int i;
+    if (m->malformed)
+	return -1;
     for (i = 0; i < next_idx; i++) {
-	if (h->qtype == idx_to_qtype[i]) {
+	if (m->qtype == idx_to_qtype[i]) {
 	    return i;
 	}
     }
-    idx_to_qtype[next_idx] = h->qtype;
+    idx_to_qtype[next_idx] = m->qtype;
     return next_idx++;
 }
 

@@ -13,6 +13,8 @@ opcode_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i = (int) m->opcode;
+    if (m->malformed)
+	return -1;
     if (i > largest)
 	largest = i;
     return i;

@@ -13,6 +13,8 @@ int
 rd_bit_indexer(const void *vp)
 {
     const dns_message *m = vp;
+    if (m->malformed)
+	return -1;
     if (m->rd)
 	return RD_BIT_SET;
     return RD_BIT_CLR;

@@ -13,6 +13,8 @@ int
 d0_bit_indexer(const void *vp)
 {
     const dns_message *m = vp;
+    if (m->malformed)
+	return -1;
     if (m->edns.found && m->edns.d0)
 	return D0_BIT_SET;
     return D0_BIT_CLR;

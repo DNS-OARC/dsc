@@ -13,6 +13,8 @@ edns_version_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int index;
+    if (m->malformed)
+	return -1;
     if (0 == m->edns.found)
 	return 0;
     index = (int) m->edns.version + 1;

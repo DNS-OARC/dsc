@@ -14,6 +14,8 @@ int
 certain_qnames_indexer(const void *vp)
 {
     const dns_message *m = vp;
+    if (m->malformed)
+	return -1;
     if (0 == strcmp(m->qname, "localhost"))
 	return QNAME_LOCALHOST;
     if (0 == strcmp(m->qname + 1, ".root-servers.net"))

@@ -14,6 +14,8 @@ rcode_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i;
+    if (m->malformed)
+	return -1;
     for (i = 0; i < next_idx; i++) {
 	if (m->rcode == idx_to_rcode[i]) {
 	    return i;

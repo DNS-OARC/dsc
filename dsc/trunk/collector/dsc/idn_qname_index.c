@@ -13,6 +13,8 @@ int
 idn_qname_indexer(const void *vp)
 {
     const dns_message *m = vp;
+    if (m->malformed)
+	return -1;
     if (0 == strncmp(m->qname, "xn--", 4))
 	return QNAME_IDN;
     return QNAME_NORMAL;

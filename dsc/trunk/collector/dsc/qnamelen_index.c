@@ -12,6 +12,8 @@ qnamelen_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i = strlen(m->qname);
+    if (m->malformed)
+	return -1;
     if (i >= MAX_QNAME_SZ)
 	i = MAX_QNAME_SZ - 1;
     if (i > largest)

@@ -48,8 +48,10 @@ md_array_count(md_array * a, const void *vp)
 	if (0 == fl->filter(vp))
 	    return -1;
 
-    i1 = a->d1.indexer(vp);
-    i2 = a->d2.indexer(vp);
+    if ((i1 = a->d1.indexer(vp)) < 0)
+	return -1;
+    if ((i2 = a->d2.indexer(vp)) < 0)
+	return -1;
 
     while (i1 >= a->d1.alloc_sz)
 	md_array_grow_d1(a);

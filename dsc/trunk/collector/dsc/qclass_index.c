@@ -11,14 +11,16 @@ static int next_idx = 0;
 int
 qclass_indexer(const void *vp)
 {
-    const dns_message *h = vp;
+    const dns_message *m = vp;
     int i;
+    if (m->malformed)
+	return -1;
     for (i = 0; i < next_idx; i++) {
-	if (h->qclass == idx_to_qclass[i]) {
+	if (m->qclass == idx_to_qclass[i]) {
 	    return i;
 	}
     }
-    idx_to_qclass[next_idx] = h->qclass;
+    idx_to_qclass[next_idx] = m->qclass;
     return next_idx++;
 }
 

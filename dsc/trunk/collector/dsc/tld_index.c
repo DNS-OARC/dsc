@@ -15,7 +15,10 @@ tld_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int i;
-    const char *tld = dns_message_tld((dns_message *) m);
+    const char *tld;
+    if (m->malformed)
+	return -1;
+    tld = dns_message_tld((dns_message *) m);
     assert(next_idx < MAX_ARRAY_SZ);
     for (i = 0; i < next_idx; i++) {
 	if (0 == strcmp(tld, idx_to_tld[i])) {
