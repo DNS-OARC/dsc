@@ -40,6 +40,7 @@ for type in $TYPES ; do
 			test -d $yymmdd/$type || mkdir $yymmdd/$type
 			#echo "Doing $type-extractor.pl $h"
 			if test -s $yymmdd/$type/$h ; then
+				ls -l $yymmdd/$type/$h $h 1>&2
 				echo "removing dupe $SERVER/$NODE/$h" 1>&2
 				rm -f $h
 				continue
