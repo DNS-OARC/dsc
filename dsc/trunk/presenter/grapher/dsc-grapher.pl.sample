@@ -5,4 +5,5 @@ use warnings;
 
 use DSC::grapher;
 
+DSC::grapher::prepare();
 DSC::grapher::run();
