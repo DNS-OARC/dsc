@@ -17,6 +17,7 @@ class Rule;
 class RuleAlg {
 	public:
 		typedef Result::StatusCode StatusCode;
+		typedef string::size_type size_type;
 
 	public:
 		virtual ~RuleAlg() {}

@@ -3,6 +3,7 @@
 #ifndef TMF_BASE__HAPY_RULE_ALGS__H
 #define TMF_BASE__HAPY_RULE_ALGS__H
 
+#include <climits>
 #include <string>
 #include <vector>
 #include "Hapy/RuleAlg.h"
@@ -104,10 +105,10 @@ class DiffRule: public RuleAlg {
 		Rule theExcept;
 };
 
-// r = *a
-class StarRule: public RuleAlg {
+// r = {min,max}a
+class ReptionRule: public RuleAlg {
 	public:
-		StarRule(const Rule &aRule);
+		ReptionRule(const Rule &aRule, size_type aMin = 0, size_type aMax = INT_MAX);
 
 		virtual StatusCode firstMatch(Buffer &buf, PreeNode &pree) const;
 		virtual StatusCode nextMatch(Buffer &buf, PreeNode &pree) const;
@@ -126,6 +127,8 @@ class StarRule: public RuleAlg {
 
 	private:
 		Rule theRule;
+		size_type theMin; // minimum number of repetitions required
+		size_type theMax; // maximum number of repetitions allowed
 };
 
 // r = a

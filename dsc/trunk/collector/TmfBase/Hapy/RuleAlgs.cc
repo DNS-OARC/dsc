@@ -361,61 +361,46 @@ ostream &Hapy::DiffRule::print(ostream &os) const {
 }
 
 
-// r = *a
-Hapy::StarRule::StarRule(const Rule &aRule): theRule(aRule) {
+// r = {min,max}a
+Hapy::ReptionRule::ReptionRule(const Rule &aRule, size_type aMin, size_type aMax):
+	theRule(aRule), theMin(aMin), theMax(aMax) {
+	Should(theMin <= theMax);
 }
 
-RuleAlg::StatusCode Hapy::StarRule::firstMatch(Buffer &buf, PreeNode &pree) const {
+RuleAlg::StatusCode Hapy::ReptionRule::firstMatch(Buffer &buf, PreeNode &pree) const {
 	Assert(pree.rawCount() == 0);
-	// be greedy but remember that an empty sequence always matches
-	const RuleAlg::StatusCode res = tryMore(buf, pree);
-	return res == Result::scMiss ? Result::scMatch : res;
+	return tryMore(buf, pree);
 }
 	
-RuleAlg::StatusCode Hapy::StarRule::nextMatch(Buffer &buf, PreeNode &pree) const {
-	if (pree.rawCount() > 0) // empty sequence did not match yet
-		return checkAndTry(buf, pree, theRule.nextMatch(buf, pree.backChild()));
-	return Result::scMiss;
+RuleAlg::StatusCode Hapy::ReptionRule::nextMatch(Buffer &buf, PreeNode &pree) const {
+	return pree.rawCount() == 0 ? // has empty sequence matched?
+		Result::scMiss :
+		checkAndTry(buf, pree, theRule.nextMatch(buf, pree.backChild()));
 }
 
-RuleAlg::StatusCode Hapy::StarRule::backtrack(Buffer &buf, PreeNode &pree) const {
-	if (!Should(pree.rawCount() > 0)) // empty sequence have not match yet
-		return Result::scError;
+RuleAlg::StatusCode Hapy::ReptionRule::backtrack(Buffer &buf, PreeNode &pree) const {
+	if (pree.rawCount() == 0) // empty sequence has already match
+		return Result::scMiss;
 
 	// get rid of the failed node
 	pree.popChild();
 
-	// try the same sequence but without the last node
-	// this covers the case of an empty sequence as well
-	return Result::scMatch;
+	// change the tail and try to grow to reach theMin goal if needed
+	// otherwise, try the same sequence but now without the last node
+	// the latter covers the case of an empty sequence as well
+	return pree.rawCount() < theMin ? nextMatch(buf, pree) : Result::scMatch;
 }
 
-RuleAlg::StatusCode Hapy::StarRule::resume(Buffer &buf, PreeNode &pree) const {
-	if (!Should(pree.rawCount() > 0)) // empty sequence did not match yet
+RuleAlg::StatusCode Hapy::ReptionRule::resume(Buffer &buf, PreeNode &pree) const {
+	if (!Should(pree.rawCount() > 0)) // empty sequence has not match yet
 		return Result::scError;
-	switch (theRule.resume(buf, pree.backChild()).sc()) {
-		case Result::scMatch: {
-			const RuleAlg::StatusCode moreRes = tryMore(buf, pree);
-			return moreRes == Result::scMiss ? Result::scMatch : moreRes;
-		}
-		case Result::scMore:
-			return Result::scMore;
-		case Result::scMiss:
-			return backtrack(buf, pree);
-		case Result::scError:
-			return Result::scError;
-		default:
-			Should(false); // unknown code
-			return Result::scError;
-	}
+	return checkAndTry(buf, pree, theRule.resume(buf, pree.backChild()));
 }
 
-RuleAlg::StatusCode Hapy::StarRule::checkAndTry(Buffer &buf, PreeNode &pree, StatusCode res) const {
+RuleAlg::StatusCode Hapy::ReptionRule::checkAndTry(Buffer &buf, PreeNode &pree, StatusCode res) const {
 	switch (res.sc()) {
-		case Result::scMatch: {
-			const RuleAlg::StatusCode moreRes = tryMore(buf, pree);
-			return moreRes == Result::scMiss ? res : moreRes;
-		}
+		case Result::scMatch:
+			return tryMore(buf, pree);
 		case Result::scMore:
 			return Result::scMore;
 		case Result::scMiss:
@@ -428,35 +413,43 @@ RuleAlg::StatusCode Hapy::StarRule::checkAndTry(Buffer &buf, PreeNode &pree, Sta
 	}
 }
 
-RuleAlg::StatusCode Hapy::StarRule::tryMore(Buffer &buf, PreeNode &pree) const {
-	int count = 0;
-	RuleAlg::StatusCode res;
-	while ((res = ApplyRule(theRule, buf, pree.newChild(), "*")) == Result::scMatch)
-		count++;
+RuleAlg::StatusCode Hapy::ReptionRule::tryMore(Buffer &buf, PreeNode &pree) const {
+	RuleAlg::StatusCode res = Result::scMatch;
+	while (pree.rawCount() < theMax && res == Result::scMatch)
+		res = ApplyRule(theRule, buf, pree.newChild(), "*");
 
-	if (res != Result::scMiss)
-		return res;
+	if (!Should(pree.rawCount() <= theMax))
+		return Result::scError; // too many already
 
-	// get rid of the last failed node on failure
-	pree.popChild();
-
-	return count > 1 ? Result::scMatch : Result::scMiss;
+	// res == match implies that count == max, implies that min <= count
+	return res == Result::scMiss ? backtrack(buf, pree) : res;
 }
 
-bool Hapy::StarRule::terminal() const {
-	return false;
+bool Hapy::ReptionRule::terminal() const {
+	return theMax == 0;
 }
 
-bool Hapy::StarRule::compile() {
+bool Hapy::ReptionRule::compile() {
 	return theRule.compile();
 }
 
-void Hapy::StarRule::spreadTrim(const Rule &r) {
+void Hapy::ReptionRule::spreadTrim(const Rule &r) {
 	theRule.implicitTrim(r);
 }
 
-ostream &Hapy::StarRule::print(ostream &os) const {
-	PrintSubRule(os << "*", theRule);
+ostream &Hapy::ReptionRule::print(ostream &os) const {
+	if (theMax == INT_MAX) {
+		if (theMin == 0)
+			os << "*";
+		else
+		if (theMin == 1)
+			os << "+";
+		else
+			os << "{" << theMin << ",}";
+	} else {
+		os << "{" << theMin << "," << theMax << "}";
+	}
+	PrintSubRule(os, theRule);
 	return os;
 }
 

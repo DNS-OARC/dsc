@@ -131,6 +131,12 @@ void Hapy::Rule::leaf(bool be) {
 
 // set trimming if no trimming was configured
 void Hapy::Rule::implicitTrim(const Rule &skipper) {
+	// fork in case other users have different preferences
+	RuleBase oldBase = *theBase;
+	theBase = RuleBasePtr(); // leaking old bases
+	*theBase = oldBase;
+	theBase->compiling = false;
+
 	if (theBase->trimMode == RuleBase::tmDefault) {
 		Should(theBase->itrimmer == 0);
 		theBase->trimMode = RuleBase::tmImplicit;
@@ -181,23 +187,31 @@ bool Hapy::Rule::compile() {
 	theBase->compiling = true;
 
 #if HAPY_DEBUG
-print(cerr << here << "pre rule:  ") << endl;
+print(cerr << here << "pre rule:  " << this << ' ') << endl;
 #endif
 
 	if (!Should(theBase->alg))
 		return false;
 
+#if HAPY_DEBUG
+	const bool spread = theBase->itrimmer && theBase->trimMode != RuleBase::tmVerbatim;
+	cerr << here << this << " will " << (spread ? "" : "not") << "spread trim" << endl;
+#endif
 	if (theBase->itrimmer && theBase->trimMode != RuleBase::tmVerbatim)
 		theBase->alg->spreadTrim(*theBase->itrimmer);
 
 	if (!theBase->alg->compile())
 		return false;
 
+#if HAPY_DEBUG
+	const bool tr = theBase->itrimmer && terminal();
+	cerr << here << this << " will " << (tr ? "" : "not") << "compile trim" << endl;
+#endif
 	if (theBase->itrimmer && terminal() && !compileTrim())
 		return false;
 
 #if HAPY_DEBUG
-print(cerr << here << "comp rule: ") << endl;
+print(cerr << here << "comp rule: " << this << ' ') << endl;
 if (theBase->core)
 theBase->core->print(cerr << here << "comp core: ") << endl;
 #endif

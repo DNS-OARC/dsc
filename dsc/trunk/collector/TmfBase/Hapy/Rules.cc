@@ -46,14 +46,12 @@ Rule Hapy::operator >>(const Rule &a, const Rule &b) {
 }
 
 Rule Hapy::operator *(const Rule &a) {
-	StarRule *alg = new StarRule(a);
+	ReptionRule *alg = new ReptionRule(a, 0);
 	return AlgToRule(alg);
 }
 
 Rule Hapy::operator +(const Rule &a) {
-	SeqRule *alg = new SeqRule;
-	alg->add(a);
-	alg->add(*a);
+	ReptionRule *alg = new ReptionRule(a, 1);
 	return AlgToRule(alg);
 }
 

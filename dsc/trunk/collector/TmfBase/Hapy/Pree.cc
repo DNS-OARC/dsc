@@ -42,7 +42,7 @@ PreeNode::const_iterator Hapy::PreeNode::end() const {
 	return coreNode().theChildren.end();
 }
 
-const PreeNode &Hapy::PreeNode::operator [](int idx) const {
+const PreeNode &Hapy::PreeNode::operator [](size_type idx) const {
 	const PreeNode &c = coreNode();
 	Assert(!leaf && !c.leaf);
 	return c.rawChild(idx);
@@ -81,7 +81,7 @@ PreeNode::Children::size_type Hapy::PreeNode::rawCount() const {
 	return theChildren.size();
 }
 
-const PreeNode &Hapy::PreeNode::rawChild(int idx) const {
+const PreeNode &Hapy::PreeNode::rawChild(size_type idx) const {
 	Assert(0 <= idx && idx < rawCount());
 	return theChildren[idx];
 }
