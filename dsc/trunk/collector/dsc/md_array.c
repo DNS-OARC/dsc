@@ -105,7 +105,6 @@ md_array_print(md_array * a, md_array_printer * pr, void *pr_data)
     pr->d2_type(pr_data, a->d2.type);
     pr->start_data(pr_data);
     while ((i1 = a->d1.iterator(&label1)) > -1) {
-	int total = 0;
 	assert(i1 < a->d1.alloc_sz);
 	pr->d1_begin(pr_data, label1);
 	a->d2.iterator(NULL);
@@ -114,9 +113,8 @@ md_array_print(md_array * a, md_array_printer * pr, void *pr_data)
 	    if (0 == a->array[i1][i2])
 		continue;
 	    pr->print_element(pr_data, label2, a->array[i1][i2]);
-	    total += a->array[i1][i2];
 	}
-	pr->d1_end(pr_data, label1, total);
+	pr->d1_end(pr_data, label1);
     }
     pr->finish_data(pr_data);
     pr->finish_array(pr_data);

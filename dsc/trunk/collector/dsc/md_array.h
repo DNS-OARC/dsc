@@ -32,7 +32,7 @@ struct _md_array_printer {
 	void (*start_data)(void *);
 	void (*finish_data)(void *);
 	void (*d1_begin)(void *,char *);
-	void (*d1_end)(void *,char *, int);
+	void (*d1_end)(void *,char *);
 	void (*print_element)(void *,char *label, int);
 };
 

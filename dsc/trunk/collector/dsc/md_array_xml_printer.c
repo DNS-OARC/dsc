@@ -55,10 +55,10 @@ print_element(void *pr_data, char *l, int val)
 }
 
 static void
-d1_end(void *pr_data, char *l, int n)
+d1_end(void *pr_data, char *l)
 {
     FILE *fp = pr_data;
-    fprintf(fp, "    </%s total=\"%d\">\n", d1_type_s, n);
+    fprintf(fp, "    </%s>\n", d1_type_s);
 }
 
 static void
