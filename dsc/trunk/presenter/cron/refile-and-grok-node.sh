@@ -6,7 +6,6 @@ set -e
 : ${SERVER:?}
 : ${NODE:?}
 : ${EXECDIR:?}
-: ${TYPES:?}
 export SERVER NODE
 
 PROG=`basename $0`
@@ -29,10 +28,20 @@ echo $$ > $PIDF
 date
 
 
-for type in $TYPES ; do
-	xmls=`ls -r | grep "\.$type\.xml$" | head -10` || true
+	xmls=`ls -r | grep "\.xml$" | head -100 | sort -t. +1` || true
 	if test -n "$xmls" ; then
 		for h in $xmls ; do
+
+			type=`echo $h | awk -F. '{print $2}'`
+
+			# hack
+			if test "$type" = "d0_bit" ; then
+				toname=`echo $h | sed -e 's/d0_bit/do_bit/'`
+				mv $h $toname
+				type='do_bit'
+				h=$toname
+			fi
+
 			secs=`echo $h | awk -F. '{print $1}'`
 			secs=`expr $secs - 60`
 			#yymmdd=`date -u -r $secs +%Y%m%d`
@@ -67,7 +76,6 @@ for type in $TYPES ; do
 			fi
 		done
 	fi
-done
 date
 
 if test -s $PROG.stderr ; then
