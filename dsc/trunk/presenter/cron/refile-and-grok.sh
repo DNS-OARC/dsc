@@ -10,8 +10,7 @@ exec >$PROG.stdout
 date
 
 EXECDIR=/usr/local/dsc/libexec
-TYPES=`ls $EXECDIR/*-extractor.pl | awk -F/ '{print $NF}' | awk -F- '{print $1}'`
-export EXECDIR SERVER NODE TYPES
+export EXECDIR SERVER NODE
 
 for SERVER in * ; do
 	test -L $SERVER && continue;
