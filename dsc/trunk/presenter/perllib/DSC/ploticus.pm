@@ -50,7 +50,8 @@ sub Ploticus_create_datafile {
 	my $window = shift;
 	my $divideflag = shift;
 	my %newhash;
-	my $cutoff = time - $window;
+	my $now = $main::now || time;
+	my $cutoff = $now - $window;
 	$divideflag = 0 unless defined($divideflag);
 	#
 	# convert the original data into possibly larger bins
@@ -95,7 +96,8 @@ sub Ploticus_create_datafile_type2 {
 	my $time_bin_size = shift || 60;
 	my $window = shift;
 	my %newhash;
-	my $cutoff = time - $window;
+	my $now = $main::now || time;
+	my $cutoff = $now - $window;
 	my %COUNT;
 	#
 	# convert the original data into possibly larger bins
@@ -133,8 +135,8 @@ sub Ploticus_areadef{
 	PO($ropts, 'xscaletype');
 	PO($ropts, 'xscaletype');
 	if (defined($ropts->{-window})) {
-		my $range_begin = POSIX::strftime($strftimefmt, gmtime(time-$ropts->{-window}));
-		my $range_end = POSIX::strftime($strftimefmt, gmtime(time));
+		my $range_begin = POSIX::strftime($strftimefmt, gmtime($main::now-$ropts->{-window}));
+		my $range_end = POSIX::strftime($strftimefmt, gmtime($main::now));
 		P("xrange: $range_begin $range_end");
 	} elsif (defined($ropts->{-xstackfields})) {
 		P("xautorange: datafield=$ropts->{-xstackfields} combomode=stack lowfix=0");
