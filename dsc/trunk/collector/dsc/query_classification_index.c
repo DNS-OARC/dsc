@@ -163,11 +163,11 @@ query_classification_indexer(const void *vp)
     int x;
     if ((x = a_for_a(m)))
 	return x;
-    if ((x = nonauth_tld(m)))
+    if ((x = localhost(m)))
 	return x;
     if ((x = root_servers_net(m)))
 	return x;
-    if ((x = localhost(m)))
+    if ((x = nonauth_tld(m)))
 	return x;
     if ((x = rfc1918_ptr(m)))
 	return x;
