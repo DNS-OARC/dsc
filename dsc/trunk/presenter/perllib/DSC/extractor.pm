@@ -47,7 +47,7 @@ END { }
 $SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
 $SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 
-my $lockfile_template = '/var/tmp/%F.lck';
+my $lockfile_template = '/tmp/%F.lck';
 my $LOCK_RETRY_DURATION = 45;
 
 sub yymmdd {

@@ -30,6 +30,7 @@ BEGIN {
 		&extract_server_from_datafile_path
 		&extract_node_from_datafile_path
 		&index_in_array
+		$plotdata_tmp
 	 );
         %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
         @EXPORT_OK   = qw();
@@ -39,6 +40,8 @@ use vars      @EXPORT_OK;
 
 END { }
 
+# globals
+my $plotdata_tmp = '/tmp/plotdataXXXXXXXXXXXXXX';
 
 my $strftimefmt = '%D.%T';
 
