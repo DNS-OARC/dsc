@@ -161,6 +161,10 @@ query_classification_indexer(const void *vp)
 {
     const dns_message *m = vp;
     int x;
+    if ((x = funny_qclass(m)))
+	return x;
+    if ((x = funny_qtype(m)))
+	return x;
     if ((x = a_for_a(m)))
 	return x;
     if ((x = localhost(m)))
@@ -170,10 +174,6 @@ query_classification_indexer(const void *vp)
     if ((x = nonauth_tld(m)))
 	return x;
     if ((x = rfc1918_ptr(m)))
-	return x;
-    if ((x = funny_qclass(m)))
-	return x;
-    if ((x = funny_qtype(m)))
 	return x;
     return CLASS_OK;
 }
