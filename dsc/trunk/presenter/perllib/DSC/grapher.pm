@@ -873,6 +873,13 @@ sub check_image_cache {
 	return 1;
 }
 
+sub cached_image_size {
+	my $prefix = shift;
+	my @sb = stat(cache_image_path($prefix));
+	return -1 unless (@sb);
+	$sb[7];
+}
+
 sub cat_image {
 	my $prefix = shift;
 	if (open(F, cache_image_path($prefix))) {
@@ -1031,7 +1038,11 @@ sub img_with_map {
 	my %attrs;
 
 	if (my $reason = reason_to_not_plot()) {
-		return "<p>$reason";
+		return "<div class=\"notice\">$reason</div>";
+	}
+
+	unless (cached_image_size($cache_name) > 0) {
+		return "<div class=\"notice\">No Data To Display At This Time</div>";
 	}
 
 	my $pn = $ARGS{plot};
@@ -1053,24 +1064,6 @@ sub img_with_map {
 	$attrs{src} = $imgsrc;
 	$result .= html_markup('img', \%attrs, undef);
 	$result;
-}
-
-sub img {
-	my %own_args = %ARGS;	# copy
-	while (my $k = shift) { $own_args{$k} = shift; }
-	$own_args{content} = 'image';
-	my $p = urlpath(%own_args);
-	my $q = "<img src=\"$p\">";
-	#print STDERR "[$$] img() ret '$q'\n";
-	$q;
-}
-
-sub page {
-	my %own_args = %ARGS;	# copy
-	while (my $k = shift) { $own_args{$k} = shift; }
-	my $p = urlpath(%own_args);
-	#print STDERR "[$$] page() ret '$p'\n";
-	$p;
 }
 
 sub urlpath {
