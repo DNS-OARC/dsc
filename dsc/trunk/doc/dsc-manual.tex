@@ -294,8 +294,220 @@ the job that we use:
 
 \chapter{Configuring the {\dsc} Presenter}
 
-After installation of the {\dsc} files, there is not much additional
-configuration to do.  You do need to configure the HTTP server, however.
+This chapter describes how to create X.509 certificates and configure
+Apache/mod\_ssl.  If you plan on using a different upload
+technique (such as scp or rsync) you can skip these instructions.
+
+\section{Generating X.509 Certificates}
+
+We use X.509 certificates to authenticate both sides
+of an SSL connection when uploading XML data files from 
+the collector to the archiver.
+
+Certificate generation is a tricky thing.  We use three different
+types of certificates:
+\begin{enumerate}
+\item A self-signed root CA certificate
+\item A server certificate
+\item Client certificates for each collector node
+\end{enumerate}
+
+In the client certificates
+we use X.509 fields to store the collector's server and node name.
+The Organizational Unit Name (OU) becomes the server name and
+the Common Name (CN) becomes the node name:
+
+\begin{MyVerbatim}
+% openssl req -newkey rsa:1024 -keyout new.key -out new.req
+...
+Country Name (2 letter code) [AU]:US
+State or Province Name (full name) [Some-State]:Colorado
+Locality Name (eg, city) []:Boulder
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:TMF
+Organizational Unit Name (eg, section) []:x-root
+Common Name (eg, YOUR name) []:BLDR
+Email Address []:wessels@measurement-factory.com
+\end{MyVerbatim}
+
+When the {\em put-file.pl\/} script receives an XML file over an
+SSL session that uses this key, it will store the data in the {\em
+x-root/bldr\/} directory.
+
+The {\dsc} distribution includes some shell scripts that we have
+used to create X.509 certificates.  You can find them in the
+\path|presenter/certs| directory.  Note these are not installed
+into \path|/usr/local/dsc|.  You should edit \path|openssl.conf|
+and enter the relevant information for your organization.
+
+\subsection{Certificate Authority} 
+
+You may need to create a self-signed certificate authority if you
+don't already have one.  The CA signs client and server certificates.
+You will need to distribute the CA and client certificates to
+collector sites.  Here is how to use our \path|create-ca-cert.sh|
+script:
+
+\begin{MyVerbatim}
+> sh create-ca-cert.sh 
+CREATING CA CERT
+Generating a 2048 bit RSA private key
+..............................................................................
+............+++
+......+++
+writing new private key to './private/cakey.pem'
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----
+\end{MyVerbatim}
+
+
+\subsection{Server Certificate} 
+
+The server certificate is used by the HTTP server (Apache/mod\_ssl).
+The clients will have a copy of the CA certificate so they
+can validate the server's certificate when uploading XML files.
+Use the \path|create-srv-cert.sh| script to create a server
+certificate:
+
+\begin{MyVerbatim}
+> sh create-srv-cert.sh 
+CREATING SERVER REQUEST
+Generating a 1024 bit RSA private key
+..........................++++++
+.....................................++++++
+writing new private key to 'server/server.key'
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:US
+State or Province Name (full name) [Some-State]:Colorado
+Locality Name (eg, city) []:Boulder
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:The Measurement Factory, Inc
+Organizational Unit Name (eg, section) []:DNS
+Common Name (eg, YOUR name) []:dns.measurement-factory.com
+Email Address []:wessels@measurement-factory.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+Enter pass phrase for server/server.key:
+writing RSA key
+CREATING SERVER CERT
+Using configuration from ./openssl.conf
+Enter pass phrase for ./private/cakey.pem:
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+countryName           :PRINTABLE:'US'
+stateOrProvinceName   :PRINTABLE:'Colorado'
+localityName          :PRINTABLE:'Boulder'
+organizationName      :PRINTABLE:'The Measurement Factory, Inc'
+organizationalUnitName:PRINTABLE:'DNS'
+commonName            :PRINTABLE:'dns.measurement-factory.com'
+emailAddress          :IA5STRING:'wessels@measurement-factory.com'
+Certificate is to be certified until Jun  3 20:06:17 2013 GMT (3000 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+\end{MyVerbatim}
+
+Note that the Common Name must match the hostname of the HTTP
+server that receives XML files.
+
+Note that the \path|create-srv-cert.sh| script rewrites the
+server key file without the RSA password.  This allows your
+HTTP server to start automatically without prompting for
+the password.
+
+The script leaves the server certificate and key in the \path|server|
+directory.  You'll need to copy these over to the HTTP server config
+directory as described later in this chapter.
+
+\section{Client Certificates}
+
+Generating client certificates is similar.  Remember that
+the Organizational Unit Name and Common Name correspond to the
+collector's {\em server\/} and {\em node\/} names.   For example:
+
+\begin{MyVerbatim}
+> sh create-clt-cert.sh
+CREATING CLIENT REQUEST
+Generating a 1024 bit RSA private key
+................................++++++
+..............++++++
+writing new private key to 'client/client.key'
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:US
+State or Province Name (full name) [Some-State]:California
+Locality Name (eg, city) []:Los Angeles
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Some DNS Server
+Organizational Unit Name (eg, section) []:x-root  
+Common Name (eg, YOUR name) []:LAX
+Email Address []:noc@example.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+CREATING CLIENT CERT
+Using configuration from ./openssl.conf
+Enter pass phrase for ./private/cakey.pem:
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+countryName           :PRINTABLE:'US'
+stateOrProvinceName   :PRINTABLE:'California'
+localityName          :PRINTABLE:'Los Angeles'
+organizationName      :PRINTABLE:'Some DNS Server'
+organizationalUnitName:PRINTABLE:'x-root  '
+commonName            :PRINTABLE:'LAX'
+emailAddress          :IA5STRING:'noc@example.com'
+Certificate is to be certified until Jun  3 20:17:24 2013 GMT (3000 days)
+Sign the certificate? [y/n]:y 
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+Enter pass phrase for client/client.key:
+writing RSA key
+writing RSA key
+\end{MyVerbatim}
+
+The client's key and certificate will be placed in a directory
+based on the server and node names.  For example:
+
+\begin{MyVerbatim}
+> ls -l client/x-root/LAX
+total 10
+-rw-r--r--  1 wessels  wessels  3311 Mar 17 13:17 client.crt
+-rw-r--r--  1 wessels  wessels   712 Mar 17 13:17 client.csr
+-r--------  1 wessels  wessels   887 Mar 17 13:17 client.key
+-rw-r--r--  1 wessels  wessels  1953 Mar 17 13:17 client.pem
+\end{MyVerbatim}
+
+The \path|client.pem| (and \path|cacert.pem|) files should be copied
+to the collector machine.
 
 \section{Apache Configuration}
 
@@ -329,212 +541,20 @@ Script PUT /cgi-bin/put-file.pl
 
 \noindent
 Note the last line of the configuration specifies the CGI script
-that accepts PUT requests.  The <emphasis>SSLOptions</emphasis>
+that accepts PUT requests.  The {\em SSLOptions\/}
 line is necessary so that the CGI script receives certain HTTP
 headers as environment variables.  Those headers/variables convey
 the X.509 information to the script so it knows where to store
 received XML files.
 
-\section{Generating X.509 Certificates}
-
-We use X.509 certificates to authenticate both sides
-of an SSL connection when uploading XML data files from 
-the collector to the archiver.
-
-Certificate generation is a tricky thing.  We use three different
-types of certificates:
-\begin{enumerate}
-\item A self-signed root CA certificate
-\item A server certificate
-\item Client certificates for each collector node
-\end{enumerate}
-
-In the client certificates
-we use X.509 fields to store the collector's server and node name.
-The Organizational Unit Name (OU) becomes the server name and
-the Common Name (CN) becomes the node name:
-
-\begin{MyVerbatim}
-% openssl req -newkey rsa:1024 -keyout new.key -out new.req
-...
-Country Name (2 letter code) [AU]:US
-State or Province Name (full name) [Some-State]:Colorado
-Locality Name (eg, city) []:Boulder
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:TMF
-Organizational Unit Name (eg, section) []:x-root
-Common Name (eg, YOUR name) []:BLDR
-Email Address []:wessels@measurement-factory.com
-\end{MyVerbatim}
-
-When the {\em put-file.pl\/} script receives an XML file over an SSL session
-that uses this key, it will store the data in the {\em x-root/bldr\/} directory.
-
-\subsection{Certificate Authority} 
-
-You may need to create a self-signed certificate authority if you
-don't already have one.  The CA signs client and server certificates.
-You will need to distribute the CA and client certificates to
-collector sites.    Figure~\ref{fig-create-ca-cert-sh} is a sample
-script for creating the CA, and Figure~\ref{fig-openssl-conf} is
-a sample \path|openssl.conf| file.
-
-\begin{figure}
-\begin{MyVerbatim}
-#!/bin/sh
-set -e
-
-X_OPENSSL_CONF=/usr/local/dsc/certs/openssl.conf
-
-mkdir -p private
-
-if test ! -f index.txt ; then touch index.txt ; fi
-if test ! -f serial ; then echo 0 > serial ; fi
-
-CA_KEY=private/cakey.pem
-CA_CRT=cacert.pem
-
-# create the CA's self-signed root certificate
-#
-if test ! -f $CA_CRT ; then
-        echo 'CREATING CA CERT'
-        env OPENSSL_CONF=$X_OPENSSL_CONF \
-        openssl req -x509 -days 3000 -newkey rsa -out $CA_CRT
-fi
-\end{MyVerbatim}
-\caption{\label{fig-create-ca-cert-sh}A script to create a CA}
-\end{figure}
-
-
-\begin{figure}
-\begin{MyVerbatim}
-[ ca ]
-default_ca              = foo_ca
-
-[ foo_ca ]
-dir                     = /usr/local/dsc/certs
-certificate             = $dir/cacert.pem
-database                = $dir/index.txt
-new_certs_dir           = $dir/certs
-private_key             = $dir/private/cakey.pem
-serial                  = $dir/serial
-default_crl_days        = 7
-default_days            = 3000
-default_md              = md5
-policy                  = foo_ca_policy
-x509_extensions         = foo_ca_extensions
-
-[ foo_ca_policy ]
-commonName              = supplied
-stateOrProvinceName     = supplied
-countryName             = supplied
-emailAddress            = supplied
-organizationName        = supplied
-organizationalUnitName  = optional
-
-[ foo_ca_extensions ]
-basicConstraints        = CA:false
-
-[ req ]
-default_bits            = 2048
-default_keyfile         = /usr/local/dsc/certs/private/cakey.pem
-default_md              = md5
-prompt                  = no
-distinguished_name      = foo_ca_distinguished_name
-x509_extensions         = foo_ca_extensions
-
-[ foo_ca_distinguished_name ]
-commonName              = FOO-CA
-stateOrProvinceName     = Kansas
-countryName             = US
-emailAddress            = root@example.com
-organizationName        = FOO
-
-[ foo_ca_extensions ]
-basicConstraints        = CA:true
-\end{MyVerbatim}
-\caption{\label{fig-openssl-conf}A sample openssl.conf file}
-\end{figure}
-
-
-\subsection{Client Certificates}
-
-\begin{figure}
-\begin{MyVerbatim}
-#!/bin/sh
-set -e
-
-X_OPENSSL_CONF=/usr/local/dsc/certs/openssl.conf
-
-mkdir -p client
-
-CLT_REQ=client/client.csr
-CLT_KEY=client/client.key
-CLT_CRT=client/client.crt
-
-# create a certificate request for a client
-#
-if test ! -f $CLT_REQ ; then
-        echo 'CREATING CLIENT REQUEST'
-        openssl req -newkey rsa:1024 -keyout $CLT_KEY -out $CLT_REQ
-fi
-
-# issue a certificate based on the client's request
-#
-if test ! -f $CLT_CRT ; then
-        echo 'CREATING CLIENT CERT'
-        env OPENSSL_CONF=$X_OPENSSL_CONF \
-        openssl ca -in $CLT_REQ -out $CLT_CRT
-fi
-
-openssl rsa -in $CLT_KEY -out $CLT_KEY.new
-mv $CLT_KEY.new $CLT_KEY
-
-CN=`openssl x509 -in $CLT_CRT -noout -subject -nameopt multiline | awk '/commonName/ {print $3}'`
-OU=`openssl x509 -in $CLT_CRT -noout -subject -nameopt multiline | awk '/organizationalUnitName/ {p
-rint $3}'`
-mkdir -p client/$OU/$CN
-mv $CLT_KEY client/$OU/$CN/client.key
-mv $CLT_REQ client/$OU/$CN/client.csr
-mv $CLT_CRT client/$OU/$CN/client.crt
-
-openssl rsa -in client/$OU/$CN/client.key   > client/$OU/$CN/client.pem
-openssl x509 -in client/$OU/$CN/client.crt >> client/$OU/$CN/client.pem
-
-exit 0
-\end{MyVerbatim}
-\caption{\label{fig-create-client-cert-sh}A script to create client certificates}
-\end{figure}
-
-We use a simlar script to generate client certificates.  It is shown
-in Figure~\ref{fig-create-client-cert-sh}.
-
-After running the {\tt create-client-cert.sh} script,
-you should find a number of files under the
-\path|client| directory.   For example:
-
-\begin{MyVerbatim}
-> ls -R client/
-x-root
-
-client/f-root:
-bldr
-
-client/f-root/bldr:
-client.crt      client.csr      client.key      client.pem
-\end{MyVerbatim}
-
-The \path|client.pem| files should be copied to their respective
-collector machines.
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \chapter{Collector Installation}
 
 
-A collector machine needs only the {\em dsc\/} binary, a configuration file,
-and a cron job script.
+A collector machine needs only the {\em dsc\/} binary, a configuration
+file, and a couple of cron job scripts.
 
 At this point, {\dsc} lacks certain niceties such as a \path|./configure|
 script.   The installation prefix, \path|/usr/local/dsc| is currently
@@ -567,25 +587,31 @@ the {\tt dsc\/} binary and other scripts with:
 \end{MyVerbatim}
 
 This installs three files:
-\path|/usr/local/dsc/bin/dsc|,
-\path|/usr/local/dsc/etc/dsc.conf.sample|, 
-\path|/usr/local/dsc/libexec/upload-data.sh|, and
-\path|/usr/local/dsc/libexec/upload-prep.sh|.
+\begin{Verbatim}
+/usr/local/dsc/bin/dsc
+/usr/local/dsc/etc/dsc.conf.sample
+/usr/local/dsc/libexec/upload-data.sh
+/usr/local/dsc/libexec/upload-prep.sh
+\end{Verbatim}
 
 Of course, if you don't want to use the default installation
 prefix, you can manually copy these files to a location
-of your choosing.  @@cron scripts need to be edited then.
+of your choosing.  If you do that, you'll also need to
+edit the cron scripts to match your choice of pathnames, etc.
 
 \section{Uploading XML Files} 
 \label{sec-install-collector-cron}
 
 This section describes how XML files are transferred from
-the collector to one or more ``presenter'' systems.
+the collector to one or more Presenter systems.
 
 As we'll see in the next chapter, each {\tt dsc} process
 has its own {\em run directory\/}.  This is the directory
 where {\tt dsc} leaves its XML files.  It usually has a
-name like \path|/usr/local/dsc/run/NODENAME|.
+name like \path|/usr/local/dsc/run/NODENAME|.  XML files
+are removed after they are successfully transferred.  If the
+Presenter is unreachable, XML files accumulate here until
+they can be transferred.
 
 In general we want to be able to upload XML files to multiple
 presenters.  This is the reason behind the {\tt upload-prep.sh}
@@ -597,8 +623,8 @@ script.  This script runs every 60 seconds from cron:
 
 {\tt upload-prep.sh} looks for \path|dsc.conf| files in
 \path|/usr/local/dsc/etc| by default.  For each config file
-found, it cd's to the {\em run\_dir\/} and copies\footnote{Actually,
-XML files are hard-linked, rather than copied, to save disk space.}
+found, it cd's to the {\em run\_dir\/} and links\footnote{as in
+``hard link'' made with \path|/bin/ln|.}
 XML files to one or more upload directories.  The upload directories
 are named \path|upload/dest1|, \path|upload/dest2|, and so on.
 
@@ -634,17 +660,28 @@ of XML files and then uploads it to the remote server with
 \path|/usr/local/dsc/run|.  Similarly, {\em DEST\/} must match the
 name of a directory under \path|/usr/local/dsc/run/NODE/upload|.
 {\em URI\/} is the URL/URI that the data is uploaded to.  Usually
-it is just an https URL with the name of the destination server.
+it is just an HTTPS URL with the name of the destination server.
 We also recommend running this from cron every 60 seconds.  For
 example:
 
 \begin{MyVerbatim}
-* * * * * /usr/local/dsc/libexec/upload-data.sh ns0 oarc https://collect.oarc.isc.org/
-* * * * * /usr/local/dsc/libexec/upload-data.sh ns0 archive https://archive.example.com/
+* * * * * /usr/local/dsc/libexec/upload-data.sh ns0 oarc \
+	https://collect.oarc.isc.org/
+* * * * * /usr/local/dsc/libexec/upload-data.sh ns0 archive \
+	https://archive.example.com/
 \end{MyVerbatim}
+
+\path|upload-data.sh| looks for X.509 certificates in
+\path|/usr/local/dsc/certs|.  The client certificate should be named
+\path|/usr/local/dsc/certs/DEST/NODE.pem| and the CA certficiate
+should be named
+\path|/usr/local/dsc/certs/DEST/cacert.pem|.  Note that {\em DEST\/}
+and {\em NODE\/} must match the \path|upload-data.sh|
+command line arguments.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \chapter{Configuring the {\dsc} Collector}
 
 \section{dsc.conf}
@@ -681,6 +718,11 @@ The configuration file currently understands the following directives:
 	packets.  If you specify something like {\em udp port 53\/}
 	that indexer will not work.
 
+	However, if you want to monitor multiple DNS servers with
+	separate {\dsc} instances on one collector box, then you
+	may need to use {\em bfp\_program} to make sure that each
+	{\tt dsc} process sees only the traffic it should see.
+
 	Note that this directive must go before the {\em interface\/}
 	directive because {\tt dsc\/} makes only one pass through
 	the configuration file and the BFP filter is set when the
@@ -713,11 +755,83 @@ The configuration file currently understands the following directives:
 
 \item[dataset]
 
-	This directive is the hart of {\dsc}.  Please see the following section for its description.
-
+	This directive is the hart of {\dsc}.  However, it is also
+	the most complex.
+	To save time we recommend that you copy interesting-looking
+	dataset definitions from \path|dsc.conf.sample|.  Comment
+	out any that you feel are irrelevant or uninteresting.
+	Later, as you become more familiar with {\dsc}, you may
+	want to read the next chapter and add your own custom
+	datasets.
 \end{description}
 
-\section{The dataset directive}
+
+\section{A Complete Sample dsc.conf}
+
+Here's how your entire {\em dsc.conf\/} file might look:
+
+\begin{MyVerbatim}
+#bpf_program
+interface em0;
+
+local_address 192.5.5.241;
+
+run_dir "/udir/wessels/dsc/run-pao1";
+
+dataset qtype dns All:null Qtype:qtype queries-only;
+dataset rcode dns All:null Rcode:rcode replies-only;
+dataset opcode dns All:null Opcode:opcode queries-only;
+dataset rcode_vs_replylen dns Rcode:rcode ReplyLen:msglen replies-only;
+dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only
+        max-cells=200;
+dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
+dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes
+        max-cells=200;
+dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames
+        Qtype:qtype queries-only;
+dataset client_subnet2 dns Class:query_classification
+        ClientSubnet:cip4_net queries-only max-cells=200;
+dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client
+        replies-only max-cells=50;
+dataset chaos_types_and_names dns Qtype:qtype Qname:qname
+        chaos-class,queries-only;
+dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
+dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
+dataset do_bit dns All:null D0:do_bit queries-only;
+dataset rd_bit dns All:null RD:rd_bit queries-only;
+dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
+dataset ipv6_rsn_abusers dns All:null ClientAddr:client
+        queries-only,aaaa-or-a6-only,root-servers-n et-only max-cells=50;
+
+dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
+        any;
+\end{MyVerbatim}
+
+\section{Running {\tt dsc}}
+
+{\tt dsc\/} accepts a single command line argument, which is
+the name of the configuration file.  For example:
+
+\begin{MyVerbatim}
+> /usr/local/dsc/bin/dsc /usr/local/dsc/etc/foo.conf
+\end{MyVerbatim}
+
+If you run {\tt ps} when {\tt dsc} is running, you'll see two processes:
+
+\begin{MyVerbatim}
+60494  ??  S      0:00.36 bin/dsc etc/foo.conf
+69453  ??  Ss     0:10.65 bin/dsc etc/foo.conf
+\end{MyVerbatim}
+
+The first process simply forks off child processes every
+60 seconds.  The child processes do the work of analyzing
+and tabulating DNS messages.
+
+Please use NTP or another technique to keep the collector's
+clock synchronized to the correct time.
+
+
+\chapter{DSC Datasets}
 
 A {\em dataset\/} is a 2-D array of counters.  For example, you
 might have a dataset with ``Query Type'' along one dimension and
@@ -748,11 +862,11 @@ A dataset is defined by the following parameters:
 \item A protocol layer (IP or DNS)
 \item An indexer for the first dimension
 \item An indexer for the second dimension
-\item Zero or more options
+\item Zero or more options and parameters
 \end{itemize}
 
 \noindent
-{\em dsc.conf\/} syntax:
+The {\em dataset\/} definition syntax in \path|dsc.conf| is:
 
 {\tt dataset\/}
 {\em name\/}
@@ -763,20 +877,22 @@ A dataset is defined by the following parameters:
 {\em [parameters]\/};
 \vspace{2ex}
 
-\subsection{Dataset Name}
+\section{Dataset Name}
 
 The dataset name is used in the filename for {\tt dsc\/}'s XML
-files.  Although this is an opaque string, the dataset name is also
-used as the name for the XML extractors.  That is, if {\dsc} finds
-an XML file named {\em 1092180200.foo.xml\/}, it passes that file
-to {\em foo-extractor.pl\/}.
+files.  Although this is an opaque string in theory, the Presenter's
+XML extractor routines must recognize the dataset name to properly
+parse it.  The source code file
+\path|presenter/perllib/DSC/extractor/config.pm| contains an entry
+for each known dataset name.
 
-\subsection{Protocol}
+\section{Protocol}
 
 {\dsc} currently knows about two protocol layers: IP and DNS.
 On the {\tt dataset\/} line they are written as {\tt ip\/} and {\tt dns\/}.
 
-\subsection{Indexers}
+
+\section{Indexers}
 
 An {\em indexer\/} is simply a function that transforms the attributes
 of an IP/DNS message into an array index.  For some attributes the
@@ -824,9 +940,50 @@ dataset the_dataset dns Foo:foo Bar:bar queries-only;
 In theory you are free to choose any label that you like, however,
 the XML extractors look for specific labels.  Please use the labels
 given for the indexers in Tables~\ref{tbl-dns-indexers}
-and~\ref{tbl-ip-indexers}.  Table~\ref{tbl-dns-indexers} shows the
-currently-defined indexers for DNS messages.  Similarly,
+and~\ref{tbl-ip-indexers}.
+
+\subsection{IP Indexers}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|lll|}
+\hline
+Indexer & Label & Description \\
+\hline 
+ip\_direction & Direction & one of sent, recv, or other \\
+ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
+\hline
+\end{tabular}
+\caption{\label{tbl-ip-indexers}IP packet indexers}
+\end{center}
+\end{table}
+
+{\dsc} includes only minimal support for collecting IP-layer
+stats.  Mostly we are interested in finding out the mix of
+IP protocols recieved by the DNS server.  It can also show us
+if/when the DNS server is the subject of denial-of-service
+attack.
 Table~\ref{tbl-ip-indexers} shows the indexers for IP packets.
+Here are their longer descriptions:
+
+\begin{description}
+\item[ip\_direction]
+	One of three values: sent, recv, or else.  Direction is determined
+	based on the setting for {\em local\_address\/} in the configuration file.
+\item[ip\_proto]
+	The IP protocol type, e.g.: tcp, udp, icmp.
+	Note that the {\em bpf\_filter\/} setting affects all traffic
+	seen by {\dsc}.  If the filter contains the word ``udp''
+	then you won't see any counts for non-UDP traffic.
+\end{description}
+
+\subsection{IP Filters}
+
+Currently there is only one IP protocol filter: {\em any\/}.
+It includes all received packets.
+
+
+\subsection{DNS Indexers}
 
 \begin{table}
 \begin{center}
@@ -836,7 +993,7 @@ Indexer & Label & Description \\
 \hline 
 certain\_qnames & CertainQnames & Popular query names seen at roots \\
 cip4\_net & ClientSubnet & The client's IPv4 /24 subnet \\
-client & - & The client's IPv4 address \\
+client & ClientAddr & The client's IPv4 address \\
 do\_bit & DO & Whether the DO bit is on \\
 edns\_version & EDNSVersion & The EDNS version number \\
 idn\_qname & IDNQname & If the QNAME is in IDN format \\
@@ -856,22 +1013,8 @@ tld & TLD & TLD of the query name \\
 \end{center}
 \end{table}
 
-\begin{table}
-\begin{center}
-\begin{tabular}{|lll|}
-\hline
-Indexer & Label & Description \\
-\hline 
-ip\_direction & Direction & one of sent, recv, or other \\
-ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
-\hline
-\end{tabular}
-\caption{\label{tbl-ip-indexers}IP packet indexers}
-\end{center}
-\end{table}
-
-\noindent
-Here are some longer descriptions of the DNS indexers:
+Table~\ref{tbl-dns-indexers} shows the currently-defined indexers
+for DNS messages, and here are their descriptions:
 
 \begin{description}
 \item[certain\_qnames]
@@ -883,13 +1026,14 @@ Here are some longer descriptions of the DNS indexers:
 	client's IPv4 address.  We use this to make datasets with
 	large, diverse client populations more manageable and to
 	provide a small amount of privacy and anonymization.
-\item[client]
+\item[cip4\_addr]
 	The IPv4 address of the DNS client.
 \item[do\_bit]
 	This indexer has only two values: 0 or 1.  It indicates
 	whether or not the ``DO'' bit is set in a DNS query.  According to
-	RFC 2335: {\em Setting the DO bit to one in a query indicates to the server
-	that the resolver is able to accept DNSSEC security RRs.}
+	RFC 2335: {\em Setting the DO bit to one in a query indicates
+	to the server that the resolver is able to accept DNSSEC
+	security RRs.}
 \item[edns\_version]
 	The EDNS version number, if any, in a DNS query.  EDNS
 	Version 0 is documented in RFC 2671.
@@ -913,6 +1057,9 @@ Here are some longer descriptions of the DNS indexers:
 	The DNS message query class (QCLASS) is a 16-bit value.  IN
 	is the most common query class.  Additional currently defined
 	query class values include: CHAOS, HS, NONE, and ANY.
+\item[qname]
+	The full QNAME string from the first (and usually only)
+	QNAME in question section of a DNS message.
 \item[qnamelen]
 	The length of the first (and usually only) QNAME in a DNS
 	message question section.  Note this is the ``expanded''
@@ -949,23 +1096,14 @@ Here are some longer descriptions of the DNS indexers:
 	the TLD of the first QNAME in a DNS message's question section.
 \end{description}
 
-\noindent
-Here are some longer descriptions of the IP indexers:
+\subsection{DNS Filters}
 
-\begin{description}
-\item[ip\_direction]
-	One of three values: sent, recv, or else.  Direction is determined
-	based on the setting for {\em local\_address\/} in the configuration file.
-\item[ip\_proto]
-	The IP protocol type, e.g.: tcp, udp, icmp.
-\end{description}
-
-\subsection{Filters}
-
-You may specify zero or more of the following filters (separated by commas) on
+You must specify one or more of the following filters (separated by commas) on
 the {\tt dataset\/} line:
 
 \begin{description}
+\item[any]
+	The no-op filter, counts all messages.
 \item[queries-only]
 	Count only DNS query messages.  A query is a DNS message
 	where the QR bit is set to 0.
@@ -983,6 +1121,11 @@ the {\tt dataset\/} line:
 \item[root-servers-net-only]
 	Count only DNS messages where the query name is within
 	the {\em root-servers.net\/} domain.
+\item[chaos-class]
+	Counts only DNS messages where QCLASS is equal to
+	CHAOS (3).  The CHAOS class is generally used
+	for only the special {\em hostname.bind\/} and
+	{\em version.bind\/} queries.
 \end{description}
 
 \noindent
@@ -996,77 +1139,24 @@ narrow the input stream, rather than broaden it.
 
 \begin{description}
 \item[min-count={\em NN\/}]
-	Cells with counts less than {\em NN\/} are not included
-	in the output.  Instead, they are aggregated into the special
-	values {\tt -:SKIPPED:-\/} and {\tt -:SKIPPED\_SUM:-\/}.  This helps reduce
-	the size of datasets with a large number of small counts.
+	Cells with counts less than {\em NN\/} are not included in
+	the output.  Instead, they are aggregated into the special
+	values {\tt -:SKIPPED:-\/} and {\tt -:SKIPPED\_SUM:-\/}.
+	This helps reduce the size of datasets with a large number
+	of small counts.
+\item[max-cells={\em NN\/}]
+	A different, perhaps better, way of limiting the size
+	of a dataset.  Instead of trying to determine an appropriate
+	{\em min-count\/} value in advance, {\em max-cells\/}
+	allows you put a limit on the number of cells to
+	include for the second dataset dimension.  If the dataset
+	has 9 possible first-dimension values, and you specify
+	a {\em max-cell\/} count of 100, then the dataset will not
+	have more than 900 total values.  The cell values are sorted
+	and the top {\em max-cell\/} values are output.  Values
+	that fall below the limit are aggregated into the special
+	{\tt -:SKIPPED:-\/} and {\tt -:SKIPPED\_SUM:-\/} entries.
 \end{description}
-
-\section{A Complete Sample dsc.conf}
-
-Here's how your entire {\em dsc.conf\/} file might look:
-
-\noindent\hrulefill
-
-\begin{footnotesize}
-\begin{MyVerbatim}
-#bpf_program
-interface em0;
-
-local_address 192.5.5.241;
-
-run_dir "/udir/wessels/dsc/run-pao1";
-
-dataset qtype dns All:null Qtype:qtype queries-only;
-dataset rcode dns All:null Rcode:rcode replies-only;
-dataset opcode dns All:null Opcode:opcode queries-only;
-dataset rcode_vs_replylen dns Rcode:rcode ReplyLen:msglen replies-only;
-dataset client_subnet dns All:null ClientSubnet:cip4_net
-        queries-only min-count=10;
-dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
-dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes
-        min-count=3;
-dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype
-        queries-only;
-dataset client_subnet2 dns Class:query_classification ClientSubnet:cip4_net
-        queries-only min-count=5;
-
-dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
-dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
-dataset do_bit dns All:null DO:do_bit queries-only;
-dataset rd_bit dns All:null RD:rd_bit queries-only;
-
-dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
-dataset ipv6_rsn_abusers dns All:null ClientAddr:client
-        queries-only,aaaa-or-a6-only,root-servers-net-only min-count=27;
-
-dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
-\end{MyVerbatim}
-\end{footnotesize}
-
-\noindent\hrulefill
-
-\section{Pushing XML files to the Presenter}
-
-The {\tt dsc\/} process writes XML files to its current directory
-(which you probably set with the {\em run\_dir\/} directive.  Back
-in Section~\ref{sec-install-collector-cron} we talked about the
-cron job that pushes XML files to the Presenter.
-
-The script that we provide ({\em push-data.sh\/}) uses {\tt curl\/}
-and X.509 certificates.  This is a somewhat-complex technique.  You
-may want to start of with something simpler, such as {\tt rsync\/}
-or {\em scp\/}, then come back and attempt HTTPS PUT later.
-
-If you go with HTTPS PUT, the collector needs copies of the client
-X.509 certificates.  The next chapter explains how to generate these
-certificates.  If you use our {\em push-data.sh\/} script, make
-sure that the certificate file location matches the {\em SRVAUTH\/}
-setting in the script.  You need two certificate files: one contains
-the Certificate Authority (CA) certificate ({\em cacert.pem\/}) and the
-other contains the client (collector) certificate and private key
-({\em node-cert.pem\/}).  The CA certificate is
-necessary so that {\tt curl\/} can authenticate the server.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Data Storage}
@@ -1120,8 +1210,8 @@ The {\em count\/} values are always integers.
 
 \noindent
 Here is a possibly-valid DTD for the dataset XML format.
-Note, however, that the <emphasis>LABEL1</emphasis>
-and <emphasis>LABEL2</emphasis> strings are different
+Note, however, that the {\em LABEL1\/}
+and {\em LABEL2\/} strings are different
 for each dataaset:
 
 \begin{MyVerbatim}
@@ -1240,6 +1330,9 @@ For example:
 	Seems too confusing to have an opaque name for indexers in
 	dsc.conf dataset line.  The names are pre-determined anyway
 	since they must match what the XML extractors look for.
+\item
+	Also stupid to have indexer names and a separate ``Label'' for
+	the XML file.
 
 \item
 	DSC perl modules are installed in the ``site\_perl'' directory
