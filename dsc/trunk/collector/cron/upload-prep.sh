@@ -31,6 +31,7 @@ for node in THIS THAT ; do
 	exec 2>&1
 
 	k=`ls -r | grep xml$ | head -400` || true
+	test -z "$k" && continue
 
 	for to in to-* ; do
 		ln -f $k $to
