@@ -35,7 +35,7 @@ edns_version_iterator(char **label)
     } else if (0 == next_iter) {
 	*label = "none";
     } else {
-        snprintf(buf, 12, "EDNS%d", next_iter - 1);
+        snprintf(buf, 12, "%d", next_iter - 1);
         *label = buf;
     }
     return next_iter++;
