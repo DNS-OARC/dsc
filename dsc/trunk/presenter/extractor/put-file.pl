@@ -18,6 +18,8 @@ my $method = $ENV{REQUEST_METHOD} || '-';
 my $remaddr = $ENV{REMOTE_ADDR} || '-';
 my $timestamp = strftime("[%d/%b/%Y:%H:%M:%S %z]", localtime(time));
 
+umask 022;
+
 
 # Check we are using PUT method
 &reply(500, "No request method") unless defined ($method);
@@ -88,6 +90,7 @@ sub reply
     my $message = shift;
     my $logline;
 
+    $remaddr = sprintf "%-15s", $remaddr;
     $logline = "$remaddr - - $timestamp \"$method $TOPDIR/$SERVER/$NODE/$filename\" $status $clength";
 
     print "Status: $status\n";
@@ -110,12 +113,13 @@ sub log
 {
 	my $msg = shift;
 	my $lockmgr = LockFile::Simple->make(
-                -format => '/var/tmp/%F.lck',
+                -format => '/tmp/%F.lck',
                 -max => 3,
                 -delay => 1);
         my $lock = $lockmgr->lock($putlog) || return;
-	open (LOG, ">> $putlog") || return;
-	print LOG "$msg\n";
-	close(LOG);
+	if (open (LOG, ">> $putlog")) {
+		print LOG "$msg\n";
+		close(LOG);
+	}
 	$lock->release;
 }
