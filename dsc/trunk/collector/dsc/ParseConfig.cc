@@ -105,7 +105,7 @@ interpret(const Pree &tree, int level)
 			return 0;
         } else
 	if (tree.rid() == rDataset.id()) {
-		int min_count = 0;
+		int min_count = 1;
 		assert(tree.count() > 10);
 		getDatasetOptVal(tree[10], "min-count", min_count);
 		x = add_dataset(tree[1].image().c_str(),	// name
