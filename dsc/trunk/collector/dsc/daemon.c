@@ -19,6 +19,9 @@
 char *progname = NULL;
 int promisc_flag = 1;
 
+extern void cip4_net_indexer_init(void);
+
+
 void
 usage(void)
 {
@@ -73,6 +76,7 @@ main(int argc, char *argv[])
      * collector exits.
      */
 
+    cip4_net_indexer_init();
     Pcap_init(device, promisc_flag);
     for (;;) {
 	pid_t cpid = fork();

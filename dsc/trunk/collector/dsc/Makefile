@@ -13,6 +13,8 @@ OBJS=\
 	qclass_index.o \
 	tld_index.o \
 	rcode_index.o \
+	client_ipv4_addr_index.o \
+	client_ipv4_net_index.o \
 	md_array_xml_printer.o
 
 LIBS=\
@@ -29,16 +31,37 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(PROG)
 
-# daemon.c dns_message.c dns_protocol.c generic_counter.c md_array.c md_array_xml_printer.c pcap.c qclass_index.c qtype_index.c rcode_index.c string_counter.c tld_index.c
+
+# client_ipv4_addr_index.c client_ipv4_net_index.c daemon.c dns_message.c dns_protocol.c generic_counter.c md_array.c md_array_xml_printer.c pcap.c qclass_index.c qtype_index.c rcode_index.c string_counter.c tld_index.c
+client_ipv4_addr_index.o: client_ipv4_addr_index.c \
+ /usr/include/stdlib.h /usr/include/sys/cdefs.h \
+ /usr/include/machine/ansi.h /usr/include/assert.h \
+ /usr/include/stdio.h /usr/include/string.h dns_message.h \
+ /usr/include/sys/types.h /usr/include/sys/inttypes.h \
+ /usr/include/machine/types.h /usr/include/machine/endian.h \
+ /usr/include/sys/socket.h /usr/include/machine/param.h \
+ /usr/include/netinet/in.h /usr/include/netinet6/in6.h \
+ /usr/include/arpa/inet.h /usr/include/sys/time.h /usr/include/time.h \
+ /usr/include/sys/_posix.h md_array.h
+client_ipv4_net_index.o: client_ipv4_net_index.c /usr/include/stdlib.h \
+ /usr/include/sys/cdefs.h /usr/include/machine/ansi.h \
+ /usr/include/assert.h /usr/include/stdio.h /usr/include/string.h \
+ dns_message.h /usr/include/sys/types.h /usr/include/sys/inttypes.h \
+ /usr/include/machine/types.h /usr/include/machine/endian.h \
+ /usr/include/sys/socket.h /usr/include/machine/param.h \
+ /usr/include/netinet/in.h /usr/include/netinet6/in6.h \
+ /usr/include/arpa/inet.h /usr/include/sys/time.h /usr/include/time.h \
+ /usr/include/sys/_posix.h md_array.h
 daemon.o: daemon.c /usr/include/stdio.h /usr/include/sys/cdefs.h \
  /usr/include/machine/ansi.h /usr/include/stdlib.h \
  /usr/include/string.h /usr/include/unistd.h /usr/include/sys/types.h \
  /usr/include/sys/inttypes.h /usr/include/machine/types.h \
  /usr/include/machine/endian.h /usr/include/sys/unistd.h \
- /usr/include/sys/_posix.h dns_message.h /usr/include/sys/socket.h \
- /usr/include/machine/param.h /usr/include/netinet/in.h \
- /usr/include/netinet6/in6.h /usr/include/arpa/inet.h \
- /usr/include/sys/time.h /usr/include/time.h pcap.h
+ /usr/include/sys/_posix.h /usr/include/sys/wait.h dns_message.h \
+ /usr/include/sys/socket.h /usr/include/machine/param.h \
+ /usr/include/netinet/in.h /usr/include/netinet6/in6.h \
+ /usr/include/arpa/inet.h /usr/include/sys/time.h /usr/include/time.h \
+ pcap.h
 dns_message.o: dns_message.c /usr/include/stdlib.h \
  /usr/include/sys/cdefs.h /usr/include/machine/ansi.h \
  /usr/include/assert.h /usr/include/stdio.h dns_message.h \
@@ -69,7 +92,7 @@ md_array.o: md_array.c /usr/include/stdlib.h /usr/include/sys/cdefs.h \
  /usr/include/machine/param.h /usr/include/netinet/in.h \
  /usr/include/netinet6/in6.h /usr/include/arpa/inet.h \
  /usr/include/sys/time.h /usr/include/time.h /usr/include/sys/_posix.h \
- md_array.h
+ md_array.h pcap.h
 md_array_xml_printer.o: md_array_xml_printer.c /usr/include/stdio.h \
  /usr/include/sys/cdefs.h /usr/include/machine/ansi.h \
  /usr/include/assert.h dns_message.h /usr/include/sys/types.h \
@@ -78,7 +101,7 @@ md_array_xml_printer.o: md_array_xml_printer.c /usr/include/stdio.h \
  /usr/include/machine/param.h /usr/include/netinet/in.h \
  /usr/include/netinet6/in6.h /usr/include/arpa/inet.h \
  /usr/include/sys/time.h /usr/include/time.h /usr/include/sys/_posix.h \
- md_array.h
+ md_array.h pcap.h
 pcap.o: pcap.c /usr/include/sys/types.h /usr/include/sys/cdefs.h \
  /usr/include/sys/inttypes.h /usr/include/machine/ansi.h \
  /usr/include/machine/types.h /usr/include/machine/endian.h \
