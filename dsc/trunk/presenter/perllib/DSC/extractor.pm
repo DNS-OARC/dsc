@@ -26,6 +26,7 @@ BEGIN {
 		&grok_cltsub_xml
 		&grok_client_subnet2_xml
 		&grok_tld_xml
+		&grok_idn_vs_tld_xml
 		&grok_qtype_vs_qnamelen_xml
 		&grok_rcode_vs_replylen_xml
 		&grok_qtype_vs_tld_xml
@@ -50,7 +51,8 @@ END { }
 $SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
 $SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 
-my $lockfile_template = '/tmp/%F.lck';
+#my $lockfile_template = '/tmp/%F.lck';
+my $lockfile_template = '%f.lck';
 my $LOCK_RETRY_DURATION = 45;
 
 sub yymmdd {
@@ -59,6 +61,11 @@ sub yymmdd {
 	POSIX::strftime "%Y%m%d", @t;
 }
 
+#sub lockfile_format {
+#        my @x = split(/\//, shift);
+#        '/tmp/' . join(':', reverse(pop @x, pop @x, pop @x)) . '.lck';
+#}
+
 #
 # time k1 v1 k2 v2 ...
 #
@@ -66,6 +73,7 @@ sub read_data {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => $lockfile_template,
 		-max => $LOCK_RETRY_DURATION,
@@ -115,6 +123,7 @@ sub read_data2 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => $lockfile_template,
 		-max => $LOCK_RETRY_DURATION,
@@ -163,6 +172,7 @@ sub read_data3 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => $lockfile_template,
 		-max => $LOCK_RETRY_DURATION,
@@ -213,6 +223,7 @@ sub read_data4 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
+	return unless (-f $fn);
 	my $lockmgr = LockFile::Simple->make(
 		-format => $lockfile_template,
 		-max => $LOCK_RETRY_DURATION,
@@ -349,6 +360,11 @@ sub grok_client_subnet2_xml {
 }
 
 sub grok_tld_xml {
+	my $fname = shift || die;
+	&grok_1d_xml($fname, 'TLD');
+}
+
+sub grok_idn_vs_tld_xml {
 	my $fname = shift || die;
 	&grok_1d_xml($fname, 'TLD');
 }
