@@ -32,6 +32,8 @@ for type in $TYPES ; do
 	if test -n "$xmls" ; then
 		for h in $xmls ; do
 			secs=`echo $h | awk -F. '{print $1}'`
+			# convert end time to start time
+			secs=`expr $secs - 60`
 			yymmdd=`date -u -r $secs +%Y%m%d`
 			test -d $yymmdd || mkdir $yymmdd
 			test -d $yymmdd/$type || mkdir $yymmdd/$type
