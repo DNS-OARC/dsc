@@ -99,7 +99,7 @@ handle_udp(const struct udphdr *udp, int len)
 }
 
 dns_message *
-handle_ip(const struct ip * ip, int len)
+handle_ipv4(const struct ip * ip, int len)
 {
     char buf[PCAP_SNAPLEN];
     dns_message *m;
@@ -146,7 +146,7 @@ handle_ppp(const u_char * pkt, int len)
     if (ETHERTYPE_IP != proto && PPP_IP != proto)
 	return NULL;
     memcpy(buf, pkt, len);
-    return handle_ip((struct ip *) buf, len);
+    return handle_ipv4((struct ip *) buf, len);
 }
 
 #endif
@@ -158,7 +158,7 @@ handle_null(const u_char * pkt, int len)
     memcpy(&family, pkt, sizeof(family));
     if (AF_INET != family)
 	return NULL;
-    return handle_ip((struct ip *) (pkt + 4), len - 4);
+    return handle_ipv4((struct ip *) (pkt + 4), len - 4);
 }
 
 #ifdef DLT_LOOP
@@ -169,7 +169,7 @@ handle_loop(const u_char * pkt, int len)
     memcpy(&family, pkt, sizeof(family));
     if (AF_INET != ntohl(family))
 	return NULL;
-    return handle_ip((struct ip *) (pkt + 4), len - 4);
+    return handle_ipv4((struct ip *) (pkt + 4), len - 4);
 }
 
 #endif
@@ -178,7 +178,7 @@ handle_loop(const u_char * pkt, int len)
 dns_message *
 handle_raw(const u_char * pkt, int len)
 {
-    return handle_ip((struct ip *) pkt, len);
+    return handle_ipv4((struct ip *) pkt, len);
 }
 
 #endif
@@ -222,7 +222,7 @@ handle_ether(const u_char * pkt, int len)
 	return NULL;
     if (ETHERTYPE_IP == etype) {
 	memcpy(buf, pkt, len);
-	return handle_ip((struct ip *) buf, len);
+	return handle_ipv4((struct ip *) buf, len);
     }
     return NULL;
 }
