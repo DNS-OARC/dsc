@@ -1,3 +1,4 @@
+<html>
 <head>
 <style type="text/css">
 :link		{ color: inherit; text-decoration: none; }
@@ -18,6 +19,7 @@ A.current	{ color: red; }
 </style>
 </head>
 
+<body>
 <table>
  <tr>
   <td valign="top">
@@ -43,3 +45,5 @@ A.current	{ color: red; }
   </td>
  </tr>
 </table>
+</body>
+</html>
