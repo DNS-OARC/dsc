@@ -117,6 +117,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Queries by QType',
+    map_legend	=> 1,
   },
 
   rcode => {
@@ -128,18 +129,19 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Replies by Rcode',
+    map_legend	=> 1,
   },
 
   opcode => {
     keys	=> [ qw(1 2 4 5 else) ],
     names	=> [ qw(Iquery Status Notify Update_ Other) ],
-    plotnames	=> [ qw(Iquery Status Notify Update_ Other) ],
     colors	=> [ qw(orange yellow brightgreen brightblue purple red) ],
     data_reader => \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Messages by Opcode (excluding QUERY)',
+    map_legend	=> 1,
   },
 
   certain_qnames_vs_qtype => {
@@ -182,6 +184,7 @@ my $std_accum_yaxes = {
 	DSC::grapher::munge_2d_to_1d(shift, [qw(localhost X.root-servers.net else)], [qw(1 28 38)])
     },
     plottitle	=> 'Queries for localhost and X.root-servers-.net',
+    map_legend	=> 1,
   },
 
   client_subnet_accum => {
@@ -205,6 +208,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_0d,
     yaxes	=> $std_accum_yaxes,
     plottitle	=> 'Busiest Client Subnets',
+    map_legend	=> 1,
   },
 
   client_subnet2_accum => {
@@ -217,6 +221,7 @@ my $std_accum_yaxes = {
     data_reader => \&DSC::extractor::read_data3,
     data_summer => \&DSC::grapher::data_summer_1d,
     plottitle	=> 'Query Classifications by Subnets',
+    map_legend	=> 1,
   },
 
   client_subnet2_trace => {
@@ -229,6 +234,7 @@ my $std_accum_yaxes = {
     data_reader	=> \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
     plottitle	=> 'Query Classifications by Subnets',
+    map_legend	=> 1,
   },
 
   client_subnet2_count => {
@@ -253,6 +259,7 @@ my $std_accum_yaxes = {
 	},
     },
     plottitle	=> 'Query Classifications by Subnets',
+    map_legend	=> 1,
   },
 
   qtype_vs_all_tld => {
@@ -282,6 +289,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
     plottitle   => 'Most Popular TLDs Queried',
+    map_legend	=> 1,
   },
 
   qtype_vs_invalid_tld => {
@@ -312,6 +320,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
     plottitle   => 'Most Popular TLDs Queried',
+    map_legend	=> 1,
   },
 
   qtype_vs_valid_tld => {
@@ -342,6 +351,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
     plottitle   => 'Most Popular TLDs Queried',
+    map_legend	=> 1,
   },
 
   qtype_vs_numeric_tld => {
@@ -372,6 +382,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
     plottitle   => 'Most Popular TLDs Queried',
+    map_legend	=> 1,
   },
 
   direction_vs_ipproto => {
@@ -396,6 +407,7 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'Received packets by IP protocol',
+    map_legend	=> 1,
     munge_func  => sub {
 	# XXX: 'shift' represents the old data hashref
 	DSC::grapher::munge_2d_to_1d(shift, [qw(recv)], [qw(icmp tcp udp else)])
@@ -425,6 +437,7 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'Transmitted packets by IP protocol',
+    map_legend	=> 1,
     munge_func  => sub {
 	# XXX: 'shift' represents the old data hashref
 	DSC::grapher::munge_2d_to_1d(shift, [qw(sent)], [qw(icmp tcp udp else)])
@@ -479,6 +492,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'EDNS Version Numbers',
+    map_legend	=> 1,
   },
 
   qtype_vs_qnamelen => {
@@ -501,6 +515,7 @@ my $std_accum_yaxes = {
 	},
     },
     plottitle	=> 'Query Name Lengths',
+    map_legend	=> 1,
   },
 
  rcode_vs_replylen => {
@@ -523,6 +538,7 @@ my $std_accum_yaxes = {
 	},
     },
     plottitle	=> 'Reply Code Message Lengths',
+    map_legend	=> 1,
  },
 
   client_addr_vs_rcode_accum => {
@@ -534,7 +550,8 @@ my $std_accum_yaxes = {
     colors	=> [ qw(brightgreen red purple blue orange magenta ) ],
     data_reader => \&DSC::extractor::read_data3,
     data_summer => \&DSC::grapher::data_summer_1d,
-    plottitle	=> 'Rcodes and Addrs'
+    plottitle	=> 'Rcodes and Addrs',
+    map_legend	=> 1,
   }
 
 );
