@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include <netinet/in.h>
+#include <netinet/ip6.h>
 
 #include <pcap.h>
 #include <signal.h>
@@ -116,6 +117,13 @@ handle_ipv4(const struct ip * ip, int len)
     else			/* reply */
 	m->client_ipv4_addr = ip->ip_dst;
     return m;
+}
+
+dns_message *
+handle_ipv6(const struct ip6_hdr * ip6, int len)
+{
+    syslog(LOG_ERR, "Ignoring IPv6 packet");
+    return NULL;
 }
 
 #if USE_PPP
@@ -224,6 +232,10 @@ handle_ether(const u_char * pkt, int len)
 	memcpy(buf, pkt, len);
 	return handle_ipv4((struct ip *) buf, len);
     }
+    if (ETHERTYPE_IPV6 == etype) {
+	memcpy(buf, pkt, len);
+	return handle_ipv6((struct ip6_hdr *) buf, len);
+    }
     return NULL;
 }
 
@@ -291,7 +303,7 @@ Pcap_init(const char *device, int promisc)
 	new_pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1000, errbuf);
     }
     if (NULL == new_pcap) {
-	syslog(LOG_ERR, "pcap_open_*: %s\n", errbuf);
+	syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
 	exit(1);
     }
     memset(&fp, '\0', sizeof(fp));
@@ -328,7 +340,7 @@ Pcap_init(const char *device, int promisc)
 	handle_datalink = handle_null;
 	break;
     default:
-	syslog(LOG_ERR, "unsupported data link type %d\n",
+	syslog(LOG_ERR, "unsupported data link type %d",
 	    pcap_datalink(new_pcap));
 	exit(1);
 	break;
