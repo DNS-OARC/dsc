@@ -503,8 +503,8 @@ my $std_accum_yaxes = {
   },
 
   do_bit => {
-    dataset	=> 'd0_bit',
-    datafile	=> 'd0_bit',
+    dataset	=> 'do_bit',
+    datafile	=> 'do_bit',
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     keys	=> [qw(set)],
