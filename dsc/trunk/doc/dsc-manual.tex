@@ -1,5 +1,6 @@
 \documentclass{report}
-\usepackage{psfig}
+\usepackage{epsfig}
+\usepackage{path}
 
 \def\dsc{{\sc dsc}}
 
@@ -9,7 +10,9 @@
 \begin{titlepage}
 \title{DSC Manual}
 \author{Duane Wessels\\
-The Measurement Factory, Inc.}
+The Measurement Factory, Inc.\\
+\\
+http://dns.measurement-factory.com/tools/dsc/}
 \date{\today}
 \end{titlepage}
 
@@ -17,18 +20,18 @@ The Measurement Factory, Inc.}
 
 \chapter{Introduction}
 
-{\dsc} is a system for collecting, archiving, and displaying statistics from
-a DNS server.  
+{\dsc} is a system for collecting and presenting statistics from
+a busy DNS server.  
 
 \section{Components}
 
 {\dsc} consists of the following components:
 \begin{itemize}
 \item A data collector
-\item A secure channel for transferring data from the collector
-	to the archiver
-\item A set of utilities/scripts that parse XML files from the collector
-\item A set of utilities/scripts that generate graphs and HTML pages
+\item A method for securely transferring data from the collector
+	to the presenter
+\item Utilities and scripts that parse XML files from the collector
+\item Utilities and scripts that generate graphs and HTML pages
 \end{itemize}
 
 \subsection{The Collector}
@@ -37,26 +40,27 @@ The collector is a binary program, named {\tt dsc\/}, which snoops
 on DNS messages.  It is written in C and uses {\em libpcap\/} for
 packet capture.
 
-{\tt dsc\/} uses a relatively simple configuration file {\em
+{\tt dsc\/} uses a relatively simple configuration file called {\em
 dsc.conf\/} to define certain parameters and options.  The configuration
 file also determines the {\em datasets\/} that {\tt dsc\/} collects.
 
-A Datasets is a 2-D array of counters of IP/DNS message properties.
+A Dataset is a 2-D array of counters of IP/DNS message properties.
 You can define each dimension of the arrray independently.  For
 example you might define a dataset categorized by DNS query type
 along one dimension and TLD along the other.
 
-{\tt dsc\/} dumps the datasets to XML files every 60 seconds.
+{\tt dsc\/} dumps the datasets from memory to XML files every 60 seconds.
 
 \subsection{XML Data Transfer}
 
 You may run the {\tt dsc\/} collector on a remote machine.  That
 is, the collector may run on a different machine than where the
-data is archived and displayed.  {\dsc} includes some Perl and /bin/sh
+data is archived and displayed.  {\dsc} includes some Perl and {\tt /bin/sh}
 scripts that enable transporting XML files over a secure HTTP
 connection.
 
-To make this work, Apache+mod\_ssl should run on the archive machine.
+To make this work, Apache+mod\_ssl should run on the machine where data
+is archived and presented.
 Data transfer is authenticated via SSL X509 certificates.  A Perl
 CGI script handles all PUT requests on the server.  If the client
 certificate is allowed, XML files are stored in the appropriate
@@ -70,26 +74,20 @@ before transfer to eliminate per-connection delays.
 You could use {\tt scp\/} or {\tt rsync\/}/{\tt ssh\/} instead of
 {\tt curl\/} if you like.
 
-\subsection{XML Extractors}
+\subsection{The Extractor}
 
-The XML extractors are Perl scripts that read the XML files from
-{\tt dsc\/}.  Presently there is one XML extractor Perl script for
-each type of dataset.  Thus, if you add a new dataset definition
-to {\em dsc.conf\/}, you also need to write a corresponding XML
-extractor.
+The XML extractor is a Perl script that reads the XML files from
+{\tt dsc\/}.  The extractor essentially converts the XML-structured
+data to a format that is easier (faster) for the graphing tools to
+parse.  Currently the extracted data files are line-based ASCII
+text files.  Support for SQL databases is planned for the future.
 
-An XML extractor essentially converts the XML-structured data to a
-format that is easier (faster) for the graphing tools to parse.
-All XML extractors save the data to ``flat'' text files.  Some
-extractors also store the data to relational database tables.
-
-\subsection{Ploticus Graphers}
+\subsection{The Grapher}
 
 {\dsc} uses {\em Ploticus\/}\footnote{http://ploticus.sourceforge.net/}
-as the graphing engine.  The ``Ploticus Graphers'' read the text
-files from the XML extractors.  Graphers are also currently
-dataset-specific.   Graphers are written in Perl and use a
-now-unavailable Perl Module for the interface to Ploticus.
+as the graphing engine.  A Perl module and CGI script read extracted
+data files and generate Ploticus scriptfiles to generate plots.  Plots
+are always generated on demand via the CGI application.
 
 
 \section{Architecture}
@@ -105,24 +103,37 @@ Note that {\dsc} supports the concept of {\em servers\/} and {\em
 nodes\/}.  A server is generally a logical service, which may
 actually consist of multiple nodes.  Figure~\ref{fig-architecture}
 shows six collectors (the circles) and two servers (the rounded
-rectangles).
+rectangles).  For a real-world example, consider a DNS root server.
+IP Anycast allows a DNS root server to have geographically distributed
+nodes that share a single IP address.  We call each instance a 
+{\em node\/} and all nodes sharing the single IP address belong
+to the same {\em server\/}.
 
 The {\tt dsc\/} collector program runs on or near\footnote{by
 ``near'' we mean that packets may be sniffed remotely via switch
 port mirroring, or a SPAN port.} the remote nodes.  Its XML output
-is transferred to the archive via HTTPS PUTs or something simpler
+is transferred to the presentation machine via HTTPS PUTs (or something simpler
 if you prefer).
 
-The archiver runs the HTTPS server, the XML extractors, and the
-Ploticus graphers.
+The presentation machine includes an HTTP(S) server.  The extractor looks
+for XML files PUT there by the collectors.  A CGI script also runs on
+the HTTP server to display graphs and other information.
 
 
 \chapter{Installation}
 
-At this point, {\dsc} lacks certain niceties such as a {\tt ./configure\/}
-script. Many pathnames are currently hard-coded.  The package
-also lacks a top-level Makefile that supports {\tt make install\/}.
-Therefore, we will install it one subdirectory at a time.
+At this point, {\dsc} lacks certain niceties such as a \path|./configure|
+script.   The installation prefix, \path|/usr/local/dsc| is currently
+hard-coded.  The top-level directory structure is as follows:
+
+\begin{verbatim}
+% ls -l dsc
+-rw-r--r--  1 wessels  wessels  159 Mar 14 14:21 COPYRIGHT
+drwxr-xr-x  6 wessels  wessels  512 Mar 14 13:40 collector
+drwxr-xr-x  3 wessels  wessels  512 Mar 14 15:01 doc
+drwxr-xr-x  7 wessels  wessels  512 Mar 14 13:49 presenter
+\end{verbatim}
+
 
 \section{On the Collector}
 
@@ -138,22 +149,24 @@ way to transfer data files.  We recommend that you use the {\tt
 curl\/} HTTP/SSL client You may use another technique, such as {\tt
 scp\/} or {\tt rsync\/} if you prefer.
 
-\subsection{\tt src}
+\subsection{\tt Installation}
 
-This subdirectory contains the C code for the {\tt dsc\/} binary.
-You'll need this program on the collector, but not on the archiver.
-To compile:
+You can compile {\tt dsc\/} from the {\tt collector\/} directory:
 
 \begin{verbatim}
-% cd src
+% cd collector
 % make
 \end{verbatim}
 
-At the end you should have a {\em dsc\/} binary in the current directory.
-You can run {\tt make install\/} if you like.  It copies things to
-{\em /usr/local/dsc/bin\/} and {\em /usr/local/dsc/etc\/}.
-Alternatively you can manually copy the {\em dsc\/} binary and {\em
-dsc.conf.sample\/} file to a location of your choosing.
+Assuming there are no errors or problems during compliation, install
+the {\tt dsc\/} binary and other scripts with:
+
+\begin{verbatim}
+% make install
+\end{verbatim}
+
+Alternatively you can manually copy the {\em dsc\/} binary,
+\path|dsc.conf.sample| file to a location of your choosing.
 
 \subsection{\tt cron}
 \label{sec-install-collector-cron}
