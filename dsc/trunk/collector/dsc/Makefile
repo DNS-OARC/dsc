@@ -29,6 +29,8 @@ all:  $(PROG)
 $(PROG): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
 
+install:
+	install -m 755 $(PROG) $(INSTALLDIR)
 
 clean:
 	rm -f $(OBJS)
