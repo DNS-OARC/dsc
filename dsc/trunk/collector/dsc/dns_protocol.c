@@ -158,9 +158,9 @@ handle_dns(const char *buf, int len)
     opcode = (us >> 11) & 0x0F;
     aa = (us >> 10) & 0x01;
     tc = (us >> 9) & 0x01;
-    rd = (us >> 8) & 0x01;
     ra = (us >> 7) & 0x01;
 #endif
+    m->rd = (us >> 8) & 0x01;
     m->rcode = us & 0x0F;
 
     memcpy(&us, buf + 4, 2);
