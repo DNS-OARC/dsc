@@ -144,3 +144,13 @@ md_array_print(md_array * a, md_array_printer * pr)
  * different array, but the filter prevented it from growing this
  * particular array so far.
  */
+
+
+filter_list **
+md_array_filter_list_append(filter_list **fl, FLTR *f)
+{
+        *fl = calloc(1, sizeof(**fl));
+        assert(fl);
+        (*fl)->filter = f;
+        return(&(*fl)->next);
+}

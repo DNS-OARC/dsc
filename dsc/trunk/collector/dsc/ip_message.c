@@ -44,8 +44,6 @@ ip_message_find_filters(const char *fn, filter_list ** fl)
     char *t;
     char *copy = strdup(fn);
     for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
-	*fl = calloc(1, sizeof(**fl));
-	assert(*fl);
 	if (0 == strcmp(t, "any")) {
 	    continue;
 	}

@@ -54,3 +54,4 @@ md_array *md_array_create(const char *name, filter_list *,
     const char *, IDXR *, HITR *,
     const char *, IDXR *, HITR *);
 int md_array_print(md_array * a, md_array_printer * pr);
+filter_list ** md_array_filter_list_append(filter_list **fl, FLTR *f);

@@ -124,24 +124,19 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
     char *t;
     char *copy = strdup(fn);
     for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
-	*fl = calloc(1, sizeof(**fl));
-	assert(*fl);
 	if (0 == strcmp(t, "any")) {
 	    continue;
 	}
 	if (0 == strcmp(t, "queries-only")) {
-	    (*fl)->filter = queries_only_filter;
-	    fl = &(*fl)->next;
+	    fl = md_array_filter_list_append(fl, queries_only_filter);
 	    continue;
 	}
 	if (0 == strcmp(t, "replies-only")) {
-	    (*fl)->filter = replies_only_filter;
-	    fl = &(*fl)->next;
+	    fl = md_array_filter_list_append(fl, replies_only_filter);
 	    continue;
 	}
 	if (0 == strcmp(t, "popular-qtypes")) {
-	    (*fl)->filter = popular_qtypes_filter;
-	    fl = &(*fl)->next;
+	    fl = md_array_filter_list_append(fl, popular_qtypes_filter);
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
