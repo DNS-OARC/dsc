@@ -1185,6 +1185,9 @@ sub navbar_plot {
 	my $pn = $ARGS{plot} || die;
 	push(@items, navbar_item('plot','bynode','By Node')) if ($ARGS{node} eq 'all');
 	push(@items, navbar_item('plot','qtype','Qtypes'));
+	if ($pn eq 'qtype' || $pn eq 'dnssec_qtype') {
+		push(@items, sublist_item() . navbar_item('plot','dnssec_qtype','DNSSEC Qtypes'));
+	}
 	push(@items, navbar_item('plot','rcode','Rcodes'));
 	push(@items, navbar_item('plot','client_subnet2_accum','Classification'));
 	if ($pn =~ /^client_subnet2/) {
