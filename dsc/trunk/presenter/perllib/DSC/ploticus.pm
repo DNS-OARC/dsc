@@ -1,0 +1,287 @@
+#!/usr/bin/perl -wl
+
+use Chart::Ploticus;
+use Data::Dumper;
+use POSIX;
+
+package OARC::ploticus;
+use strict;
+
+BEGIN {
+        use Exporter   ();
+        use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+        $VERSION     = 1.00;
+        @ISA         = qw(Exporter);
+        @EXPORT      = qw(
+		&Ploticus_create_datafile
+		&Ploticus_getdata
+		&Ploticus_areadef
+		&Ploticus_bars_vstacked
+		&Ploticus_bars
+		&Ploticus_lines_stacked
+		&Ploticus_xaxis
+		&Ploticus_yaxis
+		&Ploticus_legend
+		&Ploticus_categories
+		&Ploticus_legendentry
+		&window2increment
+		&extract_server_from_datafile_path
+		&extract_node_from_datafile_path
+	 );
+        %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
+        @EXPORT_OK   = qw();
+}
+use vars      @EXPORT;
+use vars      @EXPORT_OK;
+
+END { }
+
+
+my $strftimefmt = '%D.%T';
+
+sub Ploticus_create_datafile {
+	my $hashref = shift;
+	my $keysarrayref = shift;
+	my $FH = shift;
+	my $time_bin_size = shift || 60;
+	my $window = shift;
+	my %newhash;
+	my $cutoff = time - $window;
+	#
+	# convert the original data into possibly larger bins
+	#
+	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
+		# note $fromkey is a time_t.
+		next if ($fromkey < $cutoff);
+		my $tokey = $fromkey - ($fromkey % $time_bin_size);
+		foreach my $qt (@$keysarrayref) {
+			next unless defined($$hashref{$fromkey}{$qt});
+			$newhash{$tokey}{$qt} += $$hashref{$fromkey}{$qt};
+			$newhash{$tokey}{$qt . '_COUNT'}++;
+		}
+	}
+	#
+	# now write the new data
+	#
+	foreach my $tokey (sort {$a <=> $b} keys %newhash) {
+		my @v = ();
+		foreach my $qt (@$keysarrayref) {
+			push (@v, defined($newhash{$tokey}{$qt}) ? $newhash{$tokey}{$qt} / (60*$newhash{$tokey}{$qt . '_COUNT'}): '-');
+		}
+		print $FH join(' ', strftime($strftimefmt, gmtime($tokey)), @v);
+	}
+	close($FH);
+}
+
+sub Ploticus_create_datafile_type2 {
+	my $hashref = shift;
+	my $FH = shift;
+	my $time_bin_size = shift || 60;
+	my $window = shift;
+	my %newhash;
+	my $cutoff = time - $window;
+	my %COUNT;
+	#
+	# convert the original data into possibly larger bins
+	#
+	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
+		# note $fromkey is a time_t.
+		next if ($fromkey < $cutoff);
+		my $tokey = $fromkey - ($fromkey % $time_bin_size);
+		next unless defined($$hashref{$fromkey});
+		$newhash{$tokey} += $$hashref{$fromkey};
+		$COUNT{$tokey}++;
+	}
+	#
+	# now write the new data
+	#
+	foreach my $tokey (sort {$a <=> $b} keys %newhash) {
+		my $timestr = strftime($strftimefmt, gmtime($tokey));
+		print $FH $timestr, ' ', defined($newhash{$tokey}) ? $newhash{$tokey} / ($COUNT{$tokey}) : '-';
+	}
+	close($FH);
+}
+
+sub Ploticus_getdata {
+	my $datafile = shift;
+	P("#proc getdata");
+	P("file: $datafile");
+}
+
+
+sub Ploticus_areadef{
+	my $ropts = shift;
+	P("#proc areadef");
+	PO($ropts, 'title');
+	PO($ropts, 'rectangle', '1 1 6 4');
+	PO($ropts, 'xscaletype');
+	PO($ropts, 'xscaletype');
+	if (defined($ropts->{-window})) {
+		my $range_begin = strftime($strftimefmt, gmtime(time-$ropts->{-window}));
+		my $range_end = strftime($strftimefmt, gmtime(time));
+		P("xrange: $range_begin $range_end");
+	} elsif (defined($ropts->{-xstackfields})) {
+		P("xautorange: datafield=$ropts->{-xstackfields} combomode=stack lowfix=0");
+	} else {
+		P("xautorange: datafield=1");
+	}
+	PO($ropts, 'yscaletype');
+	if (defined($ropts->{-ystackfields})) {
+		P("yautorange: datafield=$ropts->{-ystackfields} combomode=stack lowfix=0");
+	}
+}
+
+sub Ploticus_bars_vstacked { Ploticus_bars(shift); }
+
+sub Ploticus_bars {
+	my $ropts = shift;
+
+	foreach my $i (@{$ropts->{-indexesarrayref}}) {
+		my $field = $i+2;
+		P("#proc bars");
+		P('outline: no');
+		P("lenfield: $field");
+		PO($ropts, 'horizontalbars');
+		PO($ropts, 'locfield', '1');
+		PO($ropts, 'stackfields', '*');
+		PO($ropts, 'barwidth');
+		if (defined($ropts->{-exactcolorfield})) {
+			PO($ropts, 'exactcolorfield');
+		} elsif (defined($ropts->{-colorfield})) {
+			PO($ropts, 'colorfield');
+		} else {
+			P("color: ${$ropts->{-colorsarrayref}}[$i]");
+		}
+		if (defined($ropts->{-labelsarrayref})) {
+			my $legendlabel;
+			# generate clickmap entries for the legend based on
+			# a printf-like template
+			if (defined($ropts->{-legend_clickmapurl_tmpl})) {
+				my $URI = $ropts->{-legend_clickmapurl_tmpl};
+				$URI =~ s/\@LEGEND\@/${$ropts->{-labelsarrayref}}[$i]/;
+				$legendlabel .= "url:$URI ";
+			}
+			$legendlabel .= ${$ropts->{-labelsarrayref}}[$i];
+			P("legendlabel: $legendlabel");
+		}
+		PO($ropts, 'clickmapurl');
+	}
+	PO($ropts, 'labelfield');
+	P("labelzerovalue: yes") if defined($ropts->{-labelfield});
+}
+
+sub Ploticus_lines_stacked {
+	my $cloneref = shift;
+	my $labelsarrayref = shift;
+	my $colorsarrayref = shift;
+	my $indexesarrayref = shift;
+	my $field;
+	foreach my $i (@$indexesarrayref) {
+		my $field = $i+2;
+		P("#proc bars");
+		&$cloneref if defined($cloneref);
+		P("lenfield: $field");
+		P("color: $$colorsarrayref[$i]");
+		P("legendlabel: $$labelsarrayref[$i]");
+	}
+}
+
+sub Ploticus_xaxis {
+	my $ropts = shift;
+	my $window = $ropts->{-window};
+	P("#proc xaxis");
+	if (!defined($window)) {
+		P("stubs: inc");
+	} elsif ($window > 3*24*3600) {
+		P("stubs: inc 1 day");
+		P("stubformat: Mmmdd");
+		P("label: Date");
+	} elsif ($window > 8*3600) {
+		P("stubs: inc 2 hours");
+		P("autodays: yes");
+		P("stubformat: hh:mm");
+		P("label: Time");
+	} elsif ($window > 2*3600) {
+		P("stubs: inc 30 minutes");
+		P("stubformat: hh:mm");
+		P("label: Time");
+	} else {
+		P("stubs: inc 10 minutes");
+		P("stubformat: hh:mm");
+		P("label: Time");
+	}
+	PO($ropts, 'label');
+	PO($ropts, 'grid');
+}
+
+sub Ploticus_yaxis{
+	my $ropts = shift;
+	P("#proc yaxis");
+	PO($ropts, 'stubs', 'inc');
+	PO($ropts, 'grid');
+	PO($ropts, 'label');
+}
+
+sub Ploticus_legend {
+	P("#proc legend");
+	P("location: max+0.5 max");
+	P("reverseorder: yes");
+	P("outlinecolors: yes");
+}
+
+sub Ploticus_categories {
+	my $catfield = shift;
+	P("#proc categories");
+	P("axis: y");
+	P("datafield: $catfield");
+}
+
+sub Ploticus_legendentry {
+	my $ropts = shift;
+	P("#proc legendentry");
+	P("sampletype: color");
+	PO($ropts, 'label');
+	PO($ropts, 'details');
+	PO($ropts, 'tag');
+}
+
+sub window2increment {
+	my $window = shift;
+	return 10*60 if ($window == 3600);
+	return 30*60 if ($window == 4*3600);
+	return 2*3600 if ($window == 24*3600);
+	return 24*3600 if ($window == 7*24*3600);
+	undef;
+}
+
+sub extract_server_from_datafile_path {
+	my $fn = shift;
+	die "$fn" unless ($fn =~ m@/([^/]+)/[^/]+/\d\d\d\d\d\d\d\d/@);
+	return $1;
+}
+
+sub extract_node_from_datafile_path {
+	my $fn = shift;
+	die "$fn" unless ($fn =~ m@/[^/]+/([^/]+)/\d\d\d\d\d\d\d\d/@);
+	return $1;
+}
+
+sub PO {
+	my $ropts = shift;
+	my $optname = shift;
+	my $default = shift;
+	if (defined ($ropts->{-$optname})) {
+		P("$optname: $ropts->{-$optname}");
+	} elsif (defined($default)) {
+		P("$optname: $default");
+	}
+}
+
+sub P {
+	my $line = shift;
+	#print STDERR "$line";
+	ploticus_execline($line);
+}
+
+1;
+
