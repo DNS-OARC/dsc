@@ -17,6 +17,11 @@ fi
 echo $$ >$PIDF
 trap "rm -f $PIDF" EXIT
 
+exec > $PROG.out
+exec 2>&1
+sleep 3
+date
+
 CURL=curl
 SRVAUTH="--cacert $HOME/dsc/etc/cacert.pem"
 URI="https://dns-oarc.measurement-factory.com"
@@ -34,9 +39,10 @@ for d in pao1 ; do
 	if test -n "$k" ; then
 		for f in $k ; do
 			UPLOAD="--upload $f"
-			$CURL $SRVAUTH $CLTAUTH $UPLOAD $URI
-			rm -f $f
+			$CURL $SRVAUTH $CLTAUTH $UPLOAD $URI && rm -f $f &
 		done
 	fi
 
 done
+wait
+date
