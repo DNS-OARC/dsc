@@ -742,6 +742,7 @@ sub convert_to_percentage {
 		foreach my $k1 (keys %{$data->{$t}}) {
 			$S += $data->{$t}{$k1};
 		}
+		next unless ($S > 0);
 		$S /= 100;
 		foreach my $k1 (keys %{$data->{$t}}) {
 			$newdata{$t}{$k1} = $data->{$t}{$k1} / $S;
