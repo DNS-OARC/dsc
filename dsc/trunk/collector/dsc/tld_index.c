@@ -19,6 +19,8 @@ tld_indexer(dns_message * m)
     tld = m->qname + strlen(m->qname) - 2;
     while (tld >= m->qname && (*tld != '.'))
 	tld--;
+    if (*tld == '.')
+	tld++;
     if (tld < m->qname)
 	tld = m->qname;
     for (i = 0; i < next_idx; i++) {
