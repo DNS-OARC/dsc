@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "dns_message.h"
 #include "md_array.h"
 #include "pcap.h"
+#include "base64.h"
 
 static char *d1_type_s;		/* XXX barf */
 static char *d2_type_s;		/* XXX barf */
@@ -44,11 +47,22 @@ d2_type(void *pr_data, char *t)
     d2_type_s = t;
 }
 
+static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+				  "0123456789_-:";
 static void
 d1_begin(void *pr_data, char *l)
 {
+    int ll = strlen(l);
     FILE *fp = pr_data;
-    fprintf(fp, "    <%s val=\"%s\">\n", d1_type_s, l);
+    if (strspn(l, entity_chars) == ll) {
+    	fprintf(fp, "    <%s val=\"%s\">\n", d1_type_s, l);
+    } else {
+	char *e;
+	int x = base64_encode(l, ll, &e);
+	assert(x);
+    	fprintf(fp, "    <%s val=\"%s\" base64>\n", d1_type_s, e);
+	free(e);
+    }
 }
 
 static void

@@ -3,6 +3,7 @@ CFLAGS=-g -Wall
 TODAY != date +%Y%m%d
 
 OBJS=\
+	base64.o \
 	generic_counter.o \
 	string_counter.o \
 	pcap.o \
