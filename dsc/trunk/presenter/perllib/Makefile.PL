@@ -1,8 +1,8 @@
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    'NAME'	=> 'OARC',
-    'VERSION_FROM' => 'lib/OARC/ploticus.pm',
+    'NAME'	=> 'DSC',
+    'VERSION_FROM' => 'lib/DSC/ploticus.pm',
 
     'LIBS'	=> [],
     'DEFINE'	=> '',
