@@ -288,6 +288,8 @@ Pcap_run(DMC * callback)
     while(last_ts.tv_sec < finish_ts.tv_sec) {
 	if (Pcap_select(pcap, 1, 0))
 	    pcap_dispatch(pcap, 50, handle_pcap, NULL);
+	else
+	    gettimeofday(&last_ts, NULL);
     }
 }
 
