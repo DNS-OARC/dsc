@@ -35,6 +35,8 @@ sub extract {
 	} else {
 		die "unsupported ndim $EX->{ndim}\n";
 	}
+	# round start time down to start of the minute
+	$start_time = int($start_time / 60) * 60;
 	my $yymmdd = &yymmdd($start_time);
 
 	print STDERR 'grokked=', Dumper($grokked) if ($dbg);
