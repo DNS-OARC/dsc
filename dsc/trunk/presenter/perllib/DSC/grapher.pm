@@ -26,6 +26,7 @@ BEGIN {
         @ISA         = qw(Exporter);
         @EXPORT      = qw(
 		&run
+		&cgi
         );
         %EXPORT_TAGS = ( );
         @EXPORT_OK   = qw();
@@ -61,6 +62,8 @@ my $PLOT;	# = $DSC::grapher::config::PLOTS{name}
 my $ACCUM_TOP_N = 40;
 my $cgi = new CGI();
 my $now;
+
+sub cgi { $cgi; }
 
 sub run {
 	$now = time;
@@ -131,9 +134,9 @@ sub run {
 	if ('html' eq $ARGS{content}) {
 		if ($use_data_uri) {
 			if (!reason_to_not_plot()) {
-				print STDERR "no reason to not plot\n";
+				print STDERR "[$$] no reason to not plot\n";
 				if (!check_image_cache($cache_name)) {
-					print STDERR "need to make cached image\n";
+					print STDERR "[$$] need to make cached image\n";
 					make_image($cache_name);
 				}
 			}
@@ -308,8 +311,8 @@ sub calc_accum_win {
 	my $last = $ARGS{end};
 	my $first = $ARGS{end} - $ARGS{window};
 	$first += (86400 - ($ARGS{end} % 86400));
-	printf STDERR "accum window = %.2f days\n",
-		($last - $first) / 86400;
+	#printf STDERR "[$$] accum window = %.2f days\n",
+	#	($last - $first) / 86400;
 	$last - $first;
 }
 
