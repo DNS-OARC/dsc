@@ -35,7 +35,7 @@ for server in * ; do
 
 		echo "$server/$node:"
 
-		xmls=`ls | grep xml$` || true
+		xmls=`ls -r | grep xml$ | head -50` || true
 		if test -n "$xmls" ; then
 		    for h in $xmls ; do
 			secs=`echo $h | awk -F. '{print $1}'`

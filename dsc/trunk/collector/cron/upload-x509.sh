@@ -30,7 +30,7 @@ for d in pao1 ; do
 	exec > $PROG.out
 	exec 2>&1
 
-	k=`ls | grep xml$ | head -50` || true
+	k=`ls -r | grep xml$ | head -50` || true
 	if test -n "$k" ; then
 		for f in $k ; do
 			UPLOAD="--upload $f"
