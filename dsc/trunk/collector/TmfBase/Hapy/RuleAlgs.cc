@@ -659,13 +659,17 @@ RuleAlg::StatusCode ApplyRule(const Rule &r, Buffer &buf, PreeNode &pree, const 
 	++level;
 	const string pfx = string(2*level, ' ');
 	const char *name = r.name().size() ? r.name().c_str() : defName;
+#if CERR_DEBUG
 r.print(cerr << endl << id << '/' << level << '-' << pfx << "try rule: ") << " (" << name << "/" << defName << ")" << endl;
 cerr << id << '/' << level << '-' << pfx << "try buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
 cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rid << " pree: " << &pree << " children: " << pree.rawCount() << endl;
+#endif
 	const RuleAlg::StatusCode res = r.firstMatch(buf, pree);
+#if CERR_DEBUG
 r.print(cerr << endl << id << '/' << level << '-' << pfx << '#' << res.sc() << " rule: ") << " (" << name << "/" << defName << ")" << endl;
 cerr << id << '/' << level << '-' << pfx << '#' << res.sc() << " buffer: " << shortStr(buf.content()) << ". end: " << buf.contentSize() << " ? " << buf.atEnd() << endl;
 cerr << id << '/' << level << '-' << pfx << "rid: " << pree.rid << " pree: " << &pree << " children: " << pree.rawCount() << endl;
+#endif
 	--level;
 	return res;
 }

@@ -98,11 +98,15 @@ void Hapy::RuleAlgPtr::repoint(RuleAlg *anAlg) {
 
 /* Rule */
 
+#if CERR_DEBUG
 #define debug(label, buf, pree) \
 	cerr << here << this << ' '<< theName << "::" << label << \
 		" raw_cnt: " << pree.rawCount() << \
 		" trim: " << pree.trimming << \
 		" buf: " << buf.content().substr(0,20) << endl;
+#else
+#define debug(label, buf, pree) (void) 0;
+#endif
 
 Hapy::Rule::Rule(): theId(0), theCore(0), theCommitMode(cmDefault) {
 }

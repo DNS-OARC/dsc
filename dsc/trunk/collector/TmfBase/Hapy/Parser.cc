@@ -27,8 +27,10 @@ const Result &Hapy::Parser::result() const {
 bool Hapy::Parser::parse(const string &content) {
 	if (begin() && step(content, true))
 		end();
+#if CERR_DEBUG
 cerr << here << "final sc: " << theResult.statusCode.sc() << " == " << Result::scMatch << endl;
 cerr << here << "final imageSize: " << theResult.pree.rawImageSize() << " == " << content.size() << endl;
+#endif
 	return theResult.statusCode == Result::scMatch &&
 		theResult.pree.rawImageSize() == content.size();
 }
@@ -42,7 +44,9 @@ bool Hapy::Parser::begin() {
 
 	Should(theBuffer.empty());
 	theResult.statusCode = theStartRule.firstMatch(theBuffer, theResult.pree);
+#if CERR_DEBUG
 cerr << here << "begin() fm(): " << theResult.statusCode.sc() << endl;
+#endif
 	// the first application is likey to return scMore; can also succeed or err
 	if (theResult.statusCode == Result::scMore)
 		return true;
@@ -69,7 +73,9 @@ bool Hapy::Parser::step(const string &content, bool lastStep) {
 
 	theBuffer.append(content);
 	theBuffer.atEnd(lastStep);
+#if CERR_DEBUG
 cerr << here << "buffer:" << theBuffer.content() << endl;
+#endif
 
 	theResult.statusCode = theStartRule.resume(theBuffer, theResult.pree);
 
