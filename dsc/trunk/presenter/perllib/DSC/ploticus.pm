@@ -51,9 +51,9 @@ sub plotdata_tmp {
 	my $label = shift;
 	my $obj;
 	if (defined($label)) {
-		$obj = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX", UNLINK=>0);
+		$obj = new File::Temp(TEMPLATE => "/tmp/plotdata.$label.XXXXXXXXXXXXX");
 	} else {
-		$obj = new File::Temp(TEMPLATE => $plotdata_tmp, UNLINK=>0);
+		$obj = new File::Temp(TEMPLATE => $plotdata_tmp);
 	}
 	$obj;
 }
