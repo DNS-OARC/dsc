@@ -59,6 +59,7 @@
 
 #ifdef __linux__
 #define uh_dport dest
+#define uh_sport source
 #endif
 
 #define MAX_N_PCAP 10
