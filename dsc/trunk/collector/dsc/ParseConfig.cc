@@ -237,9 +237,17 @@ ParseConfig(const char *fn)
 	std::string config;
 	char c;
 	std::ifstream in(fn);
+	if (!in) {
+		cerr << fn << ": " << strerror(errno) << endl;
+		exit(1);
+	}
 	while (in.get(c))
 		config += c;
 	in.close();
+	if (config.empty()) {
+		cerr << "Did not find configuration in " << fn << endl;
+		exit(1);
+	}
 
 	Parser parser;
 	parser.grammar(rConfig);
