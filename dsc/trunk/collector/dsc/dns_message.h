@@ -35,3 +35,6 @@ void dns_message_report(void);
 int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, int);
 const char * dns_message_tld(dns_message * m);
 
+#ifndef T_OPT
+#define T_OPT 41	/* OPT pseudo-RR, RFC2761 */
+#endif
