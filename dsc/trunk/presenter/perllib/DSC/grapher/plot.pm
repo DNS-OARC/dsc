@@ -10,14 +10,18 @@ BEGIN {
         );
         %EXPORT_TAGS = ( );
         @EXPORT_OK   = qw();
+	print STDERR "this is DSC::grapher::config::BEGIN\n";
 }
 use vars      @EXPORT;
 use vars      @EXPORT_OK;
 
-END { }
+END { 
+	print STDERR "this is DSC::grapher::config::END\n";
+}
 
 use strict;
 use warnings;
+use NDBM_File;
 
 my $qtype_keys	= [ qw(1 2  5     6   12  15 28   33  38 255 else) ];
 my $qtype_names	= [ qw(A NS CNAME SOA PTR MX AAAA SRV A6 ANY Other) ];
@@ -446,6 +450,10 @@ my $std_accum_yaxes = {
 
   query_attrs => {
     plot_type	=> 'none',
+    # not a real plot, but we get errors if these members aren't present
+    keys	=> [ qw(a) ],
+    names	=> [ qw(a) ],
+    colors	=> [ qw (red) ],
   },
 
   idn_qname => {
@@ -552,8 +560,58 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     plottitle	=> 'Rcodes and Addrs',
     map_legend	=> 1,
-  }
+  },
+
+  ipv6_rsn_abusers_accum => {
+    dataset	=> 'ipv6_rsn_abusers',
+    plot_type	=> 'accum1d',
+    keys	=> [ qw(Other BIND8 BIND9 W2000 WINNT W2003 DJBDNS NoAns) ],
+    names	=> [ qw(Other BIND8 BIND9 W2000 WINNT W2003 DJBDNS NoAns) ],
+    colors	=> [ qw(red brightblue brightgreen claret orange yellow purple gray(0.5)) ],
+    color_func => \&guess_software,
+    label_func => sub { '.' },
+    data_reader => \&DSC::extractor::read_data2,
+    data_summer => \&DSC::grapher::data_summer_0d,
+    yaxes	=> $std_accum_yaxes,
+    plottitle	=> 'Clients sending excessive root-servers.net queries',
+    map_legend	=> 1,
+  },
 
 );
+
+my %FPDNSCACHE;
+
+sub fpdns_query($) {
+        my $addr = shift;
+	unless (tied(%FPDNSCACHE)) {
+		tie(%FPDNSCACHE,
+			'NDBM_File',
+			'/var/tmp/fpdns-cache', 0x200 | 0x002, 0666) or die "$!";
+	}
+        if (defined(my $val = $FPDNSCACHE{$addr})) {
+print STDERR "fpdns cache hit!\n";
+                my $when = $FPDNSCACHE{"${addr}_when"};
+                return $val if (time - $when  < 86400);
+        }
+	print STDERR "running fpdns -t 1 -s -c $addr\n";
+        open(CMD, "/usr/local/bin/fpdns -t 1 -s -c $addr|") or return 'NoAns';
+        my $ans = <CMD>;
+	close(CMD);
+        $ans =~ s/^[0-9\.]+\s+//;
+        $FPDNSCACHE{"${addr}_when"} = time;
+        $FPDNSCACHE{$addr} = $ans;
+}
+
+sub guess_software($) {
+        my $addr = shift;
+        my $fp = &fpdns_query($addr);
+        return 'BIND9' if ($fp =~ /BIND 9/);
+        return 'BIND8' if ($fp =~ /BIND 8/);
+        return 'WINNT' if ($fp =~ /Microsoft Windows NT/);
+        return 'W2000' if ($fp =~ /Microsoft Windows 2000/);
+        return 'W2003' if ($fp =~ /Microsoft Windows 2003/);
+        return 'NoAns' if ($fp =~ /query timed out/);
+        return 'Other';
+}
 
 1;
