@@ -24,6 +24,7 @@ sub extract {
 
 	my $EX = $DSC::extractor::config::DATASETS{$dataset};
 	print STDERR 'EX=', Dumper($EX) if ($dbg);
+	die "no extractor for $dataset\n" unless defined($EX);
 
 	my $start_time;
 	my $grokked;
@@ -56,7 +57,7 @@ sub extract {
 
 		# read the current data file
 		#
-		exit(254) if (&{$O->{data_reader}}(\%db, "$yymmdd/$dataset/$output.tmp") < 0);
+		exit(254) if (&{$O->{data_reader}}(\%db, "$yymmdd/$dataset/$output.dat") < 0);
 
 		# merge/combine
 		#
@@ -65,7 +66,7 @@ sub extract {
 
 		# write out the new data file
 		#
-		&{$O->{data_writer}}(\%db, "$yymmdd/$dataset/$output.tmp");
+		&{$O->{data_writer}}(\%db, "$yymmdd/$dataset/$output.dat");
 
 	}
 }
@@ -79,7 +80,19 @@ sub munge_elsify {
 	# copy the input data
 	my $copy;
 	eval Data::Dumper->Dump([$input], ['copy']);
-	elsify_unwanted_keys($copy, $O->{keys});
+	if ($O->{keys}) {
+		# A 1D dataset
+		print STDERR "elsifiying 1D dataset\n" if ($dbg);
+		elsify_unwanted_keys($copy, $O->{keys});
+	} elsif ($O->{keys2}) {
+		# A 2D dataset
+		print STDERR "elsifiying 2D dataset\n" if ($dbg);
+		foreach my $k1 (keys %$copy) {
+			&elsify_unwanted_keys(\%{$copy->{$k1}}, $O->{keys2});
+		}
+	} else {
+		die "not sure what to do";
+	}
 	$copy;
 }
 
@@ -102,23 +115,20 @@ sub accum2d_to_trace {
 }
 
 #
-# convert a "2D" accum-type dataset to a "count-type"
-# ie, count all input->{*}{k2} into output->{k2}
+# convert a "1D" accum-type dataset to a "count-type"
+# ie, count all input->{k1}
 #
-sub accum2d_to_count {
+sub accum1d_to_count {
 	my $input = shift;	# XML tree from input file
 	my $O = shift;		# extractor->output structure
-	my $count;
+	my $count = 0;
 	foreach my $k1 (keys %{$input}) {
-		$count->{$k1} = 0;
-		foreach my $k2 (keys %{$input->{$k1}}) {
-			if ($k2 eq $SKIPPED_SUM_KEY) {
-				next;
-			} elsif ($k2 eq $SKIPPED_KEY) {
-				$count->{$k1} += $input->{$k1}{$k2};
-			} else {
-				$count->{$k1} += 1;
-			}
+		if ($k1 eq $SKIPPED_SUM_KEY) {
+			next;
+		} elsif ($k1 eq $SKIPPED_KEY) {
+			$count += $input->{$k1};
+		} else {
+			$count += 1;
 		}
 	}
 	$count;
@@ -146,7 +156,6 @@ sub accum2d_to_count {
 	}
 	$count;
 }
-
 
 
 sub merge_trace {
@@ -154,6 +163,15 @@ sub merge_trace {
 	my $old = shift;
 	my $new = shift;
 	$old->{$start_time} = $new;
+}
+
+sub merge_accum1d {
+	my $start_time = shift;
+	my $old = shift;
+	my $new = shift;
+	foreach my $k1 (keys %{$new}) {
+		$old->{$k1} += $new->{$k1};
+	}
 }
 
 sub merge_accum2d {
