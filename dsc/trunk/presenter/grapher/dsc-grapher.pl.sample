@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+use vars qw(%PLOTS $PLOT %ARGS $CFG);
+
 use OARC::ploticus;
 use OARC::extractor;
 require '/usr/local/dsc/libexec/plots-cfg.pl';
@@ -22,6 +24,7 @@ $main::ploticus_debug = undef;
 
 # constants
 my $DATAROOT = '/usr/local/dsc/data';
+my $CacheImageTTL = 600; # 10 min
 my @valid_tlds = qw(
 ac ad ae af ag ai al am an ao aq ar as at au aw az ba bb bd be bf
 bg bh bi bj bm bn bo br bs bt bv bw by bz ca cc cd cf cg ch ci ck
@@ -37,6 +40,7 @@ tz ua ug uk um us uy uz va vc ve vg vi vn vu wf ws ye yt yu za zm
 zw aero biz com coop info museum name net org pro gov edu mil int
 arpa .
 );
+
 $main::use_data_uri = 1;
 
 
@@ -46,15 +50,23 @@ my %ARGS;
 $ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
 $ARGS{node} = $untaint->extract(-as_printable => 'node')	|| 'all';
 $ARGS{window} = $untaint->extract(-as_integer => 'window')	|| 3600*4;
-$ARGS{binsize} = $untaint->extract(-as_integer => 'binsize')	|| 60;
+$ARGS{binsize} = $untaint->extract(-as_integer => 'binsize')	|| TEMPLATE::default_binsize($ARGS{window});
 $ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'none';
 $ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
 $ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
 $ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $main::now;
-print STDERR "[$$] " . Dumper(\%ARGS);
-my $cache_name = cache_name($ARGS{server}, $ARGS{node}, $ARGS{plot},
-	$ARGS{end}, $ARGS{window}, $ARGS{binsize}, $ARGS{mini});
-my $PLOT = $PLOTS{$ARGS{plot}};
+
+$ARGS{end} = $main::now if ($ARGS{end} > $main::now);
+#print STDERR "[$$] " . Dumper(\%ARGS);
+my $cache_name = cache_name($ARGS{server},
+	$ARGS{node},
+	$ARGS{plot},
+	$ARGS{end} == $main::now ? 0 : $ARGS{end},
+	$ARGS{window},
+	$ARGS{binsize},
+	$ARGS{mini});
+$PLOT = Plot($ARGS{plot});
+#print STDERR "[$$] PLOT=" . Dumper($PLOT);
 
 my $ACCUM_TOP_N = $ARGS{mini} ? 20 : 40;
 my $CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
@@ -136,27 +148,26 @@ sub load_data {
 	my $yymmdd;
 	my %hash;
 	my $start = time;
-	my $last = int($ARGS{end} / 86400);
-	my $first;
+	my $last = $ARGS{end};
+	my $first = $ARGS{end} - $ARGS{window};
 	my $nl = -1;
-	if ($PLOT->{plot_type} eq 'trace') {
-		$first = int(($ARGS{end} - $ARGS{window}) / 86400);
-	} else {
-		$first = $last;
+	if ($PLOT->{plot_type} =~ /^accum/) {
+		#
+		# for 'accum' plots, round up the start time
+		# to the beginning of the next 24hour period
+		#
+		$first += (86400 - ($ARGS{end} % 86400));
 	}
 	foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
 	    next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
-	    for (my $d = $first; $d <= $last; $d++) {
+	    for (my $t = $first; $t <= $last; $t += 86400) {
 		my %thash;
-		my $datafile = datafile_path($ARGS{plot}, $node, $d*86400);
+		my $datafile = datafile_path($ARGS{plot}, $node, $t);
 		print STDERR "[$$] reading $datafile\n";
 		warn "[$$] $!\n" unless (-f $datafile);
-print STDERR "node=$ARGS{node}\n";
 		if ('all' ne $ARGS{node}) {
-print STDERR "reading into hash\n";
 			$nl = &{$PLOT->{data_reader}}(\%hash, $datafile);
 		} else {
-print STDERR "reading into thash\n";
 			$nl = &{$PLOT->{data_reader}}(\%thash, $datafile);
 			&{$PLOT->{data_summer}}(\%thash, \%hash);
 		}
@@ -166,7 +177,6 @@ print STDERR "reading into thash\n";
 	printf STDERR "[$$] reading datafile took %d seconds, %d lines\n",
 		$stop-$start,
 		$nl;
-#print STDERR Dumper(\%hash);
 	\%hash;
 }
 
@@ -247,6 +257,20 @@ sub accum2d_data_to_tmpfile {
 	printf STDERR "[$$] writing tmpfile took %d seconds\n", $stop-$start;
 }
 
+sub time_descr
+{
+	my $from_t = $ARGS{end} - $ARGS{window};
+	my $to_t = $ARGS{end};
+	if ($PLOT->{plot_type} =~ /^accum/) {
+		$from_t += (86400 - ($ARGS{end} % 86400));
+		$to_t += (86400 - ($ARGS{end} % 86400) - 1);
+		$to_t = $main::now if ($to_t > $main::now);
+	}
+	my $from_ctime = strftime("%b %d, %Y, %T", gmtime($from_t));
+	my $to_ctime = strftime("%b %d, %Y, %T UTC", gmtime($to_t));
+	"From $from_ctime To $to_ctime";
+}
+
 sub trace_plot {
 	my $tf = shift;
 	my $binsize = shift;
@@ -262,9 +286,7 @@ sub trace_plot {
 	#system "cat $tf 1>&2";
 
 	my $areadef_opts = {
-		-title => $PLOT->{plottitle}
-			. strftime("\nGenerated: %A, %b %d, %Y, %T UTC",
-			gmtime(time)),
+		-title => $PLOT->{plottitle} . "\n" . time_descr(),
 		-rectangle => '1 1 6 4',
 		-xscaletype => 'datetime mm/dd/yy',
 		-ystackfields => join(',', 2..($ntypes+1)),
@@ -317,9 +339,7 @@ sub accum1d_plot {
 	Ploticus_getdata($tf->filename());
 	Ploticus_categories(1);
 	my $areadef_opts = {
-		-title => $PLOT->{plottitle}
-			. strftime("\nGenerated: %A, %b %d, %Y, %T UTC",
-			gmtime(time)),
+		-title => $PLOT->{plottitle} . "\n" . time_descr(),
 		-rectangle => '1 1 6 6',
 		-yscaletype => 'categories',
 		-xstackfields => '2',
@@ -381,9 +401,7 @@ sub accum2d_plot {
 	Ploticus_getdata($tf->filename());
 	Ploticus_categories(1);
 	my $areadef_opts = {
-		-title => $PLOT->{plottitle}
-			. strftime("\nGenerated: %A, %b %d, %Y, %T UTC",
-			gmtime(time)),
+		-title => $PLOT->{plottitle} . "\n" . time_descr(),
 		-rectangle => '1 1 6 6',
 		-yscaletype => 'categories',
 		-xstackfields => join(',', 2..($ntypes+1)),
@@ -481,7 +499,7 @@ sub check_image_cache {
 	my $prefix = shift;
 	my @sb = stat(cache_image_path($prefix));
 	return 0 unless (defined(@sb));
-	return 0 unless (time - $sb[9] < 900);
+	return 0 unless (time - $sb[9] < $CacheImageTTL);
 	return 1;
 }
 
@@ -530,8 +548,8 @@ sub read_config {
 			my $servername = shift @x;
 			$C{servers}{$servername} = \@x;
 		}
-		if ($directive eq 'windows') {
-			$C{windows} = \@x;
+		if ($directive =~ /windows$/) {
+			$C{$directive} = \@x;
 		}
 	}
 	close(F);
@@ -577,7 +595,13 @@ sub data_summer_2d {
 	printf STDERR "[$$] data_summer_2d took %d seconds\n", $stop-$start;
 }
 
+sub Plot {
+	my $plotname = shift;
+	$PLOTS{$plotname};
+}
+
 package TEMPLATE;
+#use vars qw(%PLOTS $PLOT %ARGS $CFG);
 
 sub img_with_map {
 	my $imgsrc;
@@ -620,6 +644,7 @@ sub urlpath {
 	if ((my $n = index($cgi,'?')) > 0) {
 		$cgi = substr($cgi,0,$n);
 	}
+	delete_default_args(\%args);
 	"$cgi?" . join('&', map {"$_=$args{$_}"} keys %args);
 }
 
@@ -632,93 +657,156 @@ sub merge_args {
 	%old;
 }
 
+sub default_binsize {
+	my $win = shift;
+	my $bin = $win / 240;
+	$bin = 60 if ($bin < 60);
+	int($bin);
+}
+
+sub delete_default_args {
+	my $href = shift;
+	delete $href->{server} if ('none' eq $href->{server});
+	delete $href->{node} if ('all' eq $href->{node});
+	delete $href->{binsize} if (default_binsize($ARGS{window}) == $href->{binsize});
+	delete $href->{end} if ((abs($main::now - $href->{end}) / $href->{window}) < 0.20);
+	delete $href->{window} if (3600*4 == $href->{window});
+	delete $href->{plot} if ('none' eq $href->{plot});
+	delete $href->{content} if ('html' eq $href->{content});
+	delete $href->{mini} if (0 == $href->{mini});
+}
+
 sub server { $ARGS{server}; }
 sub node { $ARGS{node}; }
 
-sub a {
+sub a_markup {
 	my $h = shift;
 	my $a = shift;
 	my $c = shift;
 	"<a" . (defined($c) ? " class=\"$c\"" : '') . " href=\"$h\">$a</a>";
 }
 
-sub navbar_server {
+sub img_markup {
+	my $s = shift;
+	my $c = shift;
+	"<img" . (defined($c) ? " class=\"$c\"" : '') . " src=\"$s\">";
+}
+
+sub navbar_server_item {
 	my $server = shift;
 	my $label = shift;
 	my $class = ($server eq $ARGS{server}) ? 'current' : undef;
-	a(urlpath(merge_args(server=>$server,node=>'all')), $label, $class) . "\n";
+	a_markup(urlpath(merge_args(server=>$server,node=>'all')), $label, $class) . "\n";
 }
 
-sub navbar_node {
+sub navbar_node_item {
 	my $node = shift;
 	my $label = shift;
 	my $class = ($node eq $ARGS{node}) ? 'current' : undef;
-	a(urlpath(merge_args(node=>$node)), $label, $class) . "\n";
+	a_markup(urlpath(merge_args(node=>$node)), $label, $class) . "\n";
 }
 
-sub navbar_window {
+sub navbar_window_item {
 	my $window = shift;
 	my $label = shift;
 	my $class = ($window eq $ARGS{window}) ? 'current' : undef;
-	a(urlpath(merge_args(window=>$window)), $label,$class) . "\n";
+	a_markup(urlpath(merge_args(window=>$window)), $label, $class) . "\n";
 }
 
-sub navbar_plot {
+sub navbar_plot_item {
 	my $plot = shift;
 	my $label = shift;
 	my $class = ($plot eq $ARGS{plot}) ? 'current' : undef;
-	a(urlpath(merge_args(plot=>$plot)), $label, $class) . "\n";
+	a_markup(urlpath(merge_args(plot=>$plot)), $label, $class) . "\n";
 }
 
-sub navbar {
+sub navbar_arrow_item {
+	my $delta = shift;
+	my $icon = shift;
+	a_markup(urlpath(merge_args(end=>$ARGS{end} + $delta)), img_markup("/dsc-icons/$icon.png"));
+}
+
+sub navbar_servers_nodes {
 	my $snippet = '';
-	$snippet .= '<div class="border">';
 	$snippet .= '<ul>';
 	my @items;
 	foreach my $server ( keys %{$CFG->{servers}} ) {
-		$snippet .= "<li>" . navbar_server($server,$server);
+		$snippet .= "<li>" . navbar_server_item($server,$server);
 		if ($ARGS{server} eq $server) {
 			$snippet .= "<ul>";
 			foreach my $node (@{$CFG->{servers}{$server}}) {
-				$snippet .= "<li>" . navbar_node($node,$node);
+				$snippet .= "<li>" . navbar_node_item($node,$node);
 			}
 			$snippet .= "</ul>";
 		}
 	}
 	$snippet .= '</ul>';
-	$snippet .= '</div>';
-
-	@items = ();
-	$snippet .= '<div class="border">';
-	push(@items, navbar_window(3600,'1&middot;hour'));
-	push(@items, navbar_window(14440,'4&middot;hours'));
-	push(@items, navbar_window(86400,'1&middot;day'));
-	push(@items, navbar_window(608400,'1&middot;week'));
-	$snippet .= join('<br>', @items);
-	$snippet .= '</div>';
-
-	@items = ();
-	$snippet .= '<div class="border">';
-	push(@items, navbar_plot('qtype','Qtypes'));
-	push(@items, navbar_plot('client_subnet2_accum','Classification'));
-	push(@items, navbar_plot('client_subnet2_trace','Classification Trace'));
-	push(@items, navbar_plot('client_subnet2_count','Classification Count'));
-	push(@items, navbar_plot('client_subnet_accum','Geography'));
-	push(@items, navbar_plot('qtype_vs_all_tld','TLDs'));
-	if ($ARGS{plot} =~ /qtype_vs_.*_tld/) {
-		push(@items, navbar_plot('qtype_vs_valid_tld','&nbsp;valid'));
-		push(@items, navbar_plot('qtype_vs_invalid_tld','&nbsp;invalid'));
-		push(@items, navbar_plot('qtype_vs_numeric_tld','&nbsp;numeric'));
-	}
-	push(@items, navbar_plot('certain_qnames_vs_qtype','Certain Names'));
-	push(@items, navbar_plot('X','Attributes'));
-	push(@items, navbar_plot('X','Qname Length'));
-	push(@items, navbar_plot('rcode','Rcodes'));
-	push(@items, navbar_plot('X','Reply Lengths'));
-	push(@items, navbar_plot('opcode','Opcodes'));
-	push(@items, navbar_plot('edns_version','EDNS Version'));
-	push(@items, navbar_plot('direction_vs_ipproto','IP Protocols'));
-	$snippet .= join('<br>', @items);
-	$snippet .= '</div>';
 	$snippet;
+}
+
+sub navbar_window {
+	my @items = ();
+	my $PLOT = main::Plot($ARGS{plot});
+	if ($PLOT->{plot_type} =~ /^accum/) {
+		foreach my $w (@{$CFG->{accum_windows}}) {
+			push(@items, navbar_window_item(window_secs($w),$w));
+		}
+		my @arrows;
+		push(@arrows, navbar_arrow_item(-$ARGS{window}, '1leftarrow'));
+		push(@arrows, navbar_arrow_item($ARGS{window}, '1rightarrow'));
+		push(@items, join("", @arrows));
+	} else {
+		# trace
+		foreach my $w (@{$CFG->{trace_windows}}) {
+			push(@items, navbar_window_item(window_secs($w),$w));
+		}
+		my @arrows;
+		push(@arrows, navbar_arrow_item(-$ARGS{window}, '2leftarrow'));
+		push(@arrows, navbar_arrow_item(-$ARGS{window}/2, '1leftarrow'));
+		push(@arrows, navbar_arrow_item($ARGS{window}/2, '1rightarrow'));
+		push(@arrows, navbar_arrow_item($ARGS{window}, '2rightarrow'));
+		push(@items, join("", @arrows));
+	}
+	join('<br>', @items);
+}
+
+sub navbar_plot {
+	my @items = ();
+	push(@items, navbar_plot_item('qtype','Qtypes'));
+	push(@items, navbar_plot_item('client_subnet2_accum','Classification'));
+	push(@items, navbar_plot_item('client_subnet2_trace','Classification Trace'));
+	push(@items, navbar_plot_item('client_subnet2_count','Classification Count'));
+	push(@items, navbar_plot_item('client_subnet_accum','Geography'));
+	push(@items, navbar_plot_item('qtype_vs_all_tld','TLDs'));
+	if ($ARGS{plot} =~ /qtype_vs_.*_tld/) {
+		push(@items, navbar_plot_item('qtype_vs_valid_tld','&nbsp;valid'));
+		push(@items, navbar_plot_item('qtype_vs_invalid_tld','&nbsp;invalid'));
+		push(@items, navbar_plot_item('qtype_vs_numeric_tld','&nbsp;numeric'));
+	}
+	push(@items, navbar_plot_item('certain_qnames_vs_qtype','Certain Names'));
+	push(@items, navbar_plot_item('X','Attributes'));
+	push(@items, navbar_plot_item('X','Qname Length'));
+	push(@items, navbar_plot_item('rcode','Rcodes'));
+	push(@items, navbar_plot_item('X','Reply Lengths'));
+	push(@items, navbar_plot_item('opcode','Opcodes'));
+	push(@items, navbar_plot_item('edns_version','EDNS Version'));
+	push(@items, navbar_plot_item('direction_vs_ipproto','IP Protocols'));
+	join('<br>', @items);
+}
+
+sub window_secs {
+	my $win = shift;
+	die unless ($win =~ /(\d+)(\w+)/);
+	my $n = $1;
+	my $unit = $2;
+	if ($unit =~ /^hour/) {
+		$n *= 3600;
+	} elsif ($unit =~ /^day/) {
+		$n *= 86400;
+	} elsif ($unit =~ /^week/) {
+		$n *= 7*86400;
+	} else {
+		die "unknown unit: $unit";
+	}
+	$n;
 }
