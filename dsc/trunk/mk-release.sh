@@ -14,7 +14,7 @@ cd $TD
 TS=`date +%Y%m%d%H%M`
 cvs export -r HEAD -d dsc-$TS dsc
 
-${RM} collector/update-tmfbase.sh
+${RM} dsc-$TS/collector/update-tmfbase.sh
 ${RM} dsc-$TS/mk-release.sh
 
 (cd dsc-$TS/doc; make all clean-release)
