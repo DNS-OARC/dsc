@@ -287,7 +287,7 @@ sub load_data {
 	    }
 	}
 	my $stop = time;
-	debug(1, "reading datafile took %d seconds, %d linesn",
+	debug(1, "reading datafile took %d seconds, %d lines",
 		$stop-$start,
 		$nl);
 	\%hash;
