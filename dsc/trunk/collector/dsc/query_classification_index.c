@@ -7,13 +7,16 @@
 #include "dns_message.h"
 #include "md_array.h"
 
-#define CLASS_OK 0
-#define CLASS_NONAUTH_TLD 1
-#define CLASS_ROOT_SERVERS_NET 2
-#define CLASS_A_FOR_A 3
-#define CLASS_RFC1918_PTR 4
-#define CLASS_FUNNY_QCLASS 5
-#define CLASS_FUNNY_QTYPE 6
+enum {
+    CLASS_OK,
+    CLASS_NONAUTH_TLD,
+    CLASS_ROOT_SERVERS_NET,
+    CLASS_LOCALHOST,
+    CLASS_A_FOR_A,
+    CLASS_RFC1918_PTR,
+    CLASS_FUNNY_QCLASS,
+    CLASS_FUNNY_QTYPE
+};
 
 static const char *KnownTLDS[];
 
@@ -31,8 +34,16 @@ nonauth_tld(const dns_message * m)
 static int
 root_servers_net(const dns_message * m)
 {
-    if (strstr(m->qname, "root-servers.net"))
+    if (0 == strcmp(m->qname + strlen(m->qname) - 16, "root-servers.net"))
 	return CLASS_ROOT_SERVERS_NET;
+    return 0;
+}
+
+static int
+localhost(const dns_message * m)
+{
+    if (0 == strcmp(m->qname + strlen(m->qname) - 9, "localhost"))
+	return CLASS_LOCALHOST;
     return 0;
 }
 
@@ -156,6 +167,8 @@ query_classification_indexer(const void *vp)
 	return x;
     if ((x = root_servers_net(m)))
 	return x;
+    if ((x = localhost(m)))
+	return x;
     if ((x = rfc1918_ptr(m)))
 	return x;
     if ((x = funny_qclass(m)))
@@ -179,6 +192,8 @@ query_classification_iterator(char **label)
         *label = "non-auth-tld";
     else if (CLASS_ROOT_SERVERS_NET == next_iter)
         *label = "root-servers.net";
+    else if (CLASS_LOCALHOST == next_iter)
+        *label = "localhost";
     else if (CLASS_A_FOR_A == next_iter)
         *label = "a-for-a";
     else if (CLASS_RFC1918_PTR == next_iter)
