@@ -1169,7 +1169,7 @@ sub navbar_arrow_item {
 	my $icon = shift;
 	my $alt = shift;
 	a_markup(urlpath(merge_args(end=>$ARGS{end} + $delta)),
-		img_markup("/dsc-icons/$icon.png", undef, $alt),
+		img_markup("$icon.png", undef, $alt),
 		undef,	# class
 		$alt);	# title
 }
@@ -1317,9 +1317,9 @@ sub seconds_to_units {
 }
 
 sub load_icon_data {
-	my $icon = shift;	# should be like '/dsc-icons/foo.png"
+	my $icon = shift;	# should be like 'foo.png"
 	my $buf;
-	if (open(F, "/usr/local/dsc/htdocs/$icon")) {
+	if (open(F, "/usr/local/dsc/share/html/$icon")) {
 		$buf .= $_ while (<F>);
 		close(F);
 	} else {
