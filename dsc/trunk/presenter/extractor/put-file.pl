@@ -6,8 +6,8 @@ use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
 use File::Temp qw(tempfile);
 
-my $putlog = "/udir/www/https/collect.oarc.isc.org/log/put-file.log";
-my $TOPDIR = "/hog0/dns-oarc";
+my $putlog = "/usr/local/dsc/var/log/put-file.log';
+my $TOPDIR = "/usr/local/dsc/data";
 my $SERVER = undef;
 my $NODE = undef;
 
