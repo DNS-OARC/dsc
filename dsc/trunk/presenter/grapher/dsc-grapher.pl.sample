@@ -77,20 +77,22 @@ if ($PLOT->{plot_type} =~ /^accum/ && $ARGS{window} < 86400) {
 
 $ARGS{end} = $main::now if ($ARGS{end} > $main::now);
 
-if (defined($ARGS{key})) {
+if (defined($ARGS{key}) && grep {$_ eq $ARGS{key}} @{$PLOT->{keys}}) {
 	my @newkeys;
 	my @newcolors;
 	my @newnames;
 	for (my $i = 0; $i<int(@{$PLOT->{keys}}); $i++) {
 		next unless ($ARGS{key} eq ${$PLOT->{keys}}[$i]);
-print STDERR "found key $ARGS{key}\n";
 		push(@newkeys, ${$PLOT->{keys}}[$i]);
 		push(@newcolors, ${$PLOT->{colors}}[$i]);
 		push(@newnames, ${$PLOT->{names}}[$i]);
 	}
+	# kinda stupid to modify $PLOT
 	$PLOT->{keys} = \@newkeys;
 	$PLOT->{colors} = \@newcolors;
 	$PLOT->{names} = \@newnames;
+} else {
+	delete $ARGS{key};
 }
 
 
@@ -294,8 +296,6 @@ sub accum1d_data_to_tmpfile {
 	delete $data->{$SKIPPED_KEY};
         delete $data->{$SKIPPED_SUM_KEY};
 	$n = 0;
-print STDERR "data->{'63.209.180.0'} = $data->{'63.209.180.0'}\n";
-print STDERR "accum_win=$accum_win\n";
 	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
 		print $tf join(' ',
 			$k1,
@@ -324,6 +324,7 @@ sub accum2d_data_to_tmpfile {
         delete $data->{$SKIPPED_SUM_KEY};
 	foreach my $k1 (keys %$data) {
 		foreach my $k2 (keys %{$data->{$k1}}) {
+			next unless (grep {$k2 eq $_} @{$PLOT->{keys}});
 			$accum_sum{$k1} += $data->{$k1}{$k2};
 		}
 	}
