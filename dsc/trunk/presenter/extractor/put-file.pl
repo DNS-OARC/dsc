@@ -23,6 +23,18 @@ my $debug = 0;
 
 umask 022;
 
+if ($debug) {
+	print STDERR "SERVER   : $SERVER\n";
+	print STDERR "NODE     : $NODE\n";
+	print STDERR "status   : $status\n";
+	print STDERR "message  : $message\n";
+	print STDERR "remaddr  : $remaddr\n";
+	print STDERR "timestamp: $timestamp\n";
+	print STDERR "method   : $method\n";
+	print STDERR "filename : $filename\n";
+	print STDERR "clength  : $clength\n";
+}
+
 # Check we are using PUT method
 &reply(500, "No request method") unless defined ($method);
 &reply(500, "Request method is not PUT") if ($method ne "PUT");
@@ -110,16 +122,6 @@ sub reply {
     my $logline;
 
     $clength = '-' unless defined($clength);
-    if ($debug) {
-	print STDERR "status: $status\n";
-	print STDERR "message: $message\n";
-	print STDERR "remaddr: $remaddr\n";
-	print STDERR "timestamp: $timestamp\n";
-	print STDERR "method: $method\n";
-	print STDERR "filename: $filename\n";
-	print STDERR "clength: $clength\n";
-    }
-
     $remaddr = sprintf "%-15s", $remaddr;
     $logline = "$remaddr - - $timestamp \"$method $TOPDIR/$SERVER/$NODE/$filename\" $status $clength";
 
@@ -171,6 +173,10 @@ sub load_md5s {
 	while (my $line = <M>) {
 		chomp $line;
 		my ($hash, $fn) = split (/\s+/, $line);
+		unless (defined($hash) && defined($fn)) {
+			warn $line;
+			next;
+		}
 		$MD5{$fn} = $hash;
 		print STDERR "loaded $fn hash $hash\n" if ($debug);
 	}
@@ -195,7 +201,7 @@ sub check_md5 {
 		print STDERR "MD5s match!\n" if ($debug);
 		return 1;
 	}
-	print STDERR "md5 mismatch\n";
+	print STDERR "md5 mismatch for: $fn\n";
 	print STDERR "orig hash = $MD5{$fn}\n";
 	print STDERR "file hash = $file_hash\n";
 	return 0;
