@@ -32,8 +32,9 @@ for node in hq lgh sc ; do
 
 	k=`ls -r | grep xml$ | head -500` || true
 	test -n "$k" || continue
+	md5 -r $k > MD5s
 	TF=`mktemp /tmp/put.XXXXXXXXXXXXX`
-	tar czf $TF $k
+	tar czf $TF MD5s $k
 	mv $TF $TF.tar
 	TF="$TF.tar"
 	UPLOAD="--upload $TF"

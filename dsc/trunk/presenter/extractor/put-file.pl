@@ -5,21 +5,23 @@ use Data::Dumper;
 use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
 use File::Temp qw(tempfile);
+use Digest::MD5;
 
 my $putlog = "/usr/local/dsc/var/log/put-file.log";
 my $TOPDIR = "/usr/local/dsc/data";
-my $SERVER = undef;
-my $NODE = undef;
 
 my $filename = '-';
 my $tempname = '-';
-my $clength = $ENV{CONTENT_LENGTH} || '-';
+my $clength = $ENV{CONTENT_LENGTH};
 my $method = $ENV{REQUEST_METHOD} || '-';
 my $remaddr = $ENV{REMOTE_ADDR} || '-';
 my $timestamp = strftime("[%d/%b/%Y:%H:%M:%S %z]", localtime(time));
+my $SERVER = get_envar(qw(SSL_CLIENT_S_DN_OU REDIRECT_SSL_CLIENT_OU));
+my $NODE = get_envar(qw(SSL_CLIENT_S_DN_CN SSL_CLIENT_CN));
+
+my $debug = 0;
 
 umask 022;
-
 
 # Check we are using PUT method
 &reply(500, "No request method") unless defined ($method);
@@ -28,12 +30,7 @@ umask 022;
 # Check we got some content
 &reply(500, "Content-Length missing or zero") if (!$clength);
 
-&reply(500, "No SSL_CLIENT_S_DN_OU")
-	unless defined ($SERVER = $ENV{SSL_CLIENT_S_DN_OU});
-&reply(500, "No SSL_CLIENT_S_DN_CN")
-	unless defined ($NODE = $ENV{SSL_CLIENT_S_DN_CN});
-$SERVER =~ tr/A-Z/a-z/;
-$NODE =~ tr/A-Z/a-z/;
+
 mkdir("$TOPDIR/$SERVER", 0700) unless (-d "$TOPDIR/$SERVER");
 mkdir("$TOPDIR/$SERVER/$NODE", 0700) unless (-d "$TOPDIR/$SERVER/$NODE");
 chdir "$TOPDIR/$SERVER/$NODE" || die;
@@ -43,7 +40,8 @@ my $path = $ENV{PATH_TRANSLATED};
 &reply(500, "No PATH_TRANSLATED") if (!$path);
 my @F = split('/', $path);
 $filename = pop @F;
-($OUT, $tempname) = tempfile(TEMPLATE=>"put.XXXXXXXXXXXXXXXX",
+($OUT, $tempname) = tempfile(
+	TEMPLATE=>"put.XXXXXXXXXXXXXXXX",
 	DIR=>'.',
 	UNLINK=>0);
 
@@ -60,12 +58,6 @@ while ($toread > 0)
     $content .= $data;
 }
 
-# Write it out 
-# Note: doesn't check the location of the file, whether it already
-# exists, whether it is a special file, directory or link. Does not
-# set the access permissions. Does not handle subdirectories that
-# need creating.
-#&reply(500, "Cannot write to $tempname") unless open(OUT, "> $tempname");
 print $OUT $content;
 close($OUT);
 
@@ -76,16 +68,28 @@ if ($filename =~ /\.xml$/) {
 	&reply(201, "Stored $filename\n");
 } elsif ($filename =~ /\.tar$/) {
 	my $tar_output = '';
+	print STDERR "running tar -xzvf $tempname\n" if ($debug);
 	open(CMD, "tar -xzvf $tempname 2>&1 |") || die;
 	#
 	# gnutar prints extracted files on stdout, bsdtar prints
 	# to stderr and adds "x" to beginning of each line.  F!
 	#
+	my @files;
 	while (<CMD>) {
+		chomp;
 		my @x = split;
 		my $f = pop(@x);
-		$tar_output .= "Stored $f\n";
-		#print STDERR "Stored $f";
+		push(@files, $f);
+	}
+	close(CMD);
+	load_md5s();
+	foreach my $f (@files) {
+		next if ($f eq 'MD5s');
+		if (check_md5($f)) {
+			$tar_output .= "Stored $f\n";
+		} else {
+			unlink($f);
+		}
 	}
 	close(CMD);
 	unlink($tempname);
@@ -100,11 +104,21 @@ exit(0);
 # Send back reply to client for a given status.
 #
 
-sub reply
-{
+sub reply {
     my $status = shift;
     my $message = shift;
     my $logline;
+
+    $clength = '-' unless defined($clength);
+    if ($debug) {
+	print STDERR "status: $status\n";
+	print STDERR "message: $message\n";
+	print STDERR "remaddr: $remaddr\n";
+	print STDERR "timestamp: $timestamp\n";
+	print STDERR "method: $method\n";
+	print STDERR "filename: $filename\n";
+	print STDERR "clength: $clength\n";
+    }
 
     $remaddr = sprintf "%-15s", $remaddr;
     $logline = "$remaddr - - $timestamp \"$method $TOPDIR/$SERVER/$NODE/$filename\" $status $clength";
@@ -115,7 +129,7 @@ sub reply
     if ($status >= 200 && $status < 300) {
 	print $message;
     } else {
-        print "Error Transferring File\n";
+	print "Error Transferring File\n";
 	print "An error occurred publishing this file: $message\n";
 	$logline .= " ($message)" if defined($message);
 	#print Dumper(\%ENV);
@@ -125,17 +139,64 @@ sub reply
     exit(0);
 }
 
-sub log
-{
+sub log {
 	my $msg = shift;
 	my $lockmgr = LockFile::Simple->make(
-                -format => '/tmp/%F.lck',
-                -max => 3,
-                -delay => 1);
-        my $lock = $lockmgr->lock($putlog) || return;
+		-format => '/tmp/%F.lck',
+		-max => 3,
+		-delay => 1);
+	my $lock = $lockmgr->lock($putlog) || return;
 	if (open (LOG, ">> $putlog")) {
 		print LOG "$msg\n";
 		close(LOG);
 	}
 	$lock->release;
+}
+
+sub get_envar {
+	my $val = undef;
+	foreach my $name (@_) {
+		last if defined($val = $ENV{$name});
+	}
+	&reply(500, 'No ' . join(' or ', @_)) unless defined($val);
+	$val =~ tr/A-Z/a-z/;
+	$val;
+}
+
+sub load_md5s {
+	unless (open(M, "MD5s")) {
+		warn "MD5s: $!";
+		return;
+	}
+	while (my $line = <M>) {
+		chomp $line;
+		my ($hash, $fn) = split (/\s+/, $line);
+		$MD5{$fn} = $hash;
+		print STDERR "loaded $fn hash $hash\n" if ($debug);
+	}
+	close(M);
+}
+
+sub md5_file {
+	my $fn = shift;
+	my $ctx = Digest::MD5->new;
+	open(F, $fn) || die "$fn: $!";
+	$ctx->addfile(F);
+	close(F);
+	$ctx->hexdigest;
+}
+
+sub check_md5 {
+	my $fn = shift;
+	print STDERR "checking $fn\n" if ($debug);
+	return 0 unless defined($MD5{$fn});
+	my $file_hash = md5_file($fn);
+	if ($MD5{$fn} eq $file_hash) {
+		print STDERR "MD5s match!\n" if ($debug);
+		return 1;
+	}
+	print STDERR "md5 mismatch\n";
+	print STDERR "orig hash = $MD5{$fn}\n";
+	print STDERR "file hash = $file_hash\n";
+	return 0;
 }
