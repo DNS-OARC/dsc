@@ -1,5 +1,5 @@
 
-GRAPHERS != ls *-grapher.pl whois.pl
+GRAPHERS != ls *-grapher.pl whois.pl hostinfo.pl
 
 all:
 
