@@ -11,6 +11,7 @@ my $SERVER = undef;
 my $NODE = undef;
 
 my $filename = '-';
+my $tfilename = '-';
 my $clength = $ENV{CONTENT_LENGTH} || '-';
 my $method = $ENV{REQUEST_METHOD} || '-';
 my $remaddr = $ENV{REMOTE_ADDR} || '-';
@@ -35,7 +36,9 @@ mkdir("$TOPDIR/$SERVER/$NODE", 0700) unless (-d "$TOPDIR/$SERVER/$NODE");
 my $path = $ENV{PATH_TRANSLATED};
 &reply(500, "No PATH_TRANSLATED") if (!$path);
 my @F = split('/', $path);
-$filename = join("/", $TOPDIR, $SERVER, $NODE, pop(@F));
+my $last = pop @F;
+$filename = join("/", $TOPDIR, $SERVER, $NODE, $last);
+$tfilename = join("/", $TOPDIR, $SERVER, $NODE, ".$last.$$");
 
 &reply(409, "File Exists") if (-f $filename);
 
@@ -55,9 +58,10 @@ while ($toread > 0)
 # exists, whether it is a special file, directory or link. Does not
 # set the access permissions. Does not handle subdirectories that
 # need creating.
-&reply(500, "Cannot write to $filename") unless open(OUT, "> $filename");
+&reply(500, "Cannot write to $tfilename") unless open(OUT, "> $tfilename");
 print OUT $content;
 close(OUT);
+&reply(500, "$!") unless rename($tfilename, $filename);
 
 # Everything seemed to work, reply with 204 (or 200). Should reply with 201
 # if content was created, not updated.
