@@ -173,6 +173,7 @@ ParseConfig(const char *fn)
 	rBareToken.leaf(true);
 	rIPv4Address.leaf(true);
 	rHostOrNet.leaf(true);
+	rDecimalNumber.leaf(true);
 
 	// commit points
         rInterface.committed(true);
@@ -194,7 +195,7 @@ ParseConfig(const char *fn)
 	parser.grammar(rConfig);
 	if (!parser.parse(config)) {
 		parser.result().pree.print(cerr << "complete failure" << endl, "");
-		string::size_type p = parser.result().pree.rawImageSize();
+		string::size_type p = parser.result().maxPos;
 		cerr << "parse failure after " << p
 			<< " bytes, near "
 		       << (p >= config.size() ?
