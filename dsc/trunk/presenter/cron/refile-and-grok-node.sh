@@ -28,7 +28,7 @@ echo $$ > $PIDF
 date
 
 
-	xmls=`ls -r | grep "\.xml$" | head -100 | sort -t. +1` || true
+	xmls=`ls | grep "\.xml$" | head -100 | sort -t. +1` || true
 	if test -n "$xmls" ; then
 		for h in $xmls ; do
 
