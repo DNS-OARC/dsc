@@ -67,7 +67,7 @@ sub extract {
 		# trim
 		#
 		if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
-			my $ntrim = &{$O->{data_trimer}}(\%db);
+			my $ntrim = &{$O->{data_trimer}}(\%db, $O);
 			print STDERR "trimmed $ntrim records from $xmlfile\n" if ($ntrim);
 		}
 
@@ -204,12 +204,20 @@ sub swap_dimensions {
 	$output;
 }
 
+#
+# this function is pretty ugly because we've chosen to swap the order of they
+# keys before writing the datafile.  It would be simpler if the 1st and 2nd
+# dimensions were swapped, but that would mean we need to swap the keys
+# when plotting, not to mention reformatting all the archived data files
+#
 sub trim_accum2d {
 	my $data = shift;
+	my $O = shift;
 	my $ndel = 0;
-	foreach my $k1 (keys %$data) {
+	foreach my $k2 ($O->{keys}) {
 		my $n = 0;
-		foreach my $k2 (sort {$data->{$k1}{$b} <=> $data->{$k1}{$a}} keys %{$data->{$k1}}) {
+		foreach my $k1 (sort {$data->{$b}{$k2} <=> $data->{$a}{$k2}} keys %$data) {
+			next unless defined($data->{$k1}{$k2});
 			next unless (++$n > 1000);
 			$data->{$SKIPPED_KEY}{$k2}++;
 			$data->{$SKIPPED_SUM_KEY}{$k2} += $data->{$k1}{$k2};
