@@ -8,7 +8,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use LockFile::Simple qw(lock trylock unlock);
+use File::Flock;
 use File::Temp qw();
 use Digest::MD5;
 
@@ -161,16 +161,11 @@ sub reply {
 
 sub log {
 	my $msg = shift;
-	my $lockmgr = LockFile::Simple->make(
-		-format => '/tmp/%F.lck',
-		-max => 3,
-		-delay => 1);
-	my $lock = $lockmgr->lock($putlog) || return;
+	my $lock = new File::Flock($putlog);
 	if (open (LOG, ">> $putlog")) {
 		print LOG "$msg\n";
 		close(LOG);
 	}
-	$lock->release;
 }
 
 sub get_envar {
