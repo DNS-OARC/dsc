@@ -42,7 +42,9 @@ $(PROG): $(OBJS) $(LIBS)
 
 install: $(PROG)
 	@if test -n "$(INSTALLDIR)" ; then echo "installing in $$INSTALLDIR" ; else echo "set INSTALLDIR first"; false ; fi
+	@test -d $(INSTALLDIR)/bin/ || mkdir $(INSTALLDIR)/bin/
 	install -m 755 $(PROG) $(INSTALLDIR)/bin/
+	@test -d $(INSTALLDIR)/etc/ || mkdir $(INSTALLDIR)/etc/
 	install -m 644 $(PROG).conf.sample $(INSTALLDIR)/etc/
 
 clean:
