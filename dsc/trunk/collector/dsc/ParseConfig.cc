@@ -133,7 +133,7 @@ interpret(const Pree &tree, int level)
 	} else
 	if (tree.rid() == rPacketFilterProg.id()) {
 		assert(tree.count() > 1);
-		if (set_bpf_program(tree[1].image().c_str()) != 1)
+		if (set_bpf_program(remove_quotes(tree[1].image()).c_str()) != 1)
 			return 0;
 	} else
         {

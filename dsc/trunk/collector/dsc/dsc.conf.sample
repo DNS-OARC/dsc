@@ -1,9 +1,3 @@
-# interface
-#
-# 	specifies a network interface to sniff packets from.
-#	can specify more than one.
-#
-interface fxp0;
 
 # local_address
 #
@@ -25,9 +19,17 @@ run_dir "/tmp";
 #	from the kernel.  note if you limit it to "udp port 53" the
 #	IP-based collectors do not work
 #
+#	NOTE: bpf_program must GO BEFORE interface
+#
 bpf_program "udp port 53";
 bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
+# interface
+#
+# 	specifies a network interface to sniff packets from.
+#	can specify more than one.
+#
+interface fxp0;
 
 #
 # dns indexers:

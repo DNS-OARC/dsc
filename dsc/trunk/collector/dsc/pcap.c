@@ -295,12 +295,12 @@ Pcap_init(const char *device, int promisc)
     memset(&fp, '\0', sizeof(fp));
     x = pcap_compile(new_pcap, &fp, bpf_program_str, 1, 0);
     if (x < 0) {
-	syslog(LOG_ERR, "pcap_compile failed\n");
+	syslog(LOG_ERR, "pcap_compile failed: %s", pcap_geterr(new_pcap));
 	exit(1);
     }
     x = pcap_setfilter(new_pcap, &fp);
     if (x < 0) {
-	syslog(LOG_ERR, "pcap_setfilter failed\n");
+	syslog(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(new_pcap));
 	exit(1);
     }
     switch (pcap_datalink(new_pcap)) {
