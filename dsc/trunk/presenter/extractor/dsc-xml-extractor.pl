@@ -216,7 +216,7 @@ sub trim_accum2d {
 	my $ndel = 0;
 	foreach my $k2 (@{$O->{keys}}) {
 		my $n = 0;
-		foreach my $k1 (sort {$data->{$b}{$k2} <=> $data->{$a}{$k2}} keys %$data) {
+		foreach my $k1 (sort {($data->{$b}{$k2} || 0) <=> ($data->{$a}{$k2} || 0)} keys %$data) {
 			next unless defined($data->{$k1}{$k2});
 			next unless (++$n > 1000);
 			$data->{$SKIPPED_KEY}{$k2}++;
