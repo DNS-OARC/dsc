@@ -25,3 +25,5 @@ if test ! -f $SRV_CRT ; then
 	env OPENSSL_CONF=$X_OPENSSL_CONF \
 	openssl ca -in $SRV_REQ -out $SRV_CRT
 fi
+
+chmod 400 $SRV_KEY

@@ -26,6 +26,7 @@ fi
 
 openssl rsa -in $CLT_KEY -out $CLT_KEY.new
 mv $CLT_KEY.new $CLT_KEY
+chmod 400 $CLT_KEY
 
 CN=`openssl x509 -in $CLT_CRT -noout -subject -nameopt multiline | awk '/commonName/ {print $3}'`
 OU=`openssl x509 -in $CLT_CRT -noout -subject -nameopt multiline | awk '/organizationalUnitName/ {print $3}'`

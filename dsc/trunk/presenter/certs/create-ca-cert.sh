@@ -18,3 +18,5 @@ if test ! -f $CA_CRT ; then
 	env OPENSSL_CONF=$X_OPENSSL_CONF \
 	openssl req -x509 -days 3000 -newkey rsa -out $CA_CRT
 fi
+
+chmod 400 $CA_KEY
