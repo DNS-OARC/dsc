@@ -6,8 +6,8 @@ use POSIX;
 use LockFile::Simple qw(lock trylock unlock);
 use File::Temp qw(tempfile);
 
-my $putlog = "/httpd/logs/put-file.log";
-my $TOPDIR = "/data/dns-oarc";
+my $putlog = "/udir/www/https/collect.oarc.isc.org/log/put-file.log";
+my $TOPDIR = "/hog0/dns-oarc";
 my $SERVER = undef;
 my $NODE = undef;
 
@@ -28,8 +28,10 @@ umask 022;
 # Check we got some content
 &reply(500, "Content-Length missing or zero") if (!$clength);
 
-&reply(500, "No REDIRECT_SSL_CLIENT_OU") unless defined ($SERVER = $ENV{REDIRECT_SSL_CLIENT_OU});
-&reply(500, "No SSL_CLIENT_CN") unless defined ($NODE = $ENV{SSL_CLIENT_CN});
+&reply(500, "No SSL_CLIENT_S_DN_OU")
+	unless defined ($SERVER = $ENV{SSL_CLIENT_S_DN_OU});
+&reply(500, "No SSL_CLIENT_S_DN_CN")
+	unless defined ($NODE = $ENV{SSL_CLIENT_S_DN_CN});
 $SERVER =~ tr/A-Z/a-z/;
 $NODE =~ tr/A-Z/a-z/;
 mkdir("$TOPDIR/$SERVER", 0700) unless (-d "$TOPDIR/$SERVER");
@@ -41,7 +43,9 @@ my $path = $ENV{PATH_TRANSLATED};
 &reply(500, "No PATH_TRANSLATED") if (!$path);
 my @F = split('/', $path);
 $filename = pop @F;
-$tempname = new File::Temp(TEMPLATE=>"put.XXXXXXXXXXXXXXXX", UNLINK=>0);
+($OUT, $tempname) = tempfile(TEMPLATE=>"put.XXXXXXXXXXXXXXXX",
+	DIR=>'.',
+	UNLINK=>0);
 
 &reply(409, "File Exists") if (-f $filename);
 
@@ -61,13 +65,14 @@ while ($toread > 0)
 # exists, whether it is a special file, directory or link. Does not
 # set the access permissions. Does not handle subdirectories that
 # need creating.
-&reply(500, "Cannot write to $tempname") unless open(OUT, "> $tempname");
-print OUT $content;
-close(OUT);
+#&reply(500, "Cannot write to $tempname") unless open(OUT, "> $tempname");
+print $OUT $content;
+close($OUT);
 
 if ($filename =~ /\.xml$/) {
 	&reply(500, "$filename Exists") if (-f $filename);
-	&reply(500, "$!") unless rename($tempname, $filename);
+	&reply(500, "rename $tempname $filename: $!") unless rename($tempname, $filename);
+	chmod 0644, $filename;
 	&reply(201, "Stored $filename\n");
 } elsif ($filename =~ /\.tar$/) {
 	my $tar_output = '';
@@ -76,6 +81,8 @@ if ($filename =~ /\.xml$/) {
 	close(CMD);
 	unlink($tempname);
 	&reply(201, $tar_output);
+} else {
+	&reply(500, "unknown file type ($filename)");
 }
 
 exit(0);

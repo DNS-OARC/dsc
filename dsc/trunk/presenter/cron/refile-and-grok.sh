@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-cd /data/dns-oarc
+cd /hog0/dns-oarc
 
 PROG=`basename $0`
 exec >$PROG.stdout
