@@ -22,6 +22,8 @@ use vars      @EXPORT_OK;
 
 END { }
 
+my %IconData;
+
 sub img_with_map {
 	my $imgsrc;
 	if (my $reason = DSC::grapher::reason_to_not_plot()) {
@@ -114,6 +116,13 @@ sub a_markup {
 sub img_markup {
 	my $s = shift;
 	my $c = shift;
+	if ($DSC::grapher::template::use_data_uri) {
+		$IconData{$s} = load_icon_data($s) unless defined($IconData{$s});
+		my $t;
+		$t = "data:image/png;base64,\n";
+		$t .= encode_base64($IconData{$s});
+		$s = $t;
+	}
 	"<img" . (defined($c) ? " class=\"$c\"" : '') . " src=\"$s\">";
 }
 
@@ -246,6 +255,18 @@ sub window_secs {
 		die "unknown unit: $unit";
 	}
 	$n;
+}
+
+sub load_icon_data {
+	my $icon = shift;	# should be like '/dsc-icons/foo.png"
+	my $buf;
+	if (open(F, "/usr/local/dsc/htdocs/$icon")) {
+		$buf .= $_ while (<F>);
+		close(F);
+	} else {
+		warn "/usr/local/dsc/htdocs/$icon: $!\n";
+	}
+	$buf;
 }
 
 1;
