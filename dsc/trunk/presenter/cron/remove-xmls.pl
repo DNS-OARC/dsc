@@ -9,6 +9,6 @@ while (<>) {
 	next unless (m@/(\d+)\.@);
 	my $t = $1;
 	next if ($t > $cutoff);
-	print "removing $_";
+	#print "removing $_";
 	unlink $_ or die "$_";
 }
