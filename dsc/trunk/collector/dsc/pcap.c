@@ -70,7 +70,7 @@ static unsigned short port53;
 
 char *bpf_program_str = NULL;
 dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
-int vlan_tag_needs_byte_conversion = 0;
+int vlan_tag_needs_byte_conversion = 1;
 
 extern dns_message *handle_dns(const char *buf, int len);
 static DMC *dns_message_callback;
