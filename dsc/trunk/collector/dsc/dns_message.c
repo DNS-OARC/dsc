@@ -17,7 +17,7 @@ extern md_array_printer xml_printer;
 static md_array *qclass_vs_qtype;
 static md_array *qtype_vs_tld;
 static md_array *rcode_vs_tld;
-static md_array *client_ip;
+static md_array *client_subnet;
 
 void
 dns_message_handle(dns_message * m)
@@ -25,7 +25,7 @@ dns_message_handle(dns_message * m)
     md_array_count(qclass_vs_qtype, m);
     md_array_count(qtype_vs_tld, m);
     md_array_count(rcode_vs_tld, m);
-    md_array_count(client_ip, m);
+    md_array_count(client_subnet, m);
 }
 
 static int
@@ -43,10 +43,12 @@ replies_only_filter(dns_message * m)
 void
 dns_message_init(void)
 {
+#if 0
     qclass_vs_qtype = md_array_create(
 	queries_only_filter,
 	"Qclass", qclass_indexer, qclass_iterator,
 	"Qtype", qtype_indexer, qtype_iterator);
+#endif
 
     qtype_vs_tld = md_array_create(
 	queries_only_filter,
@@ -55,13 +57,13 @@ dns_message_init(void)
 
     rcode_vs_tld = md_array_create(
 	replies_only_filter,
-	"Rcode", rcode_indexer, rcode_iterator,
-	"TLD", tld_indexer, tld_iterator);
+	"All", null_indexer, null_iterator,
+	"Rcode", rcode_indexer, rcode_iterator);
 
-    client_ip = md_array_create(
+    client_subnet = md_array_create(
 	queries_only_filter,
-	"ClientIP", cip4_indexer, cip4_iterator,
-	"All", null_indexer, null_iterator);
+	"All", null_indexer, null_iterator,
+	"ClientSubnet", cip4_net_indexer, cip4_net_iterator);
 
 }
 
@@ -71,5 +73,5 @@ dns_message_report(void)
     md_array_print(qclass_vs_qtype, &xml_printer, "qclass_vs_qtype");
     md_array_print(qtype_vs_tld, &xml_printer, "qtype_vs_tld");
     md_array_print(rcode_vs_tld, &xml_printer, "rcode_vs_tld");
-    md_array_print(client_ip, &xml_printer, "clientIP");
+    md_array_print(client_subnet, &xml_printer, "clientIP");
 }
