@@ -89,8 +89,8 @@ sub run {
 	$ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
 	$ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
 	$ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $now;
-	$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis');
-	$ARGS{key} = $untaint->extract(-as_printable => 'key');
+	$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis')	|| undef;
+	$ARGS{key} = $untaint->extract(-as_printable => 'key')		|| undef;
 
 	$PLOT = $DSC::grapher::config::PLOTS{$ARGS{plot}};
 	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
