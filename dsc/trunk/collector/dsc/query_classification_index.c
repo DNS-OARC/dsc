@@ -24,8 +24,8 @@ nonauth_tld(const dns_message * m)
     const char *tld = dns_message_tld((dns_message *)m);
     for (i = 0; KnownTLDS[i]; i++)
 	if (0 == strcmp(KnownTLDS[i], tld))
-	    return CLASS_NONAUTH_TLD;
-    return 0;
+	    return 0;
+    return CLASS_NONAUTH_TLD;
 }
 
 static int
