@@ -19,7 +19,7 @@ for SERVER in * ; do
 	for NODE in * ; do
 		cd $NODE
 		echo "$SERVER/$NODE:"
-		sh ../../cron-1min-node.sh &
+		sh ../../refile-and-grok-node.sh &
 		cd ..	# NODE
 	done
 	cd ..	# SERVER
