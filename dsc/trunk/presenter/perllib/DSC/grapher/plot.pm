@@ -90,6 +90,11 @@ my $std_accum_yaxes = {
     	    divideflag => 0,
 	    default => 0,
 	},
+	count => {
+	    label => 'Number of Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
     };
 
 %PLOTS = (
