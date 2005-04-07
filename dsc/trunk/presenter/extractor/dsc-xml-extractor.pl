@@ -216,7 +216,7 @@ sub trim_accum2d {
 	my $data = shift;
 	my $O = shift;
 	my $ndel = 0;
-	foreach my $k2 (@{$O->{keys}}) {
+	foreach my $k2 (@{$O->{keys} || $O->{keys2}}) {
 		my $n = 0;
 		foreach my $k1 (sort {($data->{$b}{$k2} || 0) <=> ($data->{$a}{$k2} || 0)} keys %$data) {
 			next unless defined($data->{$k1}{$k2});
