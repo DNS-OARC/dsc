@@ -406,8 +406,9 @@ sub ploticus_arg {
 
 sub ploticus_begin {
 	die "wrong state" unless (1 == $ploticus_state);
+	my $prog = (grep {-f $_} qw(/usr/local/bin/ploticus /usr/local/bin/pl))[0];
 	my $cmd = join(" ",
-		"/usr/local/bin/ploticus" ,
+		$prog,
 		"-stdin",
 		(map { "$_ $ploticus_args{$_}" } keys %ploticus_args),
 		"-$ploticus_type",
