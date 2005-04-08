@@ -8,7 +8,6 @@ use POSIX;
 use List::Util qw(max);
 use CGI;
 use CGI::Untaint;
-use DBI;
 use Data::Dumper;
 use Digest::MD5;
 use Text::Template;
