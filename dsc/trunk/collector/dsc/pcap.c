@@ -108,6 +108,9 @@ handle_ipv4(const struct ip * ip, int len)
     ip_message_callback(ip);
     if (IPPROTO_UDP != ip->ip_p)
 	return NULL;
+    /* sigh, punt on IP fragments */
+    if (ip->ip_off & IP_OFFMASK)
+	return NULL;
     memcpy(buf, (void *) ip + offset, len - offset);
     m = handle_udp((struct udphdr *) buf, len - offset);
     if (NULL == m)
