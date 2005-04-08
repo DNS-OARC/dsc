@@ -191,6 +191,15 @@ can find via CPAN:
 \noindent
 Also note that XML::Parser requires the {\em expat\/} package.
 
+\section{Install Ploticus}
+
+{\dsc} uses Ploticus to generate plots and graphs.  You can find
+this software at \verb|http://ploticus.sourceforge.net|.  The {\em
+Download\/} page has links to some pre-compiled binaries and packages.
+FreeBSD and NetBSD users can find Ploticus in the ports/packages
+collection.
+
+
 \section{Install {\dsc} Software}
 
 All of the extractor and grapher tools are Perl or {\tt /bin/sh}
@@ -240,14 +249,14 @@ copy the scripts to the appropriate directory.
 \section{/usr/local/dsc/data}
 
 This directory is where \path|put-file.pl| writes incoming XML
-files.  Actually, XML files are placed in {\em server\/} and {\em
+files.  It should have been created when you ran {\em make install\/} earlier.
+XML files are actually placed in {\em server\/} and {\em
 node\/} subdirectories based on the authorized client X.509 certificate
 parameters.  If you want \path|put-file.pl| to automatically create
 the subdirectories, the \path|data| directory must be writable by
 the process owner:
 
 \begin{MyVerbatim}
-% mkdir /usr/local/dsc/data/
 % chgrp nobody /usr/local/dsc/data/
 % chmod 2775 /usr/local/dsc/data/
 \end{MyVerbatim}
@@ -256,7 +265,6 @@ Alternatively, you can create {\em server\/} and {\em node\/} directories
 in advance and make those writable.
 
 \begin{MyVerbatim}
-% mkdir /usr/local/dsc/data/
 % mkdir /usr/local/dsc/data/x-root/
 % mkdir /usr/local/dsc/data/x-root/blah/
 % chgrp nobody /usr/local/dsc/data/x-root/blah/
@@ -267,6 +275,34 @@ Make sure that \path|/usr/local/dsc/data/| is on a large partition with
 plenty of free space.  You can make it a symbolic link to another
 partition if necessary.
 
+\section{\path|/usr/local/dsc/var/log|}
+
+The \path|put-file.pl| script logs its activity to
+\path|put-file.log| in this directory.  It should have been
+created when you ran {\em make install\/} earlier.  The directory
+should be writable by the HTTP server userid (usually {\em nobody\/}
+or {\em www\/}).  Unfortunately the installation isn't fancy enough
+to determine that userid yet, so you must change the ownership manually:
+
+\begin{MyVerbatim}
+% chgrp nobody /usr/local/dsc/var/log/
+\end{MyVerbatim}
+
+Furthermore, you probably want to make sure the log file does not
+grow indefinately.  For example, on FreeBSD we add this line to \path|/etc/newsyslog.conf|:
+
+\begin{MyVerbatim}
+/usr/local/dsc/var/log/put-file.log nobody:wheel        644  10    *    @T00  BN
+\end{MyVerbatim}
+
+\section{\path|/usr/local/dsc/cache|}
+
+This directory, also created by {\em make install\/} above, holds cached
+plot images.  It also must be writable by the HTTP userid:
+
+\begin{MyVerbatim}
+% chgrp nobody /usr/local/dsc/cache/
+\end{MyVerbatim}
 
 \section{Cron Jobs}
 
