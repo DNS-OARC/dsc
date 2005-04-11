@@ -12,8 +12,8 @@ DEST=$1; shift
 URI=$1; shift
 
 CURL="curl --silent"
-CLTAUTH="--cert $PREFIX/etc/certs/$DEST/$NODE.pem"
-SRVAUTH="--cacert $PREFIX/etc/certs/$DEST/cacert.pem"
+CLTAUTH="--cert $PREFIX/certs/$DEST/$NODE.pem"
+SRVAUTH="--cacert $PREFIX/certs/$DEST/cacert.pem"
 
 PIDF="/tmp/$PROG.pid"
 if test -f $PIDF; then
