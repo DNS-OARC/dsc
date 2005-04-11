@@ -6,7 +6,7 @@ X_OPENSSL_CONF=./openssl.conf
 mkdir -p private
 
 if test ! -f index.txt ; then touch index.txt ; fi
-if test ! -f serial ; then echo 0 > serial ; fi
+if test ! -f serial ; then echo 00 > serial ; fi
 
 CA_KEY=private/cakey.pem
 CA_CRT=cacert.pem
