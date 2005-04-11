@@ -122,12 +122,14 @@ handle_ipv4(const struct ip * ip, int len)
     return m;
 }
 
+#ifdef ETHERTYPE_IPV6
 dns_message *
 handle_ipv6(const struct ip6_hdr * ip6, int len)
 {
     /* syslog(LOG_ERR, "Ignoring IPv6 packet"); */
     return NULL;
 }
+#endif
 
 #if USE_PPP
 dns_message *
@@ -158,10 +160,12 @@ handle_ppp(const u_char * pkt, int len)
         memcpy(buf, pkt, len);
         return handle_ipv4((struct ip *) buf, len);
     }
+#ifdef ETHERTYPE_IPV6
     if (ETHERTYPE_IPV6 == proto) {
         memcpy(buf, pkt, len);
         return handle_ipv6((struct ip6_hdr *) buf, len);
     }
+#endif
     return NULL;
 }
 
@@ -240,10 +244,12 @@ handle_ether(const u_char * pkt, int len)
 	memcpy(buf, pkt, len);
 	return handle_ipv4((struct ip *) buf, len);
     }
+#ifdef ETHERTYPE_IPV6
     if (ETHERTYPE_IPV6 == etype) {
 	memcpy(buf, pkt, len);
 	return handle_ipv6((struct ip6_hdr *) buf, len);
     }
+#endif
     return NULL;
 }
 
