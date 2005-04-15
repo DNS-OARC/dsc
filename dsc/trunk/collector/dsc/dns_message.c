@@ -4,6 +4,10 @@
 #include <syslog.h>
 #include <string.h>
 #include <arpa/nameser.h>
+
+#include <sys/types.h>
+#include <regex.h>
+
 #ifndef T_A6
 #define T_A6 38
 #endif
@@ -110,6 +114,14 @@ replies_only_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     return m->qr ? 1 : 0;
+}
+
+static int
+qname_filter(const void *vp, const void *ctx)
+{
+    const regex_t *r = ctx;
+    const dns_message *m = vp;
+    return (0 == regexec(r, m->qname, 0, NULL, 0));
 }
 
 
@@ -239,13 +251,21 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 }
 
 int
-add_qname_filter(const char *name, const char *re)
+add_qname_filter(const char *name, const char *pat)
 {
     filter_list **fl = &DNSFilters;
+    regex_t *r;
+    int x;
     while ((*fl)->next)
 	fl = &((*fl)->next);
+    r = calloc(1, sizeof(*r));
+    if (0 != (x = regcomp(r, pat, REG_EXTENDED | REG_ICASE))) {
+	char errbuf[512];
+	regerror(x, r, errbuf, 512);
+	syslog(LOG_ERR, "regcomp: %s", errbuf);
+    }
     fl = md_array_filter_list_append(fl,
-	md_array_create_filter("queries-only", queries_only_filter, 0));
+	md_array_create_filter(name, qname_filter, r));
     return 1;
 }
 
