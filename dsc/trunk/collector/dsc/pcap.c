@@ -95,7 +95,7 @@ handle_udp(const struct udphdr *udp, int len)
     m = handle_dns(buf, len - sizeof(*udp));
     if (NULL == m)
 	return NULL;
-    m->src_port = udp->uh_sport;
+    m->src_port = ntohs(udp->uh_sport);
     return m;
 }
 
@@ -109,7 +109,7 @@ handle_ipv4(const struct ip * ip, int len)
     if (IPPROTO_UDP != ip->ip_p)
 	return NULL;
     /* sigh, punt on IP fragments */
-    if (ip->ip_off & IP_OFFMASK)
+    if (ntohs(ip->ip_off) & IP_OFFMASK)
 	return NULL;
     memcpy(buf, (void *) ip + offset, len - offset);
     m = handle_udp((struct udphdr *) buf, len - offset);
