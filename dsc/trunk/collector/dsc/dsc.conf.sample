@@ -31,7 +31,8 @@ bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 #
 interface fxp0;
 
-qname_filter wpad wpad\.(com|net|org|biz|us)$
+#
+qname_filter example example\.com$
 
 
 #
