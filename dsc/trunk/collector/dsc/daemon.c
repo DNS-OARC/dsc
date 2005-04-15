@@ -23,6 +23,7 @@
 
 char *progname = NULL;
 int promisc_flag = 1;
+int debug_flag = 0;
 
 extern void cip4_net_indexer_init(void);
 extern void ParseConfig(const char *);
@@ -65,6 +66,7 @@ usage(void)
     fprintf(stderr, "usage: %s [opts] dsc.conf\n",
 	progname);
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode\n");
+    fprintf(stderr, "\t-d\tDebug mode.  Exits after first write\n");
     exit(1);
 }
 
@@ -78,10 +80,13 @@ main(int argc, char *argv[])
     srandom(time(NULL));
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
-    while ((x = getopt(argc, argv, "p")) != -1) {
+    while ((x = getopt(argc, argv, "pd")) != -1) {
 	switch (x) {
 	case 'p':
 	    promisc_flag = 0;
+	    break;
+	case 'd':
+	    debug_flag = 1;
 	    break;
 	default:
 	    usage();
@@ -97,7 +102,8 @@ main(int argc, char *argv[])
     ParseConfig(argv[0]);
     cip4_net_indexer_init();
 
-    daemonize();
+    if (!debug_flag)
+    	daemonize();
 
     /*
      * I'm using fork() in this loop, (a) out of laziness, and (b)
@@ -125,6 +131,8 @@ main(int argc, char *argv[])
 	    while (waitpid(cpid, &cstatus, 0) < 0)
 		(void) 0;
 	}
+	if (debug_flag)
+	    break;
     }
     Pcap_close();
     return 0;

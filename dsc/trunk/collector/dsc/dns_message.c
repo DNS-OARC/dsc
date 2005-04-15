@@ -34,13 +34,33 @@
 #include "opcode_index.h"
 
 extern md_array_printer xml_printer;
+extern int debug_flag;
 static md_array_list *Arrays = NULL;
 static filter_list *DNSFilters = NULL;
+
+void
+dns_message_print(dns_message * m)
+{
+	fprintf(stderr, "%15s:%5d", inet_ntoa(m->client_ipv4_addr), m->src_port);
+	fprintf(stderr, "\tQT=%d", m->qtype);
+	fprintf(stderr, "\tQC=%d", m->qclass);
+	fprintf(stderr, "\tlen=%d", m->msglen);
+	fprintf(stderr, "\tqname=%s", m->qname);
+	fprintf(stderr, "\ttld=%s", dns_message_tld(m));
+	fprintf(stderr, "\topcode=%d", m->opcode);
+	fprintf(stderr, "\trcode=%d", m->rcode);
+	fprintf(stderr, "\tmalformed=%d", m->malformed);
+	fprintf(stderr, "\tqr=%d", m->qr);
+	fprintf(stderr, "\trd=%d", m->rd);
+	fprintf(stderr, "\n");
+}
 
 void
 dns_message_handle(dns_message * m)
 {
     md_array_list *a;
+    if (debug_flag)
+	dns_message_print(m);
     for (a = Arrays; a; a = a->next)
 	md_array_count(a->theArray, m);
 }
