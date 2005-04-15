@@ -15,7 +15,7 @@ CURL="curl --silent"
 CLTAUTH="--cert $PREFIX/certs/$DEST/$NODE.pem"
 SRVAUTH="--cacert $PREFIX/certs/$DEST/cacert.pem"
 
-PIDF="/tmp/$PROG.pid"
+PIDF="/tmp/$PROG-$NODE-$DEST.pid"
 if test -f $PIDF; then
 	PID=`cat $PIDF`
 	if kill -0 $PID ; then
