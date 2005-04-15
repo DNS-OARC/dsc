@@ -31,6 +31,7 @@
 
 extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;
+static filter_list *DNSFilters = NULL;
 
 void
 dns_message_handle(dns_message * m)
@@ -41,14 +42,14 @@ dns_message_handle(dns_message * m)
 }
 
 static int
-queries_only_filter(const void *vp)
+queries_only_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     return m->qr ? 0 : 1;
 }
 
 static int
-popular_qtypes_filter(const void *vp)
+popular_qtypes_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     switch (m->qtype) {
@@ -70,7 +71,7 @@ popular_qtypes_filter(const void *vp)
 }
 
 static int
-aaaa_or_a6_filter(const void *vp)
+aaaa_or_a6_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     switch (m->qtype) {
@@ -84,28 +85,28 @@ aaaa_or_a6_filter(const void *vp)
 }
 
 static int
-idn_qname_filter(const void *vp)
+idn_qname_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     return (0 == strncmp(m->qname, "xn--", 4));
 }
 
 static int
-root_servers_net_filter(const void *vp)
+root_servers_net_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     return (0 == strcmp(m->qname + 1, ".root-servers.net"));
 }
 
 static int
-chaos_class_filter(const void *vp)
+chaos_class_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     return m->qclass == C_CHAOS;
 }
 
 static int
-replies_only_filter(const void *vp)
+replies_only_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
     return m->qr ? 1 : 0;
@@ -219,41 +220,32 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 {
     char *t;
     char *copy = strdup(fn);
+    filter_list *f;
     for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
-	if (0 == strcmp(t, "any")) {
+	if (0 == strcmp(t, "any"))
 	    continue;
+	for (f = DNSFilters; f; f = f->next) {
+	    if (0 == strcmp(t, f->filter->name))
+		break;
 	}
-	if (0 == strcmp(t, "queries-only")) {
-	    fl = md_array_filter_list_append(fl, queries_only_filter);
-	    continue;
-	}
-	if (0 == strcmp(t, "replies-only")) {
-	    fl = md_array_filter_list_append(fl, replies_only_filter);
-	    continue;
-	}
-	if (0 == strcmp(t, "popular-qtypes")) {
-	    fl = md_array_filter_list_append(fl, popular_qtypes_filter);
-	    continue;
-	}
-	if (0 == strcmp(t, "idn-only")) {
-	    fl = md_array_filter_list_append(fl, idn_qname_filter);
-	    continue;
-	}
-	if (0 == strcmp(t, "aaaa-or-a6-only")) {
-	    fl = md_array_filter_list_append(fl, aaaa_or_a6_filter);
-	    continue;
-	}
-	if (0 == strcmp(t, "root-servers-net-only")) {
-	    fl = md_array_filter_list_append(fl, root_servers_net_filter);
-	    continue;
-	}
-	if (0 == strcmp(t, "chaos-class")) {
-	    fl = md_array_filter_list_append(fl, chaos_class_filter);
+	if (f) {
+	    fl = md_array_filter_list_append(fl, f->filter);
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
 	return 0;
     }
+    return 1;
+}
+
+int
+add_qname_filter(const char *name, const char *re)
+{
+    filter_list **fl = &DNSFilters;
+    while ((*fl)->next)
+	fl = &((*fl)->next);
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("queries-only", queries_only_filter, 0));
     return 1;
 }
 
@@ -309,4 +301,24 @@ dns_message_tld(dns_message * m)
 	    m->tld = m->qname;
     }
     return m->tld;
+}
+
+void
+dns_message_init(void)
+{
+    filter_list **fl = &DNSFilters;
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("queries-only", queries_only_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("replies-only", replies_only_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("idn-only", idn_qname_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("chaos-class", chaos_class_filter, 0));
 }

@@ -93,6 +93,7 @@ main(int argc, char *argv[])
 
     if (argc != 1)
 	usage();
+    dns_message_init();
     ParseConfig(argv[0]);
     cip4_net_indexer_init();
 

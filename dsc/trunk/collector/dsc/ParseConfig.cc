@@ -19,6 +19,7 @@ extern "C" int add_dataset(const char *name, const char *layer,
 extern "C" int set_bpf_vlan_tag_byte_order(const char *);
 extern "C" int set_bpf_program(const char *);
 extern "C" int set_match_vlan(const char *);
+extern "C" int add_qname_filter(const char *name, const char *re);
 
 extern "C" void ParseConfig(const char *);
 
@@ -40,6 +41,7 @@ enum {
 	ctDatasetOpt,
 	ctBVTBO,		// bpf_vlan_tag_byte_order
 	ctMatchVlan,
+	ctQnameFilter,
 	ctConfig = 30,
 	ctMax
 } configToken;
@@ -61,6 +63,7 @@ Rule rDatasetOpt("DatasetOpt", 0);
 Rule rDataset("Dataset", 0);
 Rule rBVTBO("BVTBO", 0);
 Rule rMatchVlan("MatchVlan", 0);
+Rule rQnameFilter("QnameFilter", 0);
 
 Rule rConfig;
 
@@ -158,6 +161,13 @@ interpret(const Pree &tree, int level)
 			return 0;
 		}
 	} else
+	if (tree.rid() == rQnameFilter.id()) {
+		assert(tree.count() > 2);
+		if (add_qname_filter(tree[1].image().c_str(), tree[2].image().c_str()) != 1) {
+			cerr << "interpret() failure in qname_filter" << endl;
+			return 0;
+		}
+	} else
         {
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (interpret(tree[i], level + 1) != 1) {
@@ -200,6 +210,7 @@ ParseConfig(const char *fn)
 		>>*rDatasetOpt >>";" ;
 	rBVTBO = "bpf_vlan_tag_byte_order" >>rHostOrNet >>";" ;
 	rMatchVlan = "match_vlan" >> +rDecimalNumber >>";" ;
+	rQnameFilter = "qname_filter" >>rBareToken >>rBareToken >>";" ;
 
 	// the whole config
 	rConfig = *(
@@ -209,7 +220,8 @@ ParseConfig(const char *fn)
 		rPacketFilterProg |
 		rDataset |
 		rBVTBO |
-		rMatchVlan
+		rMatchVlan |
+		rQnameFilter
 	) >> end_r;
 	rConfig.Debug(false);
 

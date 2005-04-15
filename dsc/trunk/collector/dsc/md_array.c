@@ -48,7 +48,7 @@ md_array_count(md_array * a, const void *vp)
     filter_list *fl;
 
     for (fl = a->filter_list; fl; fl = fl->next)
-	if (0 == fl->filter(vp))
+	if (0 == fl->filter->func(vp, fl->filter->context))
 	    return -1;
 
     if ((i1 = a->d1.indexer(vp)) < 0)
@@ -221,4 +221,15 @@ md_array_filter_list_append(filter_list ** fl, FLTR * f)
     assert(fl);
     (*fl)->filter = f;
     return (&(*fl)->next);
+}
+
+FLTR *
+md_array_create_filter(const char *name, filter_func *func, const void *context)
+{
+    FLTR *f = calloc(1, sizeof(*f));
+    assert(f);
+    f->name = strdup(name);
+    f->func = func;
+    f->context = context;
+    return f;
 }
