@@ -19,6 +19,7 @@ END { }
 use strict;
 use warnings;
 use NDBM_File;
+use IO::Socket::INET;
 
 my $qtype_keys	= [ qw(1 2  5     6   12  15 28   33  38 255 else) ];
 my $qtype_names	= [ qw(A NS CNAME SOA PTR MX AAAA SRV A6 ANY Other) ];
@@ -583,23 +584,20 @@ my %FPDNSCACHE;
 
 sub fpdns_query($) {
         my $addr = shift;
-	unless (tied(%FPDNSCACHE)) {
-		tie(%FPDNSCACHE,
-			'NDBM_File',
-			'/var/tmp/fpdns-cache', 0x200 | 0x002, 0666) or die "$!";
+	my $ans = 'NoAns';
+	my $sock = IO::Socket::INET->new("dns-oarc.measurement-factory.com:8053");
+	return $ans unless ($sock);
+	print $sock "$addr\n";
+	my $rin = '';
+	my $rout = '';
+	vec($rin,fileno($sock),1) = 1;
+	select($rout=$rin, undef, undef, 1.0);
+	if (vec($rout,fileno($sock),1)) {
+		$ans = <$sock>;
+		chomp($ans);
 	}
-        if (defined(my $val = $FPDNSCACHE{$addr})) {
-print STDERR "fpdns cache hit!\n";
-                my $when = $FPDNSCACHE{"${addr}_when"};
-                return $val if (time - $when  < 86400);
-        }
-	print STDERR "running fpdns -t 1 -s -c $addr\n";
-        open(CMD, "/usr/local/bin/fpdns -t 1 -s -c $addr|") or return 'NoAns';
-        my $ans = <CMD>;
-	close(CMD);
-        $ans =~ s/^[0-9\.]+\s+//;
-        $FPDNSCACHE{"${addr}_when"} = time;
-        $FPDNSCACHE{$addr} = $ans;
+	close($sock);
+	$ans;
 }
 
 sub guess_software($) {
