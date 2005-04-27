@@ -155,13 +155,11 @@ sub run {
 	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 
 	if ('html' eq $ARGS{content}) {
-		if ($use_data_uri) {
-			if (!reason_to_not_plot()) {
-				debug(1, "no reason to not plot");
-				if (!check_image_cache($cache_name)) {
-					debug(1, "need to make cached image");
-					make_image($cache_name);
-				}
+		if (!reason_to_not_plot()) {
+			debug(1, "no reason to not plot");
+			if (!check_image_cache($cache_name)) {
+				debug(1, "need to make cached image");
+				make_image($cache_name);
 			}
 		}
 		my $source = "/usr/local/dsc/share/html/plot.page";
@@ -1148,7 +1146,7 @@ sub img_markup {
 		$s = $t;
 	}
 	html_markup('img',
-		{ class => $c, src => $s, alt => $a },
+		{ class => $c, src => "/dsc/$s", alt => $a },
 		undef);
 }
 
