@@ -63,8 +63,11 @@ along one dimension and TLD along the other.
 You may run the {\dsc} collector on a remote machine.  That
 is, the collector may run on a different machine than where the
 data is archived and displayed.  {\dsc} includes some Perl and {\tt /bin/sh}
-scripts that enable transporting XML files over a secure HTTP
-connection.
+scripts to move XML files from collector to presenter.  One
+technique uses X.509 certificates and a secure HTTP server.  The other
+uses {\em rsync\/}, presumably over {\em ssh\/}.
+
+\subsubsection{X.509/SSL}
 
 To make this work, Apache/mod\_ssl should run on the machine where data
 is archived and presented.
@@ -86,6 +89,17 @@ If the certificate is invalid, the PUT request is denied.  This
 script reads environment variables to get X.509 parameters.  The
 uploaded-data is stored in a directory based on the X.509 Organizational
 Unit (server) and Common Name fields (node).
+
+\subsubsection{rsync/ssh}
+
+This technique uses the {\em rsync\/} utility to transfer files.
+You'll probably want to use {\em ssh\/} as the underlying transport,
+although you can still use the less-secure {\em rsh\/} or native
+rsync server transports if you like.
+
+If you use {\em ssh\/} then you'll need to create passphrase-less
+SSH keys so that the transfer can occur automatically.  You may
+want to create special {\em dsc\/} userids on both ends as well.
 
 \subsection{The Extractor}
 
@@ -126,7 +140,7 @@ nodes that share a single IP address.  We call each instance a
 to the same {\em server\/}.
 
 The {\dsc} collector program runs on or near\footnote{by
-``near'' we mean that packets may be sniffed remotely via switch
+``near'' we mean that packets may be sniffed remotely via Ethernet taps, switch
 port mirroring, or a SPAN port.} the remote nodes.  Its XML output
 is transferred to the presentation machine via HTTPS PUTs (or something simpler
 if you prefer).
@@ -152,7 +166,7 @@ Installing the Presenter involves the following steps:
 \item
 	Install {\dsc} software
 \item
-	Create X.509 certificates
+	Create X.509 certificates (optional)
 \item
 	Set up a secure HTTP server (e.g., Apache and mod\_ssl)
 \item
@@ -242,11 +256,15 @@ Both of these scripts have been designed to be mod\_perl-friendly.
 % ln -s /usr/local/dsc/libexec/dsc-grapher.pl
 \end{MyVerbatim}
 
+You can skip the \path|put-file.pl| link if you plan to use
+{\em rsync\/} to transfer XML files.
 If you cannot create symbolic links, you'll need to manually
 copy the scripts to the appropriate directory.
 
 
 \section{/usr/local/dsc/data}
+
+\subsection{X.509 method}
 
 This directory is where \path|put-file.pl| writes incoming XML
 files.  It should have been created when you ran {\em make install\/} earlier.
@@ -273,7 +291,23 @@ in advance and make those writable.
 
 Make sure that \path|/usr/local/dsc/data/| is on a large partition with
 plenty of free space.  You can make it a symbolic link to another
-partition if necessary.
+partition if necessary.  Note that a typical {\dsc} installation
+for a large DNS root server requires about 4GB to hold a year's worth
+of data.
+
+\subsection{rsync Method}
+
+The directory structure is the same as above (for X.509).  The only
+differences are that:
+\begin{itemize}
+\item
+	The {\em server\/} subdirectories must be made in advance.
+\item
+	The directories should be writable by the userid associated
+	with the {\em rsync}/{\em ssh\/} connection.  You may want
+	to create a dedicated {\em dsc\/} userid for this.
+\end{itemize}
+
 
 \section{/usr/local/dsc/var/log}
 
@@ -294,6 +328,9 @@ grow indefinately.  For example, on FreeBSD we add this line to \path|/etc/newsy
 \begin{MyVerbatim}
 /usr/local/dsc/var/log/put-file.log nobody:wheel        644  10    *    @T00  BN
 \end{MyVerbatim}
+
+You need not worry about this directory if you are using the
+{\em rsync\/} upload method.
 
 \section{/usr/local/dsc/cache}
 
@@ -325,6 +362,36 @@ the job that we use:
 \begin{MyVerbatim}
 @midnight find /usr/local/dsc/data/ | /usr/local/dsc/libexec/remove-xmls.pl 7
 \end{MyVerbatim}
+
+section{Data URIs}
+
+{\dsc} uses ``Data URIs'' by default.  This is a URI where the
+content is base-64 encoded into the URI string.  It allows us
+to include images directly in HTML output, such that the browser
+does not have to make additional HTTP requests for the images.
+Data URIs may not work with some browsers.
+
+To disable Data URIs, edit {\em presenter/perllib/DSC/grapher.pm\/}
+and change this line:
+
+\begin{verbatim}
+        $use_data_uri = 1;
+\begin{verbatim}
+
+to
+
+\begin{verbatim}
+        $use_data_uri = 0;
+\begin{verbatim}
+
+Also make this symbolic link from your HTTP servers ``htdocs'' directory:
+
+\begin{verbatim}
+# cd htdocs
+# ln -s /usr/local/dsc/share/html dsc
+\end{verbatim}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -607,12 +674,13 @@ the {\tt dsc\/} binary and other scripts with:
 % make install
 \end{MyVerbatim}
 
-This installs four files:
+This installs five files:
 \begin{Verbatim}
 /usr/local/dsc/bin/dsc
 /usr/local/dsc/etc/dsc.conf.sample
-/usr/local/dsc/libexec/upload-data.sh
 /usr/local/dsc/libexec/upload-prep.sh
+/usr/local/dsc/libexec/upload-rsync.sh
+/usr/local/dsc/libexec/upload-x509.sh
 \end{Verbatim}
 
 Of course, if you don't want to use the default installation
@@ -670,14 +738,19 @@ With that directory structure, the {\tt upload-prep.sh} script moves
 XML files from the \path|ns0| directory to the two
 upload directories, \path|oarc| and \path|archive|.
 
-A second cron script, {\tt upload-data.sh} is responsible for
+To actually transfer files to the presenter, use either
+\path|upload-x509.sh| or \path|upload-rsync.sh|.
+
+\subsection{upload-x509.sh}
+
+This cron script is responsible for
 actually transferring XML files from the upload directories
-to the remote server.    This script creates a {\em tar\/} archive
+to the remote server.    It creates a {\em tar\/} archive
 of XML files and then uploads it to the remote server with
 {\tt curl}.  The script takes three commandline arguments:
 
 \begin{MyVerbatim}
-% upload-data.sh NODE DEST URI
+% upload-x509.sh NODE DEST URI
 \end{MyVerbatim}
 
 {\em NODE\/} must match the name of a directory under
@@ -689,19 +762,56 @@ We also recommend running this from cron every 60 seconds.  For
 example:
 
 \begin{MyVerbatim}
-* * * * * /usr/local/dsc/libexec/upload-data.sh ns0 oarc \
+* * * * * /usr/local/dsc/libexec/upload-x509.sh ns0 oarc \
 	https://collect.oarc.isc.org/
-* * * * * /usr/local/dsc/libexec/upload-data.sh ns0 archive \
+* * * * * /usr/local/dsc/libexec/upload-x509.sh ns0 archive \
 	https://archive.example.com/
 \end{MyVerbatim}
 
-\path|upload-data.sh| looks for X.509 certificates in
+\path|upload-x509.sh| looks for X.509 certificates in
 \path|/usr/local/dsc/certs|.  The client certificate should be named
 \path|/usr/local/dsc/certs/DEST/NODE.pem| and the CA certficiate
 should be named
 \path|/usr/local/dsc/certs/DEST/cacert.pem|.  Note that {\em DEST\/}
-and {\em NODE\/} must match the \path|upload-data.sh|
+and {\em NODE\/} must match the \path|upload-x509.sh|
 command line arguments.
+
+\subsection{upload-rsync.sh}
+
+This script can be used to transfer XML files files from the upload
+directories to the remote server.  It uses {\em rsync\/} and
+assumes that {\em rsync\/} will use {\em ssh\/} for transport.
+This script also takes three arguments:
+
+\begin{MyVerbatim}
+% upload-rsync.sh NODE DEST RSYNC-DEST
+\end{MyVerbatim}
+
+Note that {\em DEST\/} is the name of the local ``upload'' directory
+and {em RSYNC-DEST\/} is an {\em rsync\/} destination (i.e., hostname and remote directory).
+Here is how you might use it in a crontab:
+
+\begin{MyVerbatim}
+* * * * * /usr/local/dsc/libexec/upload-rsync.sh ns0 oarc \
+	dsc@collect.oarc.isc.org:/usr/local/dsc/data/Server/ns0
+* * * * * /usr/local/dsc/libexec/upload-rsync.sh ns0 archive \
+	dsc@archive.oarc.isc.org:/usr/local/dsc/data/Server/ns0
+\end{MyVerbatim}
+
+{\em rsync\/} over {\em ssh\/} requires you to use RSA or DSA public keys
+that do not have a passphrase.  If you do not want to use one of 
+{\em ssh\/}'s default identity files, you can create one specifically
+for this script.  It should be named \path|dsc_uploader_id| (and
+\path|dsc_uploader_id.pub|) in the $HOME/.ssh directory of the user
+that will be running the script.  For example, you can create it
+with this command:
+
+\begin{MyVerbatim}
+% ssh-keygen -t dsa -C dsc-uploader -f $HOME/.ssh/dsc_uploader_id
+\end{MyVerbatim}
+
+Then add \path|dsc_uploader_id.pub| to the \path|authorized_keys|
+file of the receiving userid on the presenter system.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
