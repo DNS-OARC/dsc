@@ -1,5 +1,6 @@
 
-SCRIPTS += upload-data.sh
+SCRIPTS += upload-x509.sh
+SCRIPTS += upload-rsync.sh
 SCRIPTS += upload-prep.sh
 
 INSTALLDIR=/usr/local/dsc
