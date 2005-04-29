@@ -9,7 +9,7 @@ PREFIX=/usr/local/dsc
 
 NODE=$1; shift
 DEST=$1; shift
-DEST=$1; shift
+RPATH=$1; shift
 
 PIDF="/tmp/$PROG-$NODE-$DEST.pid"
 if test -f $PIDF; then
@@ -30,7 +30,12 @@ cd $PREFIX/run/$NODE/upload/$DEST
 exec > $PROG.out
 exec 2>&1
 
+if test -f $HOME/.ssh/dsc_uploader_id ; then
+	RSYNC_RSH="ssh -i $HOME/.ssh/dsc_uploader_id"
+	export RSYNC_RSH
+fi
+
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
 md5 -r $k > MD5s
-rsync -av MD5s $k $DEST | grep '\.xml$' | xargs rm -v
+rsync -av MD5s $k $RPATH | grep '\.xml$' | xargs rm -v
