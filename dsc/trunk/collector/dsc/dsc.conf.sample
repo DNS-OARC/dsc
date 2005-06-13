@@ -21,8 +21,11 @@ run_dir "/tmp";
 #
 #	NOTE: bpf_program must GO BEFORE interface
 #
-bpf_program "udp port 53";
-bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
+# use this to see only DNS messages
+#bpf_program "udp port 53";
+#
+# use this to see only DNS *queries*
+#bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
 # interface
 #
