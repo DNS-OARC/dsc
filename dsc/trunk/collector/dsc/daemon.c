@@ -135,6 +135,7 @@ main(int argc, char *argv[])
      */
 
     syslog(LOG_INFO, "Running");
+    sleep(60 - (time(NULL) % 60));
     for (;;) {
 	pid_t cpid = fork();
 	if (0 == cpid) {
