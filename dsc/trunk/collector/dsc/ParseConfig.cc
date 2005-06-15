@@ -12,6 +12,7 @@
 extern "C" int add_local_address(const char *);
 extern "C" int open_interface(const char *);
 extern "C" int set_run_dir(const char *);
+extern "C" int set_pid_file(const char *);
 extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
 	const char *secondname, const char *secondindexer,
@@ -35,6 +36,7 @@ enum {
 	ctHostOrNet,
 	ctInterface = 21,
 	ctRunDir,
+	ctPidFile,
 	ctLocalAddr,
 	ctPacketFilterProg,
 	ctDataset,
@@ -57,6 +59,7 @@ Rule rHostOrNet;
 
 Rule rInterface("Interface", 0);
 Rule rRunDir("RunDir", 0);
+Rule rPidFile("PidFile", 0);
 Rule rLocalAddr("LocalAddr", 0);
 Rule rPacketFilterProg("PacketFilterProg", 0);
 Rule rDatasetOpt("DatasetOpt", 0);
@@ -107,6 +110,13 @@ interpret(const Pree &tree, int level)
 		assert(tree.count() > 1);
                 if (set_run_dir(remove_quotes(tree[1].image()).c_str()) != 1) {
 			cerr << "interpret() failure in run_dir" << endl;
+			return 0;
+		}
+	} else
+        if (tree.rid() == rPidFile.id()) {
+		assert(tree.count() > 1);
+                if (set_pid_file(remove_quotes(tree[1].image()).c_str()) != 1) {
+			cerr << "interpret() failure in pid_file" << endl;
 			return 0;
 		}
 	} else
@@ -200,6 +210,7 @@ ParseConfig(const char *fn)
 	// rule/line level
 	rInterface = "interface" >>rBareToken >>";" ;
 	rRunDir = "run_dir" >>rQuotedToken >>";" ;
+	rPidFile = "pid_file" >>rQuotedToken >>";" ;
 	rLocalAddr = "local_address" >>rIPv4Address >>";" ;
 	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
 	rDatasetOpt = rBareToken >> "=" >> rDecimalNumber;

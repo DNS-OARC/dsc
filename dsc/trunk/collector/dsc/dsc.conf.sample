@@ -12,6 +12,12 @@ local_address 127.0.0.1;
 #
 run_dir "/tmp";
 
+# pid_file
+#
+#	filename where DSC should store its process-id
+#
+pid_file "/var/run/dsc.pid";
+
 # bpf_program
 #
 #	a berkely packet filter program.  it can be used to limit

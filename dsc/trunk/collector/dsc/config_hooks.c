@@ -49,6 +49,22 @@ set_run_dir(const char *dir)
     return 1;
 }
 
+int
+set_pid_file(const char *fn)
+{
+    FILE *fp;
+    syslog(LOG_INFO, "writing PID to %s", fn);
+    fp = fopen(fn, "w");
+    if (NULL == fp) {
+	perror(fn);
+	syslog(LOG_ERR, "fopen: %s: %s", fn, strerror(errno));
+	return 0;
+    }
+    fprintf(fp, "%d\n", getpid());
+    fclose(fp);
+    return 1;
+}
+
 
 int
 add_dataset(const char *name, const char *layer,
