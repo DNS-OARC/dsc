@@ -227,6 +227,7 @@ ParseConfig(const char *fn)
 	rConfig = *(
 		rInterface |
 		rRunDir |
+		rPidFile |
 		rLocalAddr |
 		rPacketFilterProg |
 		rDataset |

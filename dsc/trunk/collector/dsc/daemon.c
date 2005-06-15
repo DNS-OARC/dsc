@@ -22,6 +22,7 @@
 #include "pcap.h"
 
 char *progname = NULL;
+char *pid_file_name = NULL;
 int promisc_flag = 1;
 int debug_flag = 0;
 
@@ -58,6 +59,23 @@ daemonize(void)
 	close(fd);
     }
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
+}
+
+void
+write_pid_file(void)
+{
+    FILE *fp;
+    if (NULL == pid_file_name)
+	return;
+    syslog(LOG_INFO, "writing PID to %s", pid_file_name);
+    fp = fopen(pid_file_name, "w");
+    if (NULL == fp) {
+        perror(pid_file_name);
+        syslog(LOG_ERR, "fopen: %s: %s", pid_file_name, strerror(errno));
+	return;
+    }
+    fprintf(fp, "%d\n", getpid());
+    fclose(fp);
 }
 
 void
@@ -104,6 +122,7 @@ main(int argc, char *argv[])
 
     if (!debug_flag)
     	daemonize();
+    write_pid_file();
 
     /*
      * I'm using fork() in this loop, (a) out of laziness, and (b)

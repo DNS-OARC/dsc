@@ -50,21 +50,13 @@ set_run_dir(const char *dir)
 }
 
 int
-set_pid_file(const char *fn)
+set_pid_file(const char *s)
 {
-    FILE *fp;
-    syslog(LOG_INFO, "writing PID to %s", fn);
-    fp = fopen(fn, "w");
-    if (NULL == fp) {
-	perror(fn);
-	syslog(LOG_ERR, "fopen: %s: %s", fn, strerror(errno));
-	return 0;
-    }
-    fprintf(fp, "%d\n", getpid());
-    fclose(fp);
+    extern char *pid_file_name;
+    syslog(LOG_INFO, "PID file is: %s", s);
+    pid_file_name = strdup(s);
     return 1;
 }
-
 
 int
 add_dataset(const char *name, const char *layer,
