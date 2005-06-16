@@ -80,6 +80,11 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #	Set this to 'host' on FreeBSD-4 where the VLAN id that we
 #	get from BPF appears to already be in host byte order.
-bpf_vlan_tag_byte_order host;
+#bpf_vlan_tag_byte_order host;
 
-match_vlan 100 200;
+# match_vlan
+#
+#	A whitespace-separated list of VLAN IDs.  If set, only the
+#	packets with these VLAN IDs will be analyzed by DSC.
+#
+#match_vlan 100 200;
