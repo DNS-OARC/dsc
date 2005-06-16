@@ -10,7 +10,7 @@ local_address 127.0.0.1;
 #
 #	dsc passes this directory to chdir() after starting.
 #
-run_dir "/tmp";
+run_dir "/usr/local/dsc/var/run";
 
 # pid_file
 #
