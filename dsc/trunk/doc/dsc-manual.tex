@@ -831,7 +831,7 @@ The configuration file currently understands the following directives:
 	Specifies the DNS server's local IP address.  It is used
 	to determine the ``direction'' of an IP packet: sending,
 	receiving, or other.  You may specify multiple local addresses
-	if necessary.
+	(separated by whitespace) if necessary.
 
 	Example: {\tt local\_address 172.16.0.1;\/}
 
@@ -873,10 +873,12 @@ The configuration file currently understands the following directives:
 
 \item[bpf\_vlan\_tag\_byte\_order]
 
-	{\tt dsc\/} knows about VLAN tags.  Some operating systems (FreeBSD-4.x) have a bug
-	whereby the VLAN tag id is byte-swapped.  Valid values for this directive
-	are {\tt host\/} and {\tt net\/} (the default).    Set this to {\tt host\/}
-	if you suspect your operating system has the VLAN tag byte order bug.
+	{\tt dsc\/} knows about VLAN tags.  Some operating systems
+	(FreeBSD-4.x) have a bug whereby the VLAN tag id is
+	byte-swapped.  Valid values for this directive are {\tt
+	host\/} and {\tt net\/} (the default).    Set this to {\tt
+	host\/} if you suspect your operating system has the VLAN
+	tag byte order bug.
 
 	Example: {\tt bpf\_vlan\_tag\_byte\_order host;\/}
 
@@ -886,6 +888,12 @@ The configuration file currently understands the following directives:
 	VLANs are counted.
 
 	Example: {\tt match\_vlan 101 102;\/}
+
+\item[qname\_filter]
+
+	This directive allows you to define custom filters
+	to match query names in DNS messages.  Please see
+	Section~\ref{sec-qname-filter} for more information.
 
 \item[dataset]
 
@@ -1326,6 +1334,33 @@ the {\tt dataset\/} line:
 \noindent
 Note that multiple filters are ANDed together.  That is, they
 narrow the input stream, rather than broaden it.
+
+In addition to these pre-defined filters, you can add your own
+custom filters.
+
+\subsubsection{qname\_filter}
+\label{sec-qname-filter}
+
+The {\em qname\_filter} directive defines a new
+filter that uses regular expression matching on the QNAME field of
+a DNS message.  This may be useful if you have a server that is
+authoritative for a number of zones, but you want to limit
+your measurements to a small subset.  The {\em qname\_filter} directive
+takes two arguments: a name for the filter and a regular expression.
+For example:
+
+\begin{MyVerbatim}
+qname_filter MyFilterName example\.(com|net|org)$ ;
+\end{MyVerbatim}
+
+This filter matches queries (and responses) for names ending with
+{\em example.com\/}, {\em example.net\/}, and {\em example.org\/}.
+You can reference the named filter in the filters part of a {\em
+dataset\/} line.  For example:
+
+\begin{MyVerbatim}
+dataset qtype dns All:null Qtype:qtype queries-only,MyFilterName;
+\end{MyVerbatim}
 
 \subsection{Parameters}
 

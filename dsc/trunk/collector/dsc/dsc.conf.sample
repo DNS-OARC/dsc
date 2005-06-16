@@ -40,8 +40,15 @@ pid_file "/var/run/dsc.pid";
 #
 interface fxp0;
 
+# qname_filter
 #
-qname_filter example example\.com$
+#	Defines a custom QNAME-based filter for DNS messages.  If
+#	you refer to this named filter on a dataset line, then only
+#	queries or replies for matching QNAMEs will be counted.
+#	The QNAME argument is a regular expression.  For example:
+#
+#	qname_filter WWW-Only ^www\. ;
+#	dataset qtype dns All:null Qtype:qtype queries-only,WWW-Only ;
 
 
 #
