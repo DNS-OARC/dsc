@@ -13,7 +13,7 @@ dnl created by autoconf
 PRESET_CXXFLAGS="$CXXFLAGS"
 PRESET_LDFLAGS="$LDFLAGS"
 
-AM_INIT_AUTOMAKE([no-define])
+AM_INIT_AUTOMAKE([no-define nostdinc])
 AC_CONFIG_HEADERS(src/include/Hapy/config.h)
 AC_PREFIX_DEFAULT(/usr/local)
 
