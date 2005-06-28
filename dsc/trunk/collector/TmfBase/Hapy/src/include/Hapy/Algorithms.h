@@ -3,7 +3,7 @@
 #ifndef HAPY_ALGORITHMS__H
 #define HAPY_ALGORITHMS__H
 
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/Algorithm.h>
 #include <Hapy/RulePtr.h>
 #include <climits>

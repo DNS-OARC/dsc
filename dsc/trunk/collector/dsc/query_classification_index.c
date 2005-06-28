@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
 #ifndef T_A6
 #define T_A6 38
 #endif

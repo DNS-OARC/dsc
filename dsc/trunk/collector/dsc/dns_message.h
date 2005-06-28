@@ -39,3 +39,11 @@ void dns_message_init(void);
 #ifndef T_OPT
 #define T_OPT 41	/* OPT pseudo-RR, RFC2761 */
 #endif
+
+#ifndef T_AAAA
+#define T_AAAA 28
+#endif
+
+#ifndef C_CHAOS
+#define C_CHAOS 3
+#endif

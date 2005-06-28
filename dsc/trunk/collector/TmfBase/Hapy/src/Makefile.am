@@ -41,7 +41,7 @@ include_pkg_HEADERS = \
 	include/Hapy/RuleId.h \
 	include/Hapy/RulePtr.h \
 	include/Hapy/Rules.h \
-	include/Hapy/String.h \
+	include/Hapy/HapyString.h \
 	include/Hapy/Version.h
 
 nodist_include_pkg_HEADERS = \

@@ -7,7 +7,7 @@
 #include <Hapy/Area.h>
 #include <Hapy/RuleId.h>
 #include <Hapy/PreeKids.h>
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/IosFwd.h>
 
 namespace Hapy {

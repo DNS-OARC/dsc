@@ -3,7 +3,7 @@
 #ifndef HAPY_PRETTY_PRINT__H
 #define HAPY_PRETTY_PRINT__H
 
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/IosFwd.h>
 
 namespace Hapy {

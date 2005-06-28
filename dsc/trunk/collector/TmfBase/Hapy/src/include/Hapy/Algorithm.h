@@ -4,7 +4,7 @@
 #define HAPY_ALGORITHM__H
 
 #include <Hapy/Result.h>
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/IosFwd.h>
 #include <Hapy/RulePtr.h>
 

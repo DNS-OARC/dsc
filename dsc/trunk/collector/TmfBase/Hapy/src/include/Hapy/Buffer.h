@@ -4,7 +4,7 @@
 #define HAPY_BUFFER__H
 
 #include <Hapy/Rules.h>
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/IosFwd.h>
 #include <vector>
 

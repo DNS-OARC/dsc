@@ -4,7 +4,7 @@
 #define HAPY_AREA__H
 
 #include <Hapy/config.h>
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/IosFwd.h>
 
 namespace Hapy {

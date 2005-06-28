@@ -4,7 +4,7 @@
 #define HAPY_RULE_ID__H
 
 #include <Hapy/IosFwd.h>
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 
 namespace Hapy {
 

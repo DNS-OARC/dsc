@@ -5,7 +5,7 @@
 
 #include <Hapy/config.h>
 #include <Hapy/Result.h>
-#include <Hapy/String.h>
+#include <Hapy/HapyString.h>
 #include <Hapy/IosFwd.h>
 #include <Hapy/FunAction.h>
 #include <Hapy/RulePtr.h>
