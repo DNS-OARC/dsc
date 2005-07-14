@@ -103,10 +103,11 @@ my $std_accum_yaxes = {
   bynode => {
     dataset 	=> 'qtype',
     datafile	=> 'qtype',
-    keys	=> [ qw(a b c d e f g h i j k l m) ],
-    names	=> [ qw(a b c d e f g h i j k l m) ],
+    keys	=> [ qw(a b c d e f g h i j k l m n o) ],
+    names	=> [ qw(a b c d e f g h i j k l m n o) ],
     colors	=> [ qw (red orange yellow brightgreen brightblue
-		     purple magenta redorange yellow2 green darkblue) ],
+		     purple magenta redorange yellow2 green darkblue
+		     yelloworange powderblue claret lavender ) ],
     data_reader => \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
     plot_type	=> 'trace',
