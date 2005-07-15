@@ -18,7 +18,6 @@ END { }
 
 use strict;
 use warnings;
-use NDBM_File;
 use IO::Socket::INET;
 
 my $qtype_keys	= [ qw(1 2  5     6   12  15 28   33  38 255 else) ];
