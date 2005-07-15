@@ -3,7 +3,6 @@ DSC/extractor/config.pm
 DSC/grapher.pm
 DSC/grapher/config.pm
 DSC/grapher/template.pm
-DSC/mysql.pm
 DSC/ploticus.pm
 DSC/putfile.pm
 Makefile.PL
