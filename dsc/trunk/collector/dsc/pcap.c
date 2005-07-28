@@ -75,6 +75,8 @@ dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
 extern dns_message *handle_dns(const char *buf, int len);
+extern int debug_flag;
+static int debug_count = 20;
 static DMC *dns_message_callback;
 static IPC *ip_message_callback;
 static struct timeval last_ts;
@@ -215,6 +217,8 @@ match_vlan(const char *pkt)
 	vlan = ntohs(vlan) & 0xfff;
     else
 	vlan = vlan & 0xfff;
+    if (debug_flag)
+	fprintf(stderr, "vlan is %d\n", vlan);
     for (i = 0; i < n_vlan_ids; i++)
 	if (vlan_ids[i] == vlan)
 	    return 1;
@@ -258,6 +262,8 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     dns_message *m;
     last_ts = hdr->ts;
+    if (debug_flag)
+	fprintf(stderr, "handle_pcap()\n");
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
     m = handle_datalink(pkt, hdr->caplen);
@@ -266,6 +272,8 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
     m->ts = hdr->ts;
     dns_message_callback(m);
     free(m);
+    if (debug_flag && --debug_count == 0)
+	exit(0);
 }
 
 

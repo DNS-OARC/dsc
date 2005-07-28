@@ -134,8 +134,11 @@ main(int argc, char *argv[])
      * collector exits.
      */
 
+    if (!debug_flag) {
+        syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (time(NULL) % 60));
+        sleep(60 - (time(NULL) % 60));
+    }
     syslog(LOG_INFO, "Running");
-    sleep(60 - (time(NULL) % 60));
     for (;;) {
 	pid_t cpid = fork();
 	if (0 == cpid) {
