@@ -86,6 +86,12 @@ sub cgi { $cgi; }
 
 
 sub run {
+	# read config file early so we can set back the clock if necessary
+	#
+	$CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
+	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
+	$now -= $CFG->{embargo} if defined $CFG->{embargo};
+
 	debug(1, "===> starting at " . strftime('%+', localtime($now)));
 	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
@@ -151,8 +157,6 @@ sub run {
 		$ARGS{key});
 
 	$ACCUM_TOP_N = 20 if ($ARGS{mini});
-	$CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
-	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 
 	if ('html' eq $ARGS{content}) {
 		if (!reason_to_not_plot()) {
@@ -955,6 +959,9 @@ sub read_config {
 		if ($directive =~ /windows$/) {
 			$C{$directive} = \@x;
 		}
+		if ($directive eq 'embargo') {
+			$C{$directive} = $x[0];
+		}
 	}
 	close(F);
 	\%C;
@@ -1144,9 +1151,11 @@ sub img_markup {
 		$t = "data:image/png;base64,\n";
 		$t .= encode_base64($IconData{$s});
 		$s = $t;
+	} else {
+		$s = "/dsc/$s";
 	}
 	html_markup('img',
-		{ class => $c, src => "/dsc/$s", alt => $a },
+		{ class => $c, src => $s, alt => $a },
 		undef);
 }
 
