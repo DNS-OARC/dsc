@@ -86,9 +86,10 @@ sub cgi { $cgi; }
 
 
 sub run {
+	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
 	# read config file early so we can set back the clock if necessary
 	#
-	$CFG = read_config('/usr/local/dsc/etc/dsc-grapher.cfg');
+	$CFG = read_config($cfgfile);
 	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	$now -= $CFG->{embargo} if defined $CFG->{embargo};
 
@@ -811,6 +812,30 @@ sub munge_2d_to_1d {
 	\%newdata;
 }
 
+sub munge_anonymize_ip {
+	# anonymize IP addresses, leaving only 1st octet.
+	# since anonymizing may result in colissions, we sum the values
+	my $data = shift;
+	return $data unless ($CFG->{anonymize_ip});
+	my %newdata;
+	foreach my $k1 (keys %$data) {
+		next if ($k1 eq $SKIPPED_KEY);
+		next if ($k1 eq $SKIPPED_SUM_KEY);
+		my @f = split(/\./, $k1);
+		my $newkey = join('.', $f[0], 0, 0, 0);
+		if ('HASH' eq ref($data->{$k1})) {
+			# assume 2d
+			foreach my $k2 (keys %{$data->{$k1}}) {
+				$newdata{$newkey}{$k2} += $data->{$k1}{$k2};
+			}
+		} else {
+			# assume 1d
+			$newdata{$newkey} += $data->{$k1};
+		}
+	}
+	\%newdata;
+}
+
 sub convert_to_percentage {
 	my $data = shift;
 	my $type = shift;
@@ -961,6 +986,9 @@ sub read_config {
 		}
 		if ($directive eq 'embargo') {
 			$C{$directive} = $x[0];
+		}
+		if ($directive eq 'anonymize_ip') {
+			$C{$directive} = 1;
 		}
 	}
 	close(F);
