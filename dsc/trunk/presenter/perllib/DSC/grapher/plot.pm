@@ -39,7 +39,7 @@ my $client_subnet2_keys =   [ qw(
 	) ];
 
 my $client_subnet2_names = [
-        "Other",
+        "Unclassified",
         "Non-Authoritative TLD",
         "root-servers.net",
         "localhost",
@@ -224,6 +224,7 @@ my $std_accum_yaxes = {
     },
     data_reader => \&DSC::extractor::read_data2,
     data_summer => \&DSC::grapher::data_summer_0d,
+    munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
     yaxes	=> $std_accum_yaxes,
     plottitle	=> 'Busiest Client Subnets',
     map_legend	=> 1,
@@ -237,6 +238,7 @@ my $std_accum_yaxes = {
 #    colors	=> [ qw(red) ],
 #    data_reader => \&DSC::extractor::read_data2,
 #    data_summer => \&DSC::grapher::data_summer_0d,
+#    munge_func	=> \&DSC::grapher::munge_anonymize_ip,
 #    yaxes	=> $std_trace_yaxes,
 #    plottitle	=> '# /24s seen per minute',
 #    map_legend	=> 0,
@@ -253,6 +255,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     plottitle	=> 'Query Classifications by Subnets',
     map_legend	=> 1,
+    munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
 
   client_subnet2_trace => {
@@ -291,6 +294,7 @@ my $std_accum_yaxes = {
     },
     plottitle	=> 'Query Classifications by Subnets',
     map_legend	=> 1,
+    munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
 
   qtype_vs_all_tld => {
@@ -545,6 +549,7 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_1d,
     plottitle	=> 'Rcodes and Addrs',
     map_legend	=> 1,
+    munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
 
   ipv6_rsn_abusers_accum => {
@@ -560,6 +565,7 @@ my $std_accum_yaxes = {
     yaxes	=> $std_accum_yaxes,
     plottitle	=> 'Clients sending excessive root-servers.net queries',
     map_legend	=> 1,
+    munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
 
   chaos_types_and_names => {
