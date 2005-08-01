@@ -110,7 +110,7 @@ sub run {
 
 	$PLOT = $DSC::grapher::config::PLOTS{$ARGS{plot}};
 	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
-	error("Unknown server: $ARGS{server}") unless (defined ($CFG->{servers}{$ARGS{server}}));
+	error("Unknown server: $ARGS{server}") unless ('none' eq $ARGS{server} || defined ($CFG->{servers}{$ARGS{server}}));
 	error("Unknown node: $ARGS{node}") unless ('all' eq $ARGS{node} || (grep {$_ eq $ARGS{node}} @{$CFG->{servers}{$ARGS{server}}}));
 	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 	$dbg_lvl = $PLOT->{debugflag} if defined($PLOT->{debugflag});
@@ -777,7 +777,7 @@ sub error {
 	my $msg = shift;
 	print $cgi->header(-type=>'text/html',-expires=>$expires_time);
 	print "<h2>$0 ERROR</h2><p>$msg\n";
-	die "$msg\n";
+	exit(1);
 }
 
 sub dumpdata {
