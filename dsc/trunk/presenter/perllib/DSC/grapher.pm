@@ -151,8 +151,8 @@ sub run {
 	debug(1, "ARGS=" . Dumper(\%ARGS));
 	my $cache_name = cache_name($ARGS{server},
 		$ARGS{node},
-		$ARGS{plot},
-		$ARGS{end} == $now ? 0 : $ARGS{end},
+		$ARGS{plot} . $CFG->{anonymize_ip} ? '_anon' : '',
+		$ARGS{end},
 		$ARGS{window},
 		$ARGS{binsize},
 		$ARGS{mini},
