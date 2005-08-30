@@ -112,6 +112,7 @@ sub run {
 	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 	error("Unknown server: $ARGS{server}") unless ('none' eq $ARGS{server} || defined ($CFG->{servers}{$ARGS{server}}));
 	error("Unknown node: $ARGS{node}") unless ('all' eq $ARGS{node} || (grep {$_ eq $ARGS{node}} @{$CFG->{servers}{$ARGS{server}}}));
+	error("Time window cannot be larger than a month") if ($ARGS{window} > 86400*31);
 	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 	$dbg_lvl = $PLOT->{debugflag} if defined($PLOT->{debugflag});
 
