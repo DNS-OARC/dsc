@@ -329,7 +329,23 @@ my $std_accum_yaxes = {
     colors	=> $qtype_colors,
     data_reader => \&DSC::extractor::read_data3,
     data_summer => \&DSC::grapher::data_summer_1d,
-    yaxes	=> $std_accum_yaxes,
+    yaxes	=>  {
+	rate => {
+	    label => 'Mean Query Rate (q/s)',
+	    divideflag => 1,
+	    default => 1,
+	},
+	percent => {
+	    label => 'Percent of Invalid Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
+	count => {
+	    label => 'Number of Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
+    },
     plottitle   => 'Most Popular TLDs Queried',
     map_legend	=> 1,
   },
@@ -351,7 +367,23 @@ my $std_accum_yaxes = {
     colors	=> $qtype_colors,
     data_reader	=> \&DSC::extractor::read_data3,
     data_summer	=> \&DSC::grapher::data_summer_1d,
-    yaxes	=> $std_accum_yaxes,
+    yaxes	=>  {
+	rate => {
+	    label => 'Mean Query Rate (q/s)',
+	    divideflag => 1,
+	    default => 1,
+	},
+	percent => {
+	    label => 'Percent of Valid Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
+	count => {
+	    label => 'Number of Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
+    },
     plottitle  	=> 'Most Popular TLDs Queried',
     map_legend	=> 1,
   },
@@ -374,6 +406,23 @@ my $std_accum_yaxes = {
     data_reader	=> \&DSC::extractor::read_data3,
     data_summer	=> \&DSC::grapher::data_summer_1d,
     yaxes	=> $std_accum_yaxes,
+    yaxes	=>  {
+	rate => {
+	    label => 'Mean Query Rate (q/s)',
+	    divideflag => 1,
+	    default => 1,
+	},
+	percent => {
+	    label => 'Percent of Numeric Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
+	count => {
+	    label => 'Number of Queries',
+    	    divideflag => 0,
+	    default => 0,
+	},
+    },
     plottitle  	=> 'Most Popular TLDs Queried',
     map_legend	=> 1,
   },
