@@ -177,7 +177,8 @@ sub run {
 			DELIMITERS => ['[', ']']
 		);
 		error("Text::Template failed for plot.page") unless defined ($t);
-		print $cgi->header(-type=>'text/html',-expires=>$expires_time);
+		print $cgi->header(-type=>'text/html',-expires=>$expires_time)
+			unless (defined($CFG->{'no_http_header'}));
 		my %vars_to_pass = (
 			navbar_servers_nodes => navbar_servers_nodes(),
 			navbar_plot => navbar_plot(),
@@ -991,6 +992,9 @@ sub read_config {
 			$C{$directive} = $x[0];
 		}
 		if ($directive eq 'anonymize_ip') {
+			$C{$directive} = 1;
+		}
+		if ($directive eq 'no_http_header') {
 			$C{$directive} = 1;
 		}
 	}
