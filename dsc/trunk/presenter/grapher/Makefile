@@ -1,5 +1,5 @@
 
-LIBEXECFILES += dsc-grapher.pl
+LIBEXECFILES += dsc-grapher.pl.sample
 
 ETCFILES  += dsc-grapher.cfg.sample
 
@@ -20,6 +20,8 @@ all:
 install:
 	@if test -n "${INSTALLDIR}" ; then echo "installing in $$INSTALLDIR" ; else echo "set INSTALLDIR first"; false ; fi
 	@test -d ${INSTALLDIR}/libexec/ || mkdir ${INSTALLDIR}/libexec/
+	install -m 755 ${LIBEXECFILES} ${INSTALLDIR}/libexec/
+	test -f ${INSTALLDIR}/libexec/dsc-grapher.pl || install -m 755 dsc-grapher.pl.sample ${INSTALLDIR}/libexec/dsc-grapher.pl
 	install -m 755 ${LIBEXECFILES} ${INSTALLDIR}/libexec/
 	@test -d ${INSTALLDIR}/etc/ || mkdir ${INSTALLDIR}/etc/
 	install -m 644 ${ETCFILES} ${INSTALLDIR}/etc/
