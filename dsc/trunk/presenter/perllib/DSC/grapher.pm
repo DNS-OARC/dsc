@@ -281,7 +281,7 @@ sub load_data {
 		$first += (86400 - ($ARGS{end} % 86400));
 	}
 	if (($last - $first < 86400) && yymmdd($last) ne yymmdd($first)) {
-		# check if first and last fall on different days (UTC)
+		# check if first and last fall on different days (per $TZ)
 		# and the window is less than a day.  If so, we need
 		# to make sure that the datafile that 'last' lies in
 		# gets read.
@@ -472,8 +472,8 @@ sub time_descr {
 		$to_t += (86400 - ($ARGS{end} % 86400) - 1);
 		$to_t = $now if ($to_t > $now);
 	}
-	my $from_ctime = strftime("%b %d, %Y, %T", gmtime($from_t));
-	my $to_ctime = strftime("%b %d, %Y, %T UTC", gmtime($to_t));
+	my $from_ctime = strftime("%b %d, %Y, %T", localtime($from_t));
+	my $to_ctime = strftime("%b %d, %Y, %T %Z", localtime($to_t));
 	"From $from_ctime To $to_ctime";
 }
 
@@ -996,6 +996,9 @@ sub read_config {
 		}
 		if ($directive eq 'no_http_header') {
 			$C{$directive} = 1;
+		}
+		if ($directive eq 'timezone') {
+			$ENV{TZ} = $x[0];
 		}
 	}
 	close(F);

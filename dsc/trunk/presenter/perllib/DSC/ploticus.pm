@@ -114,7 +114,7 @@ sub Ploticus_create_datafile {
 		foreach my $k1 (@$keysarrayref) {
 			push (@v, defined($newhash{$tokey}{$k1}) ? $newhash{$tokey}{$k1} / ($DF*$COUNT{$tokey}{$k1}): '-');
 		}
-		print $FH join(' ', POSIX::strftime($strftimefmt, gmtime($tokey)), @v), "\n";
+		print $FH join(' ', POSIX::strftime($strftimefmt, localtime($tokey)), @v), "\n";
 		$nl++;
 	}
 	close($FH);
@@ -149,7 +149,7 @@ sub Ploticus_create_datafile_type2 {
 	# now write the new data
 	#
 	foreach my $tokey (sort {$a <=> $b} keys %newhash) {
-		my $timestr = POSIX::strftime($strftimefmt, gmtime($tokey));
+		my $timestr = POSIX::strftime($strftimefmt, localtime($tokey));
 		print $FH $timestr, ' ', defined($newhash{$tokey}) ? $newhash{$tokey} / ($COUNT{$tokey}) : '-', "\n";
 	}
 	close($FH);
@@ -173,8 +173,8 @@ sub Ploticus_areadef{
 	if (defined($window)) {
 		my $then = $end - $window;
 	#	   $then -= ($then % &window2increment($window));
-		my $range_begin = POSIX::strftime($strftimefmt, gmtime($then));
-		my $range_end = POSIX::strftime($strftimefmt, gmtime($end));
+		my $range_begin = POSIX::strftime($strftimefmt, localtime($then));
+		my $range_end = POSIX::strftime($strftimefmt, localtime($end));
 		P("xrange: $range_begin $range_end");
 	} elsif (defined($ropts->{-xstackfields})) {
 		P("xautorange: datafield=$ropts->{-xstackfields} combomode=stack lowfix=0");
