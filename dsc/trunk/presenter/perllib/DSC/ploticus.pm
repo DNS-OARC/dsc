@@ -262,6 +262,7 @@ sub Ploticus_lines_stacked {
 sub Ploticus_xaxis {
 	my $ropts = shift;
 	my $window = $ropts->{-window};
+	my $TZ = POSIX::strftime "%Z", localtime(time);
 	P("#proc xaxis");
 	if (!defined($window)) {
 		P("stubs: inc");
@@ -277,15 +278,15 @@ sub Ploticus_xaxis {
 		}
 		P("autodays: yes");
 		P("stubformat: hh:mm");
-		P("label: Time, UTC");
+		P("label: Time, $TZ");
 	} elsif ($window > 2*3600) {
 		P("stubs: inc 30 minutes");
 		P("stubformat: hh:mm");
-		P("label: Time, UTC");
+		P("label: Time, $TZ");
 	} else {
 		P("stubs: inc 10 minutes");
 		P("stubformat: hh:mm");
-		P("label: Time, UTC");
+		P("label: Time, $TZ");
 	}
 	PO($ropts, 'label');
 	PO($ropts, 'grid');
