@@ -93,7 +93,7 @@ sub run {
 	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	$now -= $CFG->{embargo} if defined $CFG->{embargo};
 
-	debug(1, "===> starting at " . strftime('%+', localtime($now)));
+	debug(1, "===> starting at " . POSIX::strftime('%+', localtime($now)));
 	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
 	my $untaint = CGI::Untaint->new($cgi->Vars);
@@ -197,7 +197,7 @@ sub run {
 			cat_image($cache_name);
 		}
 	}
-	debug(1, "<=== finished at " . strftime('%+', localtime($now)));
+	debug(1, "<=== finished at " . POSIX::strftime('%+', localtime($now)));
 }
 
 sub reason_to_not_plot {
@@ -472,8 +472,8 @@ sub time_descr {
 		$to_t += (86400 - ($ARGS{end} % 86400) - 1);
 		$to_t = $now if ($to_t > $now);
 	}
-	my $from_ctime = strftime("%b %d, %Y, %T", localtime($from_t));
-	my $to_ctime = strftime("%b %d, %Y, %T %Z", localtime($to_t));
+	my $from_ctime = POSIX::strftime("%b %d, %Y, %T", localtime($from_t));
+	my $to_ctime = POSIX::strftime("%b %d, %Y, %T %Z", localtime($to_t));
 	"From $from_ctime To $to_ctime";
 }
 
