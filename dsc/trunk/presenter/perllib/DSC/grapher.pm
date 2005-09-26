@@ -1150,7 +1150,7 @@ sub delete_default_args {
 	my $href = shift;
 	my $pn = $ARGS{plot};
 	unless (defined($pn)) {
-		carp "shit";
+		carp "oops";
 	}
 	delete $href->{server} if ('none' eq $href->{server});
 	delete $href->{node} if ('all' eq $href->{node});
