@@ -2,6 +2,7 @@ DSC/extractor.pm
 DSC/extractor/config.pm
 DSC/grapher.pm
 DSC/grapher/config.pm
+DSC/grapher/text.pm
 DSC/grapher/template.pm
 DSC/ploticus.pm
 DSC/putfile.pm

@@ -3,6 +3,7 @@ package DSC::grapher;
 use DSC::ploticus;
 use DSC::extractor;
 use DSC::grapher::config;
+use DSC::grapher::text;
 
 use POSIX;
 use List::Util qw(max);
@@ -60,6 +61,7 @@ my $use_data_uri;
 my %ARGS;	# from CGI
 my $CFG;	# from dsc-cfg.pl
 my $PLOT;	# = $DSC::grapher::config::PLOTS{name}
+my $TEXT;	# = $DSC::grapher::text::TEXTS{name}
 my $ACCUM_TOP_N;
 my $cgi;
 my $now;
@@ -109,6 +111,7 @@ sub run {
 	$ARGS{key} = $untaint->extract(-as_printable => 'key');		# sanity check below
 
 	$PLOT = $DSC::grapher::config::PLOTS{$ARGS{plot}};
+	$TEXT = $DSC::grapher::text::TEXTS{$ARGS{plot}};
 	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 	error("Unknown server: $ARGS{server}") unless ('none' eq $ARGS{server} || defined ($CFG->{servers}{$ARGS{server}}));
 	error("Unknown node: $ARGS{node}") unless ('all' eq $ARGS{node} || (grep {$_ eq $ARGS{node}} @{$CFG->{servers}{$ARGS{server}}}));
@@ -185,6 +188,7 @@ sub run {
 			navbar_window => navbar_window(),
 			navbar_yaxis => navbar_yaxis(),
 			img_with_map => img_with_map($cache_name),
+			description => $TEXT->{description},
 		);
 		print $t->fill_in(
 			PACKAGE => 'DSC::grapher::template',
