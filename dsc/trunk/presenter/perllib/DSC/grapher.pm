@@ -4,6 +4,7 @@ use DSC::ploticus;
 use DSC::extractor;
 use DSC::grapher::plot;
 use DSC::grapher::text;
+use DSC::grapher::config;
 
 use POSIX;
 use List::Util qw(max);
@@ -91,7 +92,7 @@ sub run {
 	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
 	# read config file early so we can set back the clock if necessary
 	#
-	$CFG = read_config($cfgfile);
+	$CFG = DSC::grapher::config::read_config($cfgfile);
 	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	$now -= $CFG->{embargo} if defined $CFG->{embargo};
 
@@ -975,38 +976,6 @@ sub invalid_tld_filter {
 	return 0 if (valid_tld_filter($tld));
 	return 0 if (numeric_tld_filter($tld));
 	return 1;
-}
-
-sub read_config {
-	my $f = shift;
-	my %C;
-	open(F, $f) || die "$f: $!\n";
-	while (<F>) {
-		my @x = split;
-		next unless @x;
-		my $directive = shift @x;
-		if ($directive eq 'server') {
-			my $servername = shift @x;
-			$C{servers}{$servername} = \@x;
-		}
-		if ($directive =~ /windows$/) {
-			$C{$directive} = \@x;
-		}
-		if ($directive eq 'embargo') {
-			$C{$directive} = $x[0];
-		}
-		if ($directive eq 'anonymize_ip') {
-			$C{$directive} = 1;
-		}
-		if ($directive eq 'no_http_header') {
-			$C{$directive} = 1;
-		}
-		if ($directive eq 'timezone') {
-			$ENV{TZ} = $x[0];
-		}
-	}
-	close(F);
-	\%C;
 }
 
 sub data_summer_0d {

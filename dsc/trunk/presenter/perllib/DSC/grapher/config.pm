@@ -6,6 +6,7 @@ BEGIN {
         $VERSION     = 1.00;
         @ISA         = qw(Exporter);
         @EXPORT      = qw(
+		&read_config
         );
         %EXPORT_TAGS = ( );
         @EXPORT_OK   = qw();
