@@ -1,4 +1,4 @@
-package DSC::grapher::config;
+package DSC::grapher::plot;
 
 BEGIN {
         use Exporter   ();

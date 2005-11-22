@@ -2,7 +2,7 @@ package DSC::grapher;
 
 use DSC::ploticus;
 use DSC::extractor;
-use DSC::grapher::config;
+use DSC::grapher::plot;
 use DSC::grapher::text;
 
 use POSIX;
@@ -60,7 +60,7 @@ arpa .
 my $use_data_uri;
 my %ARGS;	# from CGI
 my $CFG;	# from dsc-cfg.pl
-my $PLOT;	# = $DSC::grapher::config::PLOTS{name}
+my $PLOT;	# = $DSC::grapher::plot::PLOTS{name}
 my $TEXT;	# = $DSC::grapher::text::TEXTS{name}
 my $ACCUM_TOP_N;
 my $cgi;
@@ -110,7 +110,7 @@ sub run {
 	$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis')	|| undef;
 	$ARGS{key} = $untaint->extract(-as_printable => 'key');		# sanity check below
 
-	$PLOT = $DSC::grapher::config::PLOTS{$ARGS{plot}};
+	$PLOT = $DSC::grapher::plot::PLOTS{$ARGS{plot}};
 	$TEXT = $DSC::grapher::text::TEXTS{$ARGS{plot}};
 	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
 	error("Unknown server: $ARGS{server}") unless ('none' eq $ARGS{server} || defined ($CFG->{servers}{$ARGS{server}}));
@@ -207,7 +207,7 @@ sub run {
 sub reason_to_not_plot {
 	return 'Please select a server' if ($ARGS{server} eq 'none');
 	return 'Please select a plot' if ($ARGS{plot} eq 'none');
-	my $PLOT = $DSC::grapher::config::PLOTS{$ARGS{plot}};
+	my $PLOT = $DSC::grapher::plot::PLOTS{$ARGS{plot}};
 	return 'Please select a Query Attributes sub-item' if ($PLOT->{plot_type} eq 'none');
 	undef;
 }
@@ -1104,7 +1104,7 @@ sub img_with_map {
 	}
 
 	my $pn = $ARGS{plot};
-	my $withmap = ($DSC::grapher::config::PLOTS{$pn}->{map_legend}) ? 1 : 0;
+	my $withmap = ($DSC::grapher::plot::PLOTS{$pn}->{map_legend}) ? 1 : 0;
 	if ($withmap) {
 		$result .= html_markup('map', {name=>'TheMap'}, mapfile_to_buf($cache_name));
 		$attrs{usemap} = '#TheMap';
@@ -1159,7 +1159,7 @@ sub delete_default_args {
 	delete $href->{server} if ('none' eq $href->{server});
 	delete $href->{node} if ('all' eq $href->{node});
 	delete $href->{binsize} if (default_binsize($ARGS{window}) == $href->{binsize});
-	delete $href->{binsize} unless ($DSC::grapher::config::PLOTS{$pn}->{plot_type} eq 'trace');
+	delete $href->{binsize} unless ($DSC::grapher::plot::PLOTS{$pn}->{plot_type} eq 'trace');
 	delete $href->{end} if ((abs($now - $href->{end}) / $href->{window}) < 0.20);
 	delete $href->{window} if (3600*4 == $href->{window});
 	delete $href->{plot} if ('none' eq $href->{plot});
@@ -1286,7 +1286,7 @@ sub navbar_plot {
 sub navbar_window {
 	my @items = ();
 	my $pn = $ARGS{plot};
-	my $PLOT = $DSC::grapher::config::PLOTS{$pn};
+	my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
 	if (defined($PLOT->{plot_type}) && $PLOT->{plot_type} =~ /^accum/) {
 		foreach my $w (@{$CFG->{accum_windows}}) {
 			push(@items, navbar_item('window',units_to_seconds($w),$w));
@@ -1322,7 +1322,7 @@ sub navbar_window {
 sub navbar_yaxis {
 	my @items = ();
 	my $pn = $ARGS{plot};
-	my $PLOT = $DSC::grapher::config::PLOTS{$pn};
+	my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
 	foreach my $t (keys %{$PLOT->{yaxes}}) {
 		push(@items, navbar_item('yaxis',$t, $PLOT->{yaxes}{$t}{label}));
 	}
