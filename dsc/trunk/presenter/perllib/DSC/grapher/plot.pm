@@ -140,9 +140,9 @@ my $std_accum_yaxes = {
   },
 
   rcode => {
-    keys	=> [ qw(0 3 5 8 else) ],
-    names	=> [ qw(NOERROR NXDOMAIN REFUSED NXRRSET Other) ],
-    colors	=> [ qw(brightgreen red blue orange purple) ],
+    keys	=> [ qw(0 2 3 5 8 else) ],
+    names	=> [ qw(NOERROR SERVFAIL NXDOMAIN REFUSED NXRRSET Other) ],
+    colors	=> [ qw(brightgreen yellow red blue orange purple) ],
     data_reader => \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
     plot_type	=> 'trace',
