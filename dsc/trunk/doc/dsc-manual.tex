@@ -1373,6 +1373,7 @@ dataset qtype dns All:null Qtype:qtype queries-only,MyFilterName;
 \end{MyVerbatim}
 
 \subsection{Parameters}
+\label{sec-dataset-params}
 
 \noindent
 {\tt dsc\/} currently supports the following optional parameters:
@@ -1430,25 +1431,74 @@ A dataset XML file has the following structure:
 {\em Label1\/}, and
 {\em Label2\/} come from the dataset definition in {\em dsc.conf\/}.
 
-\noindent
 The {\em start\_time\/} and {\em stop\_time\/} attributes
 are given in Unix seconds.  They are normally 60-seconds apart.
+{\tt dsc} usually starts a new measurement interval on 60 second
+boundaries. That is:
+
+\begin{equation}
+stop\_time \bmod{60} == 0
+\end{equation}
+
+The LABEL1 VAL attributes ({\em D1-V1\/}, {\em D1-V2\/}, etc) are
+values for the first dimension indexer.  
+Similarly, the LABEL2 VAL attributes ({\em D2-V1\/}, {\em D2-V2\/},
+{\em D2-V3\/}) are values for the second dimension indexer.
+For some indexers these
+values are numeric, for others they are strings.  If the value
+contains certain non-printable characters, the string is base64-encoded
+and the optional BASE64 attribute is set to 1.
+
+There are two special VALs that help keep large datasets down
+to a reasonable size: {\tt -:SKIPPED:-\/}  and {\tt -:SKIPPED\_SUM:-\/}.
+These may be present on datasets that use the {\em min-count\/}
+and {\em max-cells\/} parameters (see Section~\ref{sec-dataset-params}).
+{\tt -:SKIPPED:-\/} is the number of cells that were not included
+in the XML output.  {\tt -:SKIPPED\_SUM:-\/}, on the other hand, is the
+sum of the counts for all the skipped cells.
+
+Note that ``one-dimensional datasets'' still use two dimensions in
+the XML file.  The first dimension type and value will be ``All'',
+as shown in the example below.
+
+The {\em count\/} values are always integers.  If the count for
+a particular tuple is zero, it should not be included in the
+XML file.
+
+Note that the contents of the XML file do not indicate
+where it came from.  In particular, the server and node that
+it came from are not present.  Instead, DSC relies on the
+presenter to store XML files in a directory hierarchy
+with the server and node as directory names.
+
 
 \noindent
-{\em D1-V1\/}, {\em D1-V2\/}, etc are values for the
-first dimension indexer.  For some indexers these values are
-numeric, for others they are strings.  If the value contains
-certain non-printable characters, the string is base64-encoded
-and the optional {\em base64\/} attribute is set to 1.
+Here is a short sample XML file with real content:
+\begin{MyVerbatim}
+<array name="rcode" dimensions="2" start_time="1154649600"
+        stop_time="1154649660">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Rcode"/>
+  <data>
+    <All val="ALL">
+      <Rcode val="0" count="70945"/>
+      <Rcode val="3" count="50586"/>
+      <Rcode val="4" count="121"/>
+      <Rcode val="1" count="56"/>
+      <Rcode val="5" count="44"/>
+    </All>
+  </data>
+</array>
+\end{MyVerbatim}
 
 \noindent
-Similarly, {\em D1-V1\/}, {\em D1-V2\/}, {\em D1-V2\/} are
-values for the second dimension indexer.
+Please see 
+\path|http://dns.measurement-factory.com/tools/dsc/sample-xml/|
+for more sample XML files.
 
-\noindent
-The {\em count\/} values are always integers.
-
-\noindent
+The XML is not very strict and might cause XML purists to cringe.
+{\tt dsc} writes the XML files the old-fasioned way (with printf())
+and reads them with Perl's XML::Simple module.
 Here is a possibly-valid DTD for the dataset XML format.
 Note, however, that the {\em LABEL1\/}
 and {\em LABEL2\/} strings are different
@@ -1474,6 +1524,30 @@ for each dataaset:
 
 ]> 
 \end{MyVerbatim}
+
+\subsection{XML File Naming Conventions}
+
+{\tt dsc\/} relies on certain file naming conventions for XML files.
+The file name should be of the format:
+
+\begin{quote}
+{\em timestamp\/}.{\em dataset\/}.xml
+\end{quote}
+
+\noindent
+For example:
+
+\begin{quote}
+1154649660.qtype\_vs\_qnamelen.xml
+\end{quote}
+
+\noindent
+Dataset names come from {\em dsc.conf\/}, and should match the NAME
+attribute of the ARRAY tag in the XML file.  The timestamp is in
+Unix epoch seconds and is usually the same as the {\em stop\_time\/}
+value.
+
+
 
 \section{Archived Data Format}
 
