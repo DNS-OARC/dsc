@@ -484,6 +484,44 @@ my $std_accum_yaxes = {
    }
   },
 
+  direction => {
+    dataset => 'direction_vs_ipproto',
+    datafile => 'direction_vs_ipproto',
+    plot_type => 'trace',
+    keys	=> [qw(sent recv else)],
+    names	=> [qw(Sent Recv Other)],
+    colors	=> [qw(red brightgreen purple orange)],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    yaxes	=> {
+        rate => {
+            label => 'Packet Rate (p/s)',
+            divideflag => 1,
+            default => 1,
+        },
+        percent => {
+            label => 'Percent of Packets',
+            divideflag => 0,
+            default => 0,
+        },
+    },
+    plottitle   => 'IP packet direction',
+    map_legend	=> 1,
+    munge_func  => sub {
+        my $data = shift;
+        my %newdata;
+        foreach my $t (keys %$data) {
+                foreach my $k1 (keys %{$data->{$t}}) {
+                        foreach my $k2 (keys %{$data->{$t}{$k1}}) {
+                                $newdata{$t}{$k1} += $data->{$t}{$k1}{$k2}
+;
+                        }
+                }
+        }
+        \%newdata;
+   }
+  },
+
   query_attrs => {
     plot_type	=> 'none',
     # not a real plot, but we get errors if these members aren't present
