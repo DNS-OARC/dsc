@@ -42,5 +42,7 @@ tar czf $TF MD5s $k
 mv $TF $TF.tar
 TF="$TF.tar"
 UPLOAD="--upload $TF"
+
+set +e
 $CURL $SRVAUTH $CLTAUTH $UPLOAD $URI | awk '$1 == "Stored" {print $2}' | xargs rm -v
 rm -f $TF
