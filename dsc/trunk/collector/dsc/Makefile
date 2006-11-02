@@ -36,7 +36,8 @@ OBJS=\
 	rd_bit_index.o \
 	opcode_index.o \
 	ParseConfig.o \
-	config_hooks.o
+	config_hooks.o \
+	hashtbl.o
 
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
 LIBS=\
