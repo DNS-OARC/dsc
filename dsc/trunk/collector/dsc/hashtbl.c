@@ -24,7 +24,7 @@ hash_add(const void *key, void *data, hashtbl *tbl)
 	int slot;
 	new->key = key;
 	new->data = data;
-	slot = tbl->hasher(key);
+	slot = tbl->hasher(key) % tbl->modulus;
 	for (I = &tbl->items[slot]; *I; I = &(*I)->next);
 	*I = new;
 	return 0;
@@ -33,7 +33,7 @@ hash_add(const void *key, void *data, hashtbl *tbl)
 void *
 hash_find(const void *key, hashtbl *tbl)
 {
-	int slot = tbl->hasher(key);
+	int slot = tbl->hasher(key) % tbl->modulus;
 	hashitem *i;
 	for (i = tbl->items[slot]; i; i = i->next) {
 		if (0 == tbl->keycmp(key, i->key))
