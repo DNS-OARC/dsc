@@ -262,8 +262,10 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     dns_message *m;
     last_ts = hdr->ts;
+#if 0
     if (debug_flag)
 	fprintf(stderr, "handle_pcap()\n");
+#endif
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
     m = handle_datalink(pkt, hdr->caplen);
@@ -272,8 +274,10 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
     m->ts = hdr->ts;
     dns_message_callback(m);
     free(m);
+#if 0
     if (debug_flag && --debug_count == 0)
 	exit(0);
+#endif
 }
 
 
