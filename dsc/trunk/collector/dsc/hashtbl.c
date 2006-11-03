@@ -71,7 +71,7 @@ hash_iterate(hashtbl *tbl)
 		if (NULL == tbl->iter.next)
 			hash_iter_next_slot(tbl);
 	}
-	return this;
+	return this ? this->data : NULL;
 }
 
 /*
