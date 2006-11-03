@@ -154,6 +154,9 @@ main(int argc, char *argv[])
 	    syslog(LOG_DEBUG, "waiting for child pid %d", (int) cpid);
 	    while (waitpid(cpid, &cstatus, 0) < 0)
 		(void) 0;
+	    if (WIFSIGNALED(cstatus))
+		syslog(LOG_NOTICE, "child exited with signal %d, status %d",
+			WTERMSIG(cstatus), WEXITSTATUS(cstatus));
 	}
 	if (debug_flag)
 	    break;
