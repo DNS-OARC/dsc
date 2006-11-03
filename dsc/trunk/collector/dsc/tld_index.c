@@ -36,7 +36,7 @@ tld_indexer(const void *vp)
     assert(obj);
     obj->tld = strdup(tld);
     obj->index = next_idx++;
-    hash_add(tld, obj, idx_to_tld);
+    hash_add(obj->tld, obj, idx_to_tld);
     return obj->index;
 }
 
