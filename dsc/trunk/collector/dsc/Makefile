@@ -48,7 +48,7 @@ all:  $(PROG)
 
 
 $(PROG): $(OBJS) $(LIBHAPY)
-	$(CXX) -o $@ $(OBJS) $(LIBS)
+	$(CXX) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
 
 install: $(PROG)
 	@if test -n "$(INSTALLDIR)" ; then echo "installing in $$INSTALLDIR" ; else echo "set INSTALLDIR first"; false ; fi
