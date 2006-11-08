@@ -47,7 +47,7 @@ LIBS=\
 all:  $(PROG)
 
 
-$(PROG): $(OBJS) $(LIBS)
+$(PROG): $(OBJS) $(LIBHAPY)
 	$(CXX) -o $@ $(OBJS) $(LIBS)
 
 install: $(PROG)
