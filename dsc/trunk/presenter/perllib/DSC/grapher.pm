@@ -183,7 +183,8 @@ sub run {
 	} else {
 		make_image($cache_name) unless (!reason_to_not_plot() && check_image_cache($cache_name));
 		if (-f cache_image_path($cache_name)) {
-			print $cgi->header(-type=>'image/png',-expires=>$expires_time);
+			print $cgi->header(-type=>'image/png',-expires=>$expires_time)
+			    unless (defined($CFG->{'no_http_header'}));
 			cat_image($cache_name);
 		}
 	}
