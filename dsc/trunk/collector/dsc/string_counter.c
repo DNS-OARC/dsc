@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <memory.h>
+#include <string.h>
 
 #include "string_counter.h"
 #include "generic_counter.h"
