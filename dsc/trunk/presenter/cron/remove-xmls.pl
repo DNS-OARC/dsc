@@ -9,7 +9,7 @@ my $cutoff = time - ($numdays * 86400);
 while (<>) {
 	chomp;
 	next unless (/\.xml/);
-	next unless (m@/(\d+)\.@);
+	next unless (m@/\d\d\d\d\d\d\d\d/[^/]+/(\d+)\.@);
 	my $t = $1;
 	next if ($t > $cutoff);
 	#print "removing $_\n";
