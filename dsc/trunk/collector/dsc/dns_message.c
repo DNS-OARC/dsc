@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <string.h>
+#include <sys/types.h>
 #include <arpa/nameser.h>
 
 #include <sys/types.h>

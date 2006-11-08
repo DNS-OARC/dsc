@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
 #ifndef T_A6
