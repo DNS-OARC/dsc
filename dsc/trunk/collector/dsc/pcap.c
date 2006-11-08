@@ -63,6 +63,10 @@
 #define uh_sport source
 #endif
 
+#ifndef IP_OFFMASK
+#define IP_OFFMASK 0x1fff
+#endif
+
 #define MAX_N_PCAP 10
 static int n_pcap = 0;
 static pcap_t **pcap = NULL;
