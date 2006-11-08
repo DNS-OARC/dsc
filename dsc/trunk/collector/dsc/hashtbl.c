@@ -78,7 +78,7 @@ hash_iterate(hashtbl *tbl)
  * http://www.azillionmonkeys.com/qed/hash.html
  */
 
-#include "stdint.h" /* Replace with <stdint.h> if appropriate */
+/* #include "stdint.h" /* Replace with <stdint.h> if appropriate */
 #undef get16bits
 #if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
   || defined(_MSC_VER) || defined (__BORLANDC__) || defined (__TURBOC__)
