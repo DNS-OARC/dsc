@@ -136,7 +136,7 @@ main(int argc, char *argv[])
      */
 
     if (!debug_flag) {
-        syslog(LOG_INFO, "Sleeping for %ld seconds", 60 - (time(NULL) % 60));
+        syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
         sleep(60 - (time(NULL) % 60));
     }
     syslog(LOG_INFO, "Running");

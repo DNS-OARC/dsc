@@ -80,7 +80,9 @@ int vlan_tag_needs_byte_conversion = 1;
 
 extern dns_message *handle_dns(const char *buf, int len);
 extern int debug_flag;
+#if 0
 static int debug_count = 20;
+#endif
 static DMC *dns_message_callback;
 static IPC *ip_message_callback;
 static struct timeval last_ts;
