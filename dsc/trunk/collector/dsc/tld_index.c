@@ -11,7 +11,7 @@ static hashfunc tld_hashfunc;
 static hashkeycmp tld_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
-static hashtbl *idx_to_tld = NULL;
+static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
 typedef struct {
@@ -28,15 +28,15 @@ tld_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     tld = dns_message_tld((dns_message *) m);
-    if (NULL == idx_to_tld)
-	idx_to_tld = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc);
-    if ((obj = hash_find(tld, idx_to_tld)))
+    if (NULL == theHash)
+	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc);
+    if ((obj = hash_find(tld, theHash)))
 	return obj->index;
     obj = calloc(1, sizeof(*obj));
     assert(obj);
     obj->tld = strdup(tld);
     obj->index = next_idx++;
-    hash_add(obj->tld, obj, idx_to_tld);
+    hash_add(obj->tld, obj, theHash);
     return obj->index;
 }
 
@@ -49,10 +49,10 @@ tld_iterator(char **label)
 	return -1;
     if (NULL == label) {
 	/* initialize and tell caller how big the array is */
-	hash_iter_init(idx_to_tld);
+	hash_iter_init(theHash);
 	return next_idx;
     }
-    if ((obj = hash_iterate(idx_to_tld)) == NULL)
+    if ((obj = hash_iterate(theHash)) == NULL)
 	return -1;
     snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->tld);
     *label = label_buf;
