@@ -282,7 +282,7 @@ add_qname_filter(const char *name, const char *pat)
     filter_list **fl = &DNSFilters;
     regex_t *r;
     int x;
-    while ((*fl)->next)
+    while ((*fl))
 	fl = &((*fl)->next);
     r = xcalloc(1, sizeof(*r));
     if (NULL == r) {
