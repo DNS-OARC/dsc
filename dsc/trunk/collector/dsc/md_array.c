@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <syslog.h>
 
+#include "xmalloc.h"
 #include "md_array.h"
 #include "dns_message.h"
 #include "ip_message.h"
@@ -15,6 +16,25 @@
 void md_array_grow_d1(md_array * a);
 void md_array_grow_d2(md_array * a);
 
+static void
+md_array_free(md_array *a)
+{
+    if (a->name)
+	free((char *)a->name);
+    if (a->d1.type)
+	free((char *)a->d1.type);
+    if (a->d2.type)
+	free((char *)a->d2.type);
+    if (a->array) {
+	int i1;
+        for (i1 = 0; i1 < a->d1.alloc_sz; i1++) {
+	    if (a->array[i1])
+		free(a->array[i1]);
+	}
+	free(a->array);
+    }
+    free(a);
+}
 
 md_array *
 md_array_create(const char *name, filter_list * fl,
@@ -22,20 +42,42 @@ md_array_create(const char *name, filter_list * fl,
     const char *type2, IDXR * idx2, HITR * itr2)
 {
     int i1;
-    md_array *a = calloc(1, sizeof(*a));
-    a->name = strdup(name);
+    md_array *a = xcalloc(1, sizeof(*a));
+    if (NULL == a)
+	return NULL;
+    a->name = xstrdup(name);
+    if (a->name == NULL) {
+	md_array_free(a);
+	return NULL;
+    }
     a->filter_list = fl;
-    a->d1.type = strdup(type1);
+    a->d1.type = xstrdup(type1);
+    if (a->d1.type == NULL) {
+	md_array_free(a);
+	return NULL;
+    }
     a->d1.indexer = idx1;
     a->d1.iterator = itr1;
     a->d1.alloc_sz = 2;
-    a->d2.type = strdup(type2);
+    a->d2.type = xstrdup(type2);
+    if (a->d2.type == NULL) {
+	md_array_free(a);
+	return NULL;
+    }
     a->d2.indexer = idx2;
     a->d2.iterator = itr2;
     a->d2.alloc_sz = 2;
-    a->array = calloc(a->d1.alloc_sz, sizeof(int *));
+    a->array = xcalloc(a->d1.alloc_sz, sizeof(int *));
+    if (NULL == a->array) {
+	md_array_free(a);
+	return NULL;
+    }
     for (i1 = 0; i1 < a->d1.alloc_sz; i1++) {
-	a->array[i1] = calloc(a->d2.alloc_sz, sizeof(int));
+	a->array[i1] = xcalloc(a->d2.alloc_sz, sizeof(int));
+	if (NULL == a->array[i1]) {
+	    md_array_free(a);
+	    return NULL;
+	}
     }
     return a;
 }
@@ -75,14 +117,30 @@ md_array_grow_d1(md_array * a)
     int **new;
     int i1;
     new_alloc_sz = a->d1.alloc_sz << 1;
-    new = calloc(new_alloc_sz, sizeof(int *));
+    new = xcalloc(new_alloc_sz, sizeof(int *));
+    if (NULL == new)
+	return;
+
+    /*
+     * first, try allocating the new half
+     */
+    for (i1 = a->d1.alloc_sz; i1 < new_alloc_sz; i1++) {
+	new[i1] = xcalloc(a->d2.alloc_sz, sizeof(int));
+	if (NULL == new[i1]) {
+	    /* oops, undo! */
+	    for (--i1; i1 >= a->d1.alloc_sz; i1--)
+		free(new[i1]);
+	    free(new);
+	    return;
+	}
+    }
+
+    /*
+     * now copy over the old half
+     */
     memcpy(new, a->array, a->d1.alloc_sz * sizeof(int *));
     free(a->array);
     a->array = new;
-
-    for (i1 = a->d1.alloc_sz; i1 < new_alloc_sz; i1++) {
-	a->array[i1] = calloc(a->d2.alloc_sz, sizeof(int));
-    }
 
     a->d1.alloc_sz = new_alloc_sz;
 }
@@ -91,15 +149,37 @@ void
 md_array_grow_d2(md_array * a)
 {
     int new_alloc_sz;
-    int *new;
+    int **new;
     int i1;
+    new = xcalloc(a->d1.alloc_sz, sizeof(int *));
+    if (NULL == new)
+	return;
     new_alloc_sz = a->d2.alloc_sz << 1;
+
+    /*
+     * first try to allocate all the new d2's
+     */
     for (i1 = 0; i1 < a->d1.alloc_sz; i1++) {
-	new = calloc(new_alloc_sz, sizeof(int *));
-	memcpy(new, a->array[i1], a->d2.alloc_sz * sizeof(int));
-	free(a->array[i1]);
-	a->array[i1] = new;
+	new[i1] = xcalloc(new_alloc_sz, sizeof(int));
+	if (NULL == new[i1]) {
+	    /* oops, undo! */
+	    for (--i1; i1 >= 0; i1--)
+		free(new[i1]);
+	    free(new);
+	    return;
+	}
     }
+
+    /*
+     * now copy and swap
+     */
+    for (i1 = 0; i1 < a->d1.alloc_sz; i1++) {
+	memcpy(new[i1], a->array[i1], a->d2.alloc_sz * sizeof(int));
+	free(a->array[i1]);
+    }
+    free(a->array);
+    a->array = new;
+
     a->d2.alloc_sz = new_alloc_sz;
 }
 
@@ -157,7 +237,11 @@ md_array_print(md_array * a, md_array_printer * pr)
 	pr->d1_begin(fp, label1);
 	a->d2.iterator(NULL);
 	nvals = a->d2.alloc_sz;
-	sortme = calloc(nvals, sizeof(*sortme));
+	sortme = xcalloc(nvals, sizeof(*sortme));
+	if (NULL == sortme) {
+	    syslog(LOG_CRIT, "Cant output XML file chunk due to malloc failure!");
+	    continue;		/* OUCH! */
+	}
 	while ((i2 = a->d2.iterator(&label2)) > -1) {
 	    if (i2 >= a->d2.alloc_sz)
 		continue;
@@ -168,8 +252,10 @@ md_array_print(md_array * a, md_array_printer * pr)
 		skipped_sum += a->array[i1][i2];
 		continue;
 	    }
-	    sortme[si].label = strdup(label2);
 	    sortme[si].val = a->array[i1][i2];
+	    sortme[si].label = xstrdup(label2);
+	    if (NULL == sortme[si].label)
+		break;
 	    si++;
 	}
 	assert(si <= nvals);
@@ -217,8 +303,9 @@ md_array_print(md_array * a, md_array_printer * pr)
 filter_list **
 md_array_filter_list_append(filter_list ** fl, FLTR * f)
 {
-    *fl = calloc(1, sizeof(**fl));
-    assert(fl);
+    *fl = xcalloc(1, sizeof(**fl));
+    if (NULL == (*fl))
+	return NULL;
     (*fl)->filter = f;
     return (&(*fl)->next);
 }
@@ -226,9 +313,14 @@ md_array_filter_list_append(filter_list ** fl, FLTR * f)
 FLTR *
 md_array_create_filter(const char *name, filter_func *func, const void *context)
 {
-    FLTR *f = calloc(1, sizeof(*f));
-    assert(f);
-    f->name = strdup(name);
+    FLTR *f = xcalloc(1, sizeof(*f));
+    if (NULL == f)
+	return NULL;
+    f->name = xstrdup(name);
+    if (NULL == f->name) {
+	free(f);
+	return NULL;
+    }
     f->func = func;
     f->context = context;
     return f;

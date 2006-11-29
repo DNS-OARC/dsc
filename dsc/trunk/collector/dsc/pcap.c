@@ -38,6 +38,7 @@
 #include <syslog.h>
 #include <stdarg.h>
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
@@ -318,7 +319,7 @@ Pcap_init(const char *device, int promisc)
     int x;
 
     if (pcap == NULL) {
-	pcap = calloc(MAX_N_PCAP, sizeof(*pcap));
+	pcap = xcalloc(MAX_N_PCAP, sizeof(*pcap));
 	FD_ZERO(&pcap_fdset);
     }
     assert(pcap);

@@ -4,6 +4,7 @@
 #include <syslog.h>
 #include <string.h>
 
+#include "xmalloc.h"
 #include "ip_message.h"
 #include "md_array.h"
 
@@ -42,14 +43,18 @@ static int
 ip_message_find_filters(const char *fn, filter_list ** fl)
 {
     char *t;
-    char *copy = strdup(fn);
+    char *copy = xstrdup(fn);
+    if (NULL == copy)
+	return 0;
     for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
 	if (0 == strcmp(t, "any")) {
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
+	free(copy);
 	return 0;
     }
+    free(copy);
     return 1;
 }
 
@@ -72,7 +77,9 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
     if (0 == ip_message_find_filters(f, &filters))
 	return 0;
 
-    a = calloc(1, sizeof(*a));
+    a = xcalloc(1, sizeof(*a));
+    if (NULL == a)
+	return 0;
     a->theArray = md_array_create(name, filters,
 	fn, indexer1, iterator1,
 	sn, indexer2, iterator2);

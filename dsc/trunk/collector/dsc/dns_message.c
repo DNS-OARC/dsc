@@ -14,6 +14,7 @@
 #endif
 
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "md_array.h"
 #include "null_index.h"
@@ -252,8 +253,10 @@ static int
 dns_message_find_filters(const char *fn, filter_list ** fl)
 {
     char *t;
-    char *copy = strdup(fn);
+    char *copy = xstrdup(fn);
     filter_list *f;
+    if (NULL == copy)
+	return 0;
     for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
 	if (0 == strcmp(t, "any"))
 	    continue;
@@ -266,8 +269,10 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
+	free(copy);
 	return 0;
     }
+    free(copy);
     return 1;
 }
 
@@ -279,7 +284,11 @@ add_qname_filter(const char *name, const char *pat)
     int x;
     while ((*fl)->next)
 	fl = &((*fl)->next);
-    r = calloc(1, sizeof(*r));
+    r = xcalloc(1, sizeof(*r));
+    if (NULL == r) {
+	syslog(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
+	return 0;
+    }
     if (0 != (x = regcomp(r, pat, REG_EXTENDED | REG_ICASE))) {
 	char errbuf[512];
 	regerror(x, r, errbuf, 512);
@@ -309,10 +318,18 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     if (0 == dns_message_find_filters(f, &filters))
 	return 0;
 
-    a = calloc(1, sizeof(*a));
+    a = xcalloc(1, sizeof(*a));
+    if (a == NULL) {
+	syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
+	return 0;
+    }
     a->theArray = md_array_create(name, filters,
 	fn, indexer1, iterator1,
 	sn, indexer2, iterator2);
+    if (NULL == a->theArray) {
+	syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
+	return 0;
+    }
     a->theArray->opts.min_count = min_count;
     a->theArray->opts.max_cells = max_cells;
     assert(a->theArray);

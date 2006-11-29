@@ -5,26 +5,34 @@
 #ifdef __linux__
 #include <stdint.h>
 #endif
+#include "xmalloc.h"
 #include "hashtbl.h"
 
 hashtbl
 *hash_create(int N, hashfunc *hasher, hashkeycmp *cmp)
 {
-	hashtbl *new = calloc(1, sizeof(*new));
-	assert(new);
+	hashtbl *new = xcalloc(1, sizeof(*new));
+	if (NULL == new)
+	    return NULL;
 	new->modulus = N;
 	new->hasher = hasher;
 	new->keycmp = cmp;
-	new->items = calloc(N, sizeof(hashitem*));
+	new->items = xcalloc(N, sizeof(hashitem*));
+	if (NULL == new->items) {
+		free(new);
+		return NULL;
+	}
 	return new;
 }
 
 int
 hash_add(const void *key, void *data, hashtbl *tbl)
 {
-	hashitem *new = calloc(1, sizeof(*new));
+	hashitem *new = xcalloc(1, sizeof(*new));
 	hashitem **I;
 	int slot;
+	if (NULL == new)
+	    return 1;
 	new->key = key;
 	new->data = data;
 	slot = tbl->hasher(key) % tbl->modulus;

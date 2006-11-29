@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
@@ -95,7 +96,9 @@ main(int argc, char *argv[])
     int x;
     extern DMC dns_message_handle;
 
-    progname = strdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
+    progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
+    if (NULL == progname)
+	return 1;
     srandom(time(NULL));
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 

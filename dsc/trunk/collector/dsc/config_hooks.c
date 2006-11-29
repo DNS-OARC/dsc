@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "ip_message.h"
 
@@ -25,7 +26,9 @@ set_bpf_program(const char *s)
 {
     extern char *bpf_program_str;
     syslog(LOG_INFO, "BPF program is: %s", s);
-    bpf_program_str = strdup(s);
+    bpf_program_str = xstrdup(s);
+    if (NULL == bpf_program_str)
+	return 0;
     return 1;
 }
 
@@ -54,7 +57,9 @@ set_pid_file(const char *s)
 {
     extern char *pid_file_name;
     syslog(LOG_INFO, "PID file is: %s", s);
-    pid_file_name = strdup(s);
+    pid_file_name = xstrdup(s);
+    if (NULL == pid_file_name)
+	return 0;
     return 1;
 }
 

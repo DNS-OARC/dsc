@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "md_array.h"
 #include "hashtbl.h"
@@ -25,15 +26,23 @@ cip4_indexer(const void *vp)
     ipv4addrobj *obj;
     if (m->malformed)
 	return -1;
-    if (NULL == theHash)
+    if (NULL == theHash) {
 	theHash = hash_create(MAX_ARRAY_SZ, ipv4addr_hashfunc, ipv4addr_cmpfunc);
+	if (NULL == theHash)
+	    return -1;
+    }
     if ((obj = hash_find(&m->client_ipv4_addr, theHash)))
 	return obj->index;
-    obj = calloc(1, sizeof(*obj));
-    assert(obj);
+    obj = xcalloc(1, sizeof(*obj));
+    if (NULL == obj)
+	return -1;
     obj->addr = m->client_ipv4_addr;
-    obj->index = next_idx++;
-    hash_add(&obj->addr, obj, theHash);
+    obj->index = next_idx;
+    if (0 != hash_add(&obj->addr, obj, theHash)) {
+	free(obj);
+	return -1;
+    }
+    next_idx++;
     return obj->index;
 }
 

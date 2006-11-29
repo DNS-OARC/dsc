@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "md_array.h"
 #include "hashtbl.h"
@@ -28,15 +29,28 @@ tld_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     tld = dns_message_tld((dns_message *) m);
-    if (NULL == theHash)
+    if (NULL == theHash) {
 	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc);
+	if (NULL == theHash)
+	    return -1;
+    }
     if ((obj = hash_find(tld, theHash)))
 	return obj->index;
-    obj = calloc(1, sizeof(*obj));
-    assert(obj);
-    obj->tld = strdup(tld);
-    obj->index = next_idx++;
-    hash_add(obj->tld, obj, theHash);
+    obj = xcalloc(1, sizeof(*obj));
+    if (NULL == obj)
+	return -1;
+    obj->tld = xstrdup(tld);
+    if (NULL == obj->tld) {
+	free(obj);
+	return -1;
+    }
+    obj->index = next_idx;
+    if (0 != hash_add(obj->tld, obj, theHash)) {
+	free(obj->tld);
+	free(obj);
+	return -1;
+    }
+    next_idx++;
     return obj->index;
 }
 

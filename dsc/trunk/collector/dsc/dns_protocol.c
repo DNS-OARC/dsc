@@ -8,7 +8,7 @@
 #include <arpa/nameser.h>
 #include <syslog.h>
 
-#include "string_counter.h"
+#include "xmalloc.h"
 #include "dns_message.h"
 
 #define DNS_MSG_HDR_SZ 12
@@ -149,8 +149,9 @@ handle_dns(const char *buf, int len)
     int ancount;
     int nscount;
     int arcount;
-    dns_message *m = calloc(1, sizeof(*m));
-    assert(m);
+    dns_message *m = xcalloc(1, sizeof(*m));
+    if (m == NULL)
+	return NULL;
     m->msglen = (unsigned short) len;
 
     if (len < DNS_MSG_HDR_SZ) {

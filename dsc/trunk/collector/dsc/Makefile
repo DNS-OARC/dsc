@@ -8,7 +8,6 @@ INSTALLDIR=/usr/local/dsc
 OBJS=\
 	base64.o \
 	generic_counter.o \
-	string_counter.o \
 	pcap.o \
 	dns_protocol.o \
 	dns_message.o \
@@ -37,7 +36,8 @@ OBJS=\
 	opcode_index.o \
 	ParseConfig.o \
 	config_hooks.o \
-	hashtbl.o
+	hashtbl.o \
+	xmalloc.o
 
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
 LIBS=\

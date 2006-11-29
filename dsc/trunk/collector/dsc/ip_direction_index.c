@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "xmalloc.h"
 #include "ip_message.h"
 #include "md_array.h"
 
@@ -38,7 +39,9 @@ ip_direction_indexer(const void *vp)
 int
 ip_local_address(const char *dotted)
 {
-    struct _foo *n = calloc(1, sizeof(*n));
+    struct _foo *n = xcalloc(1, sizeof(*n));
+    if (NULL == n)
+	return 0;
     n->next = local_addrs;
     if (inet_aton(dotted, &n->addr) != 1) {
 	fprintf(stderr, "yucky IPv4 addr %s\n", dotted);

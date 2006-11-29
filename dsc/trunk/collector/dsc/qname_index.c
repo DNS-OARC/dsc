@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "xmalloc.h"
 #include "dns_message.h"
 #include "md_array.h"
 #include "hashtbl.h"
@@ -26,15 +27,28 @@ qname_indexer(const void *vp)
     const dns_message *m = vp;
     if (m->malformed)
 	return -1;
-    if (NULL == theHash)
+    if (NULL == theHash) {
         theHash = hash_create(MAX_ARRAY_SZ, qname_hashfunc, qname_cmpfunc);
+	if (NULL == theHash)
+	    return -1;
+    }
     if ((obj = hash_find(m->qname, theHash)))
         return obj->index;
-    obj = calloc(1, sizeof(*obj));
-    assert(obj);
-    obj->qname = strdup(m->qname);
-    obj->index = next_idx++;
-    hash_add(obj->qname, obj, theHash);
+    obj = xcalloc(1, sizeof(*obj));
+    if (NULL == obj)
+	return -1;
+    obj->qname = xstrdup(m->qname);
+    if (NULL == obj->qname) {
+	free(obj);
+	return -1;
+    }
+    obj->index = next_idx;
+    if (0 != hash_add(obj->qname, obj, theHash)) {
+	free(obj->qname);
+	free(obj);
+	return -1;
+    }
+    next_idx++;
     return obj->index;
 
 }
