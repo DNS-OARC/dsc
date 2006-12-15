@@ -933,7 +933,7 @@ dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames
         Qtype:qtype queries-only;
 dataset client_subnet2 dns Class:query_classification
         ClientSubnet:cip4_net queries-only max-cells=200;
-dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client
+dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:cip4_addr
         replies-only max-cells=50;
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname
         chaos-class,queries-only;
@@ -942,7 +942,7 @@ dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
 dataset do_bit dns All:null D0:do_bit queries-only;
 dataset rd_bit dns All:null RD:rd_bit queries-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
-dataset ipv6_rsn_abusers dns All:null ClientAddr:client
+dataset ipv6_rsn_abusers dns All:null ClientAddr:cip4_addr
         queries-only,aaaa-or-a6-only,root-servers-n et-only max-cells=50;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
