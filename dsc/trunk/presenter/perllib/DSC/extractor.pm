@@ -2,8 +2,9 @@ package DSC::extractor;
 
 use XML::Simple;
 use POSIX;
-use File::Flock;
 use Digest::MD5;
+#use File::Flock;
+use File::NFSLock;
 
 use strict;
 
@@ -68,6 +69,13 @@ sub lockfile_format {
 	'/tmp/' . join('.', $x[0], $x[1], 'lck');
 }
 
+sub lock_file {
+	my $fn = shift;
+#	return new File::Flock($fn);
+	return File::NFSLock->new($fn, 'BLOCKING');
+}
+
+
 #
 # time k1 v1 k2 v2 ...
 #
@@ -107,7 +115,7 @@ sub write_data {
 	my $fn = shift;
 	my $nl = 0;
 	my $B;
-	my $lock = new File::Flock($fn);
+	my $lock = lock_file($fn);
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a <=> $b} keys %$A) {
@@ -166,7 +174,7 @@ sub write_data2 {
 	my $A = shift;
 	my $fn = shift;
 	my $nl = 0;
-	my $lock = new File::Flock($fn);
+	my $lock = lock_file($fn);
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || die $!;
 	foreach my $k (sort {$a cmp $b} keys %$A) {
@@ -221,7 +229,7 @@ sub write_data3 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	my $lock = new File::Flock($fn);
+	my $lock = lock_file($fn);
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || return;
 	foreach my $k1 (keys %$href) {
@@ -281,7 +289,7 @@ sub write_data4 {
 	my $href = shift;
 	my $fn = shift;
 	my $nl = 0;
-	my $lock = new File::Flock($fn);
+	my $lock = lock_file($fn);
 	my $md = Digest::MD5->new;
 	open(OUT, ">$fn.new") || return;
 	foreach my $ts (sort {$a <=> $b} keys %$href) {
