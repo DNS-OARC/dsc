@@ -38,7 +38,7 @@ use vars @EXPORT_OK;
 END { }
 
 # constants
-my $dbg_lvl = 2;
+my $dbg_lvl = 0;
 my $DATAROOT = '/usr/local/dsc/data';
 my $CacheImageTTL = 60; # 1 min
 my $expires_time = '+1m';
@@ -68,6 +68,7 @@ sub prepare {
 	$ACCUM_TOP_N = 40;
 	$cgi = new CGI();
 	$now = time;
+	$use_data_uri = 0 if defined $cgi->param('x');
 }
 
 sub cgi { $cgi; }
