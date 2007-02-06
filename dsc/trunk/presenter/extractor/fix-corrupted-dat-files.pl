@@ -39,6 +39,9 @@ sub do_file {
 	unlink("$fn.fixed");
 #	print "$fn: okay\n";
     } else {
+	# give fixed file the same uid:gid as old file
+	my @sb = stat($fn);
+	chown $sb[4], $sb[5], "$fn.fixed";
 	rename ("$fn", "$fn.bad");
 	rename ("$fn.fixed", "$fn");
 	print "$fn: FIXED\n";
