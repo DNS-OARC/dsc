@@ -8,6 +8,7 @@ my $cutoff = time - ($numdays * 86400);
 
 while (<>) {
 	chomp;
+	next if (/backlog/);
 	next unless (/\.xml/);
 	next unless (m@/\d\d\d\d\d\d\d\d/[^/]+/(\d+)\.@);
 	my $t = $1;
