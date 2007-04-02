@@ -1,2 +1,2 @@
-int cip4_indexer(const void *);
-int cip4_iterator(char **label);
+int cip_indexer(const void *);
+int cip_iterator(char **label);

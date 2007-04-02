@@ -28,7 +28,7 @@ char *pid_file_name = NULL;
 int promisc_flag = 1;
 int debug_flag = 0;
 
-extern void cip4_net_indexer_init(void);
+extern void cip_net_indexer_init(void);
 extern void ParseConfig(const char *);
 
 void
@@ -122,7 +122,7 @@ main(int argc, char *argv[])
 	usage();
     dns_message_init();
     ParseConfig(argv[0]);
-    cip4_net_indexer_init();
+    cip_net_indexer_init();
 
     if (!debug_flag)
     	daemonize();

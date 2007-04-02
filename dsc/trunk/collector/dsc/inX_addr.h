@@ -1,0 +1,29 @@
+
+
+#if 0
+#if USE_IPV6
+typedef struct in6_addr inX_addr;
+#else
+typedef struct in_addr inX_addr;
+#endif
+#endif
+
+typedef union {
+	struct in6_addr in6;
+	struct {
+		struct in_addr pad0;
+		struct in_addr pad1;
+		struct in_addr pad2;
+		struct in_addr in4;
+	} _;
+} inX_addr;
+
+extern int inXaddr_version(const inX_addr *);
+extern const char * inXaddr_ntop(inX_addr *, char *, socklen_t len);
+extern int inXaddr_pton(const char *, inX_addr *);
+extern unsigned int inXaddr_hash(const inX_addr *);
+extern int inXaddr_cmp(const inX_addr *a, const inX_addr *b);
+extern inX_addr inXaddr_mask (const inX_addr *a, const inX_addr *mask);
+
+extern int inXaddr_assign_v4(inX_addr *, const struct in_addr *);
+extern int inXaddr_assign_v6(inX_addr *, const struct in6_addr *);

@@ -7,36 +7,36 @@
 #include "md_array.h"
 #include "hashtbl.h"
 
-static hashfunc ipv4addr_hashfunc;
-static hashkeycmp ipv4addr_cmpfunc;
+static hashfunc ipaddr_hashfunc;
+static hashkeycmp ipaddr_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
 typedef struct {
-	struct in_addr addr;
+	inX_addr addr;
 	int index;
-} ipv4addrobj;
+} ipaddrobj;
 
 int
-cip4_indexer(const void *vp)
+cip_indexer(const void *vp)
 {
     const dns_message *m = vp;
-    ipv4addrobj *obj;
+    ipaddrobj *obj;
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, ipv4addr_hashfunc, ipv4addr_cmpfunc);
+	theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc);
 	if (NULL == theHash)
 	    return -1;
     }
-    if ((obj = hash_find(&m->client_ipv4_addr, theHash)))
+    if ((obj = hash_find(&m->client_ip_addr, theHash)))
 	return obj->index;
     obj = xcalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
-    obj->addr = m->client_ipv4_addr;
+    obj->addr = m->client_ip_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
 	free(obj);
@@ -47,10 +47,10 @@ cip4_indexer(const void *vp)
 }
 
 int
-cip4_iterator(char **label)
+cip_iterator(char **label)
 {
-    ipv4addrobj *obj;
-    static char label_buf[24];
+    ipaddrobj *obj;
+    static char label_buf[128];
     if (0 == next_idx)
 	return -1;
     if (NULL == label) {
@@ -59,27 +59,23 @@ cip4_iterator(char **label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
 	return -1;
-    strncpy(label_buf, inet_ntoa(obj->addr), 24);
+    inXaddr_ntop(&obj->addr, label_buf, 128);
     *label = label_buf;
     return obj->index;
 }
 
 static unsigned int
-ipv4addr_hashfunc(const void *key)
+ipaddr_hashfunc(const void *key)
 {
-	const struct in_addr *a = key;
-	return ntohl(a->s_addr);
+	const inX_addr *a = key;
+	return inXaddr_hash(a);
 }
 
 static int
-ipv4addr_cmpfunc(const void *a, const void *b)
+ipaddr_cmpfunc(const void *a, const void *b)
 {
-	const struct in_addr *a1 = a;
-	const struct in_addr *a2 = b;
-	if (ntohl(a1->s_addr) < ntohl(a2->s_addr))
-		return -1;
-	if (ntohl(a1->s_addr) > ntohl(a2->s_addr))
-		return 1;
-	return 0;
+	const inX_addr *a1 = a;
+	const inX_addr *a2 = b;
+	return inXaddr_cmp(a1, a2);
 }
 

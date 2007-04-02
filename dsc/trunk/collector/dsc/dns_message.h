@@ -4,12 +4,14 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 
+#include "inX_addr.h"
+
 #define MAX_QNAME_SZ 512
 
 typedef struct _dns_message dns_message;
 struct _dns_message {
     struct timeval ts;
-    struct in_addr client_ipv4_addr;
+    inX_addr client_ip_addr;
     unsigned short src_port;
     unsigned short qtype;
     unsigned short qclass;

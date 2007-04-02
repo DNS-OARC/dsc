@@ -1,2 +1,2 @@
-int cip4_net_indexer(const void *);
-int cip4_net_iterator(char **label);
+int cip_net_indexer(const void *);
+int cip_net_iterator(char **label);

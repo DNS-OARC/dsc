@@ -125,20 +125,81 @@ handle_ipv4(const struct ip * ip, int len)
     if (NULL == m)
 	return NULL;
     if (0 == m->qr)		/* query */
-	m->client_ipv4_addr = ip->ip_src;
+	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_src);
     else			/* reply */
-	m->client_ipv4_addr = ip->ip_dst;
+	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_dst);
     return m;
 }
 
-#ifdef ETHERTYPE_IPV6
+#if USE_IPV6
 dns_message *
 handle_ipv6(const struct ip6_hdr * ip6, int len)
 {
-    /* syslog(LOG_ERR, "Ignoring IPv6 packet"); */
-    return NULL;
+    char buf[PCAP_SNAPLEN];
+    dns_message *m;
+    int offset = sizeof(struct ip6_hdr);
+    int nexthdr = ip6->ip6_nxt;
+    uint16_t payload_len = ntohs(ip6->ip6_plen);
+
+    /* XXXDPW ip_message_callback(ip); */
+
+    /*
+     * Parse extension headers. This only handles the standard headers, as
+     * defined in RFC 2460, correctly. Fragments are discarded.
+     */
+    while ((IPPROTO_ROUTING == nexthdr) /* routing header */
+        ||(IPPROTO_HOPOPTS == nexthdr)  /* Hop-by-Hop options. */
+        ||(IPPROTO_FRAGMENT == nexthdr) /* fragmentation header. */
+        ||(IPPROTO_DSTOPTS == nexthdr)  /* destination options. */
+        ||(IPPROTO_DSTOPTS == nexthdr)  /* destination options. */
+        ||(IPPROTO_AH == nexthdr)       /* destination options. */
+        ||(IPPROTO_ESP == nexthdr)) {   /* encapsulating security payload. */
+        struct {
+            uint8_t nexthdr;
+            uint8_t length;
+        }      ext_hdr;
+        uint16_t ext_hdr_len;
+
+        /* Catch broken packets */
+        if ((offset + sizeof(ext_hdr)) > len)
+            return NULL;
+
+        /* Cannot handle fragments. */
+        if (IPPROTO_FRAGMENT == nexthdr)
+            return NULL;
+
+        memcpy(&ext_hdr, (char *)ip6 + offset, sizeof(ext_hdr));
+        nexthdr = ext_hdr.nexthdr;
+        ext_hdr_len = (8 * (ntohs(ext_hdr.length) + 1));
+
+        /* This header is longer than the packets payload.. WTF? */
+        if (ext_hdr_len > payload_len)
+            return NULL;
+
+        offset += ext_hdr_len;
+        payload_len -= ext_hdr_len;
+    }                           /* while */
+
+    /* Catch broken and empty packets */
+    if (((offset + payload_len) > len)
+        || (payload_len == 0)
+        || (payload_len > PCAP_SNAPLEN))
+        return NULL;
+
+    if (IPPROTO_UDP != nexthdr)
+        return NULL;
+
+    memcpy(buf, (char *)ip6 + offset, payload_len);
+    m = handle_udp((struct udphdr *) buf, payload_len);
+    if (NULL == m)
+	return NULL;
+    if (0 == m->qr)		/* query */
+	inXaddr_assign_v6(&m->client_ip_addr, &ip6->ip6_src);
+    else			/* reply */
+	inXaddr_assign_v6(&m->client_ip_addr, &ip6->ip6_dst);
+    return m;
 }
-#endif
+#endif /* USE_IPV6 */
 
 #if USE_PPP
 dns_message *
@@ -169,10 +230,10 @@ handle_ppp(const u_char * pkt, int len)
         memcpy(buf, pkt, len);
         return handle_ipv4((struct ip *) buf, len);
     }
-#ifdef ETHERTYPE_IPV6
+#if USE_IPV6
     if (ETHERTYPE_IPV6 == proto) {
         memcpy(buf, pkt, len);
-        return handle_ipv6((struct ip6_hdr *) buf, len);
+        return handle_ip6((struct ip6_hdr *) buf, len);
     }
 #endif
     return NULL;
@@ -255,7 +316,7 @@ handle_ether(const u_char * pkt, int len)
 	memcpy(buf, pkt, len);
 	return handle_ipv4((struct ip *) buf, len);
     }
-#ifdef ETHERTYPE_IPV6
+#if USE_IPV6
     if (ETHERTYPE_IPV6 == etype) {
 	memcpy(buf, pkt, len);
 	return handle_ipv6((struct ip6_hdr *) buf, len);

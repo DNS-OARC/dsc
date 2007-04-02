@@ -1,6 +1,6 @@
 PROG=dsc
 HAPY=../TmfBase/Hapy
-CFLAGS=-g -Wall -I $(HAPY)/src/include
+CFLAGS=-g -Wall -DUSE_IPV6=1 -I $(HAPY)/src/include
 CPPFLAGS = ${CFLAGS}
 TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
@@ -37,7 +37,8 @@ OBJS=\
 	ParseConfig.o \
 	config_hooks.o \
 	hashtbl.o \
-	xmalloc.o
+	xmalloc.o \
+	inX_addr.o
 
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
 LIBS=\

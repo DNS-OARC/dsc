@@ -7,33 +7,41 @@
 #include "md_array.h"
 #include "hashtbl.h"
 
-static hashfunc ipv4net_hashfunc;
-static hashkeycmp ipv4net_cmpfunc;
-static struct in_addr mask;
+static hashfunc ipnet_hashfunc;
+static hashkeycmp ipnet_cmpfunc;
+static inX_addr v4mask;
+#if USE_IPV6
+static inX_addr v6mask;
+#endif
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
 typedef struct {
-	struct in_addr addr;
+	inX_addr addr;
 	int index;
-} ipv4netobj;
+} ipnetobj;
 
 int
-cip4_net_indexer(const void *vp)
+cip_net_indexer(const void *vp)
 {
     const dns_message *m = vp;
-    ipv4netobj *obj;
-    struct in_addr masked_addr;
+    ipnetobj *obj;
+    inX_addr masked_addr;
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, ipv4net_hashfunc, ipv4net_cmpfunc);
+	theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc);
 	if (NULL == theHash)
 	    return -1;
     }
-    masked_addr.s_addr = m->client_ipv4_addr.s_addr & mask.s_addr;
+#if USE_IPV6
+    if (6 == inXaddr_version(&m->client_ip_addr))
+	masked_addr = inXaddr_mask(&m->client_ip_addr, &v6mask);
+    else
+#endif
+	masked_addr = inXaddr_mask(&m->client_ip_addr, &v4mask);
     if ((obj = hash_find(&masked_addr, theHash)))
 	return obj->index;
     obj = xcalloc(1, sizeof(*obj));
@@ -50,10 +58,10 @@ cip4_net_indexer(const void *vp)
 }
 
 int
-cip4_net_iterator(char **label)
+cip_net_iterator(char **label)
 {
-    ipv4netobj *obj;
-    static char label_buf[24];
+    ipnetobj *obj;
+    static char label_buf[128];
     if (0 == next_idx)
 	return -1;
     if (NULL == label) {
@@ -62,32 +70,32 @@ cip4_net_iterator(char **label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
 	return -1;
-    strncpy(label_buf, inet_ntoa(obj->addr), 24);
+    inXaddr_ntop(&obj->addr, label_buf, 128);
     *label = label_buf;
     return obj->index;
 }
 
 void
-cip4_net_indexer_init(void)
+cip_net_indexer_init(void)
 {
-    mask.s_addr = inet_addr("255.255.255.0");
+    /* XXXDPW */
+    inXaddr_pton("255.255.255.0", &v4mask);
+#if USE_IPV6
+    inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
+#endif
 }
 
 static unsigned int
-ipv4net_hashfunc(const void *key)
+ipnet_hashfunc(const void *key)
 {
-	const struct in_addr *a = key;
-	return ntohl(a->s_addr) >> 8;
+	const inX_addr *a = key;
+	return inXaddr_hash(a);
 }
 
 static int
-ipv4net_cmpfunc(const void *a, const void *b)
+ipnet_cmpfunc(const void *a, const void *b)
 {
-	const struct in_addr *a1 = a;
-	const struct in_addr *a2 = b;
-	if (ntohl(a1->s_addr) < ntohl(a2->s_addr))
-		return -1;
-	if (ntohl(a1->s_addr) > ntohl(a2->s_addr))
-		return 1;
-	return 0;
+	const inX_addr *a1 = a;
+	const inX_addr *a2 = b;
+	return inXaddr_cmp(a1, a2);
 }

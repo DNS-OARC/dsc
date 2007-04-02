@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "dns_message.h"
-
 int
 null_indexer(const void *vp)
 {
