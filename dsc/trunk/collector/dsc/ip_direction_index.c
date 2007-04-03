@@ -2,25 +2,36 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#if USE_IPV6
+#include <netinet/ip6.h>
+#endif
+
 #include "xmalloc.h"
+#include "inX_addr.h"
 #include "ip_message.h"
 #include "md_array.h"
 
 #define LARGEST 2
 
 struct _foo {
-    struct in_addr addr;
+    inX_addr addr;
     struct _foo *next;
 };
 
 static struct _foo *local_addrs = NULL;
 
 static int
-ip_is_local(struct in_addr a)
+ip_is_local(inX_addr *a)
 {
     struct _foo *t;
     for (t = local_addrs; t; t = t->next)
-	if (t->addr.s_addr == a.s_addr)
+	if (0 == inXaddr_cmp(&t->addr, a))
 	    return 1;
     return 0;
 }
@@ -29,24 +40,40 @@ int
 ip_direction_indexer(const void *vp)
 {
     const struct ip *ip = vp;
-    if (ip_is_local(ip->ip_src))
-	return 0;
-    if (ip_is_local(ip->ip_dst))
-	return 1;
+    inX_addr a;
+    if (4 == ip->ip_v) {
+	inXaddr_assign_v4(&a, &ip->ip_src);
+	if (ip_is_local(&a))
+	    return 0;
+	inXaddr_assign_v4(&a, &ip->ip_dst);
+	if (ip_is_local(&a))
+	    return 1;
+#if USE_IPV6
+    } else if (6 == ip->ip_v) {
+	const struct ip6_hdr * ip6 = vp;
+	inXaddr_assign_v6(&a, &ip6->ip6_src);
+	if (ip_is_local(&a))
+	    return 0;
+	inXaddr_assign_v6(&a, &ip6->ip6_dst);
+	if (ip_is_local(&a))
+	    return 1;
+#endif
+    }
     return LARGEST;
 }
 
 int
-ip_local_address(const char *dotted)
+ip_local_address(const char *presentation)
 {
     struct _foo *n = xcalloc(1, sizeof(*n));
     if (NULL == n)
 	return 0;
-    n->next = local_addrs;
-    if (inet_aton(dotted, &n->addr) != 1) {
-	fprintf(stderr, "yucky IPv4 addr %s\n", dotted);
+    if (inXaddr_pton(presentation, &n->addr) != 1) {
+	fprintf(stderr, "yucky IP address %s\n", presentation);
+	free(n);
 	return 0;
     }
+    n->next = local_addrs;
     local_addrs = n;
     return 1;
 }
