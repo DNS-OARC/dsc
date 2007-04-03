@@ -141,6 +141,9 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
     int nexthdr = ip6->ip6_nxt;
     uint16_t payload_len = ntohs(ip6->ip6_plen);
 
+    if (debug_flag)
+	fprintf(stderr, "handle_ipv6()\n");
+
     /* XXXDPW ip_message_callback(ip); */
 
     /*
@@ -201,6 +204,52 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 }
 #endif /* USE_IPV6 */
 
+dns_message *
+handle_ip(const struct ip * ip, int len)
+{
+    switch(ip->ip_v) {
+    case 4:
+        return handle_ipv4(ip, len);
+	break;
+#if USE_IPV6
+    case 6:
+        return handle_ipv6((struct ip6_hdr *)ip, len);
+	break;
+#endif
+    default:
+	return NULL;
+	break;
+    }
+}
+
+static int
+is_ethertype_ip(unsigned short proto)
+{
+	if (ETHERTYPE_IP == proto)
+		return 1;
+#if USE_PPP
+	if (PPP_IP == proto)
+		return 1;
+#endif
+#if USE_IPV6
+	if (ETHERTYPE_IPV6 == proto)
+		return 1;
+#endif
+	return 0;
+}
+
+static int
+is_family_inet(unsigned int family)
+{
+	if (AF_INET == family)
+		return 1;
+#if USE_IPV6
+	if (AF_INET6 == family)
+		return 1;
+#endif
+	return 0;
+}
+
 #if USE_PPP
 dns_message *
 handle_ppp(const u_char * pkt, int len)
@@ -226,16 +275,10 @@ handle_ppp(const u_char * pkt, int len)
 	pkt += 2;
 	len -= 2;
     }
-    if (ETHERTYPE_IP == proto || PPP_IP == proto) {
+    if (is_ethertype_ip(proto)) {
         memcpy(buf, pkt, len);
-        return handle_ipv4((struct ip *) buf, len);
+        return handle_ip((struct ip *) buf, len);
     }
-#if USE_IPV6
-    if (ETHERTYPE_IPV6 == proto) {
-        memcpy(buf, pkt, len);
-        return handle_ip6((struct ip6_hdr *) buf, len);
-    }
-#endif
     return NULL;
 }
 
@@ -246,9 +289,9 @@ handle_null(const u_char * pkt, int len)
 {
     unsigned int family;
     memcpy(&family, pkt, sizeof(family));
-    if (AF_INET != family)
-	return NULL;
-    return handle_ipv4((struct ip *) (pkt + 4), len - 4);
+    if (is_family_inet(family))
+	return handle_ip((struct ip *) (pkt + 4), len - 4);
+    return NULL;
 }
 
 #ifdef DLT_LOOP
@@ -257,9 +300,9 @@ handle_loop(const u_char * pkt, int len)
 {
     unsigned int family;
     memcpy(&family, pkt, sizeof(family));
-    if (AF_INET != ntohl(family))
-	return NULL;
-    return handle_ipv4((struct ip *) (pkt + 4), len - 4);
+    if (is_family_inet(family))
+	return handle_ip((struct ip *) (pkt + 4), len - 4);
+    return NULL;
 }
 
 #endif
@@ -268,7 +311,7 @@ handle_loop(const u_char * pkt, int len)
 dns_message *
 handle_raw(const u_char * pkt, int len)
 {
-    return handle_ipv4((struct ip *) pkt, len);
+    return handle_ip((struct ip *) pkt, len);
 }
 
 #endif
@@ -312,16 +355,10 @@ handle_ether(const u_char * pkt, int len)
     }
     if (len < 0)
 	return NULL;
-    if (ETHERTYPE_IP == etype) {
+    if (is_ethertype_ip(etype)) {
 	memcpy(buf, pkt, len);
-	return handle_ipv4((struct ip *) buf, len);
+	return handle_ip((struct ip *) buf, len);
     }
-#if USE_IPV6
-    if (ETHERTYPE_IPV6 == etype) {
-	memcpy(buf, pkt, len);
-	return handle_ipv6((struct ip6_hdr *) buf, len);
-    }
-#endif
     return NULL;
 }
 
