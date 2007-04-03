@@ -107,15 +107,22 @@ inXaddr_version(const inX_addr *a)
 int
 inXaddr_assign_v4(inX_addr *dst, const struct in_addr *src)
 {
+#if USE_IPV6
+	memset(dst, 0, 10);
+	dst->in6.s6_addr[10] = 0xFF;
+	dst->in6.s6_addr[11] = 0xFF;
+#endif
 	dst->_.in4 = *src;
 	return 0;
 }
 
+#if USE_IPV6
 int
 inXaddr_assign_v6(inX_addr *dst, const struct in6_addr *src)
 {
 	dst->in6 = *src;
 	return 0;
 }
+#endif
 
 
