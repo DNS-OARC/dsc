@@ -1,19 +1,14 @@
 
-
-#if 0
-#if USE_IPV6
-typedef struct in6_addr inX_addr;
-#else
-typedef struct in_addr inX_addr;
-#endif
-#endif
-
 typedef union {
+#if USE_IPV6
 	struct in6_addr in6;
+#endif
 	struct {
+#if USE_IPV6
 		struct in_addr pad0;
 		struct in_addr pad1;
 		struct in_addr pad2;
+#endif
 		struct in_addr in4;
 	} _;
 } inX_addr;
