@@ -12,7 +12,9 @@
 #include <sys/stat.h>
 
 #include <netinet/in.h>
+#if USE_IPV6
 #include <netinet/ip6.h>
+#endif
 
 #include <pcap.h>
 #include <signal.h>
