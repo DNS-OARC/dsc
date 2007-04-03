@@ -924,7 +924,7 @@ dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
 dataset opcode dns All:null Opcode:opcode queries-only;
 dataset rcode_vs_replylen dns Rcode:rcode ReplyLen:msglen replies-only;
-dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only
+dataset client_subnet dns All:null ClientSubnet:client_subnet queries-only
         max-cells=200;
 dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
 dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes
@@ -932,8 +932,8 @@ dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes
 dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames
         Qtype:qtype queries-only;
 dataset client_subnet2 dns Class:query_classification
-        ClientSubnet:cip4_net queries-only max-cells=200;
-dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:cip4_addr
+        ClientSubnet:client_subnet queries-only max-cells=200;
+dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client
         replies-only max-cells=50;
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname
         chaos-class,queries-only;
@@ -942,7 +942,7 @@ dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
 dataset do_bit dns All:null D0:do_bit queries-only;
 dataset rd_bit dns All:null RD:rd_bit queries-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
-dataset ipv6_rsn_abusers dns All:null ClientAddr:cip4_addr
+dataset ipv6_rsn_abusers dns All:null ClientAddr:client
         queries-only,aaaa-or-a6-only,root-servers-n et-only max-cells=50;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
@@ -1205,8 +1205,8 @@ It includes all received packets.
 Indexer & Label & Description \\
 \hline 
 certain\_qnames & CertainQnames & Popular query names seen at roots \\
-cip4\_net & ClientSubnet & The client's IPv4 /24 subnet \\
-client & ClientAddr & The client's IPv4 address \\
+client\_subnet & ClientSubnet & The client's IP subnet (/24 for IPv4, /96 for IPv6) \\
+client & ClientAddr & The client's IP address \\
 do\_bit & DO & Whether the DO bit is on \\
 edns\_version & EDNSVersion & The EDNS version number \\
 idn\_qname & IDNQname & If the QNAME is in IDN format \\
@@ -1234,13 +1234,14 @@ for DNS messages, and here are their descriptions:
 	This indexer isolates the two most popular query names seen
 	by DNS root servers: {\em localhost\/} and {\em
 	[a--m].root-servers.net\/}.
-\item[cip4\_net]
-	Groups DNS messages together by the /24 subnet of the
-	client's IPv4 address.  We use this to make datasets with
+\item[client\_subnet]
+	Groups DNS messages together by the subnet of the
+	client's IP address.  The subnet is maked by /24 for IPv4
+	and by /96 for IPv6.  We use this to make datasets with
 	large, diverse client populations more manageable and to
 	provide a small amount of privacy and anonymization.
-\item[cip4\_addr]
-	The IPv4 address of the DNS client.
+\item[client]
+	The IP (v4 and v6) address of the DNS client.
 \item[do\_bit]
 	This indexer has only two values: 0 or 1.  It indicates
 	whether or not the ``DO'' bit is set in a DNS query.  According to
