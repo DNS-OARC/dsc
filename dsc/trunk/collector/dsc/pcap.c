@@ -231,7 +231,7 @@ is_ethertype_ip(unsigned short proto)
 	if (PPP_IP == proto)
 		return 1;
 #endif
-#if USE_IPV6
+#if USE_IPV6 && defined(ETHERTYPE_IPV6)
 	if (ETHERTYPE_IPV6 == proto)
 		return 1;
 #endif
