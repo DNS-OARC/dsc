@@ -993,16 +993,21 @@ server isc senna+piquet
 server tmf hq sc lgh
 trace_windows 1hour 4hour 1day 1week 1month
 accum_windows 1day 2days 3days 1week
-\end{MyVerbatim}
+timezone Asia/Tokyo
+domain_list isc_tlds br nl ca cz il pt cl
+domain_list isc_tlds sk ph hr ae bg is si za
+valid_domains isc isc_tlds
 
-Refer to Figure~\ref{fig-screenshot1} to see how
-the directives affect the visual display.
-The configuration file has three directives:
+\end{MyVerbatim}
 
 \begin{figure}
 \centerline{\psfig{figure=screenshot1.eps,width=6.5in}}
 \caption{\label{fig-screenshot1}A sample graph}
 \end{figure}
+
+Refer to Figure~\ref{fig-screenshot1} to see how
+the directives affect the visual display.
+The configuration accepts the following directives:
 
 \begin{description}
 \item[server]
@@ -1018,15 +1023,48 @@ The configuration file has three directives:
 	Specifies the ``Time Scale'' menu options for
 	``cumulative'' plots, such as the Classification plot.
 \item[timezone]
-	@@write me
+	Sets the time zone for dates and times displayed in the
+	graphs. 
+	You can use this if you want to override the system
+	time zone.
+	The value for this directive should be the name
+	of a timezone entry in your system database (usually found
+	in {\em /usr/share/zoneinfo\/}.
+	For example, if your system time zone is set
+	to UTC but you want the times displayed for the
+	London timezone, you can set this directive to
+	{\tt Europe/London\/}.
 \item[domain\_list]
-	@@write me
+	This directive, along with {\em valid\_domains\/}, tell the
+	presenter which domains a nameserver is authoritative for.
+	That information is used in the TLDs subgraphs to differentiate
+	requests for ``valid'' and ``invalid'' domains.
+
+	The {\em domain\_list\/} creates a named list of domains.
+	The first token is a name for the list, and the remaining
+	tokens are domain names.  The directive may be repeated with
+	the same list name, as shown in the above example.
 \item[valid\_domains]
-	@@write me
+	This directive glues servers and domain\_lists together.  The
+	first token is the name of a {\em server\/} and the second token is
+	the name of a {\em domain\_list\/}.
 \item[embargo]
-	@@write me
+	The {\em embargo\/} directive may be used to delay the
+	availability of data via the presenter.  For example, you
+	may have one instance of {\em dsc-grapher.pl\/} for internal
+	use only (password protected, etc).  You may also have a
+	second instance for third-parties where data is delayed by
+	some amount of time, such as hours, days, or weeks.  The value
+	of the {\em embargo\/} directive is the number of seconds which
+	data availability should be delayed.  For example, if you set
+	it to 604800, then viewers will not be able to see any data
+	less than one week old.
 \item[anonymize\_ip]
-	@@write me
+	When the {\em anonymize\_ip\/} directive is given, IP addresses
+	in the display will be anonymized.  The anonymization algorithm
+	is currently hard-coded and designed only for IPv4 addresses.
+	It masks off the lower 24 bits and leaves only the first octet
+	in place.
 \end{description}
 
 Note that the \path|dsc-grapher.cfg| only affects what
