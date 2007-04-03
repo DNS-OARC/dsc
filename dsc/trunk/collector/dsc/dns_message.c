@@ -162,7 +162,12 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 	*it = cip_iterator;
 	return 1;
     }
-    if (0 == strcmp(in, "cip4_net")) {
+    if (0 == strcmp(in, "client_subnet")) {
+	*ix = cip_net_indexer;
+	*it = cip_net_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "cip4_net")) {		/* compatibility */
 	*ix = cip_net_indexer;
 	*it = cip_net_iterator;
 	return 1;
