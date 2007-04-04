@@ -10,6 +10,7 @@
 
 #include "ip_direction_index.h"
 #include "ip_proto_index.h"
+#include "ip_version_index.h"
 
 extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;
@@ -33,6 +34,11 @@ ip_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "ip_proto")) {
 	*ix = ip_proto_indexer;
 	*it = ip_proto_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "ip_version")) {
+	*ix = ip_version_indexer;
+	*it = ip_version_iterator;
 	return 1;
     }
     syslog(LOG_ERR, "unknown indexer '%s'", in);

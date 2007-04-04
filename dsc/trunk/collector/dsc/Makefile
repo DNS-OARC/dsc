@@ -27,6 +27,7 @@ OBJS=\
 	md_array_xml_printer.o \
 	ip_direction_index.o \
 	ip_proto_index.o \
+	ip_version_index.o \
 	certain_qnames_index.o \
 	query_classification_index.o \
 	idn_qname_index.o \

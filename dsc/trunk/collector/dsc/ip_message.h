@@ -12,6 +12,7 @@ typedef struct _ip_message ip_message;
 struct _ip_message {
     inX_addr src;
     inX_addr dst;
+    int version;
     int proto;
 };
 

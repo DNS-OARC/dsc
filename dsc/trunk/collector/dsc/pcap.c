@@ -118,6 +118,7 @@ handle_ipv4(const struct ip * ip, int len)
     int offset = ip->ip_hl << 2;
     ip_message *i = xcalloc(1, sizeof(*i));
 
+    i->version = 4;
     inXaddr_assign_v4(&i->src, &ip->ip_src);
     inXaddr_assign_v4(&i->dst, &ip->ip_dst);
     i->proto = ip->ip_p;
@@ -192,6 +193,7 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
     }                           /* while */
 
     i = xcalloc(1, sizeof(*i));
+    i->version = 6;
     inXaddr_assign_v6(&i->src, &ip6->ip6_src);
     inXaddr_assign_v6(&i->dst, &ip6->ip6_dst);
     i->proto = nexthdr;
