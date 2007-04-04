@@ -15,7 +15,7 @@ extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;
 
 void
-ip_message_handle(const struct ip *ip)
+ip_message_handle(const ip_message *ip)
 {
     md_array_list *a;
     for (a = Arrays; a; a = a->next)

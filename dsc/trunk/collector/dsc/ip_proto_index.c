@@ -11,8 +11,8 @@ static int largest = 0;
 int
 ip_proto_indexer(const void *vp)
 {
-    const struct ip *ip = vp;
-    int i = (int) ip->ip_p;
+    const ip_message *ip = vp;
+    int i = (int) ip->proto;
     if (i > largest)
 	largest = i;
     return i;

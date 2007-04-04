@@ -6,7 +6,16 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 
-typedef void (IPC) (const struct ip *);
+#include "inX_addr.h"
+
+typedef struct _ip_message ip_message;
+struct _ip_message {
+    inX_addr src;
+    inX_addr dst;
+    int proto;
+};
+
+typedef void (IPC) (const ip_message *);
 IPC ip_message_handle;
 
 void ip_message_report(void);

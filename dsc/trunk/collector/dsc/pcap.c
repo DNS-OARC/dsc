@@ -116,7 +116,14 @@ handle_ipv4(const struct ip * ip, int len)
     char buf[PCAP_SNAPLEN];
     dns_message *m;
     int offset = ip->ip_hl << 2;
-    ip_message_callback(ip);
+    ip_message *i = xcalloc(1, sizeof(*i));
+
+    inXaddr_assign_v4(&i->src, &ip->ip_src);
+    inXaddr_assign_v4(&i->dst, &ip->ip_dst);
+    i->proto = ip->ip_p;
+    ip_message_callback(i);
+    free(i);
+
     if (IPPROTO_UDP != ip->ip_p)
 	return NULL;
     /* sigh, punt on IP fragments */
@@ -126,10 +133,12 @@ handle_ipv4(const struct ip * ip, int len)
     m = handle_udp((struct udphdr *) buf, len - offset);
     if (NULL == m)
 	return NULL;
+#if MOVED
     if (0 == m->qr)		/* query */
 	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_src);
     else			/* reply */
 	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_dst);
+#endif
     return m;
 }
 
@@ -139,14 +148,13 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 {
     char buf[PCAP_SNAPLEN];
     dns_message *m;
+    ip_message *i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
     uint16_t payload_len = ntohs(ip6->ip6_plen);
 
     if (debug_flag)
 	fprintf(stderr, "handle_ipv6()\n");
-
-    /* XXXDPW ip_message_callback(ip); */
 
     /*
      * Parse extension headers. This only handles the standard headers, as
@@ -184,6 +192,13 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
         offset += ext_hdr_len;
         payload_len -= ext_hdr_len;
     }                           /* while */
+
+    i = xcalloc(1, sizeof(*i));
+    inXaddr_assign_v6(&i->src, &ip6->ip6_src);
+    inXaddr_assign_v6(&i->dst, &ip6->ip6_dst);
+    i->proto = nexthdr;
+    ip_message_callback(i);
+    free(i);
 
     /* Catch broken and empty packets */
     if (((offset + payload_len) > len)

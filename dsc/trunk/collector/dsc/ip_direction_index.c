@@ -27,7 +27,7 @@ struct _foo {
 static struct _foo *local_addrs = NULL;
 
 static int
-ip_is_local(inX_addr *a)
+ip_is_local(const inX_addr *a)
 {
     struct _foo *t;
     for (t = local_addrs; t; t = t->next)
@@ -39,26 +39,11 @@ ip_is_local(inX_addr *a)
 int
 ip_direction_indexer(const void *vp)
 {
-    const struct ip *ip = vp;
-    inX_addr a;
-    if (4 == ip->ip_v) {
-	inXaddr_assign_v4(&a, &ip->ip_src);
-	if (ip_is_local(&a))
-	    return 0;
-	inXaddr_assign_v4(&a, &ip->ip_dst);
-	if (ip_is_local(&a))
-	    return 1;
-#if USE_IPV6
-    } else if (6 == ip->ip_v) {
-	const struct ip6_hdr * ip6 = vp;
-	inXaddr_assign_v6(&a, &ip6->ip6_src);
-	if (ip_is_local(&a))
-	    return 0;
-	inXaddr_assign_v6(&a, &ip6->ip6_dst);
-	if (ip_is_local(&a))
-	    return 1;
-#endif
-    }
+    const ip_message *ip = vp;
+    if (ip_is_local(&ip->src))
+	return 0;
+    if (ip_is_local(&ip->dst))
+	return 1;
     return LARGEST;
 }
 
