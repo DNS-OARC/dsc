@@ -133,12 +133,10 @@ handle_ipv4(const struct ip * ip, int len)
     m = handle_udp((struct udphdr *) buf, len - offset);
     if (NULL == m)
 	return NULL;
-#if MOVED
     if (0 == m->qr)		/* query */
 	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_src);
     else			/* reply */
 	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_dst);
-#endif
     return m;
 }
 
