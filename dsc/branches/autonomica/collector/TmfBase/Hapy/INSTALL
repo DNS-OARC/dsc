@@ -1,0 +1,18 @@
+
+Hapy building and installation instructions:
+
+	% ./configure
+	% make
+	% make check
+	# make install
+
+With default ./configure setting,
+	- Hapy library is installed in /usr/local/lib/
+	- Hapy header files are installed in /usr/local/include/Hapy/
+
+The "make check" step is optional. It builds a small test suite and executes
+test cases to check basic functionality. If any of the test cases fails,
+please proceed with caution and notify developers as you may have hit an
+unknown compatibility bug.
+
+See http://hapy.org for support options.
