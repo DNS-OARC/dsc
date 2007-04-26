@@ -36,6 +36,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <netinet/tcp.h>
 
 #include <syslog.h>
 #include <stdarg.h>
@@ -111,6 +112,29 @@ handle_udp(const struct udphdr *udp, int len)
 }
 
 dns_message *
+handle_tcp(const struct tcphdr *tcp, int len)
+{
+    dns_message *m;
+    int offset = tcp->th_off << 2;
+    uint16_t dnslen;
+
+    if (port53 != tcp->th_dport && port53 != tcp->th_sport)
+	return NULL;
+    len -= offset + sizeof(dnslen);
+    if (len <= sizeof(dnslen))
+	return NULL;
+    memcpy(&dnslen, (void *)tcp + offset, sizeof(dnslen));
+    dnslen = ntohs(dnslen);
+    if (dnslen != len) /* not a single-packet message */
+	return NULL;
+    m = handle_dns((void *)tcp + offset + sizeof(dnslen), dnslen);
+    if (NULL == m)
+	return NULL;
+    m->src_port = ntohs(tcp->th_sport);
+    return m;
+}
+
+dns_message *
 handle_ipv4(const struct ip * ip, int len)
 {
     char buf[PCAP_SNAPLEN];
@@ -125,13 +149,19 @@ handle_ipv4(const struct ip * ip, int len)
     ip_message_callback(i);
     free(i);
 
-    if (IPPROTO_UDP != ip->ip_p)
-	return NULL;
     /* sigh, punt on IP fragments */
     if (ntohs(ip->ip_off) & IP_OFFMASK)
 	return NULL;
-    memcpy(buf, (void *) ip + offset, len - offset);
-    m = handle_udp((struct udphdr *) buf, len - offset);
+
+    if (IPPROTO_UDP == ip->ip_p) {
+	memcpy(buf, (void *) ip + offset, len - offset);
+	m = handle_udp((struct udphdr *) buf, len - offset);
+    } else if (IPPROTO_TCP == ip->ip_p) {
+	memcpy(buf, (void *) ip + offset, len - offset);
+	m = handle_tcp((struct tcphdr *) buf, len - offset);
+    } else {
+	return NULL;
+    }
     if (NULL == m)
 	return NULL;
     if (0 == m->qr)		/* query */
@@ -206,13 +236,19 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
         || (payload_len > PCAP_SNAPLEN))
         return NULL;
 
-    if (IPPROTO_UDP != nexthdr)
-        return NULL;
+    if (IPPROTO_UDP == nexthdr) {
+	memcpy(buf, (char *) ip6 + offset, payload_len);
+	m = handle_udp((struct udphdr *) buf, payload_len);
+    } else if (IPPROTO_TCP == nexthdr) {
+	memcpy(buf, (char *) ip6 + offset, payload_len);
+	m = handle_tcp((struct tcphdr *) buf, payload_len);
+    } else {
+	return NULL;
+    }
 
-    memcpy(buf, (char *)ip6 + offset, payload_len);
-    m = handle_udp((struct udphdr *) buf, payload_len);
     if (NULL == m)
 	return NULL;
+
     if (0 == m->qr)		/* query */
 	inXaddr_assign_v6(&m->client_ip_addr, &ip6->ip6_src);
     else			/* reply */
