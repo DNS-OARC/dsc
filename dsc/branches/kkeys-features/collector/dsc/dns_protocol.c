@@ -10,6 +10,7 @@
 
 #include "xmalloc.h"
 #include "dns_message.h"
+#include "byteorder.h"
 
 #define DNS_MSG_HDR_SZ 12
 #define RFC1035_MAXLABELSZ 63
@@ -34,8 +35,7 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 	    int rc;
 	    unsigned short s;
 	    off_t ptr;
-	    memcpy(&s, buf + (*off), sizeof(s));
-	    s = ntohs(s);
+	    s = nptohs(buf + (*off));
 	    (*off) += sizeof(s);
 	    /* Sanity check */
 	    if ((*off) >= sz)
@@ -83,7 +83,6 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 static off_t
 grok_question(const char *buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
 {
-    unsigned short us;
     char *t;
     int x;
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
@@ -100,10 +99,8 @@ grok_question(const char *buf, int len, off_t offset, char *qname, unsigned shor
 	*t = tolower(*t);
     if (offset + 4 > len)
 	return 0;
-    memcpy(&us, buf + offset, 2);
-    *qtype = ntohs(us);
-    memcpy(&us, buf + offset + 2, 2);
-    *qclass = ntohs(us);
+    *qtype = nptohs(buf + offset);
+    *qclass = nptohs(buf + offset + 2);
     offset += 4;
     return offset;
 }
@@ -121,20 +118,16 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
 	return 0;
     if (offset + 10 > len)
 	return 0;
-    memcpy(&us, buf + offset, 2);
-    sometype = ntohs(us);
-    memcpy(&us, buf + offset + 2, 2);
-    someclass = ntohs(us);
+    sometype = nptohs(buf + offset);
+    someclass = nptohs(buf + offset + 2);
     if (sometype == T_OPT) {
 	m->edns.found = 1;
 	memcpy(&m->edns.version, buf + offset + 5, 1);
-	memcpy(&us, buf + offset + 6, 2);
-	us = ntohs(us);
+	us = nptohs(buf + offset + 6);
 	m->edns.DO = (us >> 15) & 0x01;		/* RFC 3225 */
     }
     /* get rdlength */
-    memcpy(&us, buf + offset + 8, 2);
-    us = ntohs(us);
+    us = nptohs(buf + offset + 8);
     offset += 10;
     if (offset + us > len)
 	return 0;
@@ -160,8 +153,7 @@ handle_dns(const char *buf, int len)
 	m->malformed = 1;
 	return m;
     }
-    memcpy(&us, buf + 2, 2);
-    us = ntohs(us);
+    us = nptohs(buf + 2);
     m->qr = (us >> 15) & 0x01;
 
 #if 0
@@ -173,14 +165,10 @@ handle_dns(const char *buf, int len)
     m->rd = (us >> 8) & 0x01;
     m->rcode = us & 0x0F;
 
-    memcpy(&us, buf + 4, 2);
-    qdcount = ntohs(us);
-    memcpy(&us, buf + 6, 2);
-    ancount = ntohs(us);
-    memcpy(&us, buf + 8, 2);
-    nscount = ntohs(us);
-    memcpy(&us, buf + 10, 2);
-    arcount = ntohs(us);
+    qdcount = nptohs(buf + 4);
+    ancount = nptohs(buf + 6);
+    nscount = nptohs(buf + 8);
+    arcount = nptohs(buf + 10);
 
     offset = DNS_MSG_HDR_SZ;
 

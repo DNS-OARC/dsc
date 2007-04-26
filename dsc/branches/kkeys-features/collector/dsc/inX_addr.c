@@ -112,7 +112,8 @@ inXaddr_assign_v4(inX_addr *dst, const struct in_addr *src)
 	dst->in6.s6_addr[10] = 0xFF;
 	dst->in6.s6_addr[11] = 0xFF;
 #endif
-	dst->_.in4 = *src;
+	/* memcpy() instead of struct assignment in case src is not aligned */
+	memcpy(&dst->_.in4, src, sizeof(*src));
 	return 0;
 }
 
@@ -120,7 +121,8 @@ inXaddr_assign_v4(inX_addr *dst, const struct in_addr *src)
 int
 inXaddr_assign_v6(inX_addr *dst, const struct in6_addr *src)
 {
-	dst->in6 = *src;
+	/* memcpy() instead of struct assignment in case src is not aligned */
+	memcpy(&dst->in6, src, sizeof(*src));
 	return 0;
 }
 #endif

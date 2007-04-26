@@ -45,6 +45,7 @@
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#include "byteorder.h"
 #include "syslog_debug.h"
 
 #define PCAP_SNAPLEN 1460
@@ -100,15 +101,14 @@ static int vlan_ids[MAX_VLAN_IDS];
 dns_message *
 handle_udp(const struct udphdr *udp, int len)
 {
-    char buf[PCAP_SNAPLEN];
     dns_message *m;
-    if (port53 != udp->uh_dport && port53 != udp->uh_sport)
+
+    if (port53 != nptohs(&udp->uh_dport) && port53 != nptohs(&udp->uh_sport))
 	return NULL;
-    memcpy(buf, udp + 1, len - sizeof(*udp));
-    m = handle_dns(buf, len - sizeof(*udp));
+    m = handle_dns((void *)(udp + 1), len - sizeof(*udp));
     if (NULL == m)
 	return NULL;
-    m->src_port = ntohs(udp->uh_sport);
+    m->src_port = nptohs(&udp->uh_sport);
     return m;
 }
 
@@ -119,26 +119,24 @@ handle_tcp(const struct tcphdr *tcp, int len)
     int offset = tcp->th_off << 2;
     uint16_t dnslen;
 
-    if (port53 != tcp->th_dport && port53 != tcp->th_sport)
+    if (port53 != nptohs(&tcp->th_dport) && port53 != nptohs(&tcp->th_sport))
 	return NULL;
     len -= offset + sizeof(dnslen);
     if (len <= sizeof(dnslen))
 	return NULL;
-    memcpy(&dnslen, (void *)tcp + offset, sizeof(dnslen));
-    dnslen = ntohs(dnslen);
+    dnslen = nptohs((void*)tcp + offset);
     if (dnslen != len) /* not a single-packet message */
 	return NULL;
     m = handle_dns((void *)tcp + offset + sizeof(dnslen), dnslen);
     if (NULL == m)
 	return NULL;
-    m->src_port = ntohs(tcp->th_sport);
+    m->src_port = nptohs(&tcp->th_sport);
     return m;
 }
 
 dns_message *
 handle_ipv4(const struct ip * ip, int len)
 {
-    char buf[PCAP_SNAPLEN];
     dns_message *m;
     int offset = ip->ip_hl << 2;
     ip_message *i = xcalloc(1, sizeof(*i));
@@ -151,15 +149,13 @@ handle_ipv4(const struct ip * ip, int len)
     free(i);
 
     /* sigh, punt on IP fragments */
-    if (ntohs(ip->ip_off) & IP_OFFMASK)
+    if (nptohs(&ip->ip_off) & IP_OFFMASK)
 	return NULL;
 
     if (IPPROTO_UDP == ip->ip_p) {
-	memcpy(buf, (void *) ip + offset, len - offset);
-	m = handle_udp((struct udphdr *) buf, len - offset);
+	m = handle_udp((struct udphdr *) ((void *)ip + offset), len - offset);
     } else if (IPPROTO_TCP == ip->ip_p) {
-	memcpy(buf, (void *) ip + offset, len - offset);
-	m = handle_tcp((struct tcphdr *) buf, len - offset);
+	m = handle_tcp((struct tcphdr *) ((void *)ip + offset), len - offset);
     } else {
 	return NULL;
     }
@@ -176,12 +172,11 @@ handle_ipv4(const struct ip * ip, int len)
 dns_message *
 handle_ipv6(const struct ip6_hdr * ip6, int len)
 {
-    char buf[PCAP_SNAPLEN];
     dns_message *m;
     ip_message *i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
-    uint16_t payload_len = ntohs(ip6->ip6_plen);
+    uint16_t payload_len = nptohs(&ip6->ip6_plen);
 
     if (debug_flag)
 	fprintf(stderr, "handle_ipv6()\n");
@@ -197,10 +192,11 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
         ||(IPPROTO_DSTOPTS == nexthdr)  /* destination options. */
         ||(IPPROTO_AH == nexthdr)       /* destination options. */
         ||(IPPROTO_ESP == nexthdr)) {   /* encapsulating security payload. */
-        struct {
+        typedef struct {
             uint8_t nexthdr;
             uint8_t length;
-        }      ext_hdr;
+        } ext_hdr_t;
+        ext_hdr_t *ext_hdr;
         uint16_t ext_hdr_len;
 
         /* Catch broken packets */
@@ -211,9 +207,9 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
         if (IPPROTO_FRAGMENT == nexthdr)
             return NULL;
 
-        memcpy(&ext_hdr, (char *)ip6 + offset, sizeof(ext_hdr));
-        nexthdr = ext_hdr.nexthdr;
-        ext_hdr_len = (8 * (ntohs(ext_hdr.length) + 1));
+        ext_hdr = (ext_hdr_t*)((char *)ip6 + offset);
+        nexthdr = ext_hdr->nexthdr;
+        ext_hdr_len = (8 * (ext_hdr->length + 1));
 
         /* This header is longer than the packets payload.. WTF? */
         if (ext_hdr_len > payload_len)
@@ -238,11 +234,9 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
         return NULL;
 
     if (IPPROTO_UDP == nexthdr) {
-	memcpy(buf, (char *) ip6 + offset, payload_len);
-	m = handle_udp((struct udphdr *) buf, payload_len);
+	m = handle_udp((struct udphdr *) ((char *) ip6 + offset), payload_len);
     } else if (IPPROTO_TCP == nexthdr) {
-	memcpy(buf, (char *) ip6 + offset, payload_len);
-	m = handle_tcp((struct tcphdr *) buf, payload_len);
+	m = handle_tcp((struct tcphdr *) ((char *) ip6 + offset), payload_len);
     } else {
 	return NULL;
     }
@@ -261,7 +255,8 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 dns_message *
 handle_ip(const struct ip * ip, int len)
 {
-    switch(ip->ip_v) {
+    /* note: ip->ip_v does not work if header is not int-aligned */
+    switch((*(uint8_t*)ip) >> 4) {
     case 4:
         return handle_ipv4(ip, len);
 	break;
@@ -309,7 +304,6 @@ dns_message *
 handle_ppp(const u_char * pkt, int len)
 {
     char buf[PCAP_SNAPLEN];
-    unsigned short us;
     unsigned short proto;
     if (len < 2)
 	return NULL;
@@ -324,14 +318,12 @@ handle_ppp(const u_char * pkt, int len)
 	pkt++;
 	len--;
     } else {
-	memcpy(&us, pkt, sizeof(us));
-	proto = ntohs(us);
+	proto = nptohs(pkt);
 	pkt += 2;
 	len -= 2;
     }
     if (is_ethertype_ip(proto)) {
-        memcpy(buf, pkt, len);
-        return handle_ip((struct ip *) buf, len);
+        return handle_ip((struct ip *) pkt, len);
     }
     return NULL;
 }
@@ -393,9 +385,8 @@ match_vlan(const char *pkt)
 dns_message *
 handle_ether(const u_char * pkt, int len)
 {
-    char buf[PCAP_SNAPLEN];
     struct ether_header *e = (void *) pkt;
-    unsigned short etype = ntohs(e->ether_type);
+    unsigned short etype = nptohs(&e->ether_type);
     if (len < ETHER_HDR_LEN)
 	return NULL;
     pkt += ETHER_HDR_LEN;
@@ -403,15 +394,14 @@ handle_ether(const u_char * pkt, int len)
     if (ETHERTYPE_8021Q == etype) {
 	if (!match_vlan(pkt))
 	    return NULL;
-	etype = ntohs(*(unsigned short *) (pkt + 2));
+	etype = nptohs((unsigned short *) (pkt + 2));
 	pkt += 4;
 	len -= 4;
     }
     if (len < 0)
 	return NULL;
     if (is_ethertype_ip(etype)) {
-	memcpy(buf, pkt, len);
-	return handle_ip((struct ip *) buf, len);
+	return handle_ip((struct ip *) pkt, len);
     }
     return NULL;
 }
@@ -420,6 +410,13 @@ void
 handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     dns_message *m;
+
+#if 0 /* enable this to test code with unaligned headers */
+    char buf[PCAP_SNAPLEN+1];
+    memcpy(buf+1, pkt, hdr->caplen);
+    pkt = buf+1;
+#endif
+
     last_ts = hdr->ts;
 #if 0
     if (debug_flag)
@@ -477,7 +474,7 @@ Pcap_init(const char *device, int promisc)
     assert(pcap);
     assert(n_pcap < MAX_N_PCAP);
 
-    port53 = htons(53);
+    port53 = 53;
     last_ts.tv_sec = last_ts.tv_usec = 0;
 
     if (0 == stat(device, &sb))
