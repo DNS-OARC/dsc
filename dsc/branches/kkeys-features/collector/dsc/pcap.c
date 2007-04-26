@@ -45,6 +45,7 @@
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#include "syslog_debug.h"
 
 #define PCAP_SNAPLEN 1460
 #ifndef ETHER_HDR_LEN

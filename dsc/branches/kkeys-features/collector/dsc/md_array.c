@@ -12,6 +12,7 @@
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#include "syslog_debug.h"
 
 void md_array_grow_d1(md_array * a);
 void md_array_grow_d2(md_array * a);
@@ -239,7 +240,7 @@ md_array_print(md_array * a, md_array_printer * pr)
 	nvals = a->d2.alloc_sz;
 	sortme = xcalloc(nvals, sizeof(*sortme));
 	if (NULL == sortme) {
-	    syslog(LOG_CRIT, "Cant output XML file chunk due to malloc failure!");
+	    syslog(LOG_CRIT, "%s", "Cant output XML file chunk due to malloc failure!");
 	    continue;		/* OUCH! */
 	}
 	while ((i2 = a->d2.iterator(&label2)) > -1) {

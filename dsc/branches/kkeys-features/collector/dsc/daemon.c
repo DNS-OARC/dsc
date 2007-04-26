@@ -22,6 +22,7 @@
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#include "syslog_debug.h"
 
 char *progname = NULL;
 char *pid_file_name = NULL;

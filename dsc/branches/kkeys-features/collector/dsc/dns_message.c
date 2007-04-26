@@ -34,6 +34,7 @@
 #include "do_bit_index.h"
 #include "rd_bit_index.h"
 #include "opcode_index.h"
+#include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
 extern int debug_flag;

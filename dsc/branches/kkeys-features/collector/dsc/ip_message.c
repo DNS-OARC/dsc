@@ -11,6 +11,7 @@
 #include "ip_direction_index.h"
 #include "ip_proto_index.h"
 #include "ip_version_index.h"
+#include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
 static md_array_list *Arrays = NULL;

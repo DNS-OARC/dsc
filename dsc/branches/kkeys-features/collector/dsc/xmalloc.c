@@ -1,10 +1,12 @@
 
+#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <errno.h>
 #include <syslog.h>
 #include "xmalloc.h"
+#include "syslog_debug.h"
 
 
 void *
