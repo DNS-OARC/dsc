@@ -24,7 +24,7 @@ is_v4_in_v6(const struct in6_addr *addr)
 
 
 const char *
-inXaddr_ntop(inX_addr *a, char *buf, socklen_t len)
+inXaddr_ntop(const inX_addr *a, char *buf, socklen_t len)
 {
 	const char *p;
 #if USE_IPV6
