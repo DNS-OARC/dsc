@@ -47,6 +47,7 @@
 #include "pcap.h"
 #include "byteorder.h"
 #include "syslog_debug.h"
+#include "hashtbl.h"
 
 #define PCAP_SNAPLEN 1460
 #ifndef ETHER_HDR_LEN
@@ -97,6 +98,7 @@ static struct timeval finish_ts;
 #define MAX_VLAN_IDS 100
 static int n_vlan_ids = 0;
 static int vlan_ids[MAX_VLAN_IDS];
+static hashtbl *tcpHash;
 
 dns_message *
 handle_udp(const struct udphdr *udp, int len)
@@ -112,25 +114,297 @@ handle_udp(const struct udphdr *udp, int len)
     return m;
 }
 
-dns_message *
-handle_tcp(const struct tcphdr *tcp, int len)
-{
-    dns_message *m;
-    int offset = tcp->th_off << 2;
-    uint16_t dnslen;
 
-    if (port53 != nptohs(&tcp->th_dport) && port53 != nptohs(&tcp->th_sport))
+#define MAX_TCP_STATE 65536
+#define MAX_TCP_HOLES 8 /* this should be enough for legitimate connections */
+
+typedef struct {
+    inX_addr src_ip_addr;
+    inX_addr dst_ip_addr;
+    uint16_t dport;
+    uint16_t sport;
+} tcpHashkey_t;
+
+/* Description of hole in tcp reassembly buffer. */
+typedef struct {
+    uint16_t start; /* start of hole */
+    uint16_t len; /* length of hole; 0 = infinity */
+    int8_t used;
+} tcphole_t;
+
+typedef struct {
+    uint32_t seq_start; /* sequence number of first byte of DNS header */
+    uint16_t dnslen;
+    int8_t fin; /* have we received a FIN? */
+    tcphole_t hole[MAX_TCP_HOLES];
+    int holes;
+    u_char *buf;
+} tcpstate_t;
+
+static void
+tcpstate_reset(tcpstate_t *tcpstate, uint32_t seq)
+{
+    tcpstate->seq_start = seq;
+    tcpstate->dnslen = 0;
+    /* DON'T reset tcpstate->fin */
+    tcpstate->hole[0].used = 1;
+    tcpstate->hole[0].start = 0;
+    tcpstate->hole[0].len = 0; /* infinity */
+    tcpstate->holes = 1;
+    if (tcpstate->buf) {
+	free(tcpstate->buf);
+	tcpstate->buf = NULL;
+    }
+}
+
+static void
+tcpstate_free(void *p)
+{
+    tcpstate_t *tcpstate = (tcpstate_t *)p; 
+    if (tcpstate->buf)
+	free(tcpstate->buf);
+    free(tcpstate);
+}
+
+static unsigned int
+tcp_hashfunc(const void *key)
+{
+    return SuperFastHash(key, strlen(key));;
+}
+
+static int
+tcp_cmpfunc(const void *a, const void *b)
+{
+    return memcmp(a, b, sizeof(tcpHashkey_t));
+}
+
+dns_message *
+handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
+    const struct tcphdr *tcp, int len)
+{
+    dns_message *m = NULL;
+    int offset = tcp->th_off << 2;
+    uint32_t seq, segstart;
+    tcpstate_t *tcpstate = NULL;
+    tcpHashkey_t key, *newkey;
+    int i;
+    char label[384];
+
+    key.src_ip_addr = *src_ip_addr;
+    key.dst_ip_addr = *dst_ip_addr;
+    key.sport = nptohs(&tcp->th_sport);
+    key.dport = nptohs(&tcp->th_dport);
+
+    if (debug_flag) {
+	char *p = label;
+	inXaddr_ntop(src_ip_addr, p, 128);
+	p += strlen(p);
+	p += sprintf(p, ":%d ", key.sport);
+	inXaddr_ntop(dst_ip_addr, p, 128);
+	p += strlen(p);
+	p += sprintf(p, ":%d ", key.dport);
+    }
+
+    if (debug_flag)
+	fprintf(stderr, "handle_tcp(): %s\n", label);
+
+    if (port53 != key.dport && port53 != key.sport)
 	return NULL;
-    len -= offset + sizeof(dnslen);
-    if (len <= sizeof(dnslen))
+
+    if (NULL == tcpHash) {
+        tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc,
+	    free, tcpstate_free);
+	if (NULL == tcpHash)
+	    return NULL;
+    }
+
+    seq = nptohl(&tcp->th_seq);
+    len -= offset; /* len = length of TCP payload */
+    if (debug_flag)
+	fprintf(stderr, "handle_tcp: %s seq = %u, len = %d", label, seq, len);
+
+    tcpstate = hash_find(&key, tcpHash);
+    if (debug_flag) {
+	if (tcpstate)
+	    fprintf(stderr, ", start_seq = %u, dnslen = %d, holes = %d\n", tcpstate->seq_start, tcpstate->dnslen, tcpstate->holes);
+	else
+	    fprintf(stderr, "\n");
+    }
+
+    if (!tcpstate && !(tcp->th_flags & TH_SYN)) {
+	/* There's no existing state, and this is not the start of a stream.
+	 * We have no way to synchronize with the stream, so we give up.
+	 * (This commonly happens for the final ACK in response to a FIN.) */
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: %s no state\n", label);
 	return NULL;
-    dnslen = nptohs((void*)tcp + offset);
-    if (dnslen != len) /* not a single-packet message */
-	return NULL;
-    m = handle_dns((void *)tcp + offset + sizeof(dnslen), dnslen);
-    if (NULL == m)
-	return NULL;
-    m->src_port = nptohs(&tcp->th_sport);
+    }
+
+    if (tcp->th_flags & TH_SYN) {
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: %s SYN at %u\n", label, seq);
+	seq++; /* skip the syn */
+	if (tcpstate) {
+	    tcpstate_reset(tcpstate, seq + 2);
+	} else {
+	    tcpstate = xcalloc(1, sizeof(*tcpstate));
+	    if (!tcpstate)
+		return NULL;
+	    tcpstate_reset(tcpstate, seq + 2);
+	    newkey = xmalloc(sizeof(*newkey));
+	    if (!newkey) {
+		free(tcpstate);
+		return NULL;
+	    }
+	    *newkey = key;
+	    if (0 != hash_add(newkey, tcpstate, tcpHash)) {
+		free(newkey);
+		tcpstate_free(tcpstate);
+		return NULL;
+	    }
+	}
+    }
+
+    if (len <= 0) /* there is no payload */
+	goto done_payload;
+
+    if (seq + sizeof(uint16_t) == tcpstate->seq_start) {
+	/* payload is 2-byte length field plus 0 or more bytes of DNS message */
+	if (len < sizeof(uint16_t)) {
+	    /* makes no sense */
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp: %s nonsense len in first segment\n", label);
+	    hash_remove(&key, tcpHash);
+	    return NULL;
+	}
+	tcpstate->dnslen = nptohs((void*)tcp + offset);
+	len -= sizeof(uint16_t);
+	offset += sizeof(uint16_t);
+	seq += sizeof(uint16_t);
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: %s first segment; dnslen = %d\n", label, tcpstate->dnslen);
+	/* Now we know length, so we can set length of final hole */
+	for (i = 0; i < MAX_TCP_HOLES; i++) {
+	    if (!tcpstate->hole[i].used)
+		continue;
+	    if (tcpstate->hole[i].start >= tcpstate->dnslen) {
+		/* shouldn't happen */
+		tcpstate->hole[i].used = 0;
+		if (debug_flag)
+		    fprintf(stderr, "handle_tcp: %s deleting excess hole %d\n", label, i);
+	    } else if (tcpstate->hole[i].len == 0 ||
+		tcpstate->hole[i].len >
+		    tcpstate->dnslen - tcpstate->hole[i].start)
+	    {
+		tcpstate->hole[i].len =
+		    tcpstate->dnslen - tcpstate->hole[i].start;
+		if (debug_flag)
+		    fprintf(stderr, "handle_tcp: %s truncating hole %d to %d\n", label, i, tcpstate->hole[i].len);
+	    }
+	}
+	tcpstate->buf = xmalloc(tcpstate->dnslen);
+
+	if (len <= 0) /* there is no more payload */
+	    goto done_payload;
+    }
+
+    segstart = seq - tcpstate->seq_start;
+    if (segstart + len > tcpstate->dnslen) { /* payload would overflow */
+	len = tcpstate->dnslen - segstart;
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: %s truncating payload to %d\n", label, len);
+    }
+    /* Reassembly algorithm adapted from RFC 815. */
+    for (i = 0; i < MAX_TCP_HOLES; i++) {
+	tcphole_t *newhole;
+	uint16_t hole_start, hole_len;
+	if (!tcpstate->hole[i].used)
+	    continue; /* hole descriptor is not in use */
+	hole_start = tcpstate->hole[i].start;
+	hole_len = tcpstate->hole[i].len;
+	if (hole_len > 0 && segstart >= hole_start + hole_len)
+	    continue; /* segment is totally after hole */
+	if (segstart + len <= hole_start)
+	    continue; /* segment is totally before hole */
+	/* The segment overlaps this hole.  Delete the hole. */
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: %s overlaping hole %d: %d %d\n", label, i, hole_start, hole_len);
+	tcpstate->hole[i].used = 0; tcpstate->holes--;
+	if (hole_len == 0) {
+	    /* create a new infinite hole after the segment */
+	    newhole = &tcpstate->hole[i]; /* hole[i] is guaranteed free */
+	    newhole->used = 1; tcpstate->holes++;
+	    newhole->start = segstart + len;
+	    newhole->len = 0; /* infinite */
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp: %s new post-hole %d: %d %d\n", label, i, newhole->start, newhole->len);
+	} else if (segstart + len < hole_start + hole_len) {
+	    /* create a new finite hole after the segment (common case) */
+	    newhole = &tcpstate->hole[i]; /* hole[i] is guaranteed free */
+	    newhole->used = 1; tcpstate->holes++;
+	    newhole->start = segstart + len;
+	    newhole->len = (hole_start + hole_len) - newhole->start;
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp: %s new post-hole %d: %d %d\n", label, i, newhole->start, newhole->len);
+	}
+	if (segstart > hole_start) {
+	    /* create a new hole before the segment */
+	    int j;
+	    for (j=0; ; j++) {
+		if (j == MAX_TCP_HOLES)
+		    return NULL; /* XXX */
+		if (!tcpstate->hole[j].used) {
+		    newhole = &tcpstate->hole[j];
+		    newhole->used = 1; tcpstate->holes++;
+		    break;
+		}
+	    }
+	    newhole->start = hole_start;
+	    newhole->len = segstart - hole_start;
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp: %s new pre-hole %d: %d %d\n", label, j, newhole->start, newhole->len);
+	}
+	if (segstart >= hole_start &&
+	    (hole_len == 0 || segstart + len < hole_start + hole_len))
+	{
+	    /* The segment does not extend past hole boundaries; there is
+	     * no need to look for other matching holes. */
+	    break;
+	}
+    }
+
+    /* copy payload to appropriate location in reassembly buffer */
+    memcpy(&tcpstate->buf[segstart], (void *)tcp + offset, len);
+
+    if (debug_flag)
+	fprintf(stderr, "handle_tcp: %s holes remaining: %d\n", label, tcpstate->holes);
+
+    if (tcpstate->holes == 0) {
+	/* We now have a completely reassembled dns message */
+	m = handle_dns(tcpstate->buf, tcpstate->dnslen);
+	if (NULL != m)
+	    m->src_port = nptohs(&tcp->th_sport);
+	if (!tcpstate->fin)
+	    tcpstate_reset(tcpstate, seq + len + 2); /* prep for another msg */
+    }
+
+done_payload:
+
+    if (tcp->th_flags & TH_FIN && !tcpstate->fin) {
+	/* End of tcp stream */
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: %s FIN at %u\n", label, seq);
+	tcpstate->fin = 1;
+    }
+
+    if (tcpstate->fin) {
+	/* If there are no holes left, or one (infinite) hole for a predicted
+	 * message that never actually started... */
+	if (tcpstate->holes == 0 ||
+	    (tcpstate->holes == 1 && tcpstate->dnslen == 0))
+		hash_remove(&key, tcpHash);
+    }
+
     return m;
 }
 
@@ -139,11 +413,15 @@ handle_ipv4(const struct ip * ip, int len)
 {
     dns_message *m;
     int offset = ip->ip_hl << 2;
+    inX_addr src_ip_addr, dst_ip_addr;
     ip_message *i = xcalloc(1, sizeof(*i));
 
+    inXaddr_assign_v4(&src_ip_addr, &ip->ip_src);
+    inXaddr_assign_v4(&dst_ip_addr, &ip->ip_dst);
+
     i->version = 4;
-    inXaddr_assign_v4(&i->src, &ip->ip_src);
-    inXaddr_assign_v4(&i->dst, &ip->ip_dst);
+    i->src = src_ip_addr;
+    i->dst = dst_ip_addr;
     i->proto = ip->ip_p;
     ip_message_callback(i);
     free(i);
@@ -155,16 +433,17 @@ handle_ipv4(const struct ip * ip, int len)
     if (IPPROTO_UDP == ip->ip_p) {
 	m = handle_udp((struct udphdr *) ((void *)ip + offset), len - offset);
     } else if (IPPROTO_TCP == ip->ip_p) {
-	m = handle_tcp((struct tcphdr *) ((void *)ip + offset), len - offset);
+	m = handle_tcp(&src_ip_addr, &dst_ip_addr,
+	    (struct tcphdr *) ((void *)ip + offset), len - offset);
     } else {
 	return NULL;
     }
     if (NULL == m)
 	return NULL;
     if (0 == m->qr)		/* query */
-	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_src);
+	m->client_ip_addr = src_ip_addr;
     else			/* reply */
-	inXaddr_assign_v4(&m->client_ip_addr, &ip->ip_dst);
+	m->client_ip_addr = dst_ip_addr;
     return m;
 }
 
@@ -176,6 +455,7 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
     ip_message *i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
+    inX_addr src_ip_addr, dst_ip_addr;
     uint16_t payload_len = nptohs(&ip6->ip6_plen);
 
     if (debug_flag)
@@ -221,8 +501,10 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 
     i = xcalloc(1, sizeof(*i));
     i->version = 6;
-    inXaddr_assign_v6(&i->src, &ip6->ip6_src);
-    inXaddr_assign_v6(&i->dst, &ip6->ip6_dst);
+    inXaddr_assign_v6(&src_ip_addr, &ip6->ip6_src);
+    inXaddr_assign_v6(&dst_ip_addr, &ip6->ip6_dst);
+    i->src = src_ip_addr;
+    i->dst = dst_ip_addr;
     i->proto = nexthdr;
     ip_message_callback(i);
     free(i);
@@ -236,7 +518,8 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
     if (IPPROTO_UDP == nexthdr) {
 	m = handle_udp((struct udphdr *) ((char *) ip6 + offset), payload_len);
     } else if (IPPROTO_TCP == nexthdr) {
-	m = handle_tcp((struct tcphdr *) ((char *) ip6 + offset), payload_len);
+	m = handle_tcp(&src_ip_addr, &dst_ip_addr,
+	    (struct tcphdr *) ((char *) ip6 + offset), payload_len);
     } else {
 	return NULL;
     }
@@ -245,9 +528,9 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 	return NULL;
 
     if (0 == m->qr)		/* query */
-	inXaddr_assign_v6(&m->client_ip_addr, &ip6->ip6_src);
+	m->client_ip_addr = src_ip_addr;
     else			/* reply */
-	inXaddr_assign_v6(&m->client_ip_addr, &ip6->ip6_dst);
+	m->client_ip_addr = dst_ip_addr;
     return m;
 }
 #endif /* USE_IPV6 */
