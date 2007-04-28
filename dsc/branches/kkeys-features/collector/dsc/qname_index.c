@@ -28,7 +28,8 @@ qname_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-        theHash = hash_create(MAX_ARRAY_SZ, qname_hashfunc, qname_cmpfunc);
+        theHash = hash_create(MAX_ARRAY_SZ, qname_hashfunc, qname_cmpfunc,
+	    free, free);
 	if (NULL == theHash)
 	    return -1;
     }
