@@ -27,6 +27,15 @@ xcalloc(size_t number, size_t size)
 	return p;
 }
 
+void *
+xrealloc(void *p, size_t size)
+{
+	p = realloc(p, size);
+	if (NULL == p)
+	    syslog(LOG_CRIT, "realloc: %s", strerror(errno));
+	return p;
+}
+
 char *
 xstrdup(const char *s)
 {

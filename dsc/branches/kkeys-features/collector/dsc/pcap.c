@@ -114,6 +114,7 @@ handle_udp(const struct udphdr *udp, int len)
     return m;
 }
 
+#define MAX_DNS_LENGTH 0xFFFF
 
 #define MAX_TCP_STATE 65536
 #define MAX_TCP_HOLES 8 /* this should be enough for legitimate connections */
@@ -178,6 +179,36 @@ tcp_cmpfunc(const void *a, const void *b)
     return memcmp(a, b, sizeof(tcpHashkey_t));
 }
 
+/* TCP Reassembly.
+ *
+ * We use SYN to establish the initial sequence number of the first dns
+ * message (tcpstate->start_seq).  We assume that no other segment can arrive
+ * before the SYN (if one does, it is discarded, and the message it belongs to
+ * will never be completely reassembled).
+ *
+ * When we see the first segment, we allocate a reassembly buffer.  If the
+ * segment contained the dns message length, we use that as the buffer length;
+ * otherwise (i.e., segments arrived out of order) we allocate the maximum
+ * buffer length.
+ *
+ * We maintain a list of holes in the current message, so we can reassemble
+ * segments of a single dns message even if they arrive out of order,
+ * duplicated, or overlapping.  Once all the holes have been filled, we can
+ * parse the dns message, and prepare to reassemble another.
+ *
+ * We assume that dns message length is always on a segment boundary.
+ *
+ * We assume segments from different messages will not arrive out of order;
+ * that is, when reassembling one message, we will not receive segments from
+ * another message.  If this does happen, the segment from the second message
+ * is discarded, so that message will never be completely reassembled.
+ *
+ * TODO:
+ * - handle RST 
+ * - deallocate state for connections that have been idle too long
+ * - handle out-of-order segments from different dns messages
+ * - handle dns message length that is not on segment boundary
+ */
 dns_message *
 handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
     const struct tcphdr *tcp, int len)
@@ -185,6 +216,7 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
     dns_message *m = NULL;
     int offset = tcp->th_off << 2;
     uint32_t seq, segstart;
+    uint32_t buflen;
     tcpstate_t *tcpstate = NULL;
     tcpHashkey_t key, *newkey;
     int i;
@@ -302,18 +334,32 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 		    fprintf(stderr, "handle_tcp: %s truncating hole %d to %d\n", label, i, tcpstate->hole[i].len);
 	    }
 	}
-	tcpstate->buf = xmalloc(tcpstate->dnslen);
+	/* buf may have been already (over)allocated if segment is misordered
+	 * or duplicated */
+	tcpstate->buf = xrealloc(tcpstate->buf, tcpstate->dnslen);
 
 	if (len <= 0) /* there is no more payload */
 	    goto done_payload;
     }
 
     segstart = seq - tcpstate->seq_start;
-    if (segstart + len > tcpstate->dnslen) { /* payload would overflow */
+    if (tcpstate->dnslen > 0) {
+	buflen = tcpstate->dnslen;
+    } else {
+	buflen = MAX_DNS_LENGTH;
+	if (NULL == tcpstate->buf)
+	    tcpstate->buf = xmalloc(MAX_DNS_LENGTH);
+    }
+
+    if (segstart >= buflen) { /* payload would be outside buf */
+	goto done_payload;
+    }
+    if (segstart + len > buflen) { /* payload would overflow */
 	len = tcpstate->dnslen - segstart;
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: %s truncating payload to %d\n", label, len);
     }
+
     /* Reassembly algorithm adapted from RFC 815. */
     for (i = 0; i < MAX_TCP_HOLES; i++) {
 	tcphole_t *newhole;
@@ -413,6 +459,7 @@ handle_ipv4(const struct ip * ip, int len)
 {
     dns_message *m;
     int offset = ip->ip_hl << 2;
+    int iplen = nptohs(&ip->ip_len);
     inX_addr src_ip_addr, dst_ip_addr;
     ip_message *i = xcalloc(1, sizeof(*i));
 
@@ -431,10 +478,10 @@ handle_ipv4(const struct ip * ip, int len)
 	return NULL;
 
     if (IPPROTO_UDP == ip->ip_p) {
-	m = handle_udp((struct udphdr *) ((void *)ip + offset), len - offset);
+	m = handle_udp((struct udphdr *) ((void *)ip + offset), iplen - offset);
     } else if (IPPROTO_TCP == ip->ip_p) {
 	m = handle_tcp(&src_ip_addr, &dst_ip_addr,
-	    (struct tcphdr *) ((void *)ip + offset), len - offset);
+	    (struct tcphdr *) ((void *)ip + offset), iplen - offset);
     } else {
 	return NULL;
     }
