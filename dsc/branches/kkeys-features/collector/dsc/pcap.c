@@ -76,6 +76,7 @@
 
 #define MAX_N_PCAP 10
 static int n_pcap = 0;
+static int n_pcap_offline = 0;
 static pcap_t **pcap = NULL;
 static fd_set pcap_fdset;
 static int max_pcap_fds = 0;
@@ -857,7 +858,9 @@ Pcap_init(const char *device, int promisc)
 	exit(1);
 	break;
     }
-    if (!pcap_file(new_pcap)) {
+    if (pcap_file(new_pcap)) {
+	n_pcap_offline++;
+    } else {
 	if (debug_flag)
 	    fprintf(stderr, "Pcap_init: FD_SET %d\n", pcap_fileno(new_pcap));
 	FD_SET(pcap_fileno(new_pcap), &pcap_fdset);
@@ -875,18 +878,23 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
     gettimeofday(&start_ts, NULL);
-    finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
-    finish_ts.tv_usec = 0;
-    while (last_ts.tv_sec < finish_ts.tv_sec) {
-	fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
-	if (NULL == R) {
-	    gettimeofday(&last_ts, NULL);
-	}
+    if (n_pcap_offline > 0) {
 	for (i = 0; i < n_pcap; i++) {
-	    if (pcap_file(pcap[i]) || /* offline savefile */
-		FD_ISSET(pcap_fileno(pcap[i]), &pcap_fdset)) /* ready device */
-	    {
-		pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+	    pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+	}
+	finish_ts = last_ts;
+    } else {
+	finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
+	finish_ts.tv_usec = 0;
+	while (last_ts.tv_sec < finish_ts.tv_sec) {
+	    fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
+	    if (NULL == R) {
+		gettimeofday(&last_ts, NULL);
+	    }
+	    for (i = 0; i < n_pcap; i++) {
+		if (FD_ISSET(pcap_fileno(pcap[i]), &pcap_fdset)) {
+		    pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+		}
 	    }
 	}
     }
