@@ -135,8 +135,8 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
     return offset;
 }
 
-dns_message *
-handle_dns(const char *buf, int len)
+void
+handle_dns(const char *buf, int len, transport_message *tm, DMC *dns_message_callback)
 {
     unsigned short us;
     off_t offset;
@@ -144,17 +144,23 @@ handle_dns(const char *buf, int len)
     int ancount;
     int nscount;
     int arcount;
-    dns_message *m = xcalloc(1, sizeof(*m));
-    if (m == NULL)
-	return NULL;
+
+    dns_message m[1];
+
+    memset(m, 0, sizeof(m));
+    m->tm = tm;
     m->msglen = (unsigned short) len;
 
     if (len < DNS_MSG_HDR_SZ) {
 	m->malformed = 1;
-	return m;
+	return;
     }
     us = nptohs(buf + 2);
     m->qr = (us >> 15) & 0x01;
+    if (0 == m->qr)		/* query */
+	m->client_ip_addr = m->tm->src_ip_addr;
+    else			/* reply */
+	m->client_ip_addr = m->tm->dst_ip_addr;
 
 #if 0
     aa = (us >> 10) & 0x01;
@@ -180,7 +186,7 @@ handle_dns(const char *buf, int len)
 	new_offset = grok_question(buf, len, offset, m->qname, &m->qtype, &m->qclass);
 	if (0 == new_offset) {
 	    m->malformed = 1;
-	    return m;
+	    return;
 	}
 	offset = new_offset;
 	qdcount--;
@@ -218,5 +224,5 @@ handle_dns(const char *buf, int len)
 	arcount--;
     }
     assert(offset <= len);
-    return m;
+    dns_message_callback(m);
 }

@@ -83,10 +83,11 @@ static int max_pcap_fds = 0;
 static unsigned short port53;
 
 char *bpf_program_str = NULL;
-dns_message *(*handle_datalink) (const u_char * pkt, int len) = NULL;
+void (*handle_datalink) (const u_char * pkt, int len, transport_message *tm) = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
-extern dns_message *handle_dns(const char *buf, int len);
+extern void handle_dns(const char *buf, int len, transport_message *tm,
+    DMC *dns_message_callback);
 extern int debug_flag;
 #if 0
 static int debug_count = 20;
@@ -101,18 +102,15 @@ static int n_vlan_ids = 0;
 static int vlan_ids[MAX_VLAN_IDS];
 static hashtbl *tcpHash;
 
-dns_message *
-handle_udp(const struct udphdr *udp, int len)
+void
+handle_udp(const struct udphdr *udp, int len, transport_message *tm)
 {
-    dns_message *m;
+    tm->src_port = nptohs(&udp->uh_sport);
+    tm->dst_port = nptohs(&udp->uh_dport);
 
-    if (port53 != nptohs(&udp->uh_dport) && port53 != nptohs(&udp->uh_sport))
-	return NULL;
-    m = handle_dns((void *)(udp + 1), len - sizeof(*udp));
-    if (NULL == m)
-	return NULL;
-    m->src_port = nptohs(&udp->uh_sport);
-    return m;
+    if (port53 != tm->dst_port && port53 != tm->src_port)
+	return;
+    handle_dns((void *)(udp + 1), len - sizeof(*udp), tm, dns_message_callback);
 }
 
 #define MAX_DNS_LENGTH 0xFFFF
@@ -210,11 +208,9 @@ tcp_cmpfunc(const void *a, const void *b)
  * - handle out-of-order segments from different dns messages
  * - handle dns message length that is not on segment boundary
  */
-dns_message *
-handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
-    const struct tcphdr *tcp, int len)
+void
+handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 {
-    dns_message *m = NULL;
     int offset = tcp->th_off << 2;
     uint32_t seq, segstart;
     uint32_t buflen;
@@ -223,17 +219,20 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
     int i;
     char label[384];
 
-    key.src_ip_addr = *src_ip_addr;
-    key.dst_ip_addr = *dst_ip_addr;
-    key.sport = nptohs(&tcp->th_sport);
-    key.dport = nptohs(&tcp->th_dport);
+    tm->src_port = nptohs(&tcp->th_sport);
+    tm->dst_port = nptohs(&tcp->th_dport);
+
+    key.src_ip_addr = tm->src_ip_addr;
+    key.dst_ip_addr = tm->dst_ip_addr;
+    key.sport = tm->src_port;
+    key.dport = tm->dst_port;
 
     if (debug_flag) {
 	char *p = label;
-	inXaddr_ntop(src_ip_addr, p, 128);
+	inXaddr_ntop(&key.src_ip_addr, p, 128);
 	p += strlen(p);
 	p += sprintf(p, ":%d ", key.sport);
-	inXaddr_ntop(dst_ip_addr, p, 128);
+	inXaddr_ntop(&key.dst_ip_addr, p, 128);
 	p += strlen(p);
 	p += sprintf(p, ":%d ", key.dport);
     }
@@ -242,13 +241,13 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 	fprintf(stderr, "handle_tcp(): %s\n", label);
 
     if (port53 != key.dport && port53 != key.sport)
-	return NULL;
+	return;
 
     if (NULL == tcpHash) {
         tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc,
 	    free, tcpstate_free);
 	if (NULL == tcpHash)
-	    return NULL;
+	    return;
     }
 
     seq = nptohl(&tcp->th_seq);
@@ -270,7 +269,7 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 	 * (This commonly happens for the final ACK in response to a FIN.) */
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: %s no state\n", label);
-	return NULL;
+	return;
     }
 
     if (tcp->th_flags & TH_SYN) {
@@ -282,18 +281,18 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 	} else {
 	    tcpstate = xcalloc(1, sizeof(*tcpstate));
 	    if (!tcpstate)
-		return NULL;
+		return;
 	    tcpstate_reset(tcpstate, seq + 2);
 	    newkey = xmalloc(sizeof(*newkey));
 	    if (!newkey) {
 		free(tcpstate);
-		return NULL;
+		return;
 	    }
 	    *newkey = key;
 	    if (0 != hash_add(newkey, tcpstate, tcpHash)) {
 		free(newkey);
 		tcpstate_free(tcpstate);
-		return NULL;
+		return;
 	    }
 	}
     }
@@ -308,7 +307,7 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 	    if (debug_flag)
 		fprintf(stderr, "handle_tcp: %s nonsense len in first segment\n", label);
 	    hash_remove(&key, tcpHash);
-	    return NULL;
+	    return;
 	}
 	tcpstate->dnslen = nptohs((void*)tcp + offset);
 	len -= sizeof(uint16_t);
@@ -356,7 +355,7 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 	goto done_payload;
     }
     if (segstart + len > buflen) { /* payload would overflow */
-	len = tcpstate->dnslen - segstart;
+	len = buflen - segstart;
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: %s truncating payload to %d\n", label, len);
     }
@@ -399,7 +398,7 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 	    int j;
 	    for (j=0; ; j++) {
 		if (j == MAX_TCP_HOLES)
-		    return NULL; /* XXX */
+		    return; /* XXX */
 		if (!tcpstate->hole[j].used) {
 		    newhole = &tcpstate->hole[j];
 		    newhole->used = 1; tcpstate->holes++;
@@ -428,9 +427,7 @@ handle_tcp(const inX_addr *src_ip_addr, const inX_addr *dst_ip_addr,
 
     if (tcpstate->holes == 0) {
 	/* We now have a completely reassembled dns message */
-	m = handle_dns(tcpstate->buf, tcpstate->dnslen);
-	if (NULL != m)
-	    m->src_port = nptohs(&tcp->th_sport);
+	handle_dns(tcpstate->buf, tcpstate->dnslen, tm, dns_message_callback);
 	if (!tcpstate->fin)
 	    tcpstate_reset(tcpstate, seq + len + 2); /* prep for another msg */
     }
@@ -451,59 +448,42 @@ done_payload:
 	    (tcpstate->holes == 1 && tcpstate->dnslen == 0))
 		hash_remove(&key, tcpHash);
     }
-
-    return m;
 }
 
-dns_message *
-handle_ipv4(const struct ip * ip, int len)
+void
+handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 {
-    dns_message *m;
     int offset = ip->ip_hl << 2;
     int iplen = nptohs(&ip->ip_len);
-    inX_addr src_ip_addr, dst_ip_addr;
-    ip_message *i = xcalloc(1, sizeof(*i));
+    ip_message i;
 
-    inXaddr_assign_v4(&src_ip_addr, &ip->ip_src);
-    inXaddr_assign_v4(&dst_ip_addr, &ip->ip_dst);
+    inXaddr_assign_v4(&tm->src_ip_addr, &ip->ip_src);
+    inXaddr_assign_v4(&tm->dst_ip_addr, &ip->ip_dst);
 
-    i->version = 4;
-    i->src = src_ip_addr;
-    i->dst = dst_ip_addr;
-    i->proto = ip->ip_p;
-    ip_message_callback(i);
-    free(i);
+    i.version = 4;
+    i.src = tm->src_ip_addr;
+    i.dst = tm->dst_ip_addr;
+    i.proto = ip->ip_p;
+    ip_message_callback(&i);
 
     /* sigh, punt on IP fragments */
     if (nptohs(&ip->ip_off) & IP_OFFMASK)
-	return NULL;
+	return;
 
     if (IPPROTO_UDP == ip->ip_p) {
-	m = handle_udp((struct udphdr *) ((void *)ip + offset), iplen - offset);
+	handle_udp((struct udphdr *) ((void *)ip + offset), iplen - offset, tm);
     } else if (IPPROTO_TCP == ip->ip_p) {
-	m = handle_tcp(&src_ip_addr, &dst_ip_addr,
-	    (struct tcphdr *) ((void *)ip + offset), iplen - offset);
-    } else {
-	return NULL;
+	handle_tcp((struct tcphdr *) ((void *)ip + offset), iplen - offset, tm);
     }
-    if (NULL == m)
-	return NULL;
-    if (0 == m->qr)		/* query */
-	m->client_ip_addr = src_ip_addr;
-    else			/* reply */
-	m->client_ip_addr = dst_ip_addr;
-    return m;
 }
 
 #if USE_IPV6
-dns_message *
-handle_ipv6(const struct ip6_hdr * ip6, int len)
+void
+handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
 {
-    dns_message *m;
     ip_message *i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
-    inX_addr src_ip_addr, dst_ip_addr;
     uint16_t payload_len = nptohs(&ip6->ip6_plen);
 
     if (debug_flag)
@@ -529,11 +509,11 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 
         /* Catch broken packets */
         if ((offset + sizeof(ext_hdr)) > len)
-            return NULL;
+            return;
 
         /* Cannot handle fragments. */
         if (IPPROTO_FRAGMENT == nexthdr)
-            return NULL;
+            return;
 
         ext_hdr = (ext_hdr_t*)((char *)ip6 + offset);
         nexthdr = ext_hdr->nexthdr;
@@ -541,7 +521,7 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 
         /* This header is longer than the packets payload.. WTF? */
         if (ext_hdr_len > payload_len)
-            return NULL;
+            return;
 
         offset += ext_hdr_len;
         payload_len -= ext_hdr_len;
@@ -549,10 +529,10 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
 
     i = xcalloc(1, sizeof(*i));
     i->version = 6;
-    inXaddr_assign_v6(&src_ip_addr, &ip6->ip6_src);
-    inXaddr_assign_v6(&dst_ip_addr, &ip6->ip6_dst);
-    i->src = src_ip_addr;
-    i->dst = dst_ip_addr;
+    inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
+    inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
+    i->src = tm->src_ip_addr;
+    i->dst = tm->dst_ip_addr;
     i->proto = nexthdr;
     ip_message_callback(i);
     free(i);
@@ -561,43 +541,30 @@ handle_ipv6(const struct ip6_hdr * ip6, int len)
     if (((offset + payload_len) > len)
         || (payload_len == 0)
         || (payload_len > PCAP_SNAPLEN))
-        return NULL;
+        return;
 
     if (IPPROTO_UDP == nexthdr) {
-	m = handle_udp((struct udphdr *) ((char *) ip6 + offset), payload_len);
+	handle_udp((struct udphdr *) ((char *) ip6 + offset), payload_len, tm);
     } else if (IPPROTO_TCP == nexthdr) {
-	m = handle_tcp(&src_ip_addr, &dst_ip_addr,
-	    (struct tcphdr *) ((char *) ip6 + offset), payload_len);
-    } else {
-	return NULL;
+	handle_tcp((struct tcphdr *) ((char *) ip6 + offset), payload_len, tm);
     }
-
-    if (NULL == m)
-	return NULL;
-
-    if (0 == m->qr)		/* query */
-	m->client_ip_addr = src_ip_addr;
-    else			/* reply */
-	m->client_ip_addr = dst_ip_addr;
-    return m;
 }
 #endif /* USE_IPV6 */
 
-dns_message *
-handle_ip(const struct ip * ip, int len)
+void
+handle_ip(const struct ip * ip, int len, transport_message *tm)
 {
     /* note: ip->ip_v does not work if header is not int-aligned */
     switch((*(uint8_t*)ip) >> 4) {
     case 4:
-        return handle_ipv4(ip, len);
+        handle_ipv4(ip, len, tm);
 	break;
 #if USE_IPV6
     case 6:
-        return handle_ipv6((struct ip6_hdr *)ip, len);
+        handle_ipv6((struct ip6_hdr *)ip, len, tm);
 	break;
 #endif
     default:
-	return NULL;
 	break;
     }
 }
@@ -631,8 +598,8 @@ is_family_inet(unsigned int family)
 }
 
 #if USE_PPP
-dns_message *
-handle_ppp(const u_char * pkt, int len)
+void
+handle_ppp(const u_char * pkt, int len, transport_message *tm)
 {
     char buf[PCAP_SNAPLEN];
     unsigned short proto;
@@ -653,42 +620,38 @@ handle_ppp(const u_char * pkt, int len)
 	pkt += 2;
 	len -= 2;
     }
-    if (is_ethertype_ip(proto)) {
-        return handle_ip((struct ip *) pkt, len);
-    }
-    return NULL;
+    if (is_ethertype_ip(proto))
+        handle_ip((struct ip *) pkt, len, tm);
 }
 
 #endif
 
-dns_message *
-handle_null(const u_char * pkt, int len)
+void
+handle_null(const u_char * pkt, int len, transport_message *tm)
 {
     unsigned int family;
     memcpy(&family, pkt, sizeof(family));
     if (is_family_inet(family))
-	return handle_ip((struct ip *) (pkt + 4), len - 4);
-    return NULL;
+	handle_ip((struct ip *) (pkt + 4), len - 4, tm);
 }
 
 #ifdef DLT_LOOP
-dns_message *
-handle_loop(const u_char * pkt, int len)
+void
+handle_loop(const u_char * pkt, int len, transport_message *tm)
 {
     unsigned int family;
     memcpy(&family, pkt, sizeof(family));
     if (is_family_inet(family))
-	return handle_ip((struct ip *) (pkt + 4), len - 4);
-    return NULL;
+	handle_ip((struct ip *) (pkt + 4), len - 4, tm);
 }
 
 #endif
 
 #ifdef DLT_RAW
-dns_message *
-handle_raw(const u_char * pkt, int len)
+void
+handle_raw(const u_char * pkt, int len, transport_message *tm)
 {
-    return handle_ip((struct ip *) pkt, len);
+    handle_ip((struct ip *) pkt, len, tm);
 }
 
 #endif
@@ -713,34 +676,33 @@ match_vlan(const char *pkt)
     return 0;
 }
 
-dns_message *
-handle_ether(const u_char * pkt, int len)
+void
+handle_ether(const u_char * pkt, int len, transport_message *tm)
 {
     struct ether_header *e = (void *) pkt;
     unsigned short etype = nptohs(&e->ether_type);
     if (len < ETHER_HDR_LEN)
-	return NULL;
+	return;
     pkt += ETHER_HDR_LEN;
     len -= ETHER_HDR_LEN;
     if (ETHERTYPE_8021Q == etype) {
 	if (!match_vlan(pkt))
-	    return NULL;
+	    return;
 	etype = nptohs((unsigned short *) (pkt + 2));
 	pkt += 4;
 	len -= 4;
     }
     if (len < 0)
-	return NULL;
+	return;
     if (is_ethertype_ip(etype)) {
-	return handle_ip((struct ip *) pkt, len);
+	handle_ip((struct ip *) pkt, len, tm);
     }
-    return NULL;
 }
 
 void
 handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
-    dns_message *m;
+    transport_message tm;
 
 #if 0 /* enable this to test code with unaligned headers */
     char buf[PCAP_SNAPLEN+1];
@@ -757,12 +719,8 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 #endif
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
-    m = handle_datalink(pkt, hdr->caplen);
-    if (NULL == m)
-	return;
-    m->ts = hdr->ts;
-    dns_message_callback(m);
-    free(m);
+    tm.ts = hdr->ts;
+    handle_datalink(pkt, hdr->caplen, &tm);
 #if 0
     if (debug_flag && --debug_count == 0)
 	exit(0);

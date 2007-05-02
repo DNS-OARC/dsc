@@ -178,7 +178,7 @@ funny_qtype(const dns_message * m)
 static int
 src_port_zero(const dns_message * m)
 {
-    if (0 == m->src_port)
+    if (0 == m->tm->src_port)
 	return CLASS_SRC_PORT_ZERO;
     return 0;
 }

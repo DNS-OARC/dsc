@@ -8,11 +8,18 @@
 
 #define MAX_QNAME_SZ 512
 
+typedef struct {
+    struct timeval ts;
+    inX_addr src_ip_addr;
+    inX_addr dst_ip_addr;
+    unsigned short src_port;
+    unsigned short dst_port;
+} transport_message;
+
 typedef struct _dns_message dns_message;
 struct _dns_message {
-    struct timeval ts;
+    transport_message *tm;
     inX_addr client_ip_addr;
-    unsigned short src_port;
     unsigned short qtype;
     unsigned short qclass;
     unsigned short msglen;
