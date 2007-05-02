@@ -8,17 +8,13 @@
 
 #include "inX_addr.h"
 
+static unsigned char v4_in_v6_prefix[12] = {0,0,0,0,0,0,0,0,0,0,0xFF,0xFF};
+
 #if USE_IPV6
 static int
 is_v4_in_v6(const struct in6_addr *addr)
 {
-    int i;
-    for (i = 0; i < 10; i++)
-        if (addr->s6_addr[i] != 0)
-            return (0);
-    if ((addr->s6_addr[10] != 0xFF) || (addr->s6_addr[11] != 0xFF))
-        return (0);
-    return 1;
+    return (0 == memcmp(addr, v4_in_v6_prefix, 12));
 }
 #endif
 
@@ -43,7 +39,10 @@ inXaddr_pton(const char *buf, inX_addr *a)
 {
 	if (strchr(buf, ':'))
 		return inet_pton(AF_INET6, buf, a);
-	return inet_pton(AF_INET, buf, a);
+#if USE_IPV6
+	memcpy(a, v4_in_v6_prefix, 12);
+#endif
+	return inet_pton(AF_INET, buf, &a->_.in4);
 }
 
 unsigned int
@@ -85,7 +84,11 @@ inXaddr_mask (const inX_addr *a, const inX_addr *mask)
 	inX_addr masked;
 	masked._.in4.s_addr = a->_.in4.s_addr & mask->_.in4.s_addr;
 #if USE_IPV6
-	if (!is_v4_in_v6(&a->in6)) {
+	if (is_v4_in_v6(&a->in6)) {
+		masked._.pad2.s_addr = a->_.pad2.s_addr;
+		masked._.pad1.s_addr = a->_.pad1.s_addr;
+		masked._.pad0.s_addr = a->_.pad0.s_addr;
+	} else {
 		masked._.pad2.s_addr = a->_.pad2.s_addr & mask->_.pad2.s_addr;
 		masked._.pad1.s_addr = a->_.pad1.s_addr & mask->_.pad1.s_addr;
 		masked._.pad0.s_addr = a->_.pad0.s_addr & mask->_.pad0.s_addr;
@@ -108,9 +111,7 @@ int
 inXaddr_assign_v4(inX_addr *dst, const struct in_addr *src)
 {
 #if USE_IPV6
-	memset(dst, 0, 10);
-	dst->in6.s6_addr[10] = 0xFF;
-	dst->in6.s6_addr[11] = 0xFF;
+	memcpy(dst, v4_in_v6_prefix, 12);
 #endif
 	/* memcpy() instead of struct assignment in case src is not aligned */
 	memcpy(&dst->_.in4, src, sizeof(*src));
