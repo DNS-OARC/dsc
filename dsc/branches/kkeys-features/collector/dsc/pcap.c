@@ -749,6 +749,8 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 #endif
 
     last_ts = hdr->ts;
+    if (start_ts.tv_sec == 0)
+	start_ts = last_ts;
 #if 0
     if (debug_flag)
 	fprintf(stderr, "handle_pcap()\n");
@@ -877,13 +879,15 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
-    gettimeofday(&start_ts, NULL);
     if (n_pcap_offline > 0) {
+	start_ts.tv_sec = 0;
+	start_ts.tv_usec = 0;
 	for (i = 0; i < n_pcap; i++) {
-	    pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+	    pcap_dispatch(pcap[i], -1, handle_pcap, NULL);
 	}
 	finish_ts = last_ts;
     } else {
+	gettimeofday(&start_ts, NULL);
 	finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
 	finish_ts.tv_usec = 0;
 	while (last_ts.tv_sec < finish_ts.tv_sec) {
