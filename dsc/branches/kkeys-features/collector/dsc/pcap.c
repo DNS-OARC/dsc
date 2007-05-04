@@ -116,7 +116,7 @@ handle_udp(const struct udphdr *udp, int len, transport_message *tm)
 #define MAX_DNS_LENGTH 0xFFFF
 
 #define MAX_TCP_WINDOW_SIZE (0xFFFF << 14)
-#define MAX_TCP_STATE 65536
+#define MAX_TCP_STATE 65535
 
 /* These numbers define the sizes of small arrays which are simpler to work
  * with than dynamically allocated lists. */
@@ -195,7 +195,10 @@ tcpstate_free(void *p)
 static unsigned int
 tcp_hashfunc(const void *key)
 {
-    return SuperFastHash(key, strlen(key));;
+    tcpHashkey_t *k = (tcpHashkey_t *) key;
+    return (k->dport << 16) | k->sport |
+	k->src_ip_addr._.in4.s_addr | k->dst_ip_addr._.in4.s_addr;
+    /* 32 low bits of ipv6 address are good enough for a hash */
 }
 
 static int
