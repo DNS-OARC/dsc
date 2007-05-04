@@ -115,8 +115,14 @@ handle_udp(const struct udphdr *udp, int len, transport_message *tm)
 
 #define MAX_DNS_LENGTH 0xFFFF
 
+#define MAX_TCP_WINDOW_SIZE (0xFFFF << 14)
 #define MAX_TCP_STATE 65536
-#define MAX_TCP_HOLES 8 /* this should be enough for legitimate connections */
+
+/* These numbers define the sizes of small arrays which are simpler to work
+ * with than dynamically allocated lists. */
+#define MAX_TCP_MSGS 8 /* messages being reassembled (per connection) */
+#define MAX_TCP_SEGS 8 /* segments not assigned to a message (per connection) */
+#define MAX_TCP_HOLES 8 /* holes in a msg buf (per message) */
 
 typedef struct {
     inX_addr src_ip_addr;
@@ -127,43 +133,63 @@ typedef struct {
 
 /* Description of hole in tcp reassembly buffer. */
 typedef struct {
-    uint16_t start; /* start of hole */
-    uint16_t len; /* length of hole; 0 = infinity */
-    int8_t used;
+    uint16_t start; /* start of hole, measured from beginning of msgbuf->buf */
+    uint16_t len; /* length of hole (0 == unused) */
 } tcphole_t;
 
+/* TCP message reassembly buffer */
 typedef struct {
-    uint32_t seq_start; /* sequence number of first byte of DNS header */
-    uint16_t dnslen;
-    int8_t fin; /* have we received a FIN? */
+    uint32_t seq; /* seq# of first byte of header of this DNS msg */
+    uint16_t dnslen; /* length of dns message, and size of buf */
     tcphole_t hole[MAX_TCP_HOLES];
-    int holes;
-    u_char *buf;
+    int holes; /* number of holes remaining in message */
+    u_char buf[]; /* reassembled message (C99 flexible array member) */
+} tcp_msgbuf_t;
+
+/* held TCP segment */
+typedef struct {
+    uint32_t seq; /* sequence number of first byte of segment */
+    uint16_t len; /* length of segment, and size of buf */
+    u_char buf[]; /* segment payload (C99 flexible array member) */
+} tcp_segbuf_t;
+
+/* TCP reassembly state */
+typedef struct {
+    uint32_t seq_start; /* seq# of length field of next DNS msg */
+    short msgbufs; /* number of msgbufs in use */
+    int8_t fin; /* have we seen a FIN? */
+    tcp_msgbuf_t *msgbuf[MAX_TCP_MSGS];
+    tcp_segbuf_t *segbuf[MAX_TCP_SEGS];
 } tcpstate_t;
 
 static void
 tcpstate_reset(tcpstate_t *tcpstate, uint32_t seq)
 {
+    int i;
     tcpstate->seq_start = seq;
-    tcpstate->dnslen = 0;
-    /* DON'T reset tcpstate->fin */
-    tcpstate->hole[0].used = 1;
-    tcpstate->hole[0].start = 0;
-    tcpstate->hole[0].len = 0; /* infinity */
-    tcpstate->holes = 1;
-    if (tcpstate->buf) {
-	free(tcpstate->buf);
-	tcpstate->buf = NULL;
+    tcpstate->fin = 0;
+    if (tcpstate->msgbufs > 0) {
+	tcpstate->msgbufs = 0;
+	for (i = 0; i < MAX_TCP_MSGS; i++) {
+	    if (tcpstate->msgbuf[i]) {
+		free(tcpstate->msgbuf[i]);
+		tcpstate->msgbuf[i] = NULL;
+	    }
+	}
+    }
+    for (i = 0; i < MAX_TCP_SEGS; i++) {
+	if (tcpstate->segbuf[i]) {
+	    free(tcpstate->segbuf[i]);
+	    tcpstate->segbuf[i] = NULL;
+	}
     }
 }
 
 static void
 tcpstate_free(void *p)
 {
-    tcpstate_t *tcpstate = (tcpstate_t *)p; 
-    if (tcpstate->buf)
-	free(tcpstate->buf);
-    free(tcpstate);
+    tcpstate_reset((tcpstate_t *)p, 0);
+    free(p);
 }
 
 static unsigned int
@@ -180,43 +206,259 @@ tcp_cmpfunc(const void *a, const void *b)
 
 /* TCP Reassembly.
  *
- * We use SYN to establish the initial sequence number of the first dns
- * message (tcpstate->start_seq).  We assume that no other segment can arrive
- * before the SYN (if one does, it is discarded, and the message it belongs to
- * will never be completely reassembled).
+ * When we see a SYN, we allocate a new tcpstate for the connection, and
+ * establish the initial sequence number of the first dns message (seq_start)
+ * on the connection.  We assume that no other segment can arrive before the
+ * SYN (if one does, it is discarded, and if is not repeated the message it
+ * belongs to can never be completely reassembled).
  *
- * When we see the first segment, we allocate a reassembly buffer.  If the
- * segment contained the dns message length, we use that as the buffer length;
- * otherwise (i.e., segments arrived out of order) we allocate the maximum
- * buffer length.
+ * Then, for each segment that arrives on the connection:
+ * - If it's the first segment of a message (containing the 2-byte message
+ *   length), we allocate a msgbuf, and check for any held segments that might
+ *   belong to it.
+ * - If the first byte of the segment belongs to any msgbuf, we fill
+ *   in the holes of that message.  If the message has no more holes, we
+ *   handle the complete dns message.  If the tail of the segment was longer
+ *   than the hole, we recurse on the tail.
+ * - Otherwise, if the segment could be within the tcp window, we hold onto it
+ *   pending the creation of a matching msgbuf.
  *
- * We maintain a list of holes in the current message, so we can reassemble
- * segments of a single dns message even if they arrive out of order,
- * duplicated, or overlapping.  Once all the holes have been filled, we can
- * parse the dns message, and prepare to reassemble another.
- *
- * We assume that dns message length is always on a segment boundary.
- *
- * We assume segments from different messages will not arrive out of order;
- * that is, when reassembling one message, we will not receive segments from
- * another message.  If this does happen, the segment from the second message
- * is discarded, so that message will never be completely reassembled.
+ * This algorithm handles segments that arrive out of order, duplicated or
+ * overlapping (including segments from different dns messages arriving out of
+ * order), and dns messages that do not necessarily start on segment
+ * boundaries.
  *
  * TODO:
  * - handle RST 
  * - deallocate state for connections that have been idle too long
- * - handle out-of-order segments from different dns messages
- * - handle dns message length that is not on segment boundary
  */
+void
+handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
+    transport_message *tm)
+{
+    int i, m, s;
+    uint16_t dnslen;
+    int segoff, seglen;
+
+    if (debug_flag)
+	fprintf(stderr, "handle_tcp_segment(): seq=%u, len=%d\n", seq, len);
+
+    if (len <= 0) /* there is no more payload */
+	return;
+
+    if (seq == tcpstate->seq_start) {
+	/* payload is 2-byte length field plus 0 or more bytes of DNS message */
+	if (len < sizeof(uint16_t)) {
+	    /* makes no sense */
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp_segment: nonsense len in first segment\n");
+	    return;
+	}
+	dnslen = nptohs(segment);
+	tcpstate->seq_start += sizeof(uint16_t) + dnslen;
+	len -= sizeof(uint16_t);
+	segment += sizeof(uint16_t);
+	seq += sizeof(uint16_t);
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp_segment: first segment; dnslen = %d\n", dnslen);
+	if (len >= dnslen) {
+	    /* this segment contains a complete message - avoid the reassembly
+	     * buffer and just handle the message immediately */
+	    handle_dns(segment, dnslen, tm, dns_message_callback);
+	    /* handle the trailing part of the segment */
+	    if (len > dnslen) {
+		if (debug_flag)
+		    fprintf(stderr, "handle_tcp_segment: segment tail\n");
+		handle_tcp_segment(segment + dnslen, len - dnslen,
+		    seq + dnslen, tcpstate, tm);
+	    }
+	    return;
+	}
+	/* allocate a msgbuf for reassembly */
+	for (m = 0; tcpstate->msgbuf[m]; ) {
+	    if (++m == MAX_TCP_MSGS) {
+		if (debug_flag)
+		    fprintf(stderr, "handle_tcp_segment: out of msgbufs\n");
+		return;
+	    }
+	}
+	tcpstate->msgbuf[m] = xcalloc(1, sizeof(tcp_msgbuf_t) + dnslen);
+	if (NULL == tcpstate->msgbuf[m]) {
+	    syslog(LOG_ERR, "out of memory for tcp_msgbuf (%d)", dnslen);
+	    return;
+	}
+	tcpstate->msgbufs++;
+	tcpstate->msgbuf[m]->seq = seq;
+	tcpstate->msgbuf[m]->dnslen = dnslen;
+	tcpstate->msgbuf[m]->holes = 1;
+	tcpstate->msgbuf[m]->hole[0].start = len;
+	tcpstate->msgbuf[m]->hole[0].len = dnslen - len;
+	if (debug_flag) {
+	    fprintf(stderr, "handle_tcp_segment: new msgbuf %d: seq = %u, dnslen = %d, hole start = %d, hole len = %d\n",
+		m,
+		tcpstate->msgbuf[m]->seq,
+		tcpstate->msgbuf[m]->dnslen,
+		tcpstate->msgbuf[m]->hole[0].start,
+		tcpstate->msgbuf[m]->hole[0].len);
+	}
+	/* copy segment to appropriate location in reassembly buffer */
+	memcpy(tcpstate->msgbuf[m]->buf, segment, len);
+
+	/* Now that we know the length of this message, we must check any held
+	 * segments to see if they belong to it. */
+	for (s = 0; s < MAX_TCP_SEGS; s++) {
+	    if (!tcpstate->segbuf[s]) continue;
+	    if (tcpstate->segbuf[s]->seq - seq >= 0 &&
+		tcpstate->segbuf[s]->seq - seq < dnslen)
+	    {
+		tcp_segbuf_t *segbuf = tcpstate->segbuf[s];
+		tcpstate->segbuf[s] = NULL;
+		handle_tcp_segment(tcpstate->segbuf[s]->buf,
+		    tcpstate->segbuf[s]->len, tcpstate->segbuf[s]->seq,
+		    tcpstate, tm);
+		free(segbuf);
+	    }
+	}
+	return;
+    }
+
+    /* find the message to which the first byte of this segment belongs */
+    for (m = 0; ; m++) {
+	if (m >= MAX_TCP_MSGS) {
+	    /* seg does not match any msgbuf; just hold on to it. */
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp_segment: seg does not match any msgbuf\n");
+
+	    if (seq - tcpstate->seq_start > MAX_TCP_WINDOW_SIZE) {
+		if (debug_flag)
+		    fprintf(stderr, "handle_tcp_segment: seg is outside window; discarding\n");
+		return;
+	    }
+	    for (s = 0; ; s++) {
+		if (s >= MAX_TCP_SEGS) {
+		    if (debug_flag)
+			fprintf(stderr, "handle_tcp_segment: out of segbufs\n");
+		    return;
+		}
+		if (tcpstate->segbuf[s])
+		    continue;
+		tcpstate->segbuf[s] = xcalloc(1, sizeof(tcp_segbuf_t) + len);
+		tcpstate->segbuf[s]->seq = seq;
+		tcpstate->segbuf[s]->len = len;
+		memcpy(tcpstate->segbuf[s]->buf, segment, len);
+		if (debug_flag) {
+		    fprintf(stderr, "handle_tcp_segment: new segbuf %d: seq = %u, len = %d\n",
+			s,
+			tcpstate->segbuf[s]->seq,
+			tcpstate->segbuf[s]->len);
+		}
+		return;
+	    }
+	}
+	if (!tcpstate->msgbuf[m])
+	    continue;
+	segoff = seq - tcpstate->msgbuf[m]->seq;
+	if (segoff >= 0 && segoff < tcpstate->msgbuf[m]->dnslen) {
+	    /* segment starts in this msgbuf */
+	    fprintf(stderr, "handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d\n",
+		m,
+		tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen);
+	    if (segoff + len > tcpstate->msgbuf[m]->dnslen) {
+		/* segment would overflow msgbuf */
+		seglen = tcpstate->msgbuf[m]->dnslen - segoff;
+		if (debug_flag)
+		    fprintf(stderr, "handle_tcp_segment: using partial segment %d\n", seglen);
+	    } else {
+		seglen = len;
+	    }
+	    break;
+	}
+    }
+
+    /* Reassembly algorithm adapted from RFC 815. */
+    for (i = 0; i < MAX_TCP_HOLES; i++) {
+	tcphole_t *newhole;
+	uint16_t hole_start, hole_len;
+	if (tcpstate->msgbuf[m]->hole[i].len == 0)
+	    continue; /* hole descriptor is not in use */
+	hole_start = tcpstate->msgbuf[m]->hole[i].start;
+	hole_len = tcpstate->msgbuf[m]->hole[i].len;
+	if (segoff >= hole_start + hole_len)
+	    continue; /* segment is totally after hole */
+	if (segoff + seglen <= hole_start)
+	    continue; /* segment is totally before hole */
+	/* The segment overlaps this hole.  Delete the hole. */
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp_segment: overlaping hole %d: %d %d\n", i, hole_start, hole_len);
+	tcpstate->msgbuf[m]->hole[i].len = 0;
+	tcpstate->msgbuf[m]->holes--;
+	if (segoff + seglen < hole_start + hole_len) {
+	    /* create a new hole after the segment (common case) */
+	    newhole = &tcpstate->msgbuf[m]->hole[i]; /* hole[i] is guaranteed free */
+	    newhole->start = segoff + seglen;
+	    newhole->len = (hole_start + hole_len) - newhole->start;
+	    tcpstate->msgbuf[m]->holes++;
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp_segment: new post-hole %d: %d %d\n", i, newhole->start, newhole->len);
+	}
+	if (segoff > hole_start) {
+	    /* create a new hole before the segment */
+	    int j;
+	    for (j=0; ; j++) {
+		if (j == MAX_TCP_HOLES) {
+		    if (debug_flag)
+			fprintf(stderr, "handle_tcp_segment: out of hole descriptors\n");
+		    return;
+		}
+		if (tcpstate->msgbuf[m]->hole[j].len == 0) {
+		    newhole = &tcpstate->msgbuf[m]->hole[j];
+		    break;
+		}
+	    }
+	    tcpstate->msgbuf[m]->holes++;
+	    newhole->start = hole_start;
+	    newhole->len = segoff - hole_start;
+	    if (debug_flag)
+		fprintf(stderr, "handle_tcp_segment: new pre-hole %d: %d %d\n", j, newhole->start, newhole->len);
+	}
+	if (segoff >= hole_start &&
+	    (hole_len == 0 || segoff + seglen < hole_start + hole_len))
+	{
+	    /* The segment does not extend past hole boundaries; there is
+	     * no need to look for other matching holes. */
+	    break;
+	}
+    }
+
+    /* copy payload to appropriate location in reassembly buffer */
+    memcpy(&tcpstate->msgbuf[m]->buf[segoff], segment, seglen);
+
+    if (debug_flag)
+	fprintf(stderr, "handle_tcp_segment: holes remaining: %d\n", tcpstate->msgbuf[m]->holes);
+
+    if (tcpstate->msgbuf[m]->holes == 0) {
+	/* We now have a completely reassembled dns message */
+	handle_dns(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm, dns_message_callback);
+	free(tcpstate->msgbuf[m]);
+	tcpstate->msgbuf[m] = NULL;
+	tcpstate->msgbufs--;
+    }
+
+    if (seglen < len) {
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp_segment: segment tail\n");
+	handle_tcp_segment(segment + seglen, len - seglen, seq + seglen,
+	    tcpstate, tm);
+    }
+}
+
 void
 handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 {
     int offset = tcp->th_off << 2;
-    uint32_t seq, segstart;
-    uint32_t buflen;
+    uint32_t seq;
     tcpstate_t *tcpstate = NULL;
     tcpHashkey_t key, *newkey;
-    int i;
     char label[384];
 
     tm->src_port = nptohs(&tcp->th_sport);
@@ -253,12 +495,12 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
     seq = nptohl(&tcp->th_seq);
     len -= offset; /* len = length of TCP payload */
     if (debug_flag)
-	fprintf(stderr, "handle_tcp: %s seq = %u, len = %d", label, seq, len);
+	fprintf(stderr, "handle_tcp: seq = %u, len = %d", seq, len);
 
     tcpstate = hash_find(&key, tcpHash);
     if (debug_flag) {
 	if (tcpstate)
-	    fprintf(stderr, ", start_seq = %u, dnslen = %d, holes = %d\n", tcpstate->seq_start, tcpstate->dnslen, tcpstate->holes);
+	    fprintf(stderr, ", seq_start = %u, msgs = %d\n", tcpstate->seq_start, tcpstate->msgbufs);
 	else
 	    fprintf(stderr, "\n");
     }
@@ -268,21 +510,21 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	 * We have no way to synchronize with the stream, so we give up.
 	 * (This commonly happens for the final ACK in response to a FIN.) */
 	if (debug_flag)
-	    fprintf(stderr, "handle_tcp: %s no state\n", label);
+	    fprintf(stderr, "handle_tcp: no state\n");
 	return;
     }
 
     if (tcp->th_flags & TH_SYN) {
 	if (debug_flag)
-	    fprintf(stderr, "handle_tcp: %s SYN at %u\n", label, seq);
+	    fprintf(stderr, "handle_tcp: SYN at %u\n", seq);
 	seq++; /* skip the syn */
 	if (tcpstate) {
-	    tcpstate_reset(tcpstate, seq + 2);
+	    tcpstate_reset(tcpstate, seq);
 	} else {
 	    tcpstate = xcalloc(1, sizeof(*tcpstate));
 	    if (!tcpstate)
 		return;
-	    tcpstate_reset(tcpstate, seq + 2);
+	    tcpstate_reset(tcpstate, seq);
 	    newkey = xmalloc(sizeof(*newkey));
 	    if (!newkey) {
 		free(tcpstate);
@@ -297,156 +539,20 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	}
     }
 
-    if (len <= 0) /* there is no payload */
-	goto done_payload;
-
-    if (seq + sizeof(uint16_t) == tcpstate->seq_start) {
-	/* payload is 2-byte length field plus 0 or more bytes of DNS message */
-	if (len < sizeof(uint16_t)) {
-	    /* makes no sense */
-	    if (debug_flag)
-		fprintf(stderr, "handle_tcp: %s nonsense len in first segment\n", label);
-	    hash_remove(&key, tcpHash);
-	    return;
-	}
-	tcpstate->dnslen = nptohs((void*)tcp + offset);
-	len -= sizeof(uint16_t);
-	offset += sizeof(uint16_t);
-	seq += sizeof(uint16_t);
-	if (debug_flag)
-	    fprintf(stderr, "handle_tcp: %s first segment; dnslen = %d\n", label, tcpstate->dnslen);
-	/* Now we know length, so we can set length of final hole */
-	for (i = 0; i < MAX_TCP_HOLES; i++) {
-	    if (!tcpstate->hole[i].used)
-		continue;
-	    if (tcpstate->hole[i].start >= tcpstate->dnslen) {
-		/* shouldn't happen */
-		tcpstate->hole[i].used = 0;
-		if (debug_flag)
-		    fprintf(stderr, "handle_tcp: %s deleting excess hole %d\n", label, i);
-	    } else if (tcpstate->hole[i].len == 0 ||
-		tcpstate->hole[i].len >
-		    tcpstate->dnslen - tcpstate->hole[i].start)
-	    {
-		tcpstate->hole[i].len =
-		    tcpstate->dnslen - tcpstate->hole[i].start;
-		if (debug_flag)
-		    fprintf(stderr, "handle_tcp: %s truncating hole %d to %d\n", label, i, tcpstate->hole[i].len);
-	    }
-	}
-	/* buf may have been already (over)allocated if segment is misordered
-	 * or duplicated */
-	tcpstate->buf = xrealloc(tcpstate->buf, tcpstate->dnslen);
-
-	if (len <= 0) /* there is no more payload */
-	    goto done_payload;
-    }
-
-    segstart = seq - tcpstate->seq_start;
-    if (tcpstate->dnslen > 0) {
-	buflen = tcpstate->dnslen;
-    } else {
-	buflen = MAX_DNS_LENGTH;
-	if (NULL == tcpstate->buf)
-	    tcpstate->buf = xmalloc(MAX_DNS_LENGTH);
-    }
-
-    if (segstart >= buflen) { /* payload would be outside buf */
-	goto done_payload;
-    }
-    if (segstart + len > buflen) { /* payload would overflow */
-	len = buflen - segstart;
-	if (debug_flag)
-	    fprintf(stderr, "handle_tcp: %s truncating payload to %d\n", label, len);
-    }
-
-    /* Reassembly algorithm adapted from RFC 815. */
-    for (i = 0; i < MAX_TCP_HOLES; i++) {
-	tcphole_t *newhole;
-	uint16_t hole_start, hole_len;
-	if (!tcpstate->hole[i].used)
-	    continue; /* hole descriptor is not in use */
-	hole_start = tcpstate->hole[i].start;
-	hole_len = tcpstate->hole[i].len;
-	if (hole_len > 0 && segstart >= hole_start + hole_len)
-	    continue; /* segment is totally after hole */
-	if (segstart + len <= hole_start)
-	    continue; /* segment is totally before hole */
-	/* The segment overlaps this hole.  Delete the hole. */
-	if (debug_flag)
-	    fprintf(stderr, "handle_tcp: %s overlaping hole %d: %d %d\n", label, i, hole_start, hole_len);
-	tcpstate->hole[i].used = 0; tcpstate->holes--;
-	if (hole_len == 0) {
-	    /* create a new infinite hole after the segment */
-	    newhole = &tcpstate->hole[i]; /* hole[i] is guaranteed free */
-	    newhole->used = 1; tcpstate->holes++;
-	    newhole->start = segstart + len;
-	    newhole->len = 0; /* infinite */
-	    if (debug_flag)
-		fprintf(stderr, "handle_tcp: %s new post-hole %d: %d %d\n", label, i, newhole->start, newhole->len);
-	} else if (segstart + len < hole_start + hole_len) {
-	    /* create a new finite hole after the segment (common case) */
-	    newhole = &tcpstate->hole[i]; /* hole[i] is guaranteed free */
-	    newhole->used = 1; tcpstate->holes++;
-	    newhole->start = segstart + len;
-	    newhole->len = (hole_start + hole_len) - newhole->start;
-	    if (debug_flag)
-		fprintf(stderr, "handle_tcp: %s new post-hole %d: %d %d\n", label, i, newhole->start, newhole->len);
-	}
-	if (segstart > hole_start) {
-	    /* create a new hole before the segment */
-	    int j;
-	    for (j=0; ; j++) {
-		if (j == MAX_TCP_HOLES)
-		    return; /* XXX */
-		if (!tcpstate->hole[j].used) {
-		    newhole = &tcpstate->hole[j];
-		    newhole->used = 1; tcpstate->holes++;
-		    break;
-		}
-	    }
-	    newhole->start = hole_start;
-	    newhole->len = segstart - hole_start;
-	    if (debug_flag)
-		fprintf(stderr, "handle_tcp: %s new pre-hole %d: %d %d\n", label, j, newhole->start, newhole->len);
-	}
-	if (segstart >= hole_start &&
-	    (hole_len == 0 || segstart + len < hole_start + hole_len))
-	{
-	    /* The segment does not extend past hole boundaries; there is
-	     * no need to look for other matching holes. */
-	    break;
-	}
-    }
-
-    /* copy payload to appropriate location in reassembly buffer */
-    memcpy(&tcpstate->buf[segstart], (void *)tcp + offset, len);
-
-    if (debug_flag)
-	fprintf(stderr, "handle_tcp: %s holes remaining: %d\n", label, tcpstate->holes);
-
-    if (tcpstate->holes == 0) {
-	/* We now have a completely reassembled dns message */
-	handle_dns(tcpstate->buf, tcpstate->dnslen, tm, dns_message_callback);
-	if (!tcpstate->fin)
-	    tcpstate_reset(tcpstate, seq + len + 2); /* prep for another msg */
-    }
-
-done_payload:
+    handle_tcp_segment((void*)tcp + offset, len, seq, tcpstate, tm);
 
     if (tcp->th_flags & TH_FIN && !tcpstate->fin) {
 	/* End of tcp stream */
 	if (debug_flag)
-	    fprintf(stderr, "handle_tcp: %s FIN at %u\n", label, seq);
+	    fprintf(stderr, "handle_tcp: FIN at %u\n", seq);
 	tcpstate->fin = 1;
     }
 
-    if (tcpstate->fin) {
-	/* If there are no holes left, or one (infinite) hole for a predicted
-	 * message that never actually started... */
-	if (tcpstate->holes == 0 ||
-	    (tcpstate->holes == 1 && tcpstate->dnslen == 0))
-		hash_remove(&key, tcpHash);
+    if (tcpstate->fin && tcpstate->msgbufs == 0) {
+	/* FIN was seen, and there are no incomplete msgbufs left */
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: connection done\n");
+	hash_remove(&key, tcpHash);
     }
 }
 
