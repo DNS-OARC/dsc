@@ -316,8 +316,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    {
 		tcp_segbuf_t *segbuf = tcpstate->segbuf[s];
 		tcpstate->segbuf[s] = NULL;
-		handle_tcp_segment(tcpstate->segbuf[s]->buf,
-		    tcpstate->segbuf[s]->len, tcpstate->segbuf[s]->seq,
+		handle_tcp_segment(segbuf->buf, segbuf->len, segbuf->seq,
 		    tcpstate, tm);
 		free(segbuf);
 	    }
