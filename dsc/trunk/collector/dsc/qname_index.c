@@ -74,7 +74,7 @@ qname_iterator(char **label)
 static unsigned int
 qname_hashfunc(const void *key)
 {
-        return SuperFastHash(key, strlen(key));;
+        return hashendian(key, strlen(key), 0);
 }
 
 static int

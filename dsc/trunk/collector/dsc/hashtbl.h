@@ -26,4 +26,18 @@ void *hash_find(const void *key, hashtbl *);
 void hash_iter_init(hashtbl *);
 void *hash_iterate(hashtbl *);
 
-extern unsigned int SuperFastHash (const char * data, int len);
+
+/*
+ * found in lookup3.c
+ */
+extern uint32_t hashlittle(const void *key, size_t length, uint32_t initval);
+extern uint32_t hashbig(const void *key, size_t length, uint32_t initval);
+extern uint32_t hashword(const uint32_t *k, size_t length, uint32_t initval);
+
+#ifndef BYTE_ORDER
+#define hashendian hashlittle
+#elif BYTE_ORDER == BIG_ENDIAN
+#define hashendian hashbig
+#else
+#define hashendian hashlittle
+#endif

@@ -38,6 +38,7 @@ OBJS=\
 	ParseConfig.o \
 	config_hooks.o \
 	hashtbl.o \
+	lookup3.o \
 	xmalloc.o \
 	inX_addr.o
 

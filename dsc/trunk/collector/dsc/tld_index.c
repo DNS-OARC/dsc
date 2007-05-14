@@ -76,7 +76,7 @@ tld_iterator(char **label)
 static unsigned int
 tld_hashfunc(const void *key)
 {
-	return SuperFastHash(key, strlen(key));;
+	return hashendian(key, strlen(key), 0);
 }
 
 static int
