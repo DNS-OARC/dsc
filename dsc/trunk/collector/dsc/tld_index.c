@@ -30,7 +30,7 @@ tld_indexer(const void *vp)
 	return -1;
     tld = dns_message_tld((dns_message *) m);
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc);
+	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc, free, free);
 	if (NULL == theHash)
 	    return -1;
     }

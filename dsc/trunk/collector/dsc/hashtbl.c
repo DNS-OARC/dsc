@@ -9,7 +9,8 @@
 #include "hashtbl.h"
 
 hashtbl
-*hash_create(int N, hashfunc *hasher, hashkeycmp *cmp)
+*hash_create(int N, hashfunc *hasher, hashkeycmp *cmp, hashfree *keyfree,
+    hashfree *datafree)
 {
 	hashtbl *new = xcalloc(1, sizeof(*new));
 	if (NULL == new)
@@ -17,12 +18,32 @@ hashtbl
 	new->modulus = N;
 	new->hasher = hasher;
 	new->keycmp = cmp;
+	new->keyfree = keyfree;
+	new->datafree = datafree;
 	new->items = xcalloc(N, sizeof(hashitem*));
 	if (NULL == new->items) {
 		free(new);
 		return NULL;
 	}
 	return new;
+}
+
+void
+hash_destroy(hashtbl *tbl)
+{
+    hashitem *i, *next;
+    int slot;
+    for (slot = 0; slot < tbl->modulus; slot++) {
+	for (i = tbl->items[slot]; i; i = next) {
+	    next = i->next;
+	    if (tbl->keyfree)
+		tbl->keyfree((void *)i->key);
+	    if (tbl->datafree)
+		tbl->datafree(i->data);
+	    free(i);
+	}
+    }
+    free(tbl);
 }
 
 int
@@ -39,6 +60,26 @@ hash_add(const void *key, void *data, hashtbl *tbl)
 	for (I = &tbl->items[slot]; *I; I = &(*I)->next);
 	*I = new;
 	return 0;
+}
+
+void
+hash_remove(const void *key, hashtbl *tbl)
+{
+	hashitem **I, *i;
+	int slot;
+	slot = tbl->hasher(key) % tbl->modulus;
+	for (I = &tbl->items[slot]; *I; I = &(*I)->next) {
+	    if (0 == tbl->keycmp(key, (*I)->key)) {
+		i = *I;
+		*I = (*I)->next;
+		if (tbl->keyfree)
+		    tbl->keyfree((void *)i->key);
+		if (tbl->datafree)
+		    tbl->datafree(i->data);
+		free(i);
+		break;
+	    }
+	}
 }
 
 void *

@@ -21,8 +21,9 @@ for SERVER in * ; do
 		test -d $NODE || continue;
 		cd $NODE
 		echo "$SERVER/$NODE:"
-		sh $EXECDIR/refile-and-grok-node.sh &
+		$EXECDIR/dsc-xml-extractor.pl >dsc-xml-extractor.out 2>&1 # &
 		cd ..	# NODE
+		# sleep 1
 	done
 	cd ..	# SERVER
 done

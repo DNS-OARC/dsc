@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <syslog.h>
+#include <ctype.h>
 #include <string.h>
 #include <sys/types.h>
 #include <arpa/nameser.h>
@@ -34,23 +35,46 @@
 #include "do_bit_index.h"
 #include "rd_bit_index.h"
 #include "opcode_index.h"
+#include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
 extern int debug_flag;
 static md_array_list *Arrays = NULL;
 static filter_list *DNSFilters = NULL;
 
+static const char *printable_dnsname(const char *name)
+{
+    static char buf[MAX_QNAME_SZ];
+    int i;
+
+    for (i = 0; i < sizeof(buf) - 1; name++) {
+	if (!*name)
+	    break;
+	if (isgraph(*name)) {
+	    buf[i] = *name;
+	    i++;
+	} else {
+	    if (i + 3 > MAX_QNAME_SZ - 1)
+		break; /* expanded character would overflow buffer */
+	    sprintf(buf+i, "%%%02x", (unsigned char)*name);
+	    i += 3;
+	}
+    }
+    buf[i] = '\0';
+    return buf;
+}
+
 void
 dns_message_print(dns_message * m)
 {
 	char buf[128];
 	inXaddr_ntop(&m->client_ip_addr, buf, 128);
-	fprintf(stderr, "%15s:%5d", buf, m->src_port);
+	fprintf(stderr, "%15s:%5d", buf, m->tm->src_port);
 	fprintf(stderr, "\tQT=%d", m->qtype);
 	fprintf(stderr, "\tQC=%d", m->qclass);
 	fprintf(stderr, "\tlen=%d", m->msglen);
-	fprintf(stderr, "\tqname=%s", m->qname);
-	fprintf(stderr, "\ttld=%s", dns_message_tld(m));
+	fprintf(stderr, "\tqname=%s", printable_dnsname(m->qname));
+	fprintf(stderr, "\ttld=%s", printable_dnsname(dns_message_tld(m)));
 	fprintf(stderr, "\topcode=%d", m->opcode);
 	fprintf(stderr, "\trcode=%d", m->rcode);
 	fprintf(stderr, "\tmalformed=%d", m->malformed);

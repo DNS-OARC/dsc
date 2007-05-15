@@ -22,6 +22,7 @@
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#include "syslog_debug.h"
 
 char *progname = NULL;
 char *pid_file_name = NULL;
@@ -142,28 +143,35 @@ main(int argc, char *argv[])
         syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
         sleep(60 - (time(NULL) % 60));
     }
-    syslog(LOG_INFO, "Running");
-    for (;;) {
-	pid_t cpid = fork();
-	if (0 == cpid) {
-	    Pcap_run(dns_message_handle, ip_message_handle);
-	    if (0 == fork()) {
-		dns_message_report();
-		ip_message_report();
+    syslog(LOG_INFO, "%s", "Running");
+
+    if (debug_flag) {
+	Pcap_run(dns_message_handle, ip_message_handle);
+	dns_message_report();
+	ip_message_report();
+
+    } else {
+	for (;;) {
+	    pid_t cpid = fork();
+	    if (0 == cpid) {
+		Pcap_run(dns_message_handle, ip_message_handle);
+		if (0 == fork()) {
+		    dns_message_report();
+		    ip_message_report();
+		}
+		_exit(0);
+	    } else {
+		int cstatus = 0;
+		syslog(LOG_DEBUG, "waiting for child pid %d", (int) cpid);
+		while (waitpid(cpid, &cstatus, 0) < 0)
+		    (void) 0;
+		if (WIFSIGNALED(cstatus))
+		    syslog(LOG_NOTICE, "child exited with signal %d, status %d",
+			    WTERMSIG(cstatus), WEXITSTATUS(cstatus));
 	    }
-	    _exit(0);
-	} else {
-	    int cstatus = 0;
-	    syslog(LOG_DEBUG, "waiting for child pid %d", (int) cpid);
-	    while (waitpid(cpid, &cstatus, 0) < 0)
-		(void) 0;
-	    if (WIFSIGNALED(cstatus))
-		syslog(LOG_NOTICE, "child exited with signal %d, status %d",
-			WTERMSIG(cstatus), WEXITSTATUS(cstatus));
 	}
-	if (debug_flag)
-	    break;
     }
+
     Pcap_close();
     return 0;
 }

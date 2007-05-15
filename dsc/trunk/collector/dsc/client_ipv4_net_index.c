@@ -32,7 +32,8 @@ cip_net_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc);
+	theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc,
+	    NULL, free);
 	if (NULL == theHash)
 	    return -1;
     }
