@@ -9,10 +9,11 @@ if test -f CVS/Root ; then
 	CVSROOT=`cat CVS/Root`
 	export CVSROOT
 fi
+ROOT=`svn info | awk '$1 == "Repository" && $2 == "Root:" {print $3}'`
 
 cd $TD
 TS=`date +%Y%m%d%H%M`
-cvs export -r HEAD -d dsc-$TS dsc
+svn export $ROOT/dsc/trunk dsc-$TS
 
 ${RM} dsc-$TS/collector/update-tmfbase.sh
 ${RM} dsc-$TS/mk-release.sh
