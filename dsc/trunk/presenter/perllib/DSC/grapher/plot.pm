@@ -465,12 +465,12 @@ my $std_accum_yaxes = {
     data_summer => \&DSC::grapher::data_summer_2d,
     yaxes	=> {
         rate => {
-            label => 'Packet Rate (p/s)',
+            label => 'Queries Rate (q/s)',
             divideflag => 1,
             default => 1,
         },
         percent => {
-            label => 'Percent of Packets',
+            label => 'Percent of Queries',
             divideflag => 0,
             default => 0,
         },
