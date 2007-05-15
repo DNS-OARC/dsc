@@ -1251,6 +1251,7 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
 	}
 	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
+	push(@items, navbar_item('plot','dns_transport','DNS Transport'));
 	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
 	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
 	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
