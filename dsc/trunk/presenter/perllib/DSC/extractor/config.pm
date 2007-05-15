@@ -316,6 +316,21 @@ my $client_subnet2_keys =   [ qw(
     },
   },
 
+  transport_vs_qtype => {
+    ndim	=> 2,
+    type1	=> 'Transport',
+    type2	=> 'Qtype',
+    outputs	=> {
+      transport_vs_qtype => {
+	keys2	=> [ qw(udp tcp) ],
+	data_munger => \&main::munge_elsify,
+	data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
 );
 
 1;
