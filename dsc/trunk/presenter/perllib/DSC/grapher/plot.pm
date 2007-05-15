@@ -455,7 +455,7 @@ my $std_accum_yaxes = {
    }
   },
 
-  dns_transport => {
+  transport_vs_qtype => {
     dataset => 'transport_vs_qtype',
     plot_type => 'trace',
     keys	=> [qw(tcp udp else)],

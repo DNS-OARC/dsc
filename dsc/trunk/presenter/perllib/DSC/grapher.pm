@@ -813,7 +813,6 @@ sub munge_sum_2d_to_1d {
 	# by summing 2nd dim values.
 	my $data = shift;
 	my %newdata;
-	my $N = 0;
 	foreach my $t (keys %$data) {
 		foreach my $k1 (keys %{$data->{$t}}) {
 			foreach my $k2 (keys %{$data->{$t}{$k1}}) {
@@ -1251,7 +1250,7 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
 	}
 	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
-	push(@items, navbar_item('plot','dns_transport','DNS Transport'));
+	push(@items, navbar_item('plot','transport_vs_qtype','DNS Transport'));
 	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
 	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
 	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
