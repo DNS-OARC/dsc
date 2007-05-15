@@ -808,6 +808,22 @@ sub munge_2d_to_1d {
 	\%newdata;
 }
 
+sub munge_sum_2d_to_1d {
+	# this function changes a 2D array into a 1D array
+	# by summing 2nd dim values.
+	my $data = shift;
+	my %newdata;
+	my $N = 0;
+	foreach my $t (keys %$data) {
+		foreach my $k1 (keys %{$data->{$t}}) {
+			foreach my $k2 (keys %{$data->{$t}{$k1}}) {
+				$newdata{$t}{$k1} += $data->{$t}{$k1}{$k2};
+			}
+		}
+	}
+	\%newdata;
+}
+
 sub munge_anonymize_ip {
 	# anonymize IP addresses, leaving only 1st octet.
 	# since anonymizing may result in colissions, we sum the values

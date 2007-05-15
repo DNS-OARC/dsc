@@ -455,6 +455,31 @@ my $std_accum_yaxes = {
    }
   },
 
+  dns_transport => {
+    dataset => 'transport_vs_qtype',
+    plot_type => 'trace',
+    keys	=> [qw(tcp udp else)],
+    names	=> [qw(TCP UDP Other)],
+    colors	=> [qw(red brightgreen purple)],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    yaxes	=> {
+        rate => {
+            label => 'Packet Rate (p/s)',
+            divideflag => 1,
+            default => 1,
+        },
+        percent => {
+            label => 'Percent of Packets',
+            divideflag => 0,
+            default => 0,
+        },
+    },
+    plottitle   => 'Transports Carrying DNS Queries',
+    map_legend	=> 1,
+    munge_func  => \&DSC::grapher::munge_sum_2d_to_1d,
+  },
+
   direction_vs_ipproto_sent => {
     dataset => 'direction_vs_ipproto',
     datafile => 'direction_vs_ipproto',
