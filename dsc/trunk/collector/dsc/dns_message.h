@@ -14,6 +14,7 @@ typedef struct {
     inX_addr dst_ip_addr;
     unsigned short src_port;
     unsigned short dst_port;
+    unsigned char proto;
 } transport_message;
 
 typedef struct _dns_message dns_message;

@@ -35,6 +35,7 @@ OBJS=\
 	do_bit_index.o \
 	rd_bit_index.o \
 	opcode_index.o \
+	transport_index.o \
 	ParseConfig.o \
 	config_hooks.o \
 	hashtbl.o \

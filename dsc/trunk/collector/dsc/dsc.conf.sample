@@ -72,6 +72,7 @@ dataset do_bit dns All:null D0:do_bit queries-only;
 dataset rd_bit dns All:null RD:rd_bit queries-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
 dataset ipv6_rsn_abusers dns All:null ClientAddr:client queries-only,aaaa-or-a6-only,root-servers-net-only max-cells=50;
+dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 

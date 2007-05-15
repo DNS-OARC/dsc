@@ -578,6 +578,7 @@ handle_ipv4(const struct ip * ip, int len, transport_message *tm)
     if (nptohs(&ip->ip_off) & IP_OFFMASK)
 	return;
 
+    tm->proto = ip->ip_p;
     if (IPPROTO_UDP == ip->ip_p) {
 	handle_udp((struct udphdr *) ((void *)ip + offset), iplen - offset, tm);
     } else if (IPPROTO_TCP == ip->ip_p) {
@@ -651,6 +652,7 @@ handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
         || (payload_len > PCAP_SNAPLEN))
         return;
 
+    tm->proto = nexthdr;
     if (IPPROTO_UDP == nexthdr) {
 	handle_udp((struct udphdr *) ((char *) ip6 + offset), payload_len, tm);
     } else if (IPPROTO_TCP == nexthdr) {
