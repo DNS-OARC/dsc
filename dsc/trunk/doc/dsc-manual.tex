@@ -831,9 +831,10 @@ The configuration file currently understands the following directives:
 	Specifies the DNS server's local IP address.  It is used
 	to determine the ``direction'' of an IP packet: sending,
 	receiving, or other.  You may specify multiple local addresses
-	(separated by whitespace) if necessary.
+	by repeating the {\em local\_address} line any number of times.
 
 	Example: {\tt local\_address 172.16.0.1;\/}
+	Example: {\tt local\_address 2001:4f8:0:2::13;\/}
 
 \item[run\_dir]
 
