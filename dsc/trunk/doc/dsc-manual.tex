@@ -944,6 +944,7 @@ dataset rd_bit dns All:null RD:rd_bit queries-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
 dataset ipv6_rsn_abusers dns All:null ClientAddr:client
         queries-only,aaaa-or-a6-only,root-servers-n et-only max-cells=50;
+dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
         any;
@@ -1266,6 +1267,7 @@ query\_classification & Class & A classification for bogus queries \\
 rcode & Rcode & DNS reply code \\
 rd\_bit & RD & Check if Recursion Desired bit set \\
 tld & TLD & TLD of the query name \\
+transport & Transport & Transport protocol for the DNS message (UDP or TCP) \\
 \hline
 \end{tabular}
 \caption{\label{tbl-dns-indexers}DNS message indexers}
@@ -1354,6 +1356,8 @@ for DNS messages, and here are their descriptions:
 	clients.
 \item[tld]
 	the TLD of the first QNAME in a DNS message's question section.
+\item[transport]
+	Indicates whether the DNS message is carried via UDP or TCP\@.
 \end{description}
 
 \subsection{DNS Filters}
@@ -1698,9 +1702,6 @@ For example:
 \item
 	{\dsc} perl modules are installed in the ``site\_perl'' directory
 	but they should probably be installed under /usr/local/dsc.
-
-\item
-	{\dsc} collector does not grok DNS/TCP transactions yet.
 
 \item
 	{\dsc} collector silently drops UDP frags
