@@ -33,6 +33,7 @@ enum {
 	ctDecimalNumber,
 	ctComment,
 	ctIPv4Address = 11,
+	ctIPv6Address,
 	ctHostOrNet,
 	ctInterface = 21,
 	ctRunDir,
@@ -55,6 +56,11 @@ Rule rDecimalNumber;
 Rule rComment;
 
 Rule rIPv4Address;
+Rule rHex4;
+Rule rHexSeq;
+Rule rHexPart;
+Rule rIPv6Address;
+Rule rIPAddress;
 Rule rHostOrNet;
 
 Rule rInterface("Interface", 0);
@@ -204,6 +210,11 @@ ParseConfig(const char *fn)
 		rDecimalNumber >> "." >>
 		rDecimalNumber >> "." >>
 		rDecimalNumber;
+	rHex4 = + char_set_r("0123456789abcdefABCDEF");
+	rHexSeq = rHex4 >> * ( ":" >> rHex4 );
+	rHexPart = rHexSeq | rHexSeq >> "::" >> * rHexSeq | "::" >> * rHexSeq;
+	rIPv6Address = rHexPart >> * ( ":" >> rIPv4Address );
+	rIPAddress = rIPv4Address | rIPv6Address;
 	rHostOrNet = string_r("host") | string_r("net");
 
 
@@ -211,7 +222,7 @@ ParseConfig(const char *fn)
 	rInterface = "interface" >>rBareToken >>";" ;
 	rRunDir = "run_dir" >>rQuotedToken >>";" ;
 	rPidFile = "pid_file" >>rQuotedToken >>";" ;
-	rLocalAddr = "local_address" >>rIPv4Address >>";" ;
+	rLocalAddr = "local_address" >>rIPAddress >>";" ;
 	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
 	rDatasetOpt = rBareToken >> "=" >> rDecimalNumber;
 	rDataset = "dataset" >>rBareToken >>rBareToken

@@ -1,10 +1,12 @@
 
 # local_address
 #
-#	specifies a local IPv4 address.  used to determine the
-#	"direction" of an IP packet: sending or receiving or other
+#	specifies a local IP address.  used to determine the
+#	"direction" of an IP packet: sending or receiving or other.
+#	Repeat any number of times for all local addresses.
 #
 local_address 127.0.0.1;
+local_address ::1;
 
 # run_dir
 #
