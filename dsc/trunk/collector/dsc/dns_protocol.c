@@ -16,7 +16,7 @@
 #define RFC1035_MAXLABELSZ 63
 
 static int
-rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
+rfc1035NameUnpack(const u_char *buf, size_t sz, off_t * off, char *name, int ns)
 {
     off_t no = 0;
     unsigned char c;
@@ -81,7 +81,7 @@ rfc1035NameUnpack(const char *buf, size_t sz, off_t * off, char *name, int ns)
 }
 
 static off_t
-grok_question(const char *buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
+grok_question(const u_char *buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
 {
     char *t;
     int x;
@@ -106,7 +106,7 @@ grok_question(const char *buf, int len, off_t offset, char *qname, unsigned shor
 }
 
 static off_t
-grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message * m)
+grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message * m)
 {
     int x;
     unsigned short sometype;
@@ -136,7 +136,7 @@ grok_additional_for_opt_rr(const char *buf, int len, off_t offset, dns_message *
 }
 
 void
-handle_dns(const char *buf, int len, transport_message *tm, DMC *dns_message_callback)
+handle_dns(const u_char *buf, uint16_t len, transport_message *tm, DMC *dns_message_callback)
 {
     unsigned short us;
     off_t offset;
@@ -149,7 +149,7 @@ handle_dns(const char *buf, int len, transport_message *tm, DMC *dns_message_cal
 
     memset(m, 0, sizeof(m));
     m->tm = tm;
-    m->msglen = (unsigned short) len;
+    m->msglen = len;
 
     if (len < DNS_MSG_HDR_SZ) {
 	m->malformed = 1;

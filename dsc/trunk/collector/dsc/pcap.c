@@ -68,6 +68,15 @@
 #ifdef __linux__
 #define uh_dport dest
 #define uh_sport source
+#define th_off doff
+#define th_dport dest
+#define th_sport source
+#define th_seq seq
+#define TCPFLAGFIN(a) (a)->fin
+#define TCPFLAGSYN(a) (a)->syn
+#else
+#define TCPFLAGSYN(a) ((a)->th_flags&TH_SYN)
+#define TCPFLAGFIN(a) ((a)->th_flags&TH_FIN)
 #endif
 
 #ifndef IP_OFFMASK
@@ -86,7 +95,7 @@ char *bpf_program_str = NULL;
 void (*handle_datalink) (const u_char * pkt, int len, transport_message *tm) = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
-extern void handle_dns(const char *buf, int len, transport_message *tm,
+extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm,
     DMC *dns_message_callback);
 extern int debug_flag;
 #if 0
@@ -507,7 +516,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	    fprintf(stderr, "\n");
     }
 
-    if (!tcpstate && !(tcp->th_flags & TH_SYN)) {
+    if (!tcpstate && !(TCPFLAGSYN(tcp))) {
 	/* There's no existing state, and this is not the start of a stream.
 	 * We have no way to synchronize with the stream, so we give up.
 	 * (This commonly happens for the final ACK in response to a FIN.) */
@@ -516,7 +525,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	return;
     }
 
-    if (tcp->th_flags & TH_SYN) {
+    if (TCPFLAGSYN(tcp)) {
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: SYN at %u\n", seq);
 	seq++; /* skip the syn */
@@ -543,7 +552,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 
     handle_tcp_segment((void*)tcp + offset, len, seq, tcpstate, tm);
 
-    if (tcp->th_flags & TH_FIN && !tcpstate->fin) {
+    if (TCPFLAGFIN(tcp) && !tcpstate->fin) {
 	/* End of tcp stream */
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: FIN at %u\n", seq);
@@ -767,7 +776,7 @@ handle_raw(const u_char * pkt, int len, transport_message *tm)
 #endif
 
 int
-match_vlan(const char *pkt)
+match_vlan(const u_char *pkt)
 {
     unsigned short vlan;
     int i;
