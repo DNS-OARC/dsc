@@ -6,14 +6,74 @@
 use warnings;
 use strict;
 
+use Cwd;
 use DSC::extractor;
 use DSC::extractor::config;
 use Data::Dumper;
+use Proc::PID::File;
+use POSIX qw(nice);
+
+my $pid_basename = pid_basename('dsc-xml-extractor');
+die "$pid_basename Already running!" if Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename);
+nice(19);
 
 my $dbg = 0;
+my $DBCACHE;
+my $N = 0;
 
-foreach my $fn (@ARGV) {
-	extract($fn);
+foreach my $fn (<*.xml incoming/*/*.xml>) {
+	my $donefn = get_donefn($fn);
+	if (-s $donefn) {
+		print STDERR "removing duplicate $fn in ", `pwd`, "\n";
+		unlink $fn;
+		next;
+	}
+	if (-f $donefn) {
+		print STDERR "removing empty $donefn in ", `pwd`, "\n";
+		unlink $donefn;
+	}
+	print "extract $fn\n";
+	my $x = eval { extract($fn); };
+	unless (defined $x) {
+		warn "extract died with ", $@, "\n";
+		mkdir ("errors", 0755) unless (-d "errors");
+		rename ($fn, "errors/$fn") || warn "rename $fn -> errors/$fn: $!";
+		next;
+	}
+	next unless ($x > 0);
+	rename($fn, $donefn) or die "$fn -> $donefn: $!";
+	last if (300 == $N++);
+}
+
+sub get_donefn {
+	my $fn = shift;
+	die unless ($fn =~ m@(\d+).([^\.]+).xml@);
+	my $when = $1;
+	my $type = $2;
+	my $yymmdd = &yymmdd($when - 60);
+	mkdir ("$yymmdd", 0755) unless (-d "$yymmdd");
+	mkdir ("$yymmdd/$type", 0755) unless (-d "$yymmdd/$type");
+	return "$yymmdd/$type/$when.$type.xml";
+}
+
+sub pid_basename {
+	my $prog = shift;
+	my $cwd = getcwd;
+	my @x = reverse split(/\//, $cwd);
+	return join('-', $x[1], $x[0], $prog);
+}
+
+sub read_db {
+        my $O = shift;
+        my $yymmdd = shift;
+        my $dataset = shift;
+        my $output = shift;
+        my $db = $DBCACHE->{$yymmdd}->{$dataset}->{$output};
+        return $db if $db;
+        my %foo = ();
+        exit(254) if (&{$O->{data_reader}}(\%foo, "$yymmdd/$dataset/$output.dat") < 0);
+        print STDERR "read $yymmdd/$dataset/$output.dat\n";
+        return $DBCACHE->{$yymmdd}->{$dataset}->{$output} = \%foo;
 }
 
 sub extract {
@@ -43,7 +103,6 @@ sub extract {
 
 	foreach my $output (keys %{$EX->{outputs}}) {
 		print STDERR "output=$output\n" if ($dbg);
-		my %db;
 		my $O =  $EX->{outputs}{$output};
 
 		# transform the input into something for this particular
@@ -59,25 +118,28 @@ sub extract {
 
 		# read the current data file
 		#
-		exit(254) if (&{$O->{data_reader}}(\%db, "$yymmdd/$dataset/$output.dat") < 0);
+		my $dbref = read_db($O, $yymmdd, $dataset, $output);
+		warn "read_db failed\n" unless $dbref;
+		return 0 unless $dbref;
 
 		# merge/combine
 		#
-		&{$O->{data_merger}}($start_time, \%db, $grok_copy);
-		print STDERR 'POST MERGE db=', Dumper(\%db) if ($dbg);
+		&{$O->{data_merger}}($start_time, $dbref, $grok_copy);
+		print STDERR 'POST MERGE db=', Dumper($dbref) if ($dbg);
 
 		# trim
 		#
 		if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
-			my $ntrim = &{$O->{data_trimer}}(\%db, $O);
+			my $ntrim = &{$O->{data_trimer}}($dbref, $O);
 			print "trimmed $ntrim records from $yymmdd/$dataset/$output.dat\n" if ($ntrim);
 		}
 
 		# write out the new data file
 		#
-		&{$O->{data_writer}}(\%db, "$yymmdd/$dataset/$output.dat");
+		&{$O->{data_writer}}($dbref, "$yymmdd/$dataset/$output.dat");
 
 	}
+	return 1;
 }
 
 #
