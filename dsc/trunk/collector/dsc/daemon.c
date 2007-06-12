@@ -1,9 +1,7 @@
 /*
  * $Id$
  *
- * http://dnstop.measurement-factory.com/
- *
- * Copyright (c) 2002, The Measurement Factory, Inc.  All rights
+ * Copyright (c) 2007, The Measurement Factory, Inc.  All rights
  * reserved.  See the LICENSE file for details.
  */
 
