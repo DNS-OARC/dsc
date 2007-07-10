@@ -35,6 +35,11 @@ cd $PREFIX/run-$NODE/to-$DEST
 
 k=`ls -r | grep \.xml$ | head -500` || true
 test -n "$k" || exit 0
+
+# dsc receiver doesn't like + in filename
+#
+NODE=`echo $NODE | sed -e 's/+/_/g'`
+
 tar czf - $k \
 	| $SSH -i $ID $LOGIN "dsc $NODE" \
 	| while read marker md5 file x; do
