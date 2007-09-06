@@ -597,7 +597,7 @@ handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 void
 handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
 {
-    ip_message *i;
+    ip_message i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
     uint16_t payload_len = nptohs(&ip6->ip6_plen);
@@ -643,15 +643,13 @@ handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
         payload_len -= ext_hdr_len;
     }                           /* while */
 
-    i = xcalloc(1, sizeof(*i));
-    i->version = 6;
+    i.version = 6;
     inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
     inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
-    i->src = tm->src_ip_addr;
-    i->dst = tm->dst_ip_addr;
-    i->proto = nexthdr;
-    ip_message_callback(i);
-    free(i);
+    i.src = tm->src_ip_addr;
+    i.dst = tm->dst_ip_addr;
+    i.proto = nexthdr;
+    ip_message_callback(&i);
 
     /* Catch broken and empty packets */
     if (((offset + payload_len) > len)
