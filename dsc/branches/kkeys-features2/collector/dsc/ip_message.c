@@ -58,10 +58,10 @@ ip_message_find_filters(const char *fn, filter_list ** fl)
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
-	free(copy);
+	xfree(copy);
 	return 0;
     }
-    free(copy);
+    xfree(copy);
     return 1;
 }
 
@@ -88,8 +88,8 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
     if (NULL == a)
 	return 0;
     a->theArray = md_array_create(name, filters,
-	fn, indexer1, iterator1,
-	sn, indexer2, iterator2);
+	fn, indexer1, iterator1, NULL,
+	sn, indexer2, iterator2, NULL);
     a->theArray->opts.min_count = min_count;
     a->theArray->opts.max_cells = max_cells;
     assert(a->theArray);
@@ -104,4 +104,12 @@ ip_message_report(void)
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
 	md_array_print(a->theArray, &xml_printer);
+}
+
+void
+ip_message_clear_arrays(void)
+{
+    md_array_list *a;
+    for (a = Arrays; a; a = a->next)
+	md_array_clear(a->theArray);
 }

@@ -179,14 +179,14 @@ tcpstate_reset(tcpstate_t *tcpstate, uint32_t seq)
 	tcpstate->msgbufs = 0;
 	for (i = 0; i < MAX_TCP_MSGS; i++) {
 	    if (tcpstate->msgbuf[i]) {
-		free(tcpstate->msgbuf[i]);
+		xfree(tcpstate->msgbuf[i]);
 		tcpstate->msgbuf[i] = NULL;
 	    }
 	}
     }
     for (i = 0; i < MAX_TCP_SEGS; i++) {
 	if (tcpstate->segbuf[i]) {
-	    free(tcpstate->segbuf[i]);
+	    xfree(tcpstate->segbuf[i]);
 	    tcpstate->segbuf[i] = NULL;
 	}
     }
@@ -196,7 +196,7 @@ static void
 tcpstate_free(void *p)
 {
     tcpstate_reset((tcpstate_t *)p, 0);
-    free(p);
+    xfree(p);
 }
 
 static unsigned int
@@ -325,7 +325,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 		tcpstate->segbuf[s] = NULL;
 		handle_tcp_segment(segbuf->buf, segbuf->len, segbuf->seq,
 		    tcpstate, tm);
-		free(segbuf);
+		xfree(segbuf);
 	    }
 	}
 	return;
@@ -448,7 +448,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     if (tcpstate->msgbuf[m]->holes == 0) {
 	/* We now have a completely reassembled dns message */
 	handle_dns(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm, dns_message_callback);
-	free(tcpstate->msgbuf[m]);
+	xfree(tcpstate->msgbuf[m]);
 	tcpstate->msgbuf[m] = NULL;
 	tcpstate->msgbufs--;
     }
@@ -495,8 +495,8 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	return;
 
     if (NULL == tcpHash) {
-        tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc,
-	    free, tcpstate_free);
+        tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc, 0,
+	    xfree, tcpstate_free);
 	if (NULL == tcpHash)
 	    return;
     }
@@ -536,12 +536,12 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	    tcpstate_reset(tcpstate, seq);
 	    newkey = xmalloc(sizeof(*newkey));
 	    if (!newkey) {
-		free(tcpstate);
+		xfree(tcpstate);
 		return;
 	    }
 	    *newkey = key;
 	    if (0 != hash_add(newkey, tcpstate, tcpHash)) {
-		free(newkey);
+		xfree(newkey);
 		tcpstate_free(tcpstate);
 		return;
 	    }
@@ -826,8 +826,6 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 #endif
 
     last_ts = hdr->ts;
-    if (start_ts.tv_sec == 0)
-	start_ts = last_ts;
 #if 0
     if (debug_flag)
 	fprintf(stderr, "handle_pcap()\n");
@@ -853,6 +851,10 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 fd_set *
 Pcap_select(const fd_set * theFdSet, int sec, int usec)
 {
+    /* XXX BUG: libpcap may have already buffered a packet that we have not
+     * processed yet, but this select will not wake up until new data arrives
+     * on the socket.  This problem is serious only if there are long gaps
+     * between packets. */
     static fd_set R;
     struct timeval to;
     to.tv_sec = sec;
@@ -882,6 +884,7 @@ Pcap_init(const char *device, int promisc)
 
     port53 = 53;
     last_ts.tv_sec = last_ts.tv_usec = 0;
+    finish_ts.tv_sec = finish_ts.tv_usec = 0;
 
     if (0 == stat(device, &sb))
 	readfile_state = 1;
@@ -943,25 +946,40 @@ Pcap_init(const char *device, int promisc)
 	    max_pcap_fds = pcap_fileno(new_pcap) + 1;
     }
     pcap[n_pcap++] = new_pcap;
+    if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_pcap > n_pcap_offline)) {
+	syslog(LOG_ERR, "%s", "offline interface must be only interface");
+	exit(1);
+    }
 }
 
-void
+int
 Pcap_run(DMC * dns_callback, IPC * ip_callback)
 {
     int i;
+#   define INTERVAL 60
 
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
     if (n_pcap_offline > 0) {
-	start_ts.tv_sec = 0;
-	start_ts.tv_usec = 0;
-	for (i = 0; i < n_pcap; i++) {
-	    pcap_dispatch(pcap[i], -1, handle_pcap, NULL);
-	}
-	finish_ts = last_ts;
+	int result = 0;
+	if (finish_ts.tv_sec > 0)
+	    finish_ts.tv_sec += INTERVAL;
+	do {
+	    result = pcap_dispatch(pcap[0], 1, handle_pcap, NULL);
+	    if (result <= 0) /* error or EOF */
+		break;
+	    if (start_ts.tv_sec == 0) {
+		start_ts = last_ts;
+		finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
+		finish_ts.tv_usec = 0;
+	    }
+	} while (last_ts.tv_sec < finish_ts.tv_sec);
+	if (result <= 0)
+	    finish_ts = last_ts; /* finish was cut short */
+	return result;
     } else {
 	gettimeofday(&start_ts, NULL);
-	finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
+	finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
 	finish_ts.tv_usec = 0;
 	while (last_ts.tv_sec < finish_ts.tv_sec) {
 	    fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
@@ -971,9 +989,11 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	    for (i = 0; i < n_pcap; i++) {
 		if (FD_ISSET(pcap_fileno(pcap[i]), &pcap_fdset)) {
 		    pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+		    /* XXX should check for errors here */
 		}
 	    }
 	}
+	return 1;
     }
 }
 
@@ -983,7 +1003,7 @@ Pcap_close(void)
     int i;
     for (i = 0; i < n_pcap; i++)
 	pcap_close(pcap[i]);
-    free(pcap);
+    xfree(pcap);
     pcap = NULL;
 }
 

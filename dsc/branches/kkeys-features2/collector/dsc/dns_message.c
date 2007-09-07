@@ -71,6 +71,10 @@ dns_message_print(dns_message * m)
 	char buf[128];
 	inXaddr_ntop(&m->client_ip_addr, buf, 128);
 	fprintf(stderr, "%15s:%5d", buf, m->tm->src_port);
+	/*
+	fprintf(stderr, "%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" :
+	    (m->tm->proto == IPPROTO_TCP) ? "TCP" : "???");
+	*/
 	fprintf(stderr, "\tQT=%d", m->qtype);
 	fprintf(stderr, "\tQC=%d", m->qclass);
 	fprintf(stderr, "\tlen=%d", m->msglen);
@@ -175,26 +179,31 @@ qname_filter(const void *vp, const void *ctx)
 
 
 static int
-dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
+dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it, RESET ** reset)
 {
+    *reset = NULL;
     if (0 == strcmp(in, "client")) {
 	*ix = cip_indexer;
 	*it = cip_iterator;
+	*reset = cip_reset;
 	return 1;
     }
     if (0 == strcmp(in, "cip4_addr")) {		/* compatibility */
 	*ix = cip_indexer;
 	*it = cip_iterator;
+	*reset = cip_reset;
 	return 1;
     }
     if (0 == strcmp(in, "client_subnet")) {
 	*ix = cip_net_indexer;
 	*it = cip_net_iterator;
+	*reset = cip_net_reset;
 	return 1;
     }
     if (0 == strcmp(in, "cip4_net")) {		/* compatibility */
 	*ix = cip_net_indexer;
 	*it = cip_net_iterator;
+	*reset = cip_net_reset;
 	return 1;
     }
     if (0 == strcmp(in, "null")) {
@@ -215,6 +224,7 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "qname")) {
 	*ix = qname_indexer;
 	*it = qname_iterator;
+	*reset = qname_reset;
 	return 1;
     }
     if (0 == strcmp(in, "msglen")) {
@@ -235,6 +245,7 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "tld")) {
 	*ix = tld_indexer;
 	*it = tld_iterator;
+	*reset = tld_reset;
 	return 1;
     }
     if (0 == strcmp(in, "certain_qnames")) {
@@ -306,10 +317,10 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
-	free(copy);
+	xfree(copy);
 	return 0;
     }
-    free(copy);
+    xfree(copy);
     return 1;
 }
 
@@ -344,13 +355,15 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     filter_list *filters = NULL;
     IDXR *indexer1;
     HITR *iterator1;
+    RESET *reset1;
     IDXR *indexer2;
     HITR *iterator2;
+    RESET *reset2;
     md_array_list *a;
 
-    if (0 == dns_message_find_indexer(fi, &indexer1, &iterator1))
+    if (0 == dns_message_find_indexer(fi, &indexer1, &iterator1, &reset1))
 	return 0;
-    if (0 == dns_message_find_indexer(si, &indexer2, &iterator2))
+    if (0 == dns_message_find_indexer(si, &indexer2, &iterator2, &reset2))
 	return 0;
     if (0 == dns_message_find_filters(f, &filters))
 	return 0;
@@ -361,8 +374,8 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 	return 0;
     }
     a->theArray = md_array_create(name, filters,
-	fn, indexer1, iterator1,
-	sn, indexer2, iterator2);
+	fn, indexer1, iterator1, reset1,
+	sn, indexer2, iterator2, reset2);
     if (NULL == a->theArray) {
 	syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
 	return 0;
@@ -381,6 +394,14 @@ dns_message_report(void)
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
 	md_array_print(a->theArray, &xml_printer);
+}
+
+void
+dns_message_clear_arrays(void)
+{
+    md_array_list *a;
+    for (a = Arrays; a; a = a->next)
+	md_array_clear(a->theArray);
 }
 
 const char *

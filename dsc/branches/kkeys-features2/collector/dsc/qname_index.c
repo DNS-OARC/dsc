@@ -29,24 +29,24 @@ qname_indexer(const void *vp)
 	return -1;
     if (NULL == theHash) {
         theHash = hash_create(MAX_ARRAY_SZ, qname_hashfunc, qname_cmpfunc,
-	    free, free);
+	    1, afree, afree);
 	if (NULL == theHash)
 	    return -1;
     }
     if ((obj = hash_find(m->qname, theHash)))
         return obj->index;
-    obj = xcalloc(1, sizeof(*obj));
+    obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
-    obj->qname = xstrdup(m->qname);
+    obj->qname = astrdup(m->qname);
     if (NULL == obj->qname) {
-	free(obj);
+	afree(obj);
 	return -1;
     }
     obj->index = next_idx;
     if (0 != hash_add(obj->qname, obj, theHash)) {
-	free(obj->qname);
-	free(obj);
+	afree(obj->qname);
+	afree(obj);
 	return -1;
     }
     next_idx++;
@@ -70,6 +70,12 @@ qname_iterator(char **label)
     snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->qname);
     *label = label_buf;
     return obj->index;
+}
+
+void
+qname_reset()
+{
+    theHash = NULL;
 }
 
 static unsigned int

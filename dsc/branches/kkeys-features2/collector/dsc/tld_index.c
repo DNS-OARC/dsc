@@ -30,24 +30,25 @@ tld_indexer(const void *vp)
 	return -1;
     tld = dns_message_tld((dns_message *) m);
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc, free, free);
+	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc,
+	    1, afree, afree);
 	if (NULL == theHash)
 	    return -1;
     }
     if ((obj = hash_find(tld, theHash)))
 	return obj->index;
-    obj = xcalloc(1, sizeof(*obj));
+    obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
-    obj->tld = xstrdup(tld);
+    obj->tld = astrdup(tld);
     if (NULL == obj->tld) {
-	free(obj);
+	afree(obj);
 	return -1;
     }
     obj->index = next_idx;
     if (0 != hash_add(obj->tld, obj, theHash)) {
-	free(obj->tld);
-	free(obj);
+	afree(obj->tld);
+	afree(obj);
 	return -1;
     }
     next_idx++;
@@ -71,6 +72,12 @@ tld_iterator(char **label)
     snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->tld);
     *label = label_buf;
     return obj->index;
+}
+
+void
+tld_reset()
+{
+    theHash = NULL;
 }
 
 static unsigned int

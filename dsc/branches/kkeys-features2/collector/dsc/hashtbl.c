@@ -9,20 +9,22 @@
 #include "hashtbl.h"
 
 hashtbl
-*hash_create(int N, hashfunc *hasher, hashkeycmp *cmp, hashfree *keyfree,
-    hashfree *datafree)
+*hash_create(int N, hashfunc *hasher, hashkeycmp *cmp, int use_arena,
+    hashfree *keyfree, hashfree *datafree)
 {
-	hashtbl *new = xcalloc(1, sizeof(*new));
+	hashtbl *new = (*(use_arena ? acalloc : xcalloc))(1, sizeof(*new));
 	if (NULL == new)
 	    return NULL;
 	new->modulus = N;
 	new->hasher = hasher;
 	new->keycmp = cmp;
+	new->use_arena = use_arena;
 	new->keyfree = keyfree;
 	new->datafree = datafree;
 	new->items = xcalloc(N, sizeof(hashitem*));
 	if (NULL == new->items) {
-		free(new);
+		if (!use_arena)
+		    xfree(new);
 		return NULL;
 	}
 	return new;
@@ -40,16 +42,18 @@ hash_destroy(hashtbl *tbl)
 		tbl->keyfree((void *)i->key);
 	    if (tbl->datafree)
 		tbl->datafree(i->data);
-	    free(i);
+	    if (!tbl->use_arena)
+		xfree(i);
 	}
     }
-    free(tbl);
+    if (!tbl->use_arena)
+	xfree(tbl);
 }
 
 int
 hash_add(const void *key, void *data, hashtbl *tbl)
 {
-	hashitem *new = xcalloc(1, sizeof(*new));
+	hashitem *new = (*(tbl->use_arena ? acalloc : xcalloc))(1,sizeof(*new));
 	hashitem **I;
 	int slot;
 	if (NULL == new)
@@ -76,7 +80,8 @@ hash_remove(const void *key, hashtbl *tbl)
 		    tbl->keyfree((void *)i->key);
 		if (tbl->datafree)
 		    tbl->datafree(i->data);
-		free(i);
+		if (!tbl->use_arena)
+		    xfree(i);
 		break;
 	    }
 	}

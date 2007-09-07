@@ -14,6 +14,7 @@ typedef struct {
 	hashitem **items;
 	hashfunc *hasher;
 	hashkeycmp *keycmp;
+	int use_arena;
 	hashfree *keyfree;
 	hashfree *datafree;
 	struct {
@@ -23,7 +24,8 @@ typedef struct {
 } hashtbl;
 
 
-hashtbl *hash_create(int N, hashfunc *, hashkeycmp *, hashfree *, hashfree *);
+hashtbl *hash_create(int N, hashfunc *, hashkeycmp *, int use_arena,
+    hashfree *, hashfree *);
 void hash_destroy(hashtbl *);
 int hash_add(const void *key, void *data, hashtbl *);
 void hash_remove(const void *key, hashtbl *tbl);
