@@ -71,10 +71,8 @@ dns_message_print(dns_message * m)
 	char buf[128];
 	inXaddr_ntop(&m->client_ip_addr, buf, 128);
 	fprintf(stderr, "%15s:%5d", buf, m->tm->src_port);
-	/*
-	fprintf(stderr, "%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" :
+	fprintf(stderr, "\t%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" :
 	    (m->tm->proto == IPPROTO_TCP) ? "TCP" : "???");
-	*/
 	fprintf(stderr, "\tQT=%d", m->qtype);
 	fprintf(stderr, "\tQC=%d", m->qclass);
 	fprintf(stderr, "\tlen=%d", m->msglen);
