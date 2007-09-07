@@ -124,6 +124,7 @@ handle_udp(const struct udphdr *udp, int len, transport_message *tm)
 
 #define MAX_TCP_WINDOW_SIZE (0xFFFF << 14)
 #define MAX_TCP_STATE 65535
+#define MAX_TCP_IDLE 60 /* tcpstate is tossed if idle for this many seconds */
 
 /* These numbers define the sizes of small arrays which are simpler to work
  * with than dynamically allocated lists. */
@@ -161,13 +162,23 @@ typedef struct {
 } tcp_segbuf_t;
 
 /* TCP reassembly state */
-typedef struct {
+typedef struct tcpstate {
+    tcpHashkey_t key;
+    struct tcpstate *newer, *older;
+    long last_use;
     uint32_t seq_start; /* seq# of length field of next DNS msg */
     short msgbufs; /* number of msgbufs in use */
     int8_t fin; /* have we seen a FIN? */
     tcp_msgbuf_t *msgbuf[MAX_TCP_MSGS];
     tcp_segbuf_t *segbuf[MAX_TCP_SEGS];
 } tcpstate_t;
+
+/* List of tcpstates ordered by time of last use, so we can quickly identify
+ * and discard stale entries. */
+struct {
+    tcpstate_t *oldest;
+    tcpstate_t *newest;
+} tcpList;
 
 static void
 tcpstate_reset(tcpstate_t *tcpstate, uint32_t seq)
@@ -461,13 +472,46 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     }
 }
 
+static void
+tcpList_add_newest(tcpstate_t *tcpstate)
+{
+    tcpstate->older = tcpList.newest;
+    tcpstate->newer = NULL;
+    *(tcpList.newest ? &tcpList.newest->newer : &tcpList.oldest) = tcpstate;
+    tcpList.newest = tcpstate;
+}
+
+static void
+tcpList_remove(tcpstate_t *tcpstate)
+{
+    *(tcpstate->older ? &tcpstate->older->newer : &tcpList.oldest) =
+	tcpstate->newer;
+    *(tcpstate->newer ? &tcpstate->newer->older : &tcpList.newest) =
+	tcpstate->older;
+}
+
+void
+tcpList_remove_older_than(long t)
+{
+    int n = 0;
+    tcpstate_t *tcpstate;
+    while (tcpList.oldest->last_use < t) {
+	tcpstate = tcpList.oldest;
+	tcpList_remove(tcpstate);
+	hash_remove(&tcpstate->key, tcpHash);
+	n++;
+    }
+    if (debug_flag)
+	fprintf(stderr, "discarded %d old tcpstates\n", n);
+}
+
 void
 handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 {
     int offset = tcp->th_off << 2;
     uint32_t seq;
     tcpstate_t *tcpstate = NULL;
-    tcpHashkey_t key, *newkey;
+    tcpHashkey_t key;
     char label[384];
 
     tm->src_port = nptohs(&tcp->th_sport);
@@ -496,7 +540,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 
     if (NULL == tcpHash) {
         tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc, 0,
-	    xfree, tcpstate_free);
+	    NULL, tcpstate_free);
 	if (NULL == tcpHash)
 	    return;
     }
@@ -523,6 +567,9 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	return;
     }
 
+    if (tcpstate)
+	tcpList_remove(tcpstate); /* remove from its current position */
+
     if (TCPFLAGSYN(tcp)) {
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: SYN at %u\n", seq);
@@ -534,14 +581,8 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	    if (!tcpstate)
 		return;
 	    tcpstate_reset(tcpstate, seq);
-	    newkey = xmalloc(sizeof(*newkey));
-	    if (!newkey) {
-		xfree(tcpstate);
-		return;
-	    }
-	    *newkey = key;
-	    if (0 != hash_add(newkey, tcpstate, tcpHash)) {
-		xfree(newkey);
+	    tcpstate->key = key;
+	    if (0 != hash_add(&tcpstate->key, tcpstate, tcpHash)) {
 		tcpstate_free(tcpstate);
 		return;
 	    }
@@ -561,7 +602,12 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	/* FIN was seen, and there are no incomplete msgbufs left */
 	if (debug_flag)
 	    fprintf(stderr, "handle_tcp: connection done\n");
-	hash_remove(&key, tcpHash);
+	hash_remove(&key, tcpHash); /* this also frees tcpstate */
+
+    } else {
+	/* We're keeping this tcpstate.  Store it in tcpList by age. */
+	tcpstate->last_use = tm->ts.tv_sec;
+	tcpList_add_newest(tcpstate);
     }
 }
 
@@ -956,12 +1002,13 @@ int
 Pcap_run(DMC * dns_callback, IPC * ip_callback)
 {
     int i;
+    int result = 1;
 #   define INTERVAL 60
 
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
     if (n_pcap_offline > 0) {
-	int result = 0;
+	result = 0;
 	if (finish_ts.tv_sec > 0)
 	    finish_ts.tv_sec += INTERVAL;
 	do {
@@ -976,7 +1023,6 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	} while (last_ts.tv_sec < finish_ts.tv_sec);
 	if (result <= 0)
 	    finish_ts = last_ts; /* finish was cut short */
-	return result;
     } else {
 	gettimeofday(&start_ts, NULL);
 	finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
@@ -993,8 +1039,9 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 		}
 	    }
 	}
-	return 1;
     }
+    tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
+    return result;
 }
 
 void
