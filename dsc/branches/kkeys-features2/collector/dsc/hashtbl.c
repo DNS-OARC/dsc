@@ -21,7 +21,7 @@ hashtbl
 	new->use_arena = use_arena;
 	new->keyfree = keyfree;
 	new->datafree = datafree;
-	new->items = xcalloc(N, sizeof(hashitem*));
+	new->items = (*(use_arena ? acalloc : xcalloc))(N, sizeof(hashitem*));
 	if (NULL == new->items) {
 		if (!use_arena)
 		    xfree(new);
