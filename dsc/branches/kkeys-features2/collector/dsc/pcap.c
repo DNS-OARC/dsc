@@ -495,7 +495,7 @@ tcpList_remove_older_than(long t)
 {
     int n = 0;
     tcpstate_t *tcpstate;
-    while (tcpList.oldest->last_use < t) {
+    while (tcpList.oldest && tcpList.oldest->last_use < t) {
 	tcpstate = tcpList.oldest;
 	tcpList_remove(tcpstate);
 	hash_remove(&tcpstate->key, tcpHash);
