@@ -72,9 +72,11 @@
 #define th_seq seq
 #define TCPFLAGFIN(a) (a)->fin
 #define TCPFLAGSYN(a) (a)->syn
+#define TCPFLAGRST(a) (a)->rst
 #else
 #define TCPFLAGSYN(a) ((a)->th_flags&TH_SYN)
 #define TCPFLAGFIN(a) ((a)->th_flags&TH_FIN)
+#define TCPFLAGRST(a) ((a)->th_flags&TH_RST)
 #endif
 
 #ifndef IP_OFFMASK
@@ -249,9 +251,6 @@ tcp_cmpfunc(const void *a, const void *b)
  * order), and dns messages that do not necessarily start on segment
  * boundaries.
  *
- * TODO:
- * - handle RST 
- * - deallocate state for connections that have been idle too long
  */
 void
 handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
@@ -569,6 +568,27 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 
     if (tcpstate)
 	tcpList_remove(tcpstate); /* remove from its current position */
+
+    if (TCPFLAGRST(tcp)) {
+	if (debug_flag)
+	    fprintf(stderr, "handle_tcp: RST at %u\n", seq);
+
+	/* remove the state for this direction */
+	if (tcpstate)
+	    hash_remove(&key, tcpHash); /* this also frees tcpstate */
+
+	/* remove the state for the opposite direction */
+	key.src_ip_addr = tm->dst_ip_addr;
+	key.dst_ip_addr = tm->src_ip_addr;
+	key.sport = tm->dst_port;
+	key.dport = tm->src_port;
+	tcpstate = hash_find(&key, tcpHash);
+	if (tcpstate) {
+	    tcpList_remove(tcpstate);
+	    hash_remove(&key, tcpHash); /* this also frees tcpstate */
+	}
+	return;
+    }
 
     if (TCPFLAGSYN(tcp)) {
 	if (debug_flag)
