@@ -6,10 +6,14 @@ typedef struct _md_array_list md_array_list;
 typedef struct _filter_list filter_list;
 typedef struct _filter_defn FLTR;
 
-typedef int (IDXR) (const void *);
-typedef int (HITR) (char **);
-typedef void (RESET) (void);
 typedef int (filter_func) (const void *message, const void *context);
+
+typedef struct { 
+    const char *name;
+    int (*index_fn) (const void *);
+    int (*iter_fn) (char **);
+    void (*reset_fn) (void);
+} indexer_t;
 
 struct _filter_defn {
 	const char *name;
@@ -31,16 +35,12 @@ struct _md_array {
     const char *name;
     filter_list *filter_list;
     struct {
-	IDXR *indexer;
-	HITR *iterator;
-	RESET *reset;
+	indexer_t *indexer;
 	const char *type;
 	int alloc_sz;
     } d1;
     struct {
-	IDXR *indexer;
-	HITR *iterator;
-	RESET *reset;
+	indexer_t *indexer;
 	const char *type;
 	int alloc_sz;
     } d2;
@@ -71,8 +71,7 @@ struct _md_array_list {
 void md_array_clear(md_array *);
 int md_array_count(md_array *, const void *);
 md_array *md_array_create(const char *name, filter_list *,
-    const char *, IDXR *, HITR *, RESET *,
-    const char *, IDXR *, HITR *, RESET *);
+    const char *, indexer_t *, const char *, indexer_t *);
 int md_array_print(md_array * a, md_array_printer * pr);
 filter_list ** md_array_filter_list_append(filter_list **fl, FLTR *f);
 FLTR * md_array_create_filter(const char *name, filter_func *, const void *context);

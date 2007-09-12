@@ -78,6 +78,7 @@ void
 tld_reset()
 {
     theHash = NULL;
+    next_idx = 0;
 }
 
 static unsigned int

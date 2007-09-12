@@ -35,17 +35,17 @@ md_array_clear(md_array *a)
     /* a->array contents were in an arena, so we don't need to free them. */
     a->array = NULL;
     a->d1.alloc_sz = 0;
-    if (a->d1.reset)
-	a->d1.reset();
+    if (a->d1.indexer->reset_fn)
+	a->d1.indexer->reset_fn();
     a->d2.alloc_sz = 0;
-    if (a->d2.reset)
-	a->d2.reset();
+    if (a->d2.indexer->reset_fn)
+	a->d2.indexer->reset_fn();
 }
 
 md_array *
 md_array_create(const char *name, filter_list * fl,
-    const char *type1, IDXR * idx1, HITR * itr1, RESET reset1,
-    const char *type2, IDXR * idx2, HITR * itr2, RESET reset2)
+    const char *type1, indexer_t *idx1,
+    const char *type2, indexer_t *idx2)
 {
     md_array *a = xcalloc(1, sizeof(*a));
     if (NULL == a)
@@ -62,8 +62,6 @@ md_array_create(const char *name, filter_list * fl,
 	return NULL;
     }
     a->d1.indexer = idx1;
-    a->d1.iterator = itr1;
-    a->d1.reset = reset1;
     a->d1.alloc_sz = 0;
     a->d2.type = xstrdup(type2);
     if (a->d2.type == NULL) {
@@ -71,8 +69,6 @@ md_array_create(const char *name, filter_list * fl,
 	return NULL;
     }
     a->d2.indexer = idx2;
-    a->d2.iterator = itr2;
-    a->d2.reset = reset2;
     a->d2.alloc_sz = 0;
     a->array = NULL; /* will be allocated when needed, in an arena. */
     return a;
@@ -89,9 +85,9 @@ md_array_count(md_array * a, const void *vp)
 	if (0 == fl->filter->func(vp, fl->filter->context))
 	    return -1;
 
-    if ((i1 = a->d1.indexer(vp)) < 0)
+    if ((i1 = a->d1.indexer->index_fn(vp)) < 0)
 	return -1;
-    if ((i2 = a->d2.indexer(vp)) < 0)
+    if ((i2 = a->d2.indexer->index_fn(vp)) < 0)
 	return -1;
 
     md_array_grow(a, i1, i2);
@@ -216,12 +212,12 @@ md_array_print(md_array * a, md_array_printer * pr)
 	close(fd);
 	return -1;
     }
-    a->d1.iterator(NULL);
+    a->d1.indexer->iter_fn(NULL);
     pr->start_array(fp, a->name);
     pr->d1_type(fp, a->d1.type);
     pr->d2_type(fp, a->d2.type);
     pr->start_data(fp);
-    while ((i1 = a->d1.iterator(&label1)) > -1) {
+    while ((i1 = a->d1.indexer->iter_fn(&label1)) > -1) {
 	int skipped = 0;
 	int skipped_sum = 0;
 	int nvals;
@@ -230,14 +226,14 @@ md_array_print(md_array * a, md_array_printer * pr)
 	if (i1 >= a->d1.alloc_sz)
 	    continue;		/* see [1] */
 	pr->d1_begin(fp, label1);
-	a->d2.iterator(NULL);
+	a->d2.indexer->iter_fn(NULL);
 	nvals = a->d2.alloc_sz;
 	sortme = xcalloc(nvals, sizeof(*sortme));
 	if (NULL == sortme) {
 	    syslog(LOG_CRIT, "%s", "Cant output XML file chunk due to malloc failure!");
 	    continue;		/* OUCH! */
 	}
-	while ((i2 = a->d2.iterator(&label2)) > -1) {
+	while ((i2 = a->d2.indexer->iter_fn(&label2)) > -1) {
 	    int val;
 	    if (i2 >= a->array[i1].alloc_sz)
 		continue;
