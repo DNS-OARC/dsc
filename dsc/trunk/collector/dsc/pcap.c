@@ -57,6 +57,13 @@
 #define ETHERTYPE_8021Q	0x8100
 #endif
 
+#if USE_IPV6
+/* We might need to define ETHERTYPE_IPV6 */
+#ifndef ETHERTYPE_IPV6
+#define ETHERTYPE_IPV6 0x86dd
+#endif
+#endif
+
 #if USE_PPP
 #include <net/if_ppp.h>
 #define PPP_ADDRESS_VAL       0xff	/* The address byte value */
