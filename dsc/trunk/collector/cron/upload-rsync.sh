@@ -25,7 +25,7 @@ trap "rm -f $PIDF" EXIT
 
 perl -e 'sleep((rand 10) + 5)'
 
-cd $PREFIX/run/$NODE/upload/$DEST
+cd $PREFIX/var/run/$NODE/upload/$DEST
 
 exec > $PROG.out
 exec 2>&1
@@ -37,5 +37,5 @@ fi
 
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
-md5 -r $k > MD5s
+md5 $k > MD5s
 rsync -av MD5s $k $RPATH | grep '\.xml$' | xargs rm -v
