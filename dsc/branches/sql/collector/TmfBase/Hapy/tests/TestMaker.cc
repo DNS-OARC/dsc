@@ -1,0 +1,242 @@
+/* Hapy is a public domain software. See Hapy README file for the details. */
+
+#include <Hapy/Parser.h>
+#include <Hapy/Rules.h>
+#include <Hapy/Assert.h>
+#include <Hapy/IoStream.h>
+
+#include <functional>
+#include <algorithm>
+
+
+using namespace Hapy;
+
+RuleId grTests, grTest, grBody, grCases, grCase, grRules, grRule, grName,
+	grComment,
+	grToken, grBareToken, grQuotedToken, grEscapedChar, grAnyQuote;
+
+// used to format C++ output
+class CppPfx {
+	public:
+		CppPfx(int aDelta, bool doEndl = false): theDelta(aDelta), doingEndl(doEndl) {}
+
+		string pfx() const {
+			TheLevel = TheLevel + theDelta;
+			return (doingEndl ? "\n" : "") +
+				(TheLevel > 0 ? string(TheLevel*4, ' ') : string());
+		}
+
+		ostream &print(ostream &os) const {
+			return os << pfx();
+		}
+
+	private:
+		static int TheLevel;
+		int theDelta;
+		bool doingEndl;
+};
+
+int CppPfx::TheLevel = 0;
+
+static
+ostream &operator <<(ostream &os, const CppPfx &pfx) {
+	return pfx.print(os);
+}
+
+// begin "C++" lines
+static
+ostream &cppb(int levelDelta = 0) {
+	return cout << CppPfx(levelDelta);
+}
+
+// end "C++" line(s)
+static
+ostream &cppe(ostream &os) {
+	return os << "\n";
+}
+
+// continue "C++" lines
+static
+ostream &cppc(ostream &os) {
+	return os << cppe << CppPfx(0);
+}
+
+// continue "C++" lines with a new level
+static
+CppPfx cppc(int levelDelta) {
+	return CppPfx(levelDelta, true);
+}
+
+
+static
+Rule grammar() {
+	Rule rTests("Tests", &grTests);
+	Rule rTest("Test", &grTest);
+	Rule rBody("Body", &grBody);
+	Rule rCases("Cases", &grCases);
+	Rule rCase("Case", &grCase);
+	Rule rRules("Rules", &grRules);
+	Rule rRule("Rule", &grRule);
+	Rule rComment("Comment", &grComment);
+	Rule rName("Name", &grName);
+	Rule rToken("Token", &grToken);
+	Rule rBareToken("BareToken", &grBareToken);
+	Rule rQuotedToken("QuotedToken", &grQuotedToken);
+	Rule rEscapedChar("EscapedChar", &grEscapedChar);
+	Rule rAnyQuote("AnyQuote", &grAnyQuote);
+
+	const char sqw = '\'';
+
+	rTests = *rTest;
+	rTest = "test" >> rName >> "{" >> rBody >> "}" ;
+	rBody = string_r("grammar") >> "=" >> "{" >> rRules >> "}" >> rCases;
+	rCases = *rCase;
+	rCase = rName >> quoted_r(anychar_r, "{", "}");
+	rRules = *rRule;
+	rRule = 
+		rName >> "=" >> +rToken >> ";" |
+		rName >> "." >> +rToken >> ";";
+	rComment =
+		quoted_r(anychar_r, "//", eol_r) |
+		quoted_r(anychar_r, "/*", "*/");
+
+	rName = alpha_r >> *(alnum_r | "_");
+	rToken = rBareToken | rQuotedToken;
+	rBareToken = +(anychar_r - rAnyQuote - ";");
+	rQuotedToken = 
+		quoted_r(rEscapedChar | char_r('"'), "'") |
+		quoted_r(rEscapedChar | char_r(sqw));
+	rEscapedChar =
+		(anychar_r - rAnyQuote) | 
+		char_r('\\') >> anychar_r;
+	rAnyQuote = char_r(sqw) | char_r('"');
+
+	// trimming rules
+	rTests.trim(*(space_r | rComment));
+	rToken.verbatim(true);
+	rName.verbatim(true);
+
+	// parse tree shaping rules
+	rToken.leaf(true);
+	rName.leaf(true);
+
+	// parsing optimization rules
+	rToken.committed(true);
+	rName.committed(true);
+	rTest.committed(true);
+	rRule.committed(true);
+
+	return rTests;
+}
+
+static
+void dumpRuleDecl(const Pree &rule) {
+	// skip non-assignments to avoid repetitions of rules
+	if (rule[0][1].image() != "=")
+		return;
+
+	const string name = rule[0][0].image();
+	//cppb() << "Rule " << name << "(\"" << name << "\", 0);" << cppe;
+	cppb() << "Rule " << name << ";" << cppe;
+}
+
+static
+void dumpCase(const Pree &c) {
+	const string &kind = c[0].image();
+	const string &i = c[1][1].image();
+	const string input = i; // i.size() > 2 ? i.substr(1,i.size()-2) : "";
+
+	cppb() << "{ // test case" << cppe;
+	cppb(+1) << "++caseCount;" << cppc <<
+		cppe;
+
+	cppb() << "const string input = \"" << input << "\";" << cppe;
+	cppb() << "const bool accept = " << 
+		(kind == "accept" ? "true" : "false") << ";" << cppe;
+
+	cppb() << "Parser parser;" << cppc <<
+		"parser.grammar(rGrammar);" << cppc <<
+		"if (parser.parse(input) == accept) {" << cppc(+1) <<
+			"++passCount;" << cppc <<
+			"clog << \"\\t+ passed: " << kind << "ed '\" << " <<
+				"input << \"'\" << endl;" << cppc(-1) <<
+		"} else {" << cppc(+1) <<
+			"clog << \"\\t- failed to " << kind << " '\" << " <<
+				"input << \"' \" << " << cppc(+1) <<
+				"parser.result().location() << endl;" << cppc(-2) <<
+		"}" << cppc <<
+		cppe;
+
+	cppb(-1) << "}" << cppc <<
+		cppe;
+}
+
+static
+void interpTest(const Pree &test) {
+	const string id = test[1].image();
+	cppb() << "{ // test clause " << id << cppe;
+
+	cppb(+1) << "clog << \"test clause: " << id << " {\" << endl;" << cppc <<
+		cppe;
+
+	const Pree &rules = test.find(grBody).find(grRules);
+	for_each(rules.begin(), rules.end(), std::ptr_fun(&dumpRuleDecl));
+	cppb() << rules.image() << cppe;
+
+	const Pree &cases = test.find(grBody).find(grCases);
+	for_each(cases.begin(), cases.end(), std::ptr_fun(&dumpCase));
+
+	cppb() << "clog << \"}\" << endl;" << cppe;
+
+	cppb(-1) << "} // " << id << cppe;
+
+	cppb() << cppe;
+}
+
+static
+void interpret(const Pree &n) {
+	cppb() << "/* autogenerated by Hapy TestMaker */" << cppc <<
+		"#include \"Hapy/Parser.h\"" << cppc <<
+		"#include \"Hapy/Rules.h\"" << cppc <<
+		"#include \"Hapy/Assert.h\"" << cppc <<
+		"#include \"Hapy/IoStream.h\"" << cppc <<
+		"" << cppc <<
+		"using namespace Hapy;" << cppc <<
+		"" << cppc <<
+		"int main() {" << cppc(+1) <<
+			"int caseCount = 0;" << cppc <<
+			"int passCount = 0;" << cppc <<
+		cppe;
+
+	for_some(n, grTest, std::ptr_fun(&interpTest));
+
+	cppb() << "clog << endl;" << cppe;
+	cppb() << "clog << \"test cases: \" << caseCount << endl;" << cppe;
+	cppb() << "clog << \"successes:  \" << passCount << endl;" << cppe;
+	cppb() << "clog << \"failures:   \" << (caseCount-passCount) << endl;" << cppe;
+
+	cppb() << "return (passCount == caseCount) ? 0 : 255;" << cppc(-1) <<
+		"}" << cppe;
+}
+
+int main() {
+	string content;
+	char c;
+	while (cin.get(c))
+		content += c;
+
+	Parser parser;
+	parser.grammar(grammar());
+	if (!parser.parse(content)) {
+		string::size_type p = parser.result().maxPos;
+		cerr << "failure after " << p << " bytes near " << content.substr(p).substr(0, 160) << endl;
+		return 2;
+	}
+//cerr << here << "complete success" << endl;
+//parser.result().pree.rawPrint(cerr << here << "parsing tree raw" << endl, "");
+//parser.result().pree.print(cerr << here << "parsing tree user" << endl, "");
+
+	interpret(parser.result().pree);
+
+	return 0;
+}

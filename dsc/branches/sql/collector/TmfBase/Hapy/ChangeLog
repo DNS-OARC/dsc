@@ -1,0 +1,79 @@
+0.0.4 2004/02/04:
+	- added char_range_r(first,last) rule to match any
+	  character in the specified [first,last] inclusive range
+	- added char_set_r(string) rule to match any character in
+	  the specified string
+	- added action interface; a rule can now be augmented
+	  with an action that gets triggered when the rule
+	  matches; an action can confirm the match, generate a
+	  parsing error, or reject the match with a miss; the
+	  latter causes new matches to be found; the action is
+	  called before the rule commits
+	- added find_if(node,f) function to search for a parsing
+	  tree node for which f() returns true
+	- polished and documented debugging mechanisms
+	- use loops instead of indirect recursion when
+	  backtracking through alternatives; recursion can easily
+	  run out of [stack] memory when dealing with huge
+	  invalid inputs and character-at-a-time rules; not all
+	  algorithms were checked for recursion loops so this may
+	  need more work
+	- avoid polluting macro name space with VERSION and
+	  PACKAGE* #defines in config.h; such pollution prevented
+	  seemless integration of Hapy with other packages
+
+
+0.0.3 2004/01/12:
+	- added RuleId class to hold Rule identifiers (used to be
+	  integers); switched to new RuleId-based construction of
+	  user-level Rules; one no longer can specify Rule IDs, but can
+	  only extract auto-assigned ones if needed; this avoids
+	  extra ink in some cases and might make integration of 3rd
+	  party rules easier
+	- when Parser::parse() interface is used, assume that all input
+	  must be consumed to report a successful match; that is, end_r
+	  becomes implied and users no longer need to specify it
+	  explicitly if they use the simple Parser::parse() interface.
+	- do not build examples, tests, and doc programs when running
+	  "make" only "make check" builds them now; the intent is to
+	  increase chances of having a functional "make install" even if
+	  some examples/tests (i.e., non-essential features) fail to
+	  compile
+	- support and use implicit conversion from char to char_r;
+	  grammar rules can now use characters directly, without a
+	  char_r wrapper
+	- parser debugging is now controlled by the Rule::Debug(bool)
+	  call rather than the HAPY_DEBUG #define
+	- increased parsing speed and decreased parser memory
+	  consumption in some common cases
+	- benchmarking methodology is now documented and is
+	  being reviewed by other parser generation projects
+	  prior to getting "officially" published.
+	- MS Visual Studio .NET 2003 portability fixes
+	- GCC 3.2 portability fixes
+	- fixed parsing tree node memory leaks (known since 0.0.1)
+	- enabled most GCC warnings by default
+
+
+0.0.2 2003/12/25:
+	- ported Hapy to GCC 3.2.2 by being careful about std namespace
+	- avoid 'using namespace Hapy' when defining class methods
+	  because MS VC compiler does not like it in combination of
+	  explicit Hapy:: prefixes in method names; explicit prefixes
+	  are probably essential to keep
+	- optional ("!") rule now produces correct parsing tree
+	- polished and documented prefix parsing interface
+	- changed quoted_r profile to match documentation and avoid
+	  implication that character-to-rule conversion works
+	- added a simple "interactive" calculator to illustrate some of
+	  the techniques common to parsing a stream of "messages". In
+	  this case, a message is an arithmetic expression.
+	- config.h in the source directory was referenced instead of
+	  the one created by configure in the built directory; it was
+	  also distributed
+	- disable default skipping of whitespace by cin stream in examples
+	- added test cases for the option rule
+	- added GiovanniChallenge backtracking test cases
+
+0.0.1 2003/12/18:
+	- first release
