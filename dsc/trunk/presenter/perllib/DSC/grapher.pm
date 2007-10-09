@@ -60,15 +60,16 @@ my @plotcolors;
 my @plotnames;
 
 sub prepare {
+	my %config = @_;
 	# initialize vars
-	$use_data_uri = 1;
+	$use_data_uri = 0;
 	%ARGS = ();
 	$CFG = ();	# from dsc-cfg.pl
 	$PLOT = undef;
 	$ACCUM_TOP_N = 40;
-	$cgi = new CGI();
+	$cgi = $config{cgi} ? $config{cgi} : new CGI();
 	$now = time;
-	$use_data_uri = 0 if defined $cgi->param('x');
+	$use_data_uri = 1 if defined $cgi->param('x');
 }
 
 sub cgi { $cgi; }
