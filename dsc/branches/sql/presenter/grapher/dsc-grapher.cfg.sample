@@ -22,3 +22,7 @@ domain_list all_tlds arpa .
 
 valid_domains f-root all_tlds
 
+dbi_datasource DBI:Pg:dbname=postgres
+dbi_username dsc
+#dbi_password secret
+

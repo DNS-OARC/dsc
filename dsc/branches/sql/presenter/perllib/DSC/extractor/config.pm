@@ -6,6 +6,7 @@ BEGIN {
 	$VERSION     = 1.00;
 	@ISA         = qw(Exporter);
 	@EXPORT      = qw(
+	        &read_config
 	        %DATASETS
 	);
 	%EXPORT_TAGS = ( );
@@ -41,6 +42,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       qtype => {
 	keys	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -48,6 +51,8 @@ my $client_subnet2_keys =   [ qw(
       },
       dnssec_qtype => {
 	keys	=> [ qw(24 25 30 43 46 47 48) ],
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -62,6 +67,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       rcode => {
 	keys	=> [ qw(0 2 3 5 8 else) ],
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -76,6 +83,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       opcode => {
 	keys	=> [ qw(0 1 2 4 5 else) ],
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -90,6 +99,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       edns_version => {
 	keys	=> [ qw(none 0 else) ],
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -104,6 +115,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       rd_bit => {
 	keys	=> [ qw(set clr) ],
+	nkeys => 1,
+	withtime => 1,
 	data_merger => \&main::merge_trace,
 	data_reader => \&DSC::extractor::read_data,
 	data_writer => \&DSC::extractor::write_data,
@@ -117,6 +130,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       idn_qname => {
 	keys	=> [ qw(normal idn) ],
+	nkeys => 1,
+	withtime => 1,
 	data_merger => \&main::merge_trace,
 	data_reader => \&DSC::extractor::read_data,
 	data_writer => \&DSC::extractor::write_data,
@@ -130,6 +145,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       do_bit => {
 	keys	=> [ qw(set clr) ],
+	nkeys => 1,
+	withtime => 1,
 	data_merger => \&main::merge_trace,
 	data_reader => \&DSC::extractor::read_data,
 	data_writer => \&DSC::extractor::write_data,
@@ -142,12 +159,16 @@ my $client_subnet2_keys =   [ qw(
     type1	=> 'ClientSubnet',
     outputs	=> {
       client_subnet_count => {
+	nkeys => 1,
+	withtime => 0,
 	data_munger	=> \&main::accum1d_to_count,
 	data_reader	=> \&DSC::extractor::read_data2,
 	data_merger	=> \&main::merge_trace,
 	data_writer	=> \&DSC::extractor::write_data2,
       },
       client_subnet_accum => {
+	nkeys => 1,
+	withtime => 0,
 	data_merger	=> \&main::merge_accum1d,
 	data_reader	=> \&DSC::extractor::read_data2,
 	data_writer	=> \&DSC::extractor::write_data2,
@@ -162,6 +183,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       client_subnet2_trace => {
 	keys	=> $client_subnet2_keys,
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::accum2d_to_trace,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -169,6 +192,8 @@ my $client_subnet2_keys =   [ qw(
       },
       client_subnet2_count => {
 	keys	=> $client_subnet2_keys,
+	nkeys => 1,
+	withtime => 1,
 	data_munger => \&main::accum2d_to_count,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
@@ -176,6 +201,8 @@ my $client_subnet2_keys =   [ qw(
       },
       client_subnet2_accum => {
 	keys	=> $client_subnet2_keys,
+	nkeys => 2,
+	withtime => 0,
 	data_munger => \&main::swap_dimensions,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
@@ -192,6 +219,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       certain_qnames_vs_qtype => {
 	keys2	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	nkeys => 2,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data4,
 	data_merger => \&main::merge_trace,
@@ -207,6 +236,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       qtype_vs_tld => {
 	keys2	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	nkeys => 2,
+	withtime => 0,
 	data_munger	=> \&main::swap_dimensions,
 	data_reader	=> \&DSC::extractor::read_data3,
 	data_merger	=> \&main::merge_accum2d,
@@ -222,6 +253,8 @@ my $client_subnet2_keys =   [ qw(
     type2	=> 'ClientAddr',
     outputs	=> {
       client_addr_vs_rcode_accum => {
+	nkeys => 2,
+	withtime => 0,
 	data_munger => \&main::swap_dimensions,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
@@ -237,6 +270,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       direction_vs_ipproto => {
 	keys2	=> [ qw(icmp tcp udp) ],
+	nkeys => 2,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data4,
 	data_merger => \&main::merge_trace,
@@ -250,6 +285,8 @@ my $client_subnet2_keys =   [ qw(
     type1	=> 'TLD',
     outputs	=> {
       idn_vs_tld => {
+	nkeys => 1,
+	withtime => 0,
 	data_reader	=> \&DSC::extractor::read_data2,
 	data_merger	=> \&main::merge_accum1d,
 	data_writer	=> \&DSC::extractor::write_data2,
@@ -262,12 +299,16 @@ my $client_subnet2_keys =   [ qw(
     type1	=> 'ClientAddr',
     outputs	=> {
       ipv6_rsn_abusers_count => {
+	nkeys => 1,
+	withtime => 0,
 	data_munger	=> \&main::accum1d_to_count,
 	data_reader	=> \&DSC::extractor::read_data2,
 	data_merger	=> \&main::merge_trace,
 	data_writer	=> \&DSC::extractor::write_data2,
       },
       ipv6_rsn_abusers_accum => {
+	nkeys => 1,
+	withtime => 0,
 	data_reader	=> \&DSC::extractor::read_data2,
 	data_merger	=> \&main::merge_accum1d,
 	data_writer	=> \&DSC::extractor::write_data2,
@@ -281,6 +322,8 @@ my $client_subnet2_keys =   [ qw(
     type2	=> 'QnameLen',
     outputs	=> {
       qtype_vs_qnamelen => {
+	nkeys => 2,
+	withtime => 0,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
 	data_writer => \&DSC::extractor::write_data3,
@@ -294,6 +337,8 @@ my $client_subnet2_keys =   [ qw(
     type2	=> 'ReplyLen',
     outputs	=> {
       rcode_vs_replylen => {
+	nkeys => 2,
+	withtime => 0,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
 	data_writer => \&DSC::extractor::write_data3,
@@ -308,6 +353,8 @@ my $client_subnet2_keys =   [ qw(
     outputs	=> {
       chaos_types_and_names => {
 	keys2	=> [ qw(hostname.bind version.bind other) ],
+	nkeys => 2,
+	withtime => 1,
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data4,
 	data_merger => \&main::merge_trace,
@@ -317,5 +364,23 @@ my $client_subnet2_keys =   [ qw(
   },
 
 );
+
+sub read_config {
+	my $f = shift;
+	open(F, $f) || die "$f: $!\n";
+	while (<F>) {
+		my @x = split;
+		next unless @x;
+		my $directive = shift @x;
+		if ($directive eq 'dbi_datasource') {
+			$DSC::extractor::datasource = join ' ', @x;
+		} elsif ($directive eq 'dbi_username') {
+			$DSC::extractor::username = join ' ', @x;
+		} elsif ($directive eq 'dbi_password') {
+			$DSC::extractor::password = join ' ', @x;
+		}
+	}
+	close(F);
+}
 
 1;

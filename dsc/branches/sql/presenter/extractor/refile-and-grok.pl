@@ -1,83 +1,307 @@
 #!/usr/bin/env perl
 
-# script must be run from /usr/local/dsc/data/$server/$node directory
-#
-
 use warnings;
 use strict;
+use POSIX;
+use POSIX ":sys_wait_h";
 
 use DSC::extractor;
 use DSC::extractor::config;
 use Data::Dumper;
+use Time::HiRes; # XXX
 
+my $DSCDIR = "/usr/local/dsc";
+my $DATADIR = "$DSCDIR/data";
+my $EXECDIR = "$DSCDIR/libexec";
 my $dbg = 0;
+my $perfdbg = 0;
 
-foreach my $fn (@ARGV) {
-	extract($fn);
+read_config("$DSCDIR/etc/dsc-extractor.cfg");
+
+chdir $DATADIR || die "chdir $DATADIR: $!\n";
+
+my $PROG=$0;
+$PROG =~ s/^.*\///;
+
+open(STDOUT, ">$PROG.stdout") || die "$PROG: writing $PROG.stdout: $!\n";
+open(STDERR, ">&1");
+
+print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
+
+my $dbh = get_dbh || die;
+$dbh->{RaiseError} = 1;
+my $sth = $dbh->prepare("SELECT server_id FROM server WHERE name = ?");
+
+opendir DATADIR, "." || die "$0: reading $DATADIR: $!\n";
+my @servers = grep { $_ !~ /^\./ && !-l && -d } readdir(DATADIR);
+closedir DATADIR;
+for my $server (@servers) {
+
+    my $server_id;
+    # get server id, or insert one if it does not exist
+    $sth->execute($server);
+    my @row = $sth->fetchrow_array;
+    if (@row) {
+	$server_id = $row[0];
+    } else {
+	$dbh->do('INSERT INTO server (name) VALUES(?)', undef, $server);
+	$server_id = $dbh->last_insert_id(undef, undef, 'server', 'server_id');
+    }
+    $dbh->commit;
+
+    chdir "$DATADIR/$server";
+    opendir SERVER, "." || die "$0: reading $DATADIR/$server: $!\n";
+    my @nodes = grep { $_ !~ /^\./ && !-l && -d } readdir(SERVER);
+    closedir SERVER;
+    for my $node (@nodes) {
+	chdir "$DATADIR/$server/$node";
+	print "$server/$node:\n";
+	my $pid = fork;
+	defined $pid || die "fork: $!\n";
+	if ($pid == 0) {
+	    &refile_and_grok_node($server, $server_id, $node);
+	    exit;
+	}
+    }
 }
 
-sub extract {
-	my $xmlfile = shift || die "usage: $0 xmlfile\n";
-	die "cant divine dataset" unless ($xmlfile =~ /\d+\.(\w+)\.xml$/);
-	my $dataset = $1;
-	print STDERR "dataset is $dataset\n" if ($dbg);
+while (wait > 0) { }
+print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
+# end
 
-	my $EX = $DSC::extractor::config::DATASETS{$dataset};
-	print STDERR 'EX=', Dumper($EX) if ($dbg);
-	die "no extractor for $dataset\n" unless defined($EX);
 
-	my $start_time;
-	my $grokked;
-	if ($EX->{ndim} == 1) {
-		($start_time, $grokked) = grok_1d_xml($xmlfile, $EX->{type1});
-	} elsif ($EX->{ndim} == 2) {
-		($start_time, $grokked) = grok_2d_xml($xmlfile, $EX->{type1}, $EX->{type2});
+sub refile_and_grok_node($$$) {
+    my ($server, $server_id, $node) = @_;
+    my $node_id = 0;
+    my $pidf_is_mine = 0;
+    my ($sth, @row);
+    my $dbh = get_dbh || die;
+    $dbh->{RaiseError} = 1;
+
+    $PROG = "$PROG-$server-$node";
+
+    my $PIDF="/var/tmp/$PROG.pid";
+    if (open PIDF, "<$PIDF") {
+	if (kill 0, <PIDF>) {
+	    exit 0;
+	}
+	close PIDF;
+    }
+
+    END {
+	if ($pidf_is_mine) { unlink $PIDF; }
+    }
+
+    $pidf_is_mine = 1;
+    open PIDF, ">$PIDF" || die "$PROG: writing $PIDF: $!\n";
+    print PIDF "$$\n";
+    close PIDF;
+
+    open(STDOUT, ">$PROG.stdout") || die "$PROG: writing $PROG.stdout: $!\n";
+    open(STDERR, ">$PROG.stderr") || die "$PROG: writing $PROG.stderr: $!\n";
+
+    print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
+
+    # get node id, or insert one if it does not exist
+    $sth = $dbh->prepare(
+	"SELECT node_id FROM node WHERE server_id = ? AND name = ?");
+    $sth->execute($server_id, $node);
+    @row = $sth->fetchrow_array;
+    if (@row) {
+	$node_id = $row[0];
+    } else {
+	$dbh->do('INSERT INTO node (server_id, name) VALUES(?,?)',
+	    undef, $server_id, $node);
+	$node_id = $dbh->last_insert_id(undef, undef, 'node', 'node_id');
+	$dbh->commit;
+    }
+
+    print "server_id = $server_id, node_id = $node_id\n";
+
+    my $DIR=".";
+    opendir DIR, $DIR || die "$0: reading $DIR: $!\n";
+    my @xmls = map { $_->[0] }		# Take the [0] of each pair...
+	sort { $a->[1] <=> $b->[1] }	# of a list of pairs sorted by [1]...
+	map { [$_, /(\d+)/ ] }		# where [0] is name and [1] is time...
+	grep { /\.xml$/ } readdir(DIR);	# for each *.xml filename in DIR.
+    closedir DIR;
+
+    my $n = 0;
+    for my $h (@xmls) {
+	if (!($h =~ /^(\d+)\.([^.]*)\.xml$/)) { next; }
+	if (++$n > 100) { last };
+	my $secs = $1 - 60;
+	my $type = $2;
+
+	# hack
+	if ($type eq "d0_bit") {
+	    my $toname = $h;
+	    $toname = s/d0_bit/do_bit/;
+	    rename "$DIR/$h", "$DIR/$toname" || die "$0: rename $h: $!\n";
+	    $type='do_bit';
+	    $h = $toname;
+	}
+
+	my $yymmdd = strftime "%Y%m%d", gmtime($secs);
+	-d $yymmdd || mkdir $yymmdd ||
+	    die "$0: mkdir $yymmdd: $!\n";
+	-d "$yymmdd/$type" || mkdir "$yymmdd/$type" ||
+	    die "$0: mkdir $yymmdd/$type: $!\n";
+
+	if (-s "$DIR/$yymmdd/$type/$h") {
+	    system("ls -l $DIR/$yymmdd/$type/$h $h 1>&2");
+	    print STDERR "removing dupe $server/$node/$h\n";
+	    unlink "$DIR/$h";
+	    next;
+	} elsif (-f "$yymmdd/$type/$h") {
+	    print STDERR "removing empty $server/$node/$yymmdd/$type/$h\n";
+	    unlink "$DIR/$yymmdd/$type/$h";
+	}
+
+	my $xml_result = eval { extract_xml($dbh, $h, $server_id, $node_id) };
+	if (!defined $xml_result) {
+	    # other error
+	    -d "errors" || mkdir "errors";
+	    print STDERR "error processing $server/$node/$h\n";
+	    print STDERR "$@\n" if $@;
+	    rename "$DIR/$h", "$DIR/errors/$h";
+	    $dbh->rollback;
+	} elsif ($xml_result == 0) {
+	    # error while reading file
+	    print "problem reading $type data file for $server/$node\n";
+	    $dbh->rollback;
+	    last;
 	} else {
-		die "unsupported ndim $EX->{ndim}\n";
+	    # success
+	    $dbh->commit;
+	    rename "$DIR/$h", "$DIR/$yymmdd/$type/$h" || die "$0: move $h: $!\n";
 	}
-	# round start time down to start of the minute
-	$start_time = int($start_time / 60) * 60;
-	my $yymmdd = &yymmdd($start_time);
+    }
 
-	print STDERR 'grokked=', Dumper($grokked) if ($dbg);
+    print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
-	foreach my $output (keys %{$EX->{outputs}}) {
-		print STDERR "output=$output\n" if ($dbg);
-		my %db;
-		my $O =  $EX->{outputs}{$output};
+    if (-s "$PROG.stderr") {
+	system("/usr/bin/uniq $PROG.stderr " .
+		"| head -20 " .
+		"| /usr/bin/Mail -s \"Cron <\${USER}@`hostname -s`> $0\" \$USER");
+    }
+}
 
-		# transform the input into something for this particular
-		# output format
-		#
-		my $grok_copy;
-		if (defined($O->{data_munger})) {
-			$grok_copy = &{$O->{data_munger}}($grokked, $O);
+sub table_exists($$) {
+    my ($dbh, $tabname) = @_;
+    my $sth = $dbh->prepare_cached(
+	"SELECT 1 FROM pg_tables WHERE tablename = ?");
+    $sth->execute($tabname);
+    my $result = scalar $sth->fetchrow_array;
+    $sth->finish;
+    return $result;
+}
+
+sub extract_xml($$$) {
+    my ($dbh, $xmlfile, $server_id, $node_id) = @_;
+    die "cant divine dataset" unless ($xmlfile =~ /\d+\.(\w+)\.xml$/);
+    my $dataset = $1;
+    print STDERR "dataset is $dataset\n" if ($dbg);
+
+    my $EX = $DSC::extractor::config::DATASETS{$dataset};
+    print STDERR 'EX=', Dumper($EX) if ($dbg);
+    die "no extractor for $dataset\n" unless defined($EX);
+
+    my $start_time;
+    my $grokked;
+    my $perfstart;
+    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
+    if ($EX->{ndim} == 1) {
+	    ($start_time, $grokked) = grok_1d_xml($xmlfile, $EX->{type1});
+    } elsif ($EX->{ndim} == 2) {
+	    ($start_time, $grokked) = grok_2d_xml($xmlfile, $EX->{type1}, $EX->{type2});
+    } else {
+	    die "unsupported ndim $EX->{ndim}\n";
+    }
+    printf "grokked $xmlfile in %d ms\n",
+	(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+    # round start time down to start of the minute
+    $start_time = int($start_time / 60) * 60;
+    my $yymmdd = &yymmdd($start_time);
+
+    print STDERR 'grokked=', Dumper($grokked) if ($dbg);
+
+    foreach my $output (keys %{$EX->{outputs}}) {
+	print STDERR "output=$output\n" if ($dbg);
+	my %db;
+	my $O =  $EX->{outputs}{$output};
+
+	# transform the input into something for this particular
+	# output format
+	#
+	$perfstart = Time::HiRes::gettimeofday if $perfdbg;
+	my $grok_copy;
+	if (defined($O->{data_munger})) {
+		$grok_copy = &{$O->{data_munger}}($grokked, $O);
+	} else {
+		$grok_copy = $grokked;
+	}
+	print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($dbg);
+	printf "munged $output in %d ms\n",
+	    (Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+
+	my $tabname = "dsc_$output";
+	my $bucket_time = $O->{withtime} ? $start_time :
+	    int($start_time / 86400) * 86400; # round down to start of day
+
+	if (!table_exists($dbh, $tabname)) {
+	    eval { create_data_table($dbh, $tabname, $O->{nkeys}); };
+	    if ($@) {
+		my $SQLSTATE_UNIQUE_VIOLATION = "23505";
+		if ($dbh->err && $dbh->state eq $SQLSTATE_UNIQUE_VIOLATION) {
+		    # This could happen if a sibling process beat us to it.
+		    # (We could avoid this with locks, but that would be more
+		    # expensive, and this case is very rare, only possible
+		    # the first time a new dataset it used.)
+		    print "table $tabname already exists.\n";
+		    $dbh->rollback;
 		} else {
-			$grok_copy = $grokked;
+		    print STDERR "error=", $dbh->err, " state=", $dbh->state,
+			" errstr=", $dbh->errstr, "\n";
+		    die $@;
 		}
-		print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($dbg);
+	    }
 
-		# read the current data file
-		#
-		exit(254) if (&{$O->{data_reader}}(\%db, "$yymmdd/$dataset/$output.dat") < 0);
-
-		# merge/combine
-		#
-		&{$O->{data_merger}}($start_time, \%db, $grok_copy);
-		print STDERR 'POST MERGE db=', Dumper(\%db) if ($dbg);
-
-		# trim
-		#
-		if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
-			my $ntrim = &{$O->{data_trimer}}(\%db, $O);
-			print "trimmed $ntrim records from $yymmdd/$dataset/$output.dat\n" if ($ntrim);
-		}
-
-		# write out the new data file
-		#
-		&{$O->{data_writer}}(\%db, "$yymmdd/$dataset/$output.dat");
-
+	} elsif (!$O->{withtime}) {
+	    # read and delete the existing data
+	    return 0 if (&{$O->{data_reader}}($dbh, \%db, $output,
+		$server_id, $node_id, $bucket_time, undef) < 0);
+	    my $rows = $dbh->do("DELETE FROM $tabname WHERE " .
+		"start_time = $bucket_time AND " .
+		"server_id = $server_id AND node_id = $node_id");
+	    # printf "deleted %d rows from $tabname\n", $rows; # XXX
 	}
+
+	# merge/combine
+	#
+	$perfstart = Time::HiRes::gettimeofday if $perfdbg;
+	&{$O->{data_merger}}($start_time, \%db, $grok_copy);
+	print STDERR 'POST MERGE db=', Dumper(\%db) if ($dbg);
+	printf "merged $output in %d ms\n",
+	    (Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+
+	# trim
+	#
+	if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
+	    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
+	    my $ntrim = &{$O->{data_trimer}}(\%db, $O);
+	    print "trimmed $ntrim records from $output\n" if ($ntrim);
+	    printf "trimmed $output in %d ms\n",
+		(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+	}
+
+	# write out the new data
+	#
+	&{$O->{data_writer}}($dbh, \%db, $output, $server_id, $node_id,
+	    $bucket_time);
+    }
+
+    return 1; # success
 }
 
 #

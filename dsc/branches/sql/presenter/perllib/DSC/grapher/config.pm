@@ -31,34 +31,33 @@ sub read_config {
 		if ($directive eq 'server') {
 			my $servername = shift @x;
 			$CONFIG{servers}{$servername} = \@x;
-		}
-		if ($directive =~ /windows$/) {
+		} elsif ($directive =~ /windows$/) {
 			$CONFIG{$directive} = \@x;
-		}
-		if ($directive eq 'embargo') {
+		} elsif ($directive eq 'embargo') {
 			$CONFIG{$directive} = $x[0];
-		}
-		if ($directive eq 'anonymize_ip') {
+		} elsif ($directive eq 'anonymize_ip') {
 			$CONFIG{$directive} = 1;
-		}
-		if ($directive eq 'no_http_header') {
+		} elsif ($directive eq 'no_http_header') {
 			$CONFIG{$directive} = 1;
-		}
-		if ($directive eq 'timezone') {
+		} elsif ($directive eq 'timezone') {
 			$ENV{TZ} = $x[0];
-		}
-		if ($directive eq 'domain_list') {
+		} elsif ($directive eq 'domain_list') {
 			my $listname = shift @x;
 			die "Didn't find list-name after domain_list" unless defined($listname);
 			push(@{$CONFIG{domain_list}{$listname}}, @x);
-		}
-		if ($directive eq 'valid_domains') {
+		} elsif ($directive eq 'valid_domains') {
 			my $server = shift @x;
 			die "Didn't find server-name after valid_domains" unless defined($server);
 			my $listname = shift @x;
 			die "domain list-name $listname does not exist"
 				unless defined($CONFIG{domain_list}{$listname});
 			$CONFIG{valid_domains}{$server} = $listname;
+		} elsif ($directive eq 'dbi_datasource') {
+			$DSC::extractor::datasource = join ' ', @x;
+		} elsif ($directive eq 'dbi_username') {
+			$DSC::extractor::username = join ' ', @x;
+		} elsif ($directive eq 'dbi_password') {
+			$DSC::extractor::password = join ' ', @x;
 		}
 	}
 	close(F);

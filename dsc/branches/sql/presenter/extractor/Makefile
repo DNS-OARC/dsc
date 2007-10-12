@@ -1,6 +1,8 @@
 
-LIBEXECS += dsc-xml-extractor.pl
+LIBEXECS += refile-and-grok.pl
 LIBEXECS += put-file.pl
+
+ETCFILES  += dsc-extractor.cfg.sample
 
 INSTALLDIR=/usr/local/dsc
 

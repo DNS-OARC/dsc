@@ -1,5 +1,4 @@
 
-SCRIPTS += refile-and-grok-node.sh
 SCRIPTS += refile-and-grok.sh
 SCRIPTS += remove-xmls.pl
 

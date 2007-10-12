@@ -209,7 +209,7 @@ sub make_image {
 
 	return unless defined($PLOT);
 	return if ($PLOT->{plot_type} eq 'none');
-	debug(1, "Plotting $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}");
+	debug(1, "Plotting $PLOT->{plottitle}: $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}");
 	$start = time;
 	$data = load_data();
 	debug(5, 'data=' . Dumper($data)) if ($dbg_lvl >= 5);
@@ -243,19 +243,9 @@ sub make_image {
 	debug(1, "graph took %d seconds", $stop-$start);
 }
 
-sub datafile_path {
+sub datafile_name {
 	my $plot = shift;
-	my $node = shift;
-	my $when = shift;
-	my $dataset = $PLOT->{dataset} || $plot;
-	my $datafile = $PLOT->{datafile} || $plot;
-	join('/',
-		$DATAROOT,
-		$ARGS{server},
-		$node,
-		yymmdd($when),
-		$dataset,
-		"$datafile.dat");
+	return $PLOT->{datafile} || $plot;
 }
 
 sub load_data {
@@ -265,47 +255,48 @@ sub load_data {
 	my $last = $ARGS{end};
 	my $first = $ARGS{end} - $ARGS{window};
 	my $nl = 0;
-	if ($PLOT->{plot_type} =~ /^accum/) {
-		#
-		# for 'accum' plots, round up the start time
-		# to the beginning of the next 24hour period
-		#
-		$first += (86400 - ($ARGS{end} % 86400));
+	my $datafile = datafile_name($ARGS{plot});
+
+	# get server and node ids
+	my $dbh = get_dbh;
+	my ($server_id) = $dbh->selectrow_array(
+	    "SELECT server_id FROM server WHERE name = ?",
+	    undef, $ARGS{server});
+	my %node_id;
+	my $aref;
+	my $sth = $dbh->prepare(
+	    "SELECT name, node_id FROM node WHERE server_id = ?");
+	$sth->execute($server_id);
+	while ($aref = $sth->fetch) {
+	    $node_id{$aref->[0]} = $aref->[1];
 	}
-	if (($last - $first < 86400) && yymmdd($last) ne yymmdd($first)) {
-		# check if first and last fall on different days (per $TZ)
-		# and the window is less than a day.  If so, we need
-		# to make sure that the datafile that 'last' lies in
-		# gets read.
-		$last = $first + 86400;
-	}
-	foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
-	    next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
-	    for (my $t = $first; $t <= $last; $t += 86400) {
+
+	# load data
+	if ('bynode' eq $ARGS{plot}) {
+	    # XXX ugly special case
+	    foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
+		next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
+		debug(1, "reading $datafile for $node");
 		my %thash;
-		my $datafile = datafile_path($ARGS{plot}, $node, $t);
-		debug(1, "reading $datafile");
-		#warn "$datafile: $!\n" unless (-f $datafile);
-		if ('bynode' eq $ARGS{plot}) {
-			# XXX ugly special case
-			$nl += &{$PLOT->{data_reader}}(\%thash, $datafile);
-			bynode_summer(\%thash, \%hash, $node);
-			# XXX yes, wasteful repetition
-			@plotkeys = @{$CFG->{servers}{$ARGS{server}}};
-			@plotnames = @{$CFG->{servers}{$ARGS{server}}};
-		} else {
-			# note that 'summing' is important for 'accum'
-			# plots, even for a single node
-			$nl += &{$PLOT->{data_reader}}(\%thash, $datafile);
-			&{$PLOT->{data_summer}}(\%thash, \%hash);
-		}
+		$nl += &{$PLOT->{data_reader}}($dbh, \%thash, $datafile,
+		    $server_id, $node_id{$node} || 0, $first, $last);
+		bynode_summer(\%thash, \%hash, $node);
+		# XXX yes, wasteful repetition
+		@plotkeys = @{$CFG->{servers}{$ARGS{server}}};
+		@plotnames = @{$CFG->{servers}{$ARGS{server}}};
 	    }
+	} else {
+	    my $node_id = ($ARGS{node} eq 'all') ? undef :
+		($node_id{$ARGS{node}} || 0);
+	    debug(1, "reading $datafile");
+	    $nl += &{$PLOT->{data_reader}}($dbh, \%hash, $datafile,
+		$server_id, $node_id, $first, $last);
 	}
 	my $stop = time;
 	debug(1, "reading datafile took %d seconds, %d lines",
 		$stop-$start,
 		$nl);
-	\%hash;
+	return \%hash;
 }
 
 sub trace_data_to_tmpfile {
@@ -969,44 +960,44 @@ sub invalid_tld_filter {
 	return 1;
 }
 
-sub data_summer_0d {
-	my $from = shift;
-	my $to = shift;
-	my $start = time;
-	foreach my $k0 (keys %$from) {
-		$to->{$k0} += $from->{$k0};
-	}
-	my $stop = time;
-	debug(1, "data_summer_0d took %d seconds", $stop-$start);
-}
-
-sub data_summer_1d {
-	my $from = shift;
-	my $to = shift;
-	my $start = time;
-	foreach my $k0 (keys %$from) {
-		foreach my $k1 (keys %{$from->{$k0}}) {
-			$to->{$k0}{$k1} += $from->{$k0}{$k1};
-		}
-	}
-	my $stop = time;
-	debug(1, "data_summer_1d took %d seconds", $stop-$start);
-}
-
-sub data_summer_2d {
-	my $from = shift;
-	my $to = shift;
-	my $start = time;
-	foreach my $k0 (keys %$from) {
-		foreach my $k1 (keys %{$from->{$k0}}) {
-			foreach my $k2 (keys %{$from->{$k0}{$k1}}) {
-				$to->{$k0}{$k1}{$k2} += $from->{$k0}{$k1}{$k2};
-			}
-		}
-	}
-	my $stop = time;
-	debug(2, "data_summer_2d took %d seconds", $stop-$start);
-}
+#sub data_summer_0d {
+#	my $from = shift;
+#	my $to = shift;
+#	my $start = time;
+#	foreach my $k0 (keys %$from) {
+#		$to->{$k0} += $from->{$k0};
+#	}
+#	my $stop = time;
+#	debug(1, "data_summer_0d took %d seconds", $stop-$start);
+#}
+#
+#sub data_summer_1d {
+#	my $from = shift;
+#	my $to = shift;
+#	my $start = time;
+#	foreach my $k0 (keys %$from) {
+#		foreach my $k1 (keys %{$from->{$k0}}) {
+#			$to->{$k0}{$k1} += $from->{$k0}{$k1};
+#		}
+#	}
+#	my $stop = time;
+#	debug(1, "data_summer_1d took %d seconds", $stop-$start);
+#}
+#
+#sub data_summer_2d {
+#	my $from = shift;
+#	my $to = shift;
+#	my $start = time;
+#	foreach my $k0 (keys %$from) {
+#		foreach my $k1 (keys %{$from->{$k0}}) {
+#			foreach my $k2 (keys %{$from->{$k0}{$k1}}) {
+#				$to->{$k0}{$k1}{$k2} += $from->{$k0}{$k1}{$k2};
+#			}
+#		}
+#	}
+#	my $stop = time;
+#	debug(2, "data_summer_2d took %d seconds", $stop-$start);
+#}
 
 # XXX special hack for "bynode" plots
 # XXX assume $from hash is 1D

@@ -1,10 +1,12 @@
 package DSC::extractor;
 
+use DBI;
 use XML::Simple;
 use POSIX;
 use Digest::MD5;
 #use File::Flock;
 use File::NFSLock;
+use Time::HiRes; # XXX for debugging
 
 use strict;
 
@@ -15,6 +17,8 @@ BEGIN {
 	@ISA	 = qw(Exporter);
 	@EXPORT      = qw(
 		&yymmdd
+		&get_dbh
+		&create_data_table
 		&read_data
 		&write_data
 		&read_data2
@@ -28,6 +32,9 @@ BEGIN {
 		&grok_array_xml
 		&elsify_unwanted_keys
 		&replace_keys
+		$datasource
+		$username
+		$password
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
 	);
@@ -43,11 +50,9 @@ END { }
 # globals
 $SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
 $SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
-
-#my $lockfile_template = '/tmp/%F.lck';
-#my $lockfile_template = '%f.lck';
-my $LOCK_RETRY_DURATION = 45;
-my $MD5_frequency = 500;
+$datasource = undef;
+$username = undef;
+$password = undef;
 
 sub yymmdd {
 	my $t = shift;
@@ -75,239 +80,215 @@ sub lock_file {
 	return File::NFSLock->new($fn, 'BLOCKING');
 }
 
+sub get_dbh {
+    # my $dbstart = Time::HiRes::gettimeofday;
+    my $dbh = DBI->connect($datasource, $username, $password, {
+	AutoCommit => 0
+	}); # XXX
+    if (!defined $dbh) {
+	print STDERR "error connecting to database: $DBI::errstr\n";
+	return undef;
+    }
+    # printf "opened db connection in %d ms\n",
+    #     (Time::HiRes::gettimeofday - $dbstart) * 1000;
+    return $dbh;
+}
 
 #
-# time k1 v1 k2 v2 ...
+# Create a db table for a $nkeys-dimensional dataset
+#
+sub create_data_table {
+    my ($dbh, $tabname, $nkeys) = @_;
+
+    print "creating table $tabname\n";
+    $dbh->do(
+	"CREATE TABLE $tabname (" .
+	"  server_id     SMALLINT NOT NULL, " .
+	"  node_id       SMALLINT NOT NULL, " .
+	"  start_time    INTEGER NOT NULL, " . # unix timestamp
+	# "duration      INTEGER NOT NULL, " . # seconds
+	(join '', map "key$_ VARCHAR NOT NULL, ", 1..$nkeys) .
+	"  count         INTEGER NOT NULL " .
+	## Omitting primary key and foreign keys improves performance of inserts	## without any real negative impacts.
+	# "CONSTRAINT dsc_$tabname_pkey PRIMARY KEY (server_id, node_id, start_time, key1), " .
+	# "CONSTRAINT dsc_$tabname_server_id_fkey FOREIGN KEY (server_id) " .
+	# "    REFERENCES server (server_id), " .
+	# "CONSTRAINT dsc_$tabname_node_id_fkey FOREIGN KEY (node_id) " .
+	# "    REFERENCES node (node_id), " .
+	")");
+
+    # These indexes are needed for grapher performance.
+    $dbh->do("CREATE INDEX ${tabname}_time ON $tabname(start_time)");
+    $dbh->do("CREATE INDEX ${tabname}_key ON $tabname(" .
+	(join ', ', map "key$_", 1..$nkeys) . ")");
+}
+
+#
+# read $nkey-dimensional hash from db table
+#
+sub read_data_generic {
+	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $nkeys, $withtime) = @_;
+	my $nl = 0;
+	my $tabname = "dsc_$type";
+	my $sth;
+
+	my @params = ($start_time);
+	my $sql = "SELECT ";
+	$sql .= "start_time, " if ($withtime);
+	$sql .= join('', map("key$_, ", 1..$nkeys));
+	$sql .= (!$withtime && defined $end_time) ? "SUM(count) " : "count ";
+	$sql .= "FROM $tabname WHERE ";
+	if (defined $end_time) {
+	    $sql .= "start_time >= ? AND start_time < ? ";
+	    push @params, $end_time;
+	} else {
+	    $sql .= "start_time = ? ";
+	}
+	$sql .= "AND server_id = ? ";
+	push @params, $server_id;
+	if (defined $node_id) {
+	    $sql .= "AND node_id = ? ";
+	    push @params, $node_id;
+	}
+	if (!$withtime && defined $end_time) {
+	    $sql .= "GROUP BY " . join(', ', map("key$_", 1..$nkeys));
+	}
+	# print "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	$sth = $dbh->prepare($sql);
+	$sth->execute(@params);
+
+	my $nkeycols = ($withtime ? 1 : 0) + $nkeys;
+	while (my @row = $sth->fetchrow_array) {
+	    $nl++;
+	    if ($nkeycols == 1) {
+		$href->{$row[0]} = $row[1];
+	    } elsif ($nkeycols == 2) {
+		$href->{$row[0]}{$row[1]} = $row[2];
+	    } elsif ($nkeycols == 3) {
+		$href->{$row[0]}{$row[1]}{$row[2]} = $row[3];
+	    }
+	}
+	$dbh->commit;
+	print "read $nl rows from $tabname\n";
+	return $nl;
+}
+
+#
+# read 1-dimensional hash with time from table with 1 minute buckets
 #
 sub read_data {
-	my $href = shift;
-	my $fn = shift;
-	my $nl = 0;
-	my $md = Digest::MD5->new;
-	return 0 unless (-f $fn);
-	if (open(IN, "$fn")) {
-	    while (<IN>) {
-		$nl++;
-		if (/^#MD5 (\S+)/) {
-			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl\n".
-					"found $1 expect ". $md->hexdigest. "\n".
-					"exiting";
-				return -1;
-			}
-			next;
-		}
-		$md->add($_);
-		chomp;
-		my ($k, %B) = split;
-		$href->{$k} = \%B;
-	    }
-	    close(IN);
-	}
-	$nl;
+    return read_data_generic(@_, 1, 1);
 }
 
 #
-# time k1 v1 k2 v2 ...
+# write 1-dimensional hash with time to table with 1 minute buckets
 #
 sub write_data {
-	my $A = shift;
-	my $fn = shift;
+	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
+	my $tabname = "dsc_$type";
+	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $B;
-	my $lock = lock_file($fn);
-	my $md = Digest::MD5->new;
-	open(OUT, ">$fn.new") || die $!;
-	foreach my $k (sort {$a <=> $b} keys %$A) {
-		next unless defined($B = $A->{$k});
-		my $line = join(' ', $k, %$B) . "\n";
-		next unless ($line =~ /\S/);
-		print OUT $line;
-		$md->add($line);
-		$nl++;
-		print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
+	my $rows;
+	my $B = $A->{$t};
+	if (!defined $B) {
+	    warn "Time $t not found in $type data; exiting.\n";
+	    return -1;
 	}
-	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
-	close(OUT);
-	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn\n";
+	$rows = $dbh->do("COPY $tabname FROM STDIN");
+	foreach my $k (keys %$B) {
+	    $dbh->pg_putline("$server_id\t$node_id\t$t\t$k\t$B->{$k}\n");
+	    $nl++;
+	}
+	$dbh->pg_endcopy;
+	printf "wrote $nl rows to $tabname in %d ms\n",
+	    (Time::HiRes::gettimeofday - $start) * 1000;
 }
 
-# a 1-level hash database with no time dimension
-#
-# ie: key value
+
+# read 1-dimensional hash without time from table with 1 day buckets
 #
 sub read_data2 {
-	my $href = shift;
-	my $fn = shift;
-	my $nl = 0;
-	my $md = Digest::MD5->new;
-	return 0 unless (-f $fn);
-	if (open(IN, "$fn")) {
-	    while (<IN>) {
-		$nl++;
-		if (/^#MD5 (\S+)/) {
-			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl\n".
-					"found $1 expect ". $md->hexdigest. "\n".
-					"exiting";
-				return -1;
-			}
-			next;
-		}
-		$md->add($_);
-		chomp;
-		my ($k, $v) = split;
-		$href->{$k} = $v;
-	    }
-	    close(IN);
-	}
-	$nl;
+    return read_data_generic(@_, 1, 0);
 }
 
-
-# a 1-level hash database with no time dimension
-#
-# ie: key value
+# write 1-dimensional hash without time to table with 1 day buckets
 #
 sub write_data2 {
-	my $A = shift;
-	my $fn = shift;
+	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
+	my $tabname = "dsc_$type";
+	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $lock = lock_file($fn);
-	my $md = Digest::MD5->new;
-	open(OUT, ">$fn.new") || die $!;
-	foreach my $k (sort {$a cmp $b} keys %$A) {
-		my $line = "$k $A->{$k}\n";
-		print OUT $line;
-		$md->add($line);
-		$nl++;
-		print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
+	my $rows;
+	$dbh->do("COPY $tabname FROM STDIN");
+	foreach my $k1 (keys %$href) {
+	    $dbh->pg_putline("$server_id\t$node_id\t$t\t$k1\t$href->{$k1}\n");
+	    $nl++;
 	}
-	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
-	close(OUT);
-	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn\n";
+	$dbh->pg_endcopy;
+	printf "wrote $nl rows to $tabname in %d ms\n",
+	    (Time::HiRes::gettimeofday - $start) * 1000;
 }
 
-# reads a 2-level hash database with no time dimension
-# ie: key1 key2 value
+# read 2-dimensional hash without time from table with 1 day buckets
 #
 sub read_data3 {
-	my $href = shift;
-	my $fn = shift;
-	my $nl = 0;
-	my $md = Digest::MD5->new;
-	return 0 unless (-f $fn);
-	if (open(IN, "$fn")) {
-	    while (<IN>) {
-		$nl++;
-		if (/^#MD5 (\S+)/) {
-			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl\n".
-					"found $1 expect ". $md->hexdigest. "\n".
-					"exiting";
-				return -1;
-			}
-			next;
-		}
-		$md->add($_);
-		chomp;
-		my ($k1, $k2, $v) = split;
-		next unless defined($v);
-		$href->{$k1}{$k2} = $v;
-	    }
-	    close(IN);
-	}
-	$nl;
+    return read_data_generic(@_, 2, 0);
 }
 
-# writes a 2-level hash database with no time dimension
-# ie: key1 key2 value
+# write 2-dimensional hash without time to table with 1 day buckets
 #
 sub write_data3 {
-	my $href = shift;
-	my $fn = shift;
+	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
+	my $tabname = "dsc_$type";
+	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $lock = lock_file($fn);
-	my $md = Digest::MD5->new;
-	open(OUT, ">$fn.new") || return;
+	my $rows;
+	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $k1 (keys %$href) {
 		foreach my $k2 (keys %{$href->{$k1}}) {
-			my $line = "$k1 $k2 $href->{$k1}{$k2}\n";
-			print OUT $line;
-			$md->add($line);
-			$nl++;
-			print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
+		    $dbh->pg_putline("$server_id\t$node_id\t$t\t$k1\t$k2\t$href->{$k1}{$k2}\n");
+		    $nl++;
 		}
 	}
-	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
-	close(OUT);
-	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn\n";
+	$dbh->pg_endcopy;
+	printf "wrote $nl rows to $tabname in %d ms\n",
+	    (Time::HiRes::gettimeofday - $start) * 1000;
 }
 
 
-# reads a 2-level hash database WITH time dimension
-# ie: time k1 (k:v:k:v) k2 (k:v:k:v)
+#
+# read 2-dimensional hash with time from table with 1 minute buckets
 #
 sub read_data4 {
-	my $href = shift;
-	my $fn = shift;
-	my $nl = 0;
-	my $md = Digest::MD5->new;
-	return 0 unless (-f $fn);
-	if (open(IN, "$fn")) {
-	    while (<IN>) {
-		$nl++;
-		if (/^#MD5 (\S+)/) {
-			if ($1 ne $md->hexdigest) {
-				warn "MD5 checksum error in $fn at line $nl\n".
-					"found $1 expect ". $md->hexdigest. "\n".
-					"exiting";
-				return -1;
-			}
-			next;
-		}
-		$md->add($_);
-		chomp;
-		my ($ts, %foo) = split;
-		while (my ($k,$v) = each %foo) {
-			my %bar = split(':', $v);
-			$href->{$ts}{$k} = \%bar;
-		}
-	    }
-	    close(IN);
-	}
-	$nl;
+    return read_data_generic(@_, 2, 1);
 }
 
-# writes a 2-level hash database WITH time dimension
-# ie: time k1 (k:v:k:v) k2 (k:v:k:v)
 #
-sub write_data4 {  
-	my $href = shift;
-	my $fn = shift;
+# write 2-dimensional hash with time to table with 1 minute buckets
+#
+sub write_data4 {
+	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
+	my $tabname = "dsc_$type";
+	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $lock = lock_file($fn);
-	my $md = Digest::MD5->new;
-	open(OUT, ">$fn.new") || return;
-	foreach my $ts (sort {$a <=> $b} keys %$href) {
-		my @foo = ();
-		foreach my $k1 (keys %{$href->{$ts}}) {
-			push(@foo, $k1);
-			push(@foo, join(':', %{$href->{$ts}{$k1}}));
-		}
-		my $line = join(' ', $ts, @foo) . "\n";
-		print OUT $line;
-		$md->add($line);
-		$nl++;
-		print OUT "#MD5 ", $md->hexdigest, "\n" if (0 == ($nl % $MD5_frequency));
+	my ($B, $C);
+	my $rows;
+	$B = $A->{$t};
+	if (!defined $B) {
+	    warn "Time $t not found in $type data; exiting.\n";
+	    return -1;
 	}
-	print OUT "#MD5 ", $md->hexdigest, "\n" if (0 != ($nl % $MD5_frequency));
-	close(OUT);
-	rename "$fn.new", $fn || die "$fn.new: $!";
-	print "wrote $nl lines to $fn\n";
+	$dbh->do("COPY $tabname FROM STDIN");
+	foreach my $k1 (keys %$B) {
+	    next unless defined($C = $B->{$k1});
+	    foreach my $k2 (keys %$C) {
+		$dbh->pg_putline("$server_id\t$node_id\t$t\t$k1\t$k2\t$C->{$k2}\n");
+		$nl++;
+	    }
+	}
+	$dbh->pg_endcopy;
+	printf "wrote $nl rows to $tabname in %d ms\n",
+	    (Time::HiRes::gettimeofday - $start) * 1000;
 }
 
 ##############################################################################
@@ -384,3 +365,5 @@ sub replace_keys {
 }
 
 ##############################################################################
+
+1;
