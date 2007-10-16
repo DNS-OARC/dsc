@@ -83,7 +83,7 @@ sub run {
 	$now -= $CFG->{embargo} if defined $CFG->{embargo};
 
 	debug(1, "===> starting at " . POSIX::strftime('%+', localtime($now)));
-	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
+	debug(2, "Client is = " . ($ENV{REMOTE_ADDR}||'') . ":" . ($ENV{REMOTE_PORT}||''));
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
 	my $untaint = CGI::Untaint->new($cgi->Vars);
 	$ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
@@ -1079,7 +1079,7 @@ sub img_with_map {
 
 sub urlpath {
 	my %args = @_;
-	my $cgi = $ENV{REQUEST_URI};
+	my $cgi = $ENV{REQUEST_URI} || '';
 	if ((my $n = index($cgi,'?')) > 0) {
 		$cgi = substr($cgi,0,$n);
 	}
