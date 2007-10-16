@@ -118,8 +118,9 @@ sub run {
 		$ARGS{yaxis} = find_default_yaxis_type();
 	}
 
-	if ($PLOT->{plot_type} =~ /^accum/ && $ARGS{window} < 86400) {
-		$ARGS{window} = 86400;
+	if ($PLOT->{plot_type} =~ /^accum|^hist/ && $ARGS{window} % 86400 > 0) {
+		# round window up to multiple of a day
+		$ARGS{window} += 86400 - $ARGS{window} % 86400;
 	}
 
 	$ARGS{end} = $now if ($ARGS{end} > $now);
@@ -252,7 +253,8 @@ sub load_data {
 	my $datadir;
 	my %hash;
 	my $start = time;
-	my $last = $ARGS{end} + $ARGS{binsize};
+	my $last = $ARGS{end};
+	$last += $ARGS{binsize} if ($PLOT->{plot_type} eq 'trace');
 	my $first = $ARGS{end} - $ARGS{window};
 	my $nl = 0;
 	my $datafile = datafile_name($ARGS{plot});
@@ -450,7 +452,7 @@ sub hist2d_data_to_tmpfile {
 sub time_descr {
 	my $from_t = $ARGS{end} - $ARGS{window};
 	my $to_t = $ARGS{end};
-	if ($PLOT->{plot_type} =~ /^accum/) {
+	if ($PLOT->{plot_type} =~ /^accum|^hist/) {
 		$from_t += (86400 - ($ARGS{end} % 86400));
 		$to_t += (86400 - ($ARGS{end} % 86400) - 1);
 		$to_t = $now if ($to_t > $now);
@@ -1238,7 +1240,7 @@ sub navbar_window {
 	my @items = ();
 	my $pn = $ARGS{plot};
 	my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
-	if (defined($PLOT->{plot_type}) && $PLOT->{plot_type} =~ /^accum/) {
+	if (defined($PLOT->{plot_type}) && $PLOT->{plot_type} =~ /^accum|^hist/) {
 		foreach my $w (@{$CFG->{accum_windows}}) {
 			push(@items, navbar_item('window',units_to_seconds($w),$w));
 		}
