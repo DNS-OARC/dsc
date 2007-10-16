@@ -252,7 +252,7 @@ sub load_data {
 	my $datadir;
 	my %hash;
 	my $start = time;
-	my $last = $ARGS{end};
+	my $last = $ARGS{end} + $ARGS{binsize};
 	my $first = $ARGS{end} - $ARGS{window};
 	my $nl = 0;
 	my $datafile = datafile_name($ARGS{plot});
