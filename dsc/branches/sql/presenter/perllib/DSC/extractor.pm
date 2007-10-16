@@ -18,6 +18,9 @@ BEGIN {
 	@EXPORT      = qw(
 		&yymmdd
 		&get_dbh
+		&get_server_id
+		&get_node_id
+		&table_exists
 		&create_data_table
 		&read_data
 		&write_data
@@ -94,6 +97,16 @@ sub get_dbh {
     return $dbh;
 }
 
+sub table_exists($$) {
+    my ($dbh, $tabname) = @_;
+    my $sth = $dbh->prepare_cached(
+	"SELECT 1 FROM pg_tables WHERE tablename = ?");
+    $sth->execute($tabname);
+    my $result = scalar $sth->fetchrow_array;
+    $sth->finish;
+    return $result;
+}
+
 #
 # Create a db table for a $nkeys-dimensional dataset
 #
@@ -123,24 +136,56 @@ sub create_data_table {
 	(join ', ', map "key$_", 1..$nkeys) . ")");
 }
 
+sub get_server_id($$) {
+    my ($dbh, $server) = @_;
+    my $server_id;
+    my $sth = $dbh->prepare("SELECT server_id FROM server WHERE name = ?");
+    $sth->execute($server);
+    my @row = $sth->fetchrow_array;
+    if (@row) {
+	$server_id = $row[0];
+    } else {
+	$dbh->do('INSERT INTO server (name) VALUES(?)', undef, $server);
+	$server_id = $dbh->last_insert_id(undef, undef, 'server', 'server_id');
+    }
+    return $server_id;
+}
+
+sub get_node_id($$$) {
+    my ($dbh, $server_id, $node) = @_;
+    my $node_id;
+    my $sth = $dbh->prepare(
+	"SELECT node_id FROM node WHERE server_id = ? AND name = ?");
+    $sth->execute($server_id, $node);
+    my @row = $sth->fetchrow_array;
+    if (@row) {
+	$node_id = $row[0];
+    } else {
+	$dbh->do('INSERT INTO node (server_id, name) VALUES(?,?)',
+	    undef, $server_id, $node);
+	$node_id = $dbh->last_insert_id(undef, undef, 'node', 'node_id');
+    }
+    return $node_id;
+}
+
 #
 # read $nkey-dimensional hash from db table
 #
 sub read_data_generic {
-	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $nkeys, $withtime) = @_;
+	my ($dbh, $href, $type, $server_id, $node_id, $first_time, $last_time, $nkeys, $withtime) = @_;
 	my $nl = 0;
 	my $tabname = "dsc_$type";
 	my $sth;
 
-	my @params = ($start_time);
+	my @params = ($first_time);
 	my $sql = "SELECT ";
 	$sql .= "start_time, " if ($withtime);
 	$sql .= join('', map("key$_, ", 1..$nkeys));
-	$sql .= (!$withtime && defined $end_time) ? "SUM(count) " : "count ";
+	$sql .= (!$withtime && defined $last_time) ? "SUM(count) " : "count ";
 	$sql .= "FROM $tabname WHERE ";
-	if (defined $end_time) {
+	if (defined $last_time) {
 	    $sql .= "start_time >= ? AND start_time < ? ";
-	    push @params, $end_time;
+	    push @params, $last_time;
 	} else {
 	    $sql .= "start_time = ? ";
 	}
@@ -150,7 +195,7 @@ sub read_data_generic {
 	    $sql .= "AND node_id = ? ";
 	    push @params, $node_id;
 	}
-	if (!$withtime && defined $end_time) {
+	if (!$withtime && defined $last_time) {
 	    $sql .= "GROUP BY " . join(', ', map("key$_", 1..$nkeys));
 	}
 	# print "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
@@ -180,24 +225,53 @@ sub read_data {
     return read_data_generic(@_, 1, 1);
 }
 
+# read data in old flat file format (used by importer)
+sub read_flat_data {
+	my $href = shift;
+	my $fn = shift;
+	my $nl = 0;
+	my $md = Digest::MD5->new;
+	return 0 unless (-f $fn);
+	if (open(IN, "$fn")) {
+	    while (<IN>) {
+		$nl++;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
+				return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
+		my ($k, %B) = split;
+		$href->{$k} = \%B;
+	    }
+	    close(IN);
+	}
+	$nl;
+}
+
+
 #
 # write 1-dimensional hash with time to table with 1 minute buckets
 #
 sub write_data {
+	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_$type";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	my $rows;
-	my $B = $A->{$t};
-	if (!defined $B) {
-	    warn "Time $t not found in $type data; exiting.\n";
-	    return -1;
-	}
-	$rows = $dbh->do("COPY $tabname FROM STDIN");
-	foreach my $k (keys %$B) {
-	    $dbh->pg_putline("$server_id\t$node_id\t$t\t$k\t$B->{$k}\n");
-	    $nl++;
+	$dbh->do("COPY $tabname FROM STDIN");
+	foreach my $t (keys %$A) {
+	    my $B = $A->{$t};
+	    foreach my $k (keys %$B) {
+		$dbh->pg_putline("$server_id\t$node_id\t$t\t$k\t$B->{$k}\n");
+		$nl++;
+	    }
 	}
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
@@ -209,6 +283,35 @@ sub write_data {
 #
 sub read_data2 {
     return read_data_generic(@_, 1, 0);
+}
+
+# read data in old flat file format (used by importer)
+sub read_flat_data2 {
+	my $href = shift;
+	my $fn = shift;
+	my $nl = 0;
+	my $md = Digest::MD5->new;
+	return 0 unless (-f $fn);
+	if (open(IN, "$fn")) {
+	    while (<IN>) {
+		$nl++;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
+				return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
+		my ($k, $v) = split;
+		$href->{$k} = $v;
+	    }
+	    close(IN);
+	}
+	$nl;
 }
 
 # write 1-dimensional hash without time to table with 1 day buckets
@@ -233,6 +336,36 @@ sub write_data2 {
 #
 sub read_data3 {
     return read_data_generic(@_, 2, 0);
+}
+
+# read data in old flat file format (used by importer)
+sub read_flat_data3 {
+	my $href = shift;
+	my $fn = shift;
+	my $nl = 0;
+	my $md = Digest::MD5->new;
+	return 0 unless (-f $fn);
+	if (open(IN, "$fn")) {
+	    while (<IN>) {
+		$nl++;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
+				return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
+		my ($k1, $k2, $v) = split;
+		next unless defined($v);
+		$href->{$k1}{$k2} = $v;
+	    }
+	    close(IN);
+	}
+	$nl;
 }
 
 # write 2-dimensional hash without time to table with 1 day buckets
@@ -263,27 +396,58 @@ sub read_data4 {
     return read_data_generic(@_, 2, 1);
 }
 
+# read data in old flat file format (used by importer)
+sub read_flat_data4 {
+	my $href = shift;
+	my $fn = shift;
+	my $nl = 0;
+	my $md = Digest::MD5->new;
+	return 0 unless (-f $fn);
+	if (open(IN, "$fn")) {
+	    while (<IN>) {
+		$nl++;
+		if (/^#MD5 (\S+)/) {
+			if ($1 ne $md->hexdigest) {
+				warn "MD5 checksum error in $fn at line $nl\n".
+					"found $1 expect ". $md->hexdigest. "\n".
+					"exiting";
+				return -1;
+			}
+			next;
+		}
+		$md->add($_);
+		chomp;
+		my ($ts, %foo) = split;
+		while (my ($k,$v) = each %foo) {
+			my %bar = split(':', $v);
+			$href->{$ts}{$k} = \%bar;
+		}
+	    }
+	    close(IN);
+	}
+	$nl;
+}
+
 #
 # write 2-dimensional hash with time to table with 1 minute buckets
 #
 sub write_data4 {
+	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_$type";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	my ($B, $C);
 	my $rows;
-	$B = $A->{$t};
-	if (!defined $B) {
-	    warn "Time $t not found in $type data; exiting.\n";
-	    return -1;
-	}
 	$dbh->do("COPY $tabname FROM STDIN");
-	foreach my $k1 (keys %$B) {
-	    next unless defined($C = $B->{$k1});
-	    foreach my $k2 (keys %$C) {
-		$dbh->pg_putline("$server_id\t$node_id\t$t\t$k1\t$k2\t$C->{$k2}\n");
-		$nl++;
+	foreach my $t (keys %$A) {
+	    $B = $A->{$t};
+	    foreach my $k1 (keys %$B) {
+		next unless defined($C = $B->{$k1});
+		foreach my $k2 (keys %$C) {
+		    $dbh->pg_putline("$server_id\t$node_id\t$t\t$k1\t$k2\t$C->{$k2}\n");
+		    $nl++;
+		}
 	    }
 	}
 	$dbh->pg_endcopy;

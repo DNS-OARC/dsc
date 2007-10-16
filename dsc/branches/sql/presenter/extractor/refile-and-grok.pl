@@ -3,7 +3,6 @@
 use warnings;
 use strict;
 use POSIX;
-use POSIX ":sys_wait_h";
 
 use DSC::extractor;
 use DSC::extractor::config;
@@ -12,7 +11,6 @@ use Time::HiRes; # XXX
 
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
-my $EXECDIR = "$DSCDIR/libexec";
 my $dbg = 0;
 my $perfdbg = 0;
 
@@ -30,23 +28,14 @@ print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
 my $dbh = get_dbh || die;
 $dbh->{RaiseError} = 1;
-my $sth = $dbh->prepare("SELECT server_id FROM server WHERE name = ?");
 
 opendir DATADIR, "." || die "$0: reading $DATADIR: $!\n";
 my @servers = grep { $_ !~ /^\./ && !-l && -d } readdir(DATADIR);
 closedir DATADIR;
 for my $server (@servers) {
 
-    my $server_id;
     # get server id, or insert one if it does not exist
-    $sth->execute($server);
-    my @row = $sth->fetchrow_array;
-    if (@row) {
-	$server_id = $row[0];
-    } else {
-	$dbh->do('INSERT INTO server (name) VALUES(?)', undef, $server);
-	$server_id = $dbh->last_insert_id(undef, undef, 'server', 'server_id');
-    }
+    my $server_id = get_server_id($dbh, $server);
     $dbh->commit;
 
     chdir "$DATADIR/$server";
@@ -103,18 +92,8 @@ sub refile_and_grok_node($$$) {
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
     # get node id, or insert one if it does not exist
-    $sth = $dbh->prepare(
-	"SELECT node_id FROM node WHERE server_id = ? AND name = ?");
-    $sth->execute($server_id, $node);
-    @row = $sth->fetchrow_array;
-    if (@row) {
-	$node_id = $row[0];
-    } else {
-	$dbh->do('INSERT INTO node (server_id, name) VALUES(?,?)',
-	    undef, $server_id, $node);
-	$node_id = $dbh->last_insert_id(undef, undef, 'node', 'node_id');
-	$dbh->commit;
-    }
+    $node_id = get_node_id($dbh, $server_id, $node);
+    $dbh->commit;
 
     print "server_id = $server_id, node_id = $node_id\n";
 
@@ -185,16 +164,6 @@ sub refile_and_grok_node($$$) {
 		"| head -20 " .
 		"| /usr/bin/Mail -s \"Cron <\${USER}@`hostname -s`> $0\" \$USER");
     }
-}
-
-sub table_exists($$) {
-    my ($dbh, $tabname) = @_;
-    my $sth = $dbh->prepare_cached(
-	"SELECT 1 FROM pg_tables WHERE tablename = ?");
-    $sth->execute($tabname);
-    my $result = scalar $sth->fetchrow_array;
-    $sth->finish;
-    return $result;
 }
 
 sub extract_xml($$$) {
