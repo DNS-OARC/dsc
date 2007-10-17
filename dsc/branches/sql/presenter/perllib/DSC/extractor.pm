@@ -177,11 +177,12 @@ sub read_data_generic {
 	my $tabname = "dsc_$type";
 	my $sth;
 
+	my $needgroup = !$withtime && defined $end_time || !defined $node_id;
 	my @params = ();
 	my $sql = "SELECT ";
 	$sql .= "start_time, " if ($withtime);
 	$sql .= join('', map("key$_, ", 1..$nkeys));
-	$sql .= (!$withtime && defined $end_time) ? "SUM(count) " : "count ";
+	$sql .= $needgroup ? "SUM(count) " : "count ";
 	$sql .= "FROM $tabname WHERE ";
 	if (defined $end_time) {
 	    $sql .= "start_time >= ? AND start_time < ? ";
@@ -196,10 +197,12 @@ sub read_data_generic {
 	    $sql .= "AND node_id = ? ";
 	    push @params, $node_id;
 	}
-	if (!$withtime && defined $end_time) {
-	    $sql .= "GROUP BY " . join(', ', map("key$_", 1..$nkeys));
+	if ($needgroup) {
+	    $sql .= "GROUP BY ";
+	    $sql .= "start_time, " if ($withtime);
+	    $sql .= join(', ', map("key$_", 1..$nkeys));
 	}
-	# print "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	# print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	$sth = $dbh->prepare($sql);
 	$sth->execute(@params);
 
