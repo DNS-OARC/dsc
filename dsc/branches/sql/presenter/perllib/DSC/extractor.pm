@@ -24,11 +24,8 @@ BEGIN {
 		&create_data_table
 		&read_data
 		&write_data
-		&read_data2
 		&write_data2
-		&read_data3
 		&write_data3
-		&read_data4
 		&write_data4
 		&grok_1d_xml
 		&grok_2d_xml
@@ -169,20 +166,21 @@ sub get_node_id($$$) {
 }
 
 #
-# read $nkey-dimensional hash from db table
+# read from a db table into a hash
 #
-sub read_data_generic {
-	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $nkeys, $withtime) = @_;
+sub read_data {
+	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, @keys) = @_;
 	my $nl = 0;
 	my $tabname = "dsc_$type";
 	my $sth;
 
-	my $needgroup = !$withtime && defined $end_time || !defined $node_id;
+	my $needgroup =
+	    defined $end_time && !(grep /^start_time/, @keys) ||
+	    !defined $node_id && !(grep /^node_id/, @keys) ||
+	    !(grep /^key/, @keys);
 	my @params = ();
-	my $sql = "SELECT ";
-	$sql .= "start_time, " if ($withtime);
-	$sql .= join('', map("key$_, ", 1..$nkeys));
-	$sql .= $needgroup ? "SUM(count) " : "count ";
+	my $sql = "SELECT " . join(', ', @keys);
+	$sql .= $needgroup ? ", SUM(count) " : ", count ";
 	$sql .= "FROM $tabname WHERE ";
 	if (defined $end_time) {
 	    $sql .= "start_time >= ? AND start_time < ? ";
@@ -197,75 +195,24 @@ sub read_data_generic {
 	    $sql .= "AND node_id = ? ";
 	    push @params, $node_id;
 	}
-	if ($needgroup) {
-	    $sql .= "GROUP BY ";
-	    $sql .= "start_time, " if ($withtime);
-	    $sql .= join(', ', map("key$_", 1..$nkeys));
-	}
-	# print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
-	$sth = $dbh->prepare($sql);
-	$sth->execute(@params);
-
-	my $nkeycols = ($withtime ? 1 : 0) + $nkeys;
-	while (my @row = $sth->fetchrow_array) {
-	    $nl++;
-	    if ($nkeycols == 1) {
-		$href->{$row[0]} = $row[1];
-	    } elsif ($nkeycols == 2) {
-		$href->{$row[0]}{$row[1]} = $row[2];
-	    } elsif ($nkeycols == 3) {
-		$href->{$row[0]}{$row[1]}{$row[2]} = $row[3];
-	    }
-	}
-	$dbh->commit;
-	# print "read $nl rows from $tabname\n";
-	return $nl;
-}
-
-#
-# read hash from db table by node
-# assumes the table is 1d
-#
-sub read_data_bynode {
-	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time) = @_;
-	my $nl = 0;
-	my $tabname = "dsc_$type";
-	my $sth;
-
-	my @params = ();
-	my $sql = "SELECT start_time, node_id, SUM(count) FROM $tabname WHERE ";
-	if (defined $end_time) {
-	    $sql .= "start_time >= ? AND start_time < ? ";
-	    push @params, $start_time, $end_time;
-	} else {
-	    $sql .= "start_time = ? ";
-	    push @params, $start_time;
-	}
-	$sql .= "AND server_id = ? ";
-	push @params, $server_id;
-	if (defined $node_id) {
-	    $sql .= "AND node_id = ? ";
-	    push @params, $node_id;
-	}
-	$sql .= "GROUP BY start_time, node_id";
+	$sql .= "GROUP BY " . join(', ', @keys) if ($needgroup);
 	print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	$sth = $dbh->prepare($sql);
 	$sth->execute(@params);
 
 	while (my @row = $sth->fetchrow_array) {
 	    $nl++;
-	    $href->{$row[0]}{$row[1]} = $row[2];
+	    if (scalar @keys == 1) {
+		$href->{$row[0]} = $row[1];
+	    } elsif (scalar @keys == 2) {
+		$href->{$row[0]}{$row[1]} = $row[2];
+	    } elsif (scalar @keys == 3) {
+		$href->{$row[0]}{$row[1]}{$row[2]} = $row[3];
+	    }
 	}
 	$dbh->commit;
 	# print "read $nl rows from $tabname\n";
 	return $nl;
-}
-
-#
-# read 1-dimensional hash with time from table with 1 minute buckets
-#
-sub read_data {
-    return read_data_generic(@_, 1, 1);
 }
 
 # read data in old flat file format (used by importer)
@@ -297,7 +244,6 @@ sub read_flat_data {
 	$nl;
 }
 
-
 #
 # write 1-dimensional hash with time to table with 1 minute buckets
 #
@@ -319,13 +265,6 @@ sub write_data {
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
 	    (Time::HiRes::gettimeofday - $start) * 1000;
-}
-
-
-# read 1-dimensional hash without time from table with 1 day buckets
-#
-sub read_data2 {
-    return read_data_generic(@_, 1, 0);
 }
 
 # read data in old flat file format (used by importer)
@@ -373,12 +312,6 @@ sub write_data2 {
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
 	    (Time::HiRes::gettimeofday - $start) * 1000;
-}
-
-# read 2-dimensional hash without time from table with 1 day buckets
-#
-sub read_data3 {
-    return read_data_generic(@_, 2, 0);
 }
 
 # read data in old flat file format (used by importer)
@@ -431,13 +364,6 @@ sub write_data3 {
 	    (Time::HiRes::gettimeofday - $start) * 1000;
 }
 
-
-#
-# read 2-dimensional hash with time from table with 1 minute buckets
-#
-sub read_data4 {
-    return read_data_generic(@_, 2, 1);
-}
 
 # read data in old flat file format (used by importer)
 sub read_flat_data4 {
