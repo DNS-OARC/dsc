@@ -107,7 +107,7 @@ my $std_accum_yaxes = {
     colors	=> [ qw (red orange yellow brightgreen brightblue
 		     purple magenta redorange yellow2 green darkblue
 		     yelloworange powderblue claret lavender ) ],
-    data_reader => \&DSC::extractor::read_data,
+    data_reader => \&DSC::extractor::read_data_bynode,
     #data_summer => \&DSC::grapher::data_summer_1d,
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,

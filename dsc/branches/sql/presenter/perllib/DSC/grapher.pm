@@ -274,25 +274,15 @@ sub load_data {
 	}
 
 	# load data
+	my $node_id = ($ARGS{node} eq 'all') ? undef :
+	    ($node_id{$ARGS{node}} || 0);
+	debug(1, "reading $datafile");
+	$nl += &{$PLOT->{data_reader}}($dbh, \%hash, $datafile,
+	    $server_id, $node_id, $first, $last);
 	if ('bynode' eq $ARGS{plot}) {
-	    # XXX ugly special case
-	    foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
-		next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
-		debug(1, "reading $datafile for $node");
-		my %thash;
-		$nl += &{$PLOT->{data_reader}}($dbh, \%thash, $datafile,
-		    $server_id, $node_id{$node} || 0, $first, $last);
-		bynode_summer(\%thash, \%hash, $node);
-		# XXX yes, wasteful repetition
-		@plotkeys = @{$CFG->{servers}{$ARGS{server}}};
-		@plotnames = @{$CFG->{servers}{$ARGS{server}}};
-	    }
-	} else {
-	    my $node_id = ($ARGS{node} eq 'all') ? undef :
-		($node_id{$ARGS{node}} || 0);
-	    debug(1, "reading $datafile");
-	    $nl += &{$PLOT->{data_reader}}($dbh, \%hash, $datafile,
-		$server_id, $node_id, $first, $last);
+	    # special case
+	    @plotkeys = values %node_id;
+	    @plotnames = keys %node_id;
 	}
 	my $stop = time;
 	debug(1, "reading datafile took %d seconds, %d lines",
@@ -960,63 +950,6 @@ sub invalid_tld_filter {
 	return 0 if (valid_tld_filter($tld));
 	return 0 if (numeric_tld_filter($tld));
 	return 1;
-}
-
-#sub data_summer_0d {
-#	my $from = shift;
-#	my $to = shift;
-#	my $start = time;
-#	foreach my $k0 (keys %$from) {
-#		$to->{$k0} += $from->{$k0};
-#	}
-#	my $stop = time;
-#	debug(1, "data_summer_0d took %d seconds", $stop-$start);
-#}
-#
-#sub data_summer_1d {
-#	my $from = shift;
-#	my $to = shift;
-#	my $start = time;
-#	foreach my $k0 (keys %$from) {
-#		foreach my $k1 (keys %{$from->{$k0}}) {
-#			$to->{$k0}{$k1} += $from->{$k0}{$k1};
-#		}
-#	}
-#	my $stop = time;
-#	debug(1, "data_summer_1d took %d seconds", $stop-$start);
-#}
-#
-#sub data_summer_2d {
-#	my $from = shift;
-#	my $to = shift;
-#	my $start = time;
-#	foreach my $k0 (keys %$from) {
-#		foreach my $k1 (keys %{$from->{$k0}}) {
-#			foreach my $k2 (keys %{$from->{$k0}{$k1}}) {
-#				$to->{$k0}{$k1}{$k2} += $from->{$k0}{$k1}{$k2};
-#			}
-#		}
-#	}
-#	my $stop = time;
-#	debug(2, "data_summer_2d took %d seconds", $stop-$start);
-#}
-
-# XXX special hack for "bynode" plots
-# XXX assume $from hash is 1D
-# NOTE this is very similar to data_summer_1d
-#
-sub bynode_summer {
-	my $from = shift;
-	my $to = shift;
-	my $newkey = shift;
-	my $start = time;
-	foreach my $k0 (keys %$from) {
-		foreach my $k1 (keys %{$from->{$k0}}) {
-			$to->{$k0}{$newkey} += $from->{$k0}{$k1};
-		}
-	}
-	my $stop = time;
-	debug(2, "bynode_summer took %d seconds", $stop-$start);
 }
 
 sub debug {

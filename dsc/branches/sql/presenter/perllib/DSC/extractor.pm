@@ -172,22 +172,23 @@ sub get_node_id($$$) {
 # read $nkey-dimensional hash from db table
 #
 sub read_data_generic {
-	my ($dbh, $href, $type, $server_id, $node_id, $first_time, $last_time, $nkeys, $withtime) = @_;
+	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $nkeys, $withtime) = @_;
 	my $nl = 0;
 	my $tabname = "dsc_$type";
 	my $sth;
 
-	my @params = ($first_time);
+	my @params = ();
 	my $sql = "SELECT ";
 	$sql .= "start_time, " if ($withtime);
 	$sql .= join('', map("key$_, ", 1..$nkeys));
-	$sql .= (!$withtime && defined $last_time) ? "SUM(count) " : "count ";
+	$sql .= (!$withtime && defined $end_time) ? "SUM(count) " : "count ";
 	$sql .= "FROM $tabname WHERE ";
-	if (defined $last_time) {
+	if (defined $end_time) {
 	    $sql .= "start_time >= ? AND start_time < ? ";
-	    push @params, $last_time;
+	    push @params, $start_time, $end_time;
 	} else {
 	    $sql .= "start_time = ? ";
+	    push @params, $start_time;
 	}
 	$sql .= "AND server_id = ? ";
 	push @params, $server_id;
@@ -195,7 +196,7 @@ sub read_data_generic {
 	    $sql .= "AND node_id = ? ";
 	    push @params, $node_id;
 	}
-	if (!$withtime && defined $last_time) {
+	if (!$withtime && defined $end_time) {
 	    $sql .= "GROUP BY " . join(', ', map("key$_", 1..$nkeys));
 	}
 	# print "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
@@ -214,7 +215,46 @@ sub read_data_generic {
 	    }
 	}
 	$dbh->commit;
-	print "read $nl rows from $tabname\n";
+	# print "read $nl rows from $tabname\n";
+	return $nl;
+}
+
+#
+# read hash from db table by node
+# assumes the table is 1d
+#
+sub read_data_bynode {
+	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time) = @_;
+	my $nl = 0;
+	my $tabname = "dsc_$type";
+	my $sth;
+
+	my @params = ();
+	my $sql = "SELECT start_time, node_id, SUM(count) FROM $tabname WHERE ";
+	if (defined $end_time) {
+	    $sql .= "start_time >= ? AND start_time < ? ";
+	    push @params, $start_time, $end_time;
+	} else {
+	    $sql .= "start_time = ? ";
+	    push @params, $start_time;
+	}
+	$sql .= "AND server_id = ? ";
+	push @params, $server_id;
+	if (defined $node_id) {
+	    $sql .= "AND node_id = ? ";
+	    push @params, $node_id;
+	}
+	$sql .= "GROUP BY start_time, node_id";
+	print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	$sth = $dbh->prepare($sql);
+	$sth->execute(@params);
+
+	while (my @row = $sth->fetchrow_array) {
+	    $nl++;
+	    $href->{$row[0]}{$row[1]} = $row[2];
+	}
+	$dbh->commit;
+	# print "read $nl rows from $tabname\n";
 	return $nl;
 }
 
