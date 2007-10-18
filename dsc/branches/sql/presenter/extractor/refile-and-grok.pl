@@ -190,7 +190,7 @@ sub extract_xml($$$) {
     printf "grokked $xmlfile in %d ms\n",
 	(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
     # round start time down to start of the minute
-    $start_time = int($start_time / 60) * 60;
+    $start_time = $start_time - $start_time % 60;
     my $yymmdd = &yymmdd($start_time);
 
     print STDERR 'grokked=', Dumper($grokked) if ($dbg);
@@ -215,11 +215,12 @@ sub extract_xml($$$) {
 	    (Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
 
 	my $tabname = "dsc_$output";
-	my $bucket_time = $O->{withtime} ? $start_time :
-	    int($start_time / 86400) * 86400; # round down to start of day
+	my $withtime = grep /start_time/ @$O->{dbkeys};
+	my $bucket_time = $withtime ? $start_time :
+	    $start_time - $start_time % 86400; # round down to start of day
 
 	if (!table_exists($dbh, $tabname)) {
-	    eval { create_data_table($dbh, $tabname, $O->{nkeys}); };
+	    eval { create_data_table($dbh, $tabname, $O->{dbkeys}); };
 	    if ($@) {
 		my $SQLSTATE_UNIQUE_VIOLATION = "23505";
 		if ($dbh->err && $dbh->state eq $SQLSTATE_UNIQUE_VIOLATION) {
@@ -236,10 +237,10 @@ sub extract_xml($$$) {
 		}
 	    }
 
-	} elsif (!$O->{withtime}) {
+	} elsif (!$withtime) {
 	    # read and delete the existing data
-	    return 0 if (&{$O->{data_reader}}($dbh, \%db, $output,
-		$server_id, $node_id, $bucket_time, undef) < 0);
+	    return 0 if (DSC::extractor::read_data($dbh, \%db, $output,
+		$server_id, $node_id, $bucket_time, undef, $O->{dbkeys}) < 0);
 	    my $rows = $dbh->do("DELETE FROM $tabname WHERE " .
 		"start_time = $bucket_time AND " .
 		"server_id = $server_id AND node_id = $node_id");

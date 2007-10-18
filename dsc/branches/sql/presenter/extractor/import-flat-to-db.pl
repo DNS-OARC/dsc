@@ -132,7 +132,7 @@ for my $server (sort { $a cmp $b } @servers) {
 
 		    my $tabname = "dsc_$output";
 		    if (!table_exists($dbh, $tabname)) {
-			create_data_table($dbh, $tabname, $O->{nkeys});
+			create_data_table($dbh, $tabname, $O->{dbkeys});
 			$maxday{$output} = 0;
 
 		    } elsif (!defined $maxday{$output}) {

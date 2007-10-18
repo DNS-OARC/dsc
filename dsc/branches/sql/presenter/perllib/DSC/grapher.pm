@@ -73,7 +73,6 @@ sub prepare {
 
 sub cgi { $cgi; }
 
-
 sub run {
 	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
 	# read config file early so we can set back the clock if necessary
@@ -277,8 +276,8 @@ sub load_data {
 	my $node_id = ($ARGS{node} eq 'all') ? undef :
 	    ($node_id{$ARGS{node}} || 0);
 	debug(1, "reading $datafile");
-	$nl += &{$PLOT->{data_reader}}($dbh, \%hash, $datafile,
-	    $server_id, $node_id, $first, $last);
+	$nl += DSC::extractor::read_data($dbh, \%hash, $datafile,
+	    $server_id, $node_id, $first, $last, $PLOT->{dbkeys});
 	if ('bynode' eq $ARGS{plot}) {
 	    # special case
 	    @plotkeys = values %node_id;

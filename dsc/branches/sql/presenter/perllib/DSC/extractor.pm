@@ -105,19 +105,20 @@ sub table_exists($$) {
 }
 
 #
-# Create a db table for a $nkeys-dimensional dataset
+# Create a db table for a dataset
 #
 sub create_data_table {
-    my ($dbh, $tabname, $nkeys) = @_;
+    my ($dbh, $tabname, $dbkeys) = @_;
 
     print "creating table $tabname\n";
-    $dbh->do(
+    print STDERR "dbkeys: ", join(', ', @$dbkeys), "\n";
+    my $sql =
 	"CREATE TABLE $tabname (" .
 	"  server_id     SMALLINT NOT NULL, " .
 	"  node_id       SMALLINT NOT NULL, " .
 	"  start_time    INTEGER NOT NULL, " . # unix timestamp
 	# "duration      INTEGER NOT NULL, " . # seconds
-	(join '', map "key$_ VARCHAR NOT NULL, ", 1..$nkeys) .
+	(join '', map("$_ VARCHAR NOT NULL, ", grep(/^key/, @$dbkeys))) .
 	"  count         INTEGER NOT NULL " .
 	## Omitting primary key and foreign keys improves performance of inserts	## without any real negative impacts.
 	# "CONSTRAINT dsc_$tabname_pkey PRIMARY KEY (server_id, node_id, start_time, key1), " .
@@ -125,12 +126,13 @@ sub create_data_table {
 	# "    REFERENCES server (server_id), " .
 	# "CONSTRAINT dsc_$tabname_node_id_fkey FOREIGN KEY (node_id) " .
 	# "    REFERENCES node (node_id), " .
-	")");
+	")";
+
+    # print STDERR "SQL: $sql\n";
+    $dbh->do($sql);
 
     # These indexes are needed for grapher performance.
-    $dbh->do("CREATE INDEX ${tabname}_time ON $tabname(start_time)");
-    $dbh->do("CREATE INDEX ${tabname}_key ON $tabname(" .
-	(join ', ', map "key$_", 1..$nkeys) . ")");
+    #$dbh->do("CREATE INDEX ${tabname}_time ON $tabname(start_time)");
 }
 
 sub get_server_id($$) {
@@ -169,17 +171,18 @@ sub get_node_id($$$) {
 # read from a db table into a hash
 #
 sub read_data {
-	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, @keys) = @_;
+	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $dbkeys) = @_;
 	my $nl = 0;
 	my $tabname = "dsc_$type";
 	my $sth;
+	my $start = Time::HiRes::gettimeofday;
 
 	my $needgroup =
-	    defined $end_time && !(grep /^start_time/, @keys) ||
-	    !defined $node_id && !(grep /^node_id/, @keys) ||
-	    !(grep /^key/, @keys);
+	    defined $end_time && !(grep /^start_time/, @$dbkeys) ||
+	    !defined $node_id && !(grep /^node_id/, @$dbkeys) ||
+	    !(grep /^key/, @$dbkeys);
 	my @params = ();
-	my $sql = "SELECT " . join(', ', @keys);
+	my $sql = "SELECT " . join(', ', @$dbkeys);
 	$sql .= $needgroup ? ", SUM(count) " : ", count ";
 	$sql .= "FROM $tabname WHERE ";
 	if (defined $end_time) {
@@ -195,18 +198,18 @@ sub read_data {
 	    $sql .= "AND node_id = ? ";
 	    push @params, $node_id;
 	}
-	$sql .= "GROUP BY " . join(', ', @keys) if ($needgroup);
-	print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	$sql .= "GROUP BY " . join(', ', @$dbkeys) if ($needgroup);
+	# print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	$sth = $dbh->prepare($sql);
 	$sth->execute(@params);
 
 	while (my @row = $sth->fetchrow_array) {
 	    $nl++;
-	    if (scalar @keys == 1) {
+	    if (scalar @$dbkeys == 1) {
 		$href->{$row[0]} = $row[1];
-	    } elsif (scalar @keys == 2) {
+	    } elsif (scalar @$dbkeys == 2) {
 		$href->{$row[0]}{$row[1]} = $row[2];
-	    } elsif (scalar @keys == 3) {
+	    } elsif (scalar @$dbkeys == 3) {
 		$href->{$row[0]}{$row[1]}{$row[2]} = $row[3];
 	    }
 	}
@@ -253,7 +256,6 @@ sub write_data {
 	my $tabname = "dsc_$type";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $rows;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $t (keys %$A) {
 	    my $B = $A->{$t};
@@ -303,7 +305,6 @@ sub write_data2 {
 	my $tabname = "dsc_$type";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $rows;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $k1 (keys %$href) {
 	    $dbh->pg_putline("$server_id\t$node_id\t$t\t$k1\t$href->{$k1}\n");
@@ -351,7 +352,6 @@ sub write_data3 {
 	my $tabname = "dsc_$type";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
-	my $rows;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $k1 (keys %$href) {
 		foreach my $k2 (keys %{$href->{$k1}}) {
@@ -407,7 +407,6 @@ sub write_data4 {
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	my ($B, $C);
-	my $rows;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $t (keys %$A) {
 	    $B = $A->{$t};
