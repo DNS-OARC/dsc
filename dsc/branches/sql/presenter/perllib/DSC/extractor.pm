@@ -20,8 +20,11 @@ BEGIN {
 		&get_dbh
 		&get_server_id
 		&get_node_id
-		&table_exists
+		&data_table_exists
 		&create_data_table
+		&create_data_indexes
+		&data_table_names
+		&data_index_names
 		&read_data
 		&write_data
 		&write_data2
@@ -35,6 +38,7 @@ BEGIN {
 		$datasource
 		$username
 		$password
+		$db_insert_suffix
 		$SKIPPED_KEY
 		$SKIPPED_SUM_KEY
 	);
@@ -53,6 +57,7 @@ $SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 $datasource = undef;
 $username = undef;
 $password = undef;
+$db_insert_suffix = 'new';
 
 sub yymmdd {
 	my $t = shift;
@@ -94,26 +99,37 @@ sub get_dbh {
     return $dbh;
 }
 
-sub table_exists($$) {
+sub data_table_exists($$) {
     my ($dbh, $tabname) = @_;
     my $sth = $dbh->prepare_cached(
 	"SELECT 1 FROM pg_tables WHERE tablename = ?");
-    $sth->execute($tabname);
+    $sth->execute("${tabname}_new");
     my $result = scalar $sth->fetchrow_array;
     $sth->finish;
     return $result;
 }
 
 #
-# Create a db table for a dataset
+# Create db table(s) for a dataset.
+# A dataset is split across two tables:
+# ${tabname}_new contains the current day's data.  It has no indexes, so the
+#   once-per-minute inserts of new data are fast; and it's small, so the
+#   plotter's queries aren't too slow despite the lack of indexes.
+# ${tabname}_old contains older data.  It has the indexes needed to make the
+#   plotter's queries fast (the indexes are created in a separate function).
+#   One-day chunks are periodically moved from _new to _old.
+# A view named ${tabname} is defined as the union of the _new and _old tables,
+# for querying convenience.  However, inserting/deleting/updating a view is
+# not portable across database engines, so we will do those operations
+# directly on the underlying tables.
 #
 sub create_data_table {
     my ($dbh, $tabname, $dbkeys) = @_;
 
     print "creating table $tabname\n";
     print STDERR "dbkeys: ", join(', ', @$dbkeys), "\n";
-    my $sql =
-	"CREATE TABLE $tabname (" .
+    my $def =
+	"(" .
 	"  server_id     SMALLINT NOT NULL, " .
 	"  node_id       SMALLINT NOT NULL, " .
 	"  start_time    INTEGER NOT NULL, " . # unix timestamp
@@ -128,11 +144,35 @@ sub create_data_table {
 	# "    REFERENCES node (node_id), " .
 	")";
 
+    for my $sfx ('old', 'new') {
+	my $sql = "CREATE TABLE ${tabname}_${sfx} $def";
+	# print STDERR "SQL: $sql\n";
+	$dbh->do($sql);
+    }
+    my $sql = "CREATE OR REPLACE VIEW $tabname AS " .
+	"SELECT * FROM ${tabname}_old UNION ALL " .
+	"SELECT * FROM ${tabname}_new";
     # print STDERR "SQL: $sql\n";
     $dbh->do($sql);
+}
 
-    # These indexes are needed for grapher performance.
-    #$dbh->do("CREATE INDEX ${tabname}_time ON $tabname(start_time)");
+# returns a reference to an array of data table names
+sub data_table_names {
+    my ($dbh) = @_;
+    return $dbh->selectcol_arrayref("SELECT viewname FROM pg_views " .
+	"WHERE schemaname = 'dsc' AND viewname LIKE 'dsc_%'");
+}
+
+# returns a reference to an array of data table index names
+sub data_index_names {
+    my ($dbh) = @_;
+    return $dbh->selectcol_arrayref("SELECT indexname FROM pg_indexes " .
+	"WHERE schemaname = 'dsc' AND indexname LIKE 'dsc_%'");
+}
+
+sub create_data_indexes {
+    my ($dbh, $tabname) = @_;
+    $dbh->do("CREATE INDEX ${tabname}_old_time ON ${tabname}_old(start_time)");
 }
 
 sub get_server_id($$) {
@@ -169,6 +209,8 @@ sub get_node_id($$$) {
 
 #
 # read from a db table into a hash
+# TODO: if the requested time range does not overlap the ${tabname}_new table,
+# we can omit that table from the query.
 #
 sub read_data {
 	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $dbkeys) = @_;
@@ -215,6 +257,8 @@ sub read_data {
 	}
 	$dbh->commit;
 	# print "read $nl rows from $tabname\n";
+	#printf STDERR "read $nl rows from $tabname in %d ms\n",
+	#    (Time::HiRes::gettimeofday - $start) * 1000;
 	return $nl;
 }
 
@@ -253,7 +297,7 @@ sub read_flat_data {
 sub write_data {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_$type";
+	my $tabname = "dsc_${type}_${db_insert_suffix}";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -302,7 +346,7 @@ sub read_flat_data2 {
 #
 sub write_data2 {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_$type";
+	my $tabname = "dsc_${type}_${db_insert_suffix}";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -349,7 +393,7 @@ sub read_flat_data3 {
 #
 sub write_data3 {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_$type";
+	my $tabname = "dsc_${type}_${db_insert_suffix}";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -403,7 +447,7 @@ sub read_flat_data4 {
 sub write_data4 {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_$type";
+	my $tabname = "dsc_${type}_${db_insert_suffix}";
 	my $start = Time::HiRes::gettimeofday;
 	my $nl = 0;
 	my ($B, $C);

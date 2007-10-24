@@ -27,7 +27,7 @@ my $req_nodes = undef;
 my $mindate = 0;
 my $today = strftime("%Y%m%d", gmtime((int(time / 86400)) * 86400));
 my $maxdate = $today;
-my $importcount = 0;
+my $totalimported = 0;
 
 sub usage(@) {
     print STDERR @_;
@@ -82,14 +82,21 @@ my $PROG=$0;
 $PROG =~ s/^.*\///;
 my $outfile = "$DATADIR/$PROG.stdout";
 
+my $dbh = get_dbh || die;
+$dbh->{RaiseError} = 1;
+$DSC::extractor::db_insert_suffix = 'old';
+
+if (@{data_index_names($dbh)}) {
+    print "Warning: indexes on data tables may make import very slow.\n";
+    print "  You may want to run drop-indexes.pl first.\n"
+}
+print "Remember to run create-indexes.pl when you are done importing.\n";
 print "For further results, see $outfile\n";
 open(STDOUT, ">$outfile") || die "$PROG: writing $outfile: $!\n";
+$| = 1;
 open(STDERR, ">&1");
 
 print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
-
-my $dbh = get_dbh || die;
-$dbh->{RaiseError} = 1;
 
 my @servers = grep { $_ !~ /^\./ && !-l && -d } descend_dir($DATADIR);
 for my $server (sort { $a cmp $b } @servers) {
@@ -102,17 +109,18 @@ for my $server (sort { $a cmp $b } @servers) {
 	next if $req_nodes && !$req_nodes->{$node};
 	my $node_id = get_node_id($dbh, $server_id, $node);
 	$dbh->commit;
-	print "server_id = $server_id, node_id = $node_id\n";
 	my %maxday = ();
 
 	my @dates = grep { /^\d{8}$/ && -d } descend_dir($node);
 	for my $date (sort { $a cmp $b } @dates) {
 	    next if ($date < $mindate || $date > $maxdate);
+	    my $start = time;
+	    my $imported = 0;
+	    my $skipped = 0;
 	    print "Importing $server/$node/$date\n";
 
 	    $date =~ /^(\d{4})(\d{2})(\d{2})$/;
-	    # $time is needed for accum data, which don't store time in file
-	    my $time = mktime(0, 0, 0, $3, $2 - 1, $1 - 1900);
+	    my $day = mktime(0, 0, 0, $3, $2 - 1, $1 - 1900);
 
 	    my @datasets = grep { $_ !~ /^\./ && -d } descend_dir($date);
 	    for my $dataset (@datasets) {
@@ -131,7 +139,7 @@ for my $server (sort { $a cmp $b } @servers) {
 		    my $O = $EX->{outputs}{$output};
 
 		    my $tabname = "dsc_$output";
-		    if (!table_exists($dbh, $tabname)) {
+		    if (!data_table_exists($dbh, $tabname)) {
 			create_data_table($dbh, $tabname, $O->{dbkeys});
 			$maxday{$output} = 0;
 
@@ -143,29 +151,37 @@ for my $server (sort { $a cmp $b } @servers) {
 			$maxday{$output} = int(($maxtime||0) / 86400) * 86400;
 		    }
 
-		    if ($time < $maxday{$output}) {
+		    if ($day < $maxday{$output}) {
 			# full day was already imported
+			$skipped++;
 			next;
 		    }
 
-		    if ($time == $maxday{$output}) {
+		    if ($day == $maxday{$output}) {
 			# partial day was already imported; delete it.
-			print "# replacing possibly incomplete day of data for $server/$node/$date/$dataset/$datafile\n";
-			$dbh->do("DELETE FROM $tabname WHERE " .
-			    "server_id = ? and node_id = ? AND start_time >= ?",
-			    undef, $server_id, $node_id, $time);
+			# print "replacing possibly incomplete day of data ",
+			# "with $server/$node/$date/$dataset/$datafile\n";
+			for my $sfx ('old', 'new') {
+			    $dbh->do("DELETE FROM ${tabname}_${sfx} WHERE " .
+				"server_id = ? and node_id = ? AND " .
+				"start_time >= ?",
+				undef, $server_id, $node_id, $day);
+			}
 		    }
 
 		    my %data;
 		    &{$O->{flat_reader}}(\%data, $datafile);
 		    &{$O->{data_writer}}($dbh, \%data, $output,
-			$server_id, $node_id, $time);
-		    $importcount++;
+			$server_id, $node_id, $day);
+		    $totalimported++;
+		    $imported++;
 		}
 		chdir "..";
 	    }
 	    $dbh->commit;
 	    chdir "..";
+	    print "$server/$node/$date: imported $imported, skipped $skipped, ",
+		"in ", time - $start, " s\n";
 	}
 	chdir "..";
     }
@@ -174,7 +190,7 @@ for my $server (sort { $a cmp $b } @servers) {
 # end
 
 END {
-    print "Done: imported $importcount files.\n";
+    print "Done: imported $totalimported files.\n";
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 }
 

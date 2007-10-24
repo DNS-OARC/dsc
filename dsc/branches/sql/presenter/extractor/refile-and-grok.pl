@@ -12,7 +12,7 @@ use Time::HiRes; # XXX
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
 my $dbg = 0;
-my $perfdbg = 0;
+my $perfdbg = 1;
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
@@ -215,12 +215,19 @@ sub extract_xml($$$) {
 	    (Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
 
 	my $tabname = "dsc_$output";
-	my $withtime = grep /start_time/ @$O->{dbkeys};
+	my $withtime = scalar (grep { /start_time/ } @{$O->{dbkeys}});
 	my $bucket_time = $withtime ? $start_time :
 	    $start_time - $start_time % 86400; # round down to start of day
 
-	if (!table_exists($dbh, $tabname)) {
-	    eval { create_data_table($dbh, $tabname, $O->{dbkeys}); };
+	# If this is the last data of the UTC day (i.e., time is 23:59:00), we
+	# will move the whole day's data from the "new" to the "old" table.
+	my $archivable = $start_time % 86400 == (23*3600 + 59*60);
+
+	if (!data_table_exists($dbh, $tabname)) {
+	    eval {
+		create_data_table($dbh, $tabname, $O->{dbkeys});
+		create_data_indexes($dbh, $tabname);
+	    };
 	    if ($@) {
 		my $SQLSTATE_UNIQUE_VIOLATION = "23505";
 		if ($dbh->err && $dbh->state eq $SQLSTATE_UNIQUE_VIOLATION) {
@@ -239,12 +246,24 @@ sub extract_xml($$$) {
 
 	} elsif (!$withtime) {
 	    # read and delete the existing data
-	    return 0 if (DSC::extractor::read_data($dbh, \%db, $output,
-		$server_id, $node_id, $bucket_time, undef, $O->{dbkeys}) < 0);
-	    my $rows = $dbh->do("DELETE FROM $tabname WHERE " .
-		"start_time = $bucket_time AND " .
-		"server_id = $server_id AND node_id = $node_id");
-	    # printf "deleted %d rows from $tabname\n", $rows; # XXX
+	    return 0 if (0 > DSC::extractor::read_data($dbh, \%db, $output,
+		$server_id, $node_id, $bucket_time, undef, $O->{dbkeys}));
+	    my $where_clause = "WHERE start_time = $bucket_time AND " .
+		"server_id = $server_id AND node_id = $node_id";
+	    # Normally, the existing data is in the _new table.  But we must
+	    # also delete from _old, since it may contain data inserted by
+	    # by import-flat-to-db.  (When the extra delete is not needed, the
+	    # index should make it very fast.)
+	    $dbh->do("DELETE FROM ${tabname}_new $where_clause");
+	    $dbh->do("DELETE FROM ${tabname}_old $where_clause");
+	}
+
+	if ($archivable && !$withtime) {
+	    # write 1-day dataset directly to old table
+	    $DSC::extractor::db_insert_suffix = 'old';
+	} else {
+	    # quickly write dataset to new table
+	    $DSC::extractor::db_insert_suffix = 'new';
 	}
 
 	# merge/combine
@@ -269,6 +288,18 @@ sub extract_xml($$$) {
 	#
 	&{$O->{data_writer}}($dbh, \%db, $output, $server_id, $node_id,
 	    $bucket_time);
+
+	if ($archivable && $withtime) {
+	    # move a chunk of 1-minute data from _new table to _old table
+	    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
+	    my $where_clause = "WHERE start_time >= " . ($bucket_time - 86400) .
+		" AND server_id = $server_id AND node_id = $node_id";
+	    $dbh->do("INSERT INTO ${tabname}_old " .
+		"SELECT * FROM ${tabname}_new $where_clause");
+	    $dbh->do("DELETE FROM ${tabname}_new $where_clause");
+	    printf "archived $output in %d ms\n",
+		(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+	}
     }
 
     return 1; # success
