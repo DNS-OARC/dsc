@@ -313,7 +313,9 @@ sub trace_data_to_tmpfile {
 sub calc_accum_win {
 	my $last = $ARGS{end};
 	my $first = $ARGS{end} - $ARGS{window};
-	$first += (86400 - ($ARGS{end} % 86400));
+	if (my $remainder = $first % 86400) {
+	    $first += (86400 - $remainder);
+	}
 	debug(1, "accum window = %.2f days", ($last - $first) / 86400);
 	$last - $first;
 }
