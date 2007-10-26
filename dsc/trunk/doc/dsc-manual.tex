@@ -855,12 +855,12 @@ The configuration file currently understands the following directives:
 
 	However, if you want to monitor multiple DNS servers with
 	separate {\dsc} instances on one collector box, then you
-	may need to use {\em bfp\_program} to make sure that each
+	may need to use {\em bpf\_program} to make sure that each
 	{\tt dsc} process sees only the traffic it should see.
 
 	Note that this directive must go before the {\em interface\/}
 	directive because {\tt dsc\/} makes only one pass through
-	the configuration file and the BFP filter is set when the
+	the configuration file and the BPF filter is set when the
 	interface is initialized.
 
 	Example: {\tt bpf\_program "dst host 192.168.1.1";\/}
