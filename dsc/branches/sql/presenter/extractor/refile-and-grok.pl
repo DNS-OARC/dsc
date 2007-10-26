@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use POSIX;
 
+use DSC::db;
 use DSC::extractor;
 use DSC::extractor::config;
 use Data::Dumper;
@@ -246,7 +247,7 @@ sub extract_xml($$$) {
 
 	} elsif (!$withtime) {
 	    # read and delete the existing data
-	    return 0 if (0 > DSC::extractor::read_data($dbh, \%db, $output,
+	    return 0 if (0 > DSC::db::read_data($dbh, \%db, $output,
 		$server_id, $node_id, $bucket_time, undef, $O->{dbkeys}));
 	    my $where_clause = "WHERE start_time = $bucket_time AND " .
 		"server_id = $server_id AND node_id = $node_id";
@@ -260,10 +261,10 @@ sub extract_xml($$$) {
 
 	if ($archivable && !$withtime) {
 	    # write 1-day dataset directly to old table
-	    $DSC::extractor::db_insert_suffix = 'old';
+	    $DSC::db::insert_suffix = 'old';
 	} else {
 	    # quickly write dataset to new table
-	    $DSC::extractor::db_insert_suffix = 'new';
+	    $DSC::db::insert_suffix = 'new';
 	}
 
 	# merge/combine

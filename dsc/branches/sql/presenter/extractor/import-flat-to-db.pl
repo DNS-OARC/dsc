@@ -9,6 +9,7 @@ use POSIX;
 
 use FindBin;
 use lib "$FindBin::Bin/../perllib";
+use DSC::db;
 use DSC::extractor;
 use DSC::extractor::config;
 use Data::Dumper;
@@ -84,7 +85,7 @@ my $outfile = "$DATADIR/$PROG.stdout";
 
 my $dbh = get_dbh || die;
 $dbh->{RaiseError} = 1;
-$DSC::extractor::db_insert_suffix = 'old';
+$DSC::db::insert_suffix = 'old';
 
 if (@{data_index_names($dbh)}) {
     print "Warning: indexes on data tables may make import very slow.\n";

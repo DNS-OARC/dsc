@@ -6,7 +6,7 @@ use POSIX;
 
 use FindBin;
 use lib "$FindBin::Bin/../perllib";
-use DSC::extractor;
+use DSC::db;
 use DSC::extractor::config;
 
 my $DSCDIR = "/usr/local/dsc";

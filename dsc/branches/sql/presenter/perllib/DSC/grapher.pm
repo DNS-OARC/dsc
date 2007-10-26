@@ -1,7 +1,8 @@
 package DSC::grapher;
 
 use DSC::ploticus;
-use DSC::extractor;
+use DSC::extractor qw($SKIPPED_KEY $SKIPPED_SUM_KEY);
+use DSC::db;
 use DSC::grapher::plot;
 use DSC::grapher::text;
 use DSC::grapher::config;
@@ -276,7 +277,7 @@ sub load_data {
 	my $node_id = ($ARGS{node} eq 'all') ? undef :
 	    ($node_id{$ARGS{node}} || 0);
 	debug(1, "reading $datafile");
-	$nl += DSC::extractor::read_data($dbh, \%hash, $datafile,
+	$nl += DSC::db::read_data($dbh, \%hash, $datafile,
 	    $server_id, $node_id, $first, $last, $PLOT->{dbkeys});
 	if ('bynode' eq $ARGS{plot}) {
 	    # special case

@@ -53,11 +53,11 @@ sub read_config {
 				unless defined($CONFIG{domain_list}{$listname});
 			$CONFIG{valid_domains}{$server} = $listname;
 		} elsif ($directive eq 'dbi_datasource') {
-			$DSC::extractor::datasource = join ' ', @x;
+			$DSC::db::datasource = join ' ', @x;
 		} elsif ($directive eq 'dbi_username') {
-			$DSC::extractor::username = join ' ', @x;
+			$DSC::db::username = join ' ', @x;
 		} elsif ($directive eq 'dbi_password') {
-			$DSC::extractor::password = join ' ', @x;
+			$DSC::db::password = join ' ', @x;
 		}
 	}
 	close(F);
