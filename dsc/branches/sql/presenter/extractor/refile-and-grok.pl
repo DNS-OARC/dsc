@@ -224,7 +224,7 @@ sub extract_xml($$$) {
 	# will move the whole day's data from the "new" to the "old" table.
 	my $archivable = $start_time % 86400 == (23*3600 + 59*60);
 
-	if (!data_table_exists($dbh, $tabname)) {
+	if (!table_exists($dbh, "${tabname}_new")) {
 	    eval {
 		create_data_table($dbh, $tabname, $O->{dbkeys});
 		create_data_indexes($dbh, $tabname);

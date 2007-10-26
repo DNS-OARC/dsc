@@ -13,10 +13,12 @@ BEGIN {
 	$VERSION     = 1.00;
 	@ISA	 = qw(Exporter);
 	@EXPORT      = qw(
+		&generic_init_db
+		&specific_init_db
 		&get_dbh
 		&get_server_id
 		&get_node_id
-		&data_table_exists
+		&table_exists
 		&create_data_table
 		&create_data_indexes
 		&data_table_names
@@ -60,6 +62,26 @@ sub get_dbh {
     return $dbh;
 }
 
+# non-driver-dependent db initialization
+sub generic_init_db($) {
+    my ($dbh) = @_;
+
+    $dbh->do("CREATE TABLE server (" .
+	"server_id   $key_type NOT NULL, " .
+	"name        $key_type NOT NULL, " .
+	"CONSTRAINT server_pkey PRIMARY KEY (server_id), " .
+	"CONSTRAINT server_name_key UNIQUE (name))");
+
+    $dbh->do("CREATE TABLE node (" .
+	"node_id     SMALLINT NOT NULL, " .
+	"server_id   SMALLINT NOT NULL, " .
+	"name        $key_type NOT NULL, " .
+	"CONSTRAINT node_pkey PRIMARY KEY (node_id), " .
+	"CONSTRAINT node_server_id_fkey FOREIGN KEY (server_id) " .
+	    "REFERENCES server (server_id), " .
+	"CONSTRAINT node_name_key UNIQUE (server_id, name))");
+};
+
 # Find and execute the driver-specific or default implementation of the
 # function.
 sub dofunc {
@@ -77,9 +99,10 @@ sub dofunc {
     return &{$func}($dbh, @_);
 }
 
+sub specific_init_db    { dofunc('specific_init_db', @_); }
 sub get_server_id       { dofunc('get_server_id', @_); }
 sub get_node_id         { dofunc('get_node_id', @_); }
-sub data_table_exists   { dofunc('data_table_exists', @_); }
+sub table_exists        { dofunc('table_exists', @_); }
 sub create_data_table   { dofunc('create_data_table', @_); }
 sub create_data_indexes { dofunc('create_data_indexes', @_); }
 sub data_table_names    { dofunc('data_table_names', @_); }

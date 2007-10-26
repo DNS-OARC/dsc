@@ -23,11 +23,23 @@ END { }
 
 $DSC::db::key_type = 'VARCHAR';
 
-$DSC::db::func{Pg}{data_table_exists} = sub {
+$DSC::db::func{Pg}{specific_init_db} = sub {
+    my ($dbh) = @_;
+
+    $dbh->do('CREATE SEQUENCE seq_server_id');
+    $dbh->do('ALTER TABLE server ALTER COLUMN server_id SET DEFAULT ' .
+	'nextval(\'seq_server_id\')');
+
+    $dbh->do('CREATE SEQUENCE seq_node_id');
+    $dbh->do('ALTER TABLE node ALTER COLUMN node_id SET DEFAULT ' .
+	'nextval(\'seq_node_id\')');
+};
+
+$DSC::db::func{Pg}{table_exists} = sub {
     my ($dbh, $tabname) = @_;
     my $sth = $dbh->prepare_cached(
 	"SELECT 1 FROM pg_tables WHERE tablename = ?");
-    $sth->execute("${tabname}_new");
+    $sth->execute($tabname);
     my $result = scalar $sth->fetchrow_array;
     $sth->finish;
     return $result;
@@ -45,11 +57,6 @@ $DSC::db::func{Pg}{data_index_names} = sub {
     my ($dbh) = @_;
     return $dbh->selectcol_arrayref("SELECT indexname FROM pg_indexes " .
 	"WHERE schemaname = 'dsc' AND indexname LIKE 'dsc_%'");
-};
-
-$DSC::db::func{Pg}{create_data_indexes} = sub {
-    my ($dbh, $tabname) = @_;
-    $dbh->do("CREATE INDEX ${tabname}_old_time ON ${tabname}_old(start_time)");
 };
 
 #
