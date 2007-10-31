@@ -15,6 +15,7 @@ BEGIN {
 	@EXPORT      = qw(
 		&generic_init_db
 		&specific_init_db
+		&from_dummy
 		&get_dbh
 		&get_server_id
 		&get_node_id
@@ -67,7 +68,7 @@ sub generic_init_db($) {
     my ($dbh) = @_;
 
     $dbh->do("CREATE TABLE server (" .
-	"server_id   $key_type NOT NULL, " .
+	"server_id   SMALLINT NOT NULL, " .
 	"name        $key_type NOT NULL, " .
 	"CONSTRAINT server_pkey PRIMARY KEY (server_id), " .
 	"CONSTRAINT server_name_key UNIQUE (name))");
@@ -80,15 +81,22 @@ sub generic_init_db($) {
 	"CONSTRAINT node_server_id_fkey FOREIGN KEY (server_id) " .
 	    "REFERENCES server (server_id), " .
 	"CONSTRAINT node_name_key UNIQUE (server_id, name))");
+
+    $dbh->do("CREATE TABLE loaded_files (" .
+	"time        INTEGER NOT NULL, " .
+	"dataset     $key_type NOT NULL, " .
+	"server_id   SMALLINT NOT NULL, " .
+	"node_id     SMALLINT NOT NULL)");
+    $dbh->do("CREATE INDEX loaded_files_time ON loaded_files(time)");
 };
 
 # Find and execute the driver-specific or default implementation of the
 # function.
 sub dofunc {
     my $funcname = shift;
-    my $dbh = shift;
+    my $dbh = shift || die "missing dbh parameter in $funcname";
     my $drvname = $dbh->{Driver}->{Name};
-    my $func = $DSC::db::func{$drvname}{$funcname};
+    my $func = $DSC::db::func->{$drvname}{$funcname};
     if (!defined $func) {
 	$func = $DSC::db::default_func{$funcname};
 	if (!defined $func) {
@@ -100,6 +108,7 @@ sub dofunc {
 }
 
 sub specific_init_db    { dofunc('specific_init_db', @_); }
+sub from_dummy          { dofunc('from_dummy', @_); }
 sub get_server_id       { dofunc('get_server_id', @_); }
 sub get_node_id         { dofunc('get_node_id', @_); }
 sub table_exists        { dofunc('table_exists', @_); }
@@ -121,12 +130,13 @@ sub write_data4         { dofunc('write_data4', @_); }
 
 # Create db table(s) for a dataset.
 # A dataset is split across two tables:
-# ${tabname}_new contains the current day's data.  It has no indexes, so the
-#   once-per-minute inserts of new data are fast; and it's small, so the
-#   plotter's queries aren't too slow despite the lack of indexes.
-# ${tabname}_old contains older data.  It has the indexes needed to make the
-#   plotter's queries fast (the indexes are created in a separate function).
-#   One-day chunks are periodically moved from _new to _old.
+# ${tabname}_new contains the current day's data.  It is small and has few
+#   indexes, so the once-per-minute inserts of new data are fast and the
+#   plotter's queries aren't too slow.
+# ${tabname}_old contains older data.  It is potentially very large, but has
+#   more indexes needed to make the plotter's queries fast (the indexes are
+#   created in a separate function).
+# Old data is periodically moved from _new to _old.
 # A view named ${tabname} is defined as the union of the _new and _old
 # tables for querying convenience.  However, inserting/deleting/updating a
 # view is not portable across database engines, so we will do those
@@ -146,10 +156,10 @@ create_data_table => sub {
 	(join '', map("$_ $key_type NOT NULL, ", grep(/^key/, @$dbkeys))) .
 	"  count         INTEGER NOT NULL " .
 	## Omitting primary key and foreign keys improves performance of inserts	## without any real negative impacts.
-	# "CONSTRAINT dsc_$tabname_pkey PRIMARY KEY (server_id, node_id, start_time, key1), " .
-	# "CONSTRAINT dsc_$tabname_server_id_fkey FOREIGN KEY (server_id) " .
+	# "CONSTRAINT $tabname_pkey PRIMARY KEY (server_id, node_id, start_time, key1), " .
+	# "CONSTRAINT $tabname_server_id_fkey FOREIGN KEY (server_id) " .
 	# "    REFERENCES server (server_id), " .
-	# "CONSTRAINT dsc_$tabname_node_id_fkey FOREIGN KEY (node_id) " .
+	# "CONSTRAINT $tabname_node_id_fkey FOREIGN KEY (node_id) " .
 	# "    REFERENCES node (node_id), " .
 	")";
 
@@ -167,7 +177,15 @@ create_data_table => sub {
 
 create_data_indexes => sub {
     my ($dbh, $tabname) = @_;
+    $dbh->do("CREATE INDEX ${tabname}_new_time ON ${tabname}_new(start_time)");
     $dbh->do("CREATE INDEX ${tabname}_old_time ON ${tabname}_old(start_time)");
+    $dbh->do("CREATE INDEX ${tabname}_old_server ON ${tabname}_old(server_id)");
+    $dbh->do("CREATE INDEX ${tabname}_old_node ON ${tabname}_old(node_id)");
+},
+
+# Return a FROM clause for a dummy table (e.g., "FROM DUAL" in Oracle)
+from_dummy => sub {
+    "";
 },
 
 get_server_id => sub {

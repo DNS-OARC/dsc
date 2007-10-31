@@ -192,6 +192,7 @@ for my $server (sort { $a cmp $b } @servers) {
 
 END {
     print "Done: imported $totalimported files.\n";
+    print "Remember to run create-indexes.pl when you are done importing.\n";
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 }
 

@@ -6,6 +6,7 @@ use POSIX;
 
 use DSC::db;
 use DSC::extractor;
+use DSC::extractor qw($SKIPPED_KEY $SKIPPED_SUM_KEY);
 use DSC::extractor::config;
 use Data::Dumper;
 use Time::HiRes; # XXX
@@ -13,8 +14,9 @@ use Time::HiRes; # XXX
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
 my $dbg = 0;
-my $perfdbg = 1;
+my $perfdbg = 0;
 
+# $XML::Simple::PREFERRED_PARSER='XML::SAX::Expat';
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
 chdir $DATADIR || die "chdir $DATADIR: $!\n";
@@ -122,22 +124,6 @@ sub refile_and_grok_node($$$) {
 	    $h = $toname;
 	}
 
-	my $yymmdd = strftime "%Y%m%d", gmtime($secs);
-	-d $yymmdd || mkdir $yymmdd ||
-	    die "$0: mkdir $yymmdd: $!\n";
-	-d "$yymmdd/$type" || mkdir "$yymmdd/$type" ||
-	    die "$0: mkdir $yymmdd/$type: $!\n";
-
-	if (-s "$DIR/$yymmdd/$type/$h") {
-	    system("ls -l $DIR/$yymmdd/$type/$h $h 1>&2");
-	    print STDERR "removing dupe $server/$node/$h\n";
-	    unlink "$DIR/$h";
-	    next;
-	} elsif (-f "$yymmdd/$type/$h") {
-	    print STDERR "removing empty $server/$node/$yymmdd/$type/$h\n";
-	    unlink "$DIR/$yymmdd/$type/$h";
-	}
-
 	my $xml_result = eval { extract_xml($dbh, $h, $server_id, $node_id) };
 	if (!defined $xml_result) {
 	    # other error
@@ -154,28 +140,43 @@ sub refile_and_grok_node($$$) {
 	} else {
 	    # success
 	    $dbh->commit;
-	    rename "$DIR/$h", "$DIR/$yymmdd/$type/$h" || die "$0: move $h: $!\n";
+	    unlink "$DIR/$h" || die "$0: unlink $h: $!\n";
 	}
     }
 
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
     if (-s "$PROG.stderr") {
-	system("/usr/bin/uniq $PROG.stderr " .
-		"| head -20 " .
-		"| /usr/bin/Mail -s \"Cron <\${USER}@`hostname -s`> $0\" \$USER");
+	$ENV{SUBJECT} = $0;
+	$ENV{TEXT} = "$0 for $server/$node:";
+	$ENV{PROG} = $PROG;
+	system("{ echo \"\$TEXT\"; echo; " .
+	        "/usr/bin/uniq \${PROG}.stderr | head -20; } " .
+		"| /usr/bin/Mail -s \"Cron <\${USER}@`hostname -s`> \$SUBJECT\" \$USER");
     }
 }
 
 sub extract_xml($$$) {
     my ($dbh, $xmlfile, $server_id, $node_id) = @_;
-    die "cant divine dataset" unless ($xmlfile =~ /\d+\.(\w+)\.xml$/);
-    my $dataset = $1;
+    die "cant divine dataset" unless ($xmlfile =~ /^(\d+)\.(\w+)\.xml$/);
+    my $file_time = $1;
+    my $dataset = $2;
     print STDERR "dataset is $dataset\n" if ($dbg);
 
     my $EX = $DSC::extractor::config::DATASETS{$dataset};
     print STDERR 'EX=', Dumper($EX) if ($dbg);
     die "no extractor for $dataset\n" unless defined($EX);
+
+    my $sth = $dbh->prepare("SELECT 1 " . from_dummy($dbh) .
+	"WHERE EXISTS (SELECT 1 " .
+	"FROM loaded_files WHERE time = ? AND " .
+	"dataset = ? AND " .
+	"server_id = ? AND node_id = ?)");
+    $sth->execute($file_time, $dataset, $server_id, $node_id);
+    if ($sth->fetchrow_array) {
+	print STDERR "skipping duplicate $xmlfile\n";
+	return 1; # do nothing, successfully
+    }
 
     my $start_time;
     my $grokked;
@@ -222,7 +223,7 @@ sub extract_xml($$$) {
 
 	# If this is the last data of the UTC day (i.e., time is 23:59:00), we
 	# will move the whole day's data from the "new" to the "old" table.
-	my $archivable = $start_time % 86400 == (23*3600 + 59*60);
+	my $archivable = ($start_time % 86400) == (23*3600 + 59*60);
 
 	if (!table_exists($dbh, "${tabname}_new")) {
 	    eval {
@@ -260,10 +261,10 @@ sub extract_xml($$$) {
 	}
 
 	if ($archivable && !$withtime) {
-	    # write 1-day dataset directly to old table
+	    # write full 1-day dataset directly to _old table
 	    $DSC::db::insert_suffix = 'old';
 	} else {
-	    # quickly write dataset to new table
+	    # quickly write 1-minute or partial day dataset to _new table
 	    $DSC::db::insert_suffix = 'new';
 	}
 
@@ -290,11 +291,12 @@ sub extract_xml($$$) {
 	&{$O->{data_writer}}($dbh, \%db, $output, $server_id, $node_id,
 	    $bucket_time);
 
-	if ($archivable && $withtime) {
-	    # move a chunk of 1-minute data from _new table to _old table
+	if ($archivable) {
+	    # Move old data from _new table to _old table.  We do this even
+	    # on non-withtime tables in case a previous archival was missed).
 	    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
-	    my $where_clause = "WHERE start_time >= " . ($bucket_time - 86400) .
-		" AND server_id = $server_id AND node_id = $node_id";
+	    my $where_clause = "WHERE start_time <= $bucket_time " .
+		"AND server_id = $server_id AND node_id = $node_id";
 	    $dbh->do("INSERT INTO ${tabname}_old " .
 		"SELECT * FROM ${tabname}_new $where_clause");
 	    $dbh->do("DELETE FROM ${tabname}_new $where_clause");
@@ -303,12 +305,17 @@ sub extract_xml($$$) {
 	}
     }
 
+    # Remember that we've processed this file.
+    $sth = $dbh->prepare("INSERT INTO loaded_files " .
+	"(time, dataset, server_id, node_id) VALUES (?, ?, ?, ?)");
+    $sth->execute($file_time, $dataset, $server_id, $node_id);
+
     return 1; # success
 }
 
 #
 # basically a wrapper for elsify_unwanted_keys();
-#
+
 sub munge_elsify {
 	my $input = shift;	# XML tree from input file
 	my $O = shift;		# extractor->output structure
