@@ -11,7 +11,7 @@ use DSC::extractor::config;
 
 my $DSCDIR = "/usr/local/dsc";
 
-my $numdays = shift || die "usage: $0 numdays";
+my $numdays = shift || die "usage: $0 numdays\n";
 my $cutoff = time - ($numdays * 86400);
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
