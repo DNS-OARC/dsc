@@ -68,14 +68,14 @@ sub Ploticus_create_datafile {
 	my $divideflag = shift;
 	my %newhash;
 	my %COUNT;
-	my $cutoff = $end - $window;
+	# my $cutoff = $end - $window; # SQL query already did cutoff
 	$divideflag = 0 unless defined($divideflag);
 	#
 	# convert the original data into possibly larger bins
 	#
-	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
+	foreach my $fromkey (keys %$hashref) {
 		# note $fromkey is a time_t.
-		next if ($fromkey < $cutoff);
+		# next if ($fromkey < $cutoff); # SQL query already did cutoff
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
 		foreach my $k1 (@$keysarrayref) {
 			if (defined($hashref->{$fromkey}{$k1})) {
@@ -128,14 +128,14 @@ sub Ploticus_create_datafile_type2 {
 	my $window = shift;
 	my %newhash;
 	my $now = $main::now || time;
-	my $cutoff = $now - $window;
+	# my $cutoff = $now - $window; # SQL query already did cutoff
 	my %COUNT;
 	#
 	# convert the original data into possibly larger bins
 	#
-	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
+	foreach my $fromkey (keys %$hashref) {
 		# note $fromkey is a time_t.
-		next if ($fromkey < $cutoff);
+		# next if ($fromkey < $cutoff); # SQL query already did cutoff
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
 		if (defined($hashref->{$fromkey})) {
 			$newhash{$tokey} += $hashref->{$fromkey};
