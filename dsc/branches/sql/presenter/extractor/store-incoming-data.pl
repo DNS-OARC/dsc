@@ -16,7 +16,6 @@ my $DATADIR = "$DSCDIR/data";
 my $dbg = 0;
 my $perfdbg = 0;
 
-# $XML::Simple::PREFERRED_PARSER='XML::SAX::Expat';
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
 chdir $DATADIR || die "chdir $DATADIR: $!\n";
