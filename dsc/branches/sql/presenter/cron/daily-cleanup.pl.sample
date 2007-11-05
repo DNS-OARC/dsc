@@ -16,8 +16,7 @@ my $cutoff = time - ($numdays * 86400);
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
-my $dbh = get_dbh;
-$dbh->{AutoCommit} = 1;
+my $dbh = get_dbh(AutoCommit => 1);
 
 $dbh->do("DELETE FROM loaded_files WHERE time <= $cutoff");
 
