@@ -2,7 +2,6 @@ package DSC::db;
 
 use DBI;
 use POSIX;
-use Time::HiRes; # XXX for debugging
 
 use strict;
 use warnings;
@@ -46,17 +45,17 @@ $insert_suffix = 'new';
 $key_type = 'VARCHAR(1024)';
 
 sub get_dbh {
-    # my $dbstart = Time::HiRes::gettimeofday;
+    my %attrs = @_;
+    my %defaults = (AutoCommit => 0);
+    while (my ($key, $value) = each %defaults) {
+	$attrs{$key} = $value if (!defined $attrs{$key});
+    }
     # print STDERR "connecting to $datasource as $username\n";
-    my $dbh = DBI->connect($datasource, $username, $password, {
-	AutoCommit => 0
-	}); # XXX
+    my $dbh = DBI->connect($datasource, $username, $password, \%attrs);
     if (!defined $dbh) {
 	print STDERR "error connecting to database: $DBI::errstr\n";
 	return undef;
     }
-    # printf "opened db connection in %d ms\n",
-    #     (Time::HiRes::gettimeofday - $dbstart) * 1000;
     my $drivername = $dbh->{Driver}->{Name};
     # print STDERR "driver name: $drivername\n";
     require "DSC/db/${drivername}.pm";
@@ -145,8 +144,7 @@ sub write_data4         { dofunc('write_data4', @_); }
 create_data_table => sub {
     my ($dbh, $tabname, $dbkeys) = @_;
 
-    print "creating table $tabname\n";
-    print STDERR "dbkeys: ", join(', ', @$dbkeys), "\n";
+    print STDERR "creating table $tabname\n";
     my $def =
 	"(" .
 	"  server_id     SMALLINT NOT NULL, " .
@@ -178,7 +176,7 @@ create_data_table => sub {
 create_data_indexes => sub {
     my ($dbh, $tabname) = @_;
     $dbh->do("CREATE INDEX ${tabname}_new_time ON ${tabname}_new(start_time)");
-    $dbh->do("CREATE INDEX ${tabname}_old_time ON ${tabname}_old(start_time)");
+    $dbh->do("CREATE INDEX ${tabname}_old_time_server_node ON ${tabname}_old(start_time, server_id, node_id)");
     $dbh->do("CREATE INDEX ${tabname}_old_server ON ${tabname}_old(server_id)");
     $dbh->do("CREATE INDEX ${tabname}_old_node ON ${tabname}_old(node_id)");
 },
@@ -230,7 +228,6 @@ read_data => sub {
 	my $nl = 0;
 	my $tabname = "dsc_$type";
 	my $sth;
-	my $start = Time::HiRes::gettimeofday;
 
 	my $needgroup =
 	    defined $end_time && !(grep /^start_time/, @$dbkeys) ||
@@ -270,8 +267,6 @@ read_data => sub {
 	}
 	$dbh->commit;
 	# print "read $nl rows from $tabname\n";
-	#printf STDERR "read $nl rows from $tabname in %d ms\n",
-	#    (Time::HiRes::gettimeofday - $start) * 1000;
 	return $nl;
 }
 
