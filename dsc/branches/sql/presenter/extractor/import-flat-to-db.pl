@@ -28,7 +28,7 @@ my $req_nodes = undef;
 my $mindate = 0;
 my $today = strftime("%Y%m%d", gmtime((int(time / 86400)) * 86400));
 my $maxdate = $today;
-my $totalimported = 0;
+my $totalimported = -1;
 
 sub usage(@) {
     print STDERR @_;
@@ -68,6 +68,8 @@ if (defined $opts{date}) {
 	usage;
     }
 }
+
+$totalimported = 0;
 $DATADIR = $opts{datadir} || $DATADIR;
 
 print "servers: ", $req_servers ? join ', ', keys %$req_servers : "(ALL)", "\n";
@@ -191,9 +193,11 @@ for my $server (sort { $a cmp $b } @servers) {
 # end
 
 END {
-    print "Done: imported $totalimported files.\n";
-    print "Remember to run create-indexes.pl when you are done importing.\n";
-    print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
+    if ($totalimported >= 0) {
+	print "Done: imported $totalimported files.\n";
+	print "Remember to run create-indexes.pl when you are done importing.\n";
+	print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
+    }
 }
 
 
