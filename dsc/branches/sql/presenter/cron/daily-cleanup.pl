@@ -21,6 +21,7 @@ $dbh->{AutoCommit} = 1;
 
 $dbh->do("DELETE FROM loaded_files WHERE time <= $cutoff");
 
+### You may customize this script here.
 
-
+# $dbh->do("VACUUM ANALYZE"); # for PostgreSQL
 
