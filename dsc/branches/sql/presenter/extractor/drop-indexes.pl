@@ -13,8 +13,7 @@ my $DSCDIR = "/usr/local/dsc";
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
-my $dbh = get_dbh;
-$dbh->{AutoCommit} = 1;
+my $dbh = get_dbh(AutoCommit => 1);
 for my $name (@{&data_index_names($dbh)}) {
     print "dropping index $name\n";
     $dbh->do("DROP INDEX $name");
