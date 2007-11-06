@@ -224,34 +224,36 @@ get_node_id => sub {
 # we can omit that table from the query.
 #
 read_data => sub {
-	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time, $dbkeys) = @_;
+	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time,
+	    $nogroup, $dbkeys, $where) = @_;
 	my $nl = 0;
 	my $tabname = "dsc_$type";
 	my $sth;
 
-	my $needgroup =
-	    defined $end_time && !(grep /^start_time/, @$dbkeys) ||
-	    !defined $node_id && !(grep /^node_id/, @$dbkeys) ||
-	    !(grep /^key/, @$dbkeys);
+	my $needgroup = !$nogroup ||
+	    !defined $node_id && !(grep /^node_id/, @$dbkeys);
 	my @params = ();
-	my $sql = "SELECT " . join(', ', @$dbkeys);
-	$sql .= $needgroup ? ", SUM(count) " : ", count ";
+	my $sql = 'SELECT ' . join(', ', @$dbkeys);
+	$sql .= $needgroup ? ', SUM(count) ' : ', count ';
 	$sql .= "FROM $tabname WHERE ";
 	if (defined $end_time) {
-	    $sql .= "start_time >= ? AND start_time < ? ";
+	    $sql .= 'start_time >= ? AND start_time < ? ';
 	    push @params, $start_time, $end_time;
 	} else {
-	    $sql .= "start_time = ? ";
+	    $sql .= 'start_time = ? ';
 	    push @params, $start_time;
 	}
-	$sql .= "AND server_id = ? ";
+	$sql .= 'AND server_id = ? ';
 	push @params, $server_id;
 	if (defined $node_id) {
-	    $sql .= "AND node_id = ? ";
+	    $sql .= 'AND node_id = ? ';
 	    push @params, $node_id;
 	}
-	$sql .= "GROUP BY " . join(', ', @$dbkeys) if ($needgroup);
-	# print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	if ($where) {
+	    $sql .= 'AND ' . $where . ' ';
+	}
+	$sql .= 'GROUP BY ' . join(', ', @$dbkeys) if ($needgroup);
+	print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	$sth = $dbh->prepare($sql);
 	$sth->execute(@params);
 

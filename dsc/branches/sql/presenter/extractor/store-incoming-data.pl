@@ -248,7 +248,7 @@ sub extract_xml($$$) {
 	} elsif (!$withtime) {
 	    # read and delete the existing data
 	    return 0 if (0 > DSC::db::read_data($dbh, \%db, $output,
-		$server_id, $node_id, $bucket_time, undef, $O->{dbkeys}));
+		$server_id, $node_id, $bucket_time, undef, 1, $O->{dbkeys}));
 	    my $where_clause = "WHERE start_time = $bucket_time AND " .
 		"server_id = $server_id AND node_id = $node_id";
 	    # Normally, the existing data is in the _new table.  But we must

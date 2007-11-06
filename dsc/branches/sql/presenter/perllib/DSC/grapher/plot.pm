@@ -118,6 +118,7 @@ my $std_accum_yaxes = {
     names	=> $qtype_names,
     colors	=> $qtype_colors,
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Queries by QType',
@@ -130,6 +131,7 @@ my $std_accum_yaxes = {
     names	=> [ qw(SIG KEY NXT DS RRSIG NSEC DNSKEY) ],
     colors	=> [ qw(yellow2 orange magenta purple brightblue brightgreen red) ],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'DNSSEC-related Queries by QType',
@@ -141,6 +143,7 @@ my $std_accum_yaxes = {
     names	=> [ qw(NOERROR SERVFAIL NXDOMAIN REFUSED NXRRSET Other) ],
     colors	=> [ qw(brightgreen yellow red blue orange purple) ],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Replies by Rcode',
@@ -152,6 +155,7 @@ my $std_accum_yaxes = {
     names	=> [ qw(Iquery Status Notify Update_ Other) ],
     colors	=> [ qw(orange yellow brightgreen brightblue purple red) ],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Messages by Opcode (excluding QUERY)',
@@ -190,6 +194,7 @@ my $std_accum_yaxes = {
         red
     )],
     dbkeys      => [ 'start_time', 'key1', 'key2' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     munge_func  => sub {
@@ -415,10 +420,12 @@ my $std_accum_yaxes = {
   direction_vs_ipproto => {
     dataset => 'direction_vs_ipproto',
     plot_type => 'trace',
-    keys	=> [qw(recv:icmp recv:tcp recv:udp recv:else)],
+    keys	=> [qw(icmp tcp udp else)],
     names	=> [qw(ICMP TCP UDP Other)],
     colors	=> [qw(red brightgreen purple orange)],
-    dbkeys      => [ 'start_time', 'key1', 'key2' ],
+    dbkeys      => [ 'start_time', 'key2' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
+    where       => "key1 = 'recv'",
     yaxes	=> {
         rate => {
             label => 'Packet Rate (p/s)',
@@ -433,20 +440,18 @@ my $std_accum_yaxes = {
     },
     plottitle   => 'Received packets by IP protocol',
     map_legend	=> 1,
-    munge_func  => sub {
-	# XXX: 'shift' represents the old data hashref
-	DSC::grapher::munge_2d_to_1d(shift, [qw(recv)], [qw(icmp tcp udp else)])
-   }
   },
 
   direction_vs_ipproto_sent => {
     dataset => 'direction_vs_ipproto',
     datafile => 'direction_vs_ipproto',
     plot_type => 'trace',
-    keys	=> [qw(sent:icmp sent:tcp sent:udp sent:else)],
+    keys	=> [qw(icmp tcp udp else)],
     names	=> [qw(ICMP TCP UDP Other)],
     colors	=> [qw(red brightgreen purple orange)],
-    dbkeys      => [ 'start_time', 'key1', 'key2' ],
+    dbkeys      => [ 'start_time', 'key2' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
+    where       => "key1 = 'sent'",
     yaxes	=> {
         rate => {
             label => 'Packet Rate (p/s)',
@@ -461,10 +466,6 @@ my $std_accum_yaxes = {
     },
     plottitle   => 'Transmitted packets by IP protocol',
     map_legend	=> 1,
-    munge_func  => sub {
-	# XXX: 'shift' represents the old data hashref
-	DSC::grapher::munge_2d_to_1d(shift, [qw(sent)], [qw(icmp tcp udp else)])
-   }
   },
 
   direction => {
@@ -474,7 +475,7 @@ my $std_accum_yaxes = {
     keys	=> [qw(sent recv else)],
     names	=> [qw(Sent Recv Other)],
     colors	=> [qw(red brightgreen purple orange)],
-    dbkeys      => [ 'start_time', 'key1', 'key2' ],
+    dbkeys      => [ 'start_time', 'key1' ],
     yaxes	=> {
         rate => {
             label => 'Packet Rate (p/s)',
@@ -489,19 +490,6 @@ my $std_accum_yaxes = {
     },
     plottitle   => 'IP packet direction',
     map_legend	=> 1,
-    munge_func  => sub {
-        my $data = shift;
-        my %newdata;
-        foreach my $t (keys %$data) {
-                foreach my $k1 (keys %{$data->{$t}}) {
-                        foreach my $k2 (keys %{$data->{$t}{$k1}}) {
-                                $newdata{$t}{$k1} += $data->{$t}{$k1}{$k2}
-;
-                        }
-                }
-        }
-        \%newdata;
-   }
   },
 
   query_attrs => {
@@ -519,6 +507,7 @@ my $std_accum_yaxes = {
     names	=> [ 'IDN Qname' ],
     colors	=> [qw(blue)],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plottitle   => 'Queries Containing Internationalized Qnames',
   },
 
@@ -529,6 +518,7 @@ my $std_accum_yaxes = {
     names	=> [ 'Recursion Desired' ],
     colors	=> [qw(purple)],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plottitle   => 'Queries With Recursion Desired bit set',
   },
 
@@ -541,6 +531,7 @@ my $std_accum_yaxes = {
     names	=> [ 'DNSSEC OK' ],
     colors	=> [qw(red)],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plottitle   => 'Queries With DNSSEC OK bit set',
   },
 
@@ -549,6 +540,7 @@ my $std_accum_yaxes = {
     names	=> [ qw(none Zero Other) ],
     colors	=> [ qw(orange yellow brightgreen brightblue purple red) ],
     dbkeys      => [ 'start_time', 'key1' ],
+    nogroup     => 1, # all columns are selected or constrained to single value
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'EDNS Version Numbers',

@@ -250,7 +250,6 @@ sub datafile_name {
 }
 
 sub load_data {
-	my $datadir;
 	my %hash;
 	my $start = time;
 	my $last = $ARGS{end};
@@ -258,9 +257,9 @@ sub load_data {
 	my $first = $ARGS{end} - $ARGS{window};
 	my $nl = 0;
 	my $datafile = datafile_name($ARGS{plot});
+	my $dbh = get_dbh;
 
 	# get server and node ids
-	my $dbh = get_dbh;
 	my ($server_id) = $dbh->selectrow_array(
 	    "SELECT server_id FROM server WHERE name = ?",
 	    undef, $ARGS{server});
@@ -277,8 +276,8 @@ sub load_data {
 	my $node_id = ($ARGS{node} eq 'all') ? undef :
 	    ($node_id{$ARGS{node}} || 0);
 	debug(1, "reading $datafile");
-	$nl += DSC::db::read_data($dbh, \%hash, $datafile,
-	    $server_id, $node_id, $first, $last, $PLOT->{dbkeys});
+	$nl += DSC::db::read_data($dbh, \%hash, $datafile, $server_id, $node_id,
+	    $first, $last, $PLOT->{nogroup}, $PLOT->{dbkeys}, $PLOT->{where});
 	if ('bynode' eq $ARGS{plot}) {
 	    # special case
 	    @plotkeys = values %node_id;
