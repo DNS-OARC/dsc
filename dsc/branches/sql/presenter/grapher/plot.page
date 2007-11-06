@@ -31,6 +31,9 @@ UL		{ list-style: none; }
 UL LI UL LI	{ margin-left: 0.5em; }
 A.current	{ color: red; }
 </style>
+  <title>
+  [$title]
+  </title>
 </head>
 
 <body>

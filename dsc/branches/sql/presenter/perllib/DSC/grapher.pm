@@ -177,6 +177,7 @@ sub run {
 			navbar_yaxis => navbar_yaxis(),
 			img_with_map => img_with_map($cache_name),
 			description => $TEXT->{description},
+			title => "DSC: $PLOT->{plottitle}: $ARGS{server}/$ARGS{node}",
 		);
 		print $t->fill_in(
 			PACKAGE => 'DSC::grapher::template',
