@@ -38,7 +38,7 @@ a busy DNS server.
 \item A data presenter, where data is archived and rendered
 \item A method for securely transferring data from the collector
 	to the presenter
-\item Utilities and scripts that parse XML and archive files from the collector
+\item Utilities and scripts that parse XML and store data from the collector
 \item Utilities and scripts that generate graphs and HTML pages
 \end{itemize}
 
@@ -104,20 +104,19 @@ want to create special {\em dsc\/} userids on both ends as well.
 \subsection{The Extractor}
 
 The XML extractor is a Perl script that reads the XML files from
-{\tt dsc\/}.  The extractor essentially converts the XML-structured
-data to a format that is easier (faster) for the graphing tools to
-parse.  Currently the extracted data files are line-based ASCII
-text files.  Support for SQL databases is planned for the future.
+{\tt dsc\/} and stores the data in a PostgreSQL database for fast access
+by the graphing tools.
+Support for other databases are planned for the future.
 
 \subsection{The Grapher}
 
 {\dsc} uses {\em Ploticus\/}\footnote{http://ploticus.sourceforge.net/}
-as the graphing engine.  A Perl module and CGI script read extracted
-data files and generate Ploticus scriptfiles to generate plots.  Plots
+as the graphing engine.  A Perl module and CGI script read data from the
+database and generate Ploticus scriptfiles to generate plots.  Plots
 are always generated on demand via the CGI application.
 
 \path|dsc-grapher.pl| is the script that displays graphs from the
-archived data.  
+stored data.  
 
 
 \section{Architecture}
@@ -183,8 +182,10 @@ can find via CPAN:
 
 \begin{itemize}
 \setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
+%	\item Apache-DBI (Apache::DBI) (optional)
 	\item CGI-Untaint (CGI::Untaint)
 	\item CGI.pm (CGI)
+	\item DBD-Pg (DBD::Pg)
 	\item Digest-MD5 (Digest::MD5)
 	\item File-Flock (File::Flock)
 	\item File-Spec (File::Spec)
@@ -208,20 +209,92 @@ turn requires the {\em expat\/} package.
 \section{Install Ploticus}
 
 {\dsc} uses Ploticus to generate plots and graphs.  You can find
-this software at \verb|http://ploticus.sourceforge.net|.  The {\em
+this software at \verb|http://ploticus.sourceforge.net/|.  The {\em
 Download\/} page has links to some pre-compiled binaries and packages.
 FreeBSD and NetBSD users can find Ploticus in the ports/packages
 collection.
 
+\section{Install and Configure PostgreSQL}
+
+{\dsc} uses PostgreSQL to store data for fast access.  You can find
+this software at \verb|http://www.postgresql.org/|.
+FreeBSD and NetBSD users can find PostgreSQL in the ports/packages
+collection.
+
+Once PostgreSQL is installed, you must configure it as follows.
+See the PostgreSQL documentation for details.
+
+\begin{itemize}
+\item
+    We recommend enabling autovacuum, or writing a script to periodically run
+    {\tt VACUUM ANALYZE}.
+\item
+    We recommend editing \path|pg_hba.conf| to change each method from
+    {\tt trust} to {\tt md5}.
+    This will require all database logins to use a password.
+    You will also need to add a password for the {\tt pgsql} superuser.
+\item
+    Create a user named {\tt dsc} (with a password).
+\item
+    Make sure the PostgreSQL data is stored on a large partition with
+    plenty of free space.  If it is not, you can create a tablespace
+    on another partition.
+    Note that a typical {\dsc} installation for a large DNS root server
+    requires about 4GB to hold a year's worth of data.
+\item
+    Create a database named {\tt dsc} (on the tablespace you created in the
+    previous step).
+\item
+    Create a schema named {\tt dsc} in the {\tt dsc} database owned by the
+    {\tt dsc} user.
+\item
+    For extra security, you may create a second user with read-only access
+    to the {\tt dsc} schema, for use by the grapher.
+\end{itemize}
+
+Execute the following shell commands:
+\begin{MyVerbatim}
+% cd presenter
+% cp extractor/dsc-extractor.cfg.sample /usr/local/dsc/etc/dsc-extractor.cfg
+\end{MyVerbatim}
+
+Then, edit \path|/usr/local/dsc/etc/dsc-extractor.cfg| to set the
+{\tt dbi\_datasource}, {\tt dbi\_username}, and {\tt dbi\_password}
+directives.
+The value of {\tt dbi\_datasource} must be a DBI data source name
+beginning with ``{\tt DBI:Pg:}''.
+The value of {\tt dbi\_datasource} must be the name of a database 
+user with read/write access to the {\tt dsc} schema.
+
+\begin{MyVerbatim}
+% ./extractor/init-db.pl
+\end{MyVerbatim}
+
+If you want to preserve more than a few months of data from flat archived
+{\tt .dat} files from an earlier version of {\dsc}, and you want to minimize
+presenter downtime, you can use the following command to import the majority of
+old data without shutting down the old version of the presenter.
+Expect this step to take roughly half an hour for each year of data per node.
+If you do not have old data, or do not mind the downtime, you may skip
+this step (there will be another import step later).
+
+\begin{MyVerbatim}
+% ./extractor/import-flat-to-db.pl
+\end{MyVerbatim}
 
 \section{Install {\dsc} Software}
 
+If you have an old version of {\dsc} running, you must disable its extractor
+now.
+Remove the {\tt refile-and-grok.sh} and {\tt remove-xmls.pl} commands from
+the crontab, and wait for any running copies of those commands to finish.
+
 All of the extractor and grapher tools are Perl or {\tt /bin/sh}
 scripts, so there is no need to compile anything.  Still,
-you should run {\tt make} first:
+you must run {\tt make} first:
 
 \begin{MyVerbatim}
-% cd presenter
+% cd presenter  ;# if you are not already in the presenter directory
 % make
 \end{MyVerbatim}
 
@@ -246,7 +319,8 @@ privileges to install files there.
 {\dsc} has a couple of CGI scripts that are installed
 into \path|/usr/local/dsc/libexec|.  You should add symbolic
 links from your HTTP server's \path|cgi-bin| directory to
-these scripts.
+these scripts (if they do not already exist from a previous
+version of {\dsc}).
 
 Both of these scripts have been designed to be mod\_perl-friendly.
 
@@ -259,8 +333,37 @@ Both of these scripts have been designed to be mod\_perl-friendly.
 You can skip the \path|put-file.pl| link if you plan to use
 {\em rsync\/} to transfer XML files.
 If you cannot create symbolic links, you'll need to manually
-copy the scripts to the appropriate directory.
+copy the scripts to the appropriate directory (even if they
+already exist from a previous version of {\dsc}).
 
+\section{Finish Data Import}
+
+If you wish to preserve flat archived {\tt .dat} files from a previous
+version of \dsc, you must run the import tool.
+If you already ran it once while the old {\dsc} was still running,
+this should take only a few minutes to import the new data that arrived
+since your last import.  If you have not already run it, you may expect this
+to take roughly half an hour per year of data per node.
+
+\begin{MyVerbatim}
+% ./extractor/import-flat-to-db.pl
+\end{MyVerbatim}
+
+After the import, you may remove the old archived files at any time
+(perhaps after making a backup copy of \path|/usr/local/dsc/data|).
+
+\begin{MyVerbatim}
+find /usr/local/dsc/data/*/* -type d -name '200*' | xargs rm -rf
+\end{MyVerbatim}
+
+\section{Finish Database Setup}
+
+All users should run the following command to create database indexes.
+\begin{MyVerbatim}
+% ./extractor/create-indexes.pl
+\end{MyVerbatim}
+If you imported old data, you will probably also want to run the postgres
+command ``{\tt VACUUM ANALYZE}'' now.
 
 \section{/usr/local/dsc/data}
 
@@ -289,11 +392,9 @@ in advance and make those writable.
 % chmod 2775 /usr/local/dsc/data/x-root/blah/
 \end{MyVerbatim}
 
-Make sure that \path|/usr/local/dsc/data/| is on a large partition with
-plenty of free space.  You can make it a symbolic link to another
-partition if necessary.  Note that a typical {\dsc} installation
-for a large DNS root server requires about 4GB to hold a year's worth
-of data.
+Unlike in previous versions of \dsc, \path|/usr/local/dsc/data/|
+does not particularly need a large amount of free space, because all long-term
+storage of data is in the database.
 
 \subsection{rsync Method}
 
@@ -343,24 +444,21 @@ plot images.  It also must be writable by the HTTP userid:
 
 \section{Cron Jobs}
 
-{\dsc} requires two cron jobs on the Presenter.  The first
-is the one that processes incoming XML files.  It is called
-\path|refile-and-grok.sh|.  We recommend running it every
-minute.  You also may want to run the jobs at a lowerer priority
+{\dsc} requires two cron jobs on the Presenter.  The extractor
+is the one that processes incoming XML files.  It is invoked via the perl script
+\path|store-incoming-data.pl|.  We recommend running it every
+minute.  You also may want to run the jobs at a lower priority
 with {\tt nice\/}.  Here is the cron job that we use:
 
 \begin{MyVerbatim}
-* * * * * /usr/bin/nice -10 /usr/local/dsc/libexec/refile-and-grok.sh
+* * * * * /usr/bin/nice -10 /usr/local/dsc/libexec/store-incoming-data.pl
 \end{MyVerbatim}
 
-The other useful cron script is \path|remove-xmls.pl|.  It removes
-XML files older than a specified number of days.  Since most of the
-information in the XML files is archived into easier-to-parse 
-data files, you can remove the XML files after a few days.  This is
-the job that we use:
+The other cron script is \path|daily-cleanup.pl|.  It performs routine
+maintenance of {\dsc} database tables.
 
 \begin{MyVerbatim}
-@midnight find /usr/local/dsc/data/ | /usr/local/dsc/libexec/remove-xmls.pl 7
+@midnight /usr/local/dsc/libexec/daily-cleanup.pl 7
 \end{MyVerbatim}
 
 \section{Data URIs}
@@ -983,7 +1081,7 @@ URL to the \path|dsc-grapher.pl| CGI.   But before you
 do that, you'll need to create a grapher configuration file.
 
 \path|dsc-grapher.pl| uses a simple configuration file to set certain
-menu options.  This  configuration file is
+menu and database options.  This  configuration file is
 \path|/usr/local/dsc/etc/dsc-grapher.cfg|.  You should find
 a sample version in the same directory.  For example:
 
@@ -998,6 +1096,9 @@ domain_list isc_tlds br nl ca cz il pt cl
 domain_list isc_tlds sk ph hr ae bg is si za
 valid_domains isc isc_tlds
 
+dbi_datasource DBI:Pg:dbname=dsc
+dbi_username dsc
+dbi_password secret
 \end{MyVerbatim}
 
 \begin{figure}
@@ -1007,6 +1108,22 @@ valid_domains isc isc_tlds
 
 Refer to Figure~\ref{fig-screenshot1} to see how
 the directives affect the visual display.
+
+The following directives are required to allow the grapher
+to read from the database:
+
+\begin{description}
+\item[dbi\_datasource]
+	Must be a DBI datasource descriptor beginning with ``DBI:Pg:''.
+\item[dbi\_username]
+	This may be the same ``dsc'' username used in 
+	\path|/usr/local/dsc/etc/dsc-extractor.cfg|,
+	or for added security it may be another username with read-only
+	access to the dsc database.
+\item[dbi\_password]
+	Specifies the password corresponding to dbi\_username.
+\end{description}
+
 The following three directives should always be set in
 the configuration file:
 
@@ -1596,90 +1713,95 @@ value.
 
 
 
-\section{Archived Data Format}
+\section{Database Structure}
 
-{\dsc} actually uses four different file formats for archived
-datasets.  These are all text-based and designed to be quickly
-read from, and written to, by Perl scripts.  
+\subsection{Data Tables}
 
-\subsection{Format 1}
+{\dsc} stores DNS statistics data in a database view named dsc\_{\em dataset\/}.
+The view is actually composed of two tables named
+dsc\_{\em dataset\/}\_new and dsc\_{\em dataset\/}\_old.
+The \_new table is small and optimized for fast writing and reading,
+and the \_old table is (potentially) large and optimized for fast reading.
+New incoming data is written to the \_new table by the extractor,
+and old data is periodically moved from \_new to \_old.
+When reading data, you should normally read from the view, not the
+underlying tables.
 
-\noindent
-\begin{tt}time $k1$ $N_{k1}$ $k2$ $N_{k2}$ $k3$ $N_{k3}$ ...
-\end{tt}
-
-\vspace{1ex}\noindent
-This is a one-dimensional time-series format.\footnote{Which means
-it can only be used for datasets where one of the indexers is set
-to the Null indexer.}  The first column is a timestamp (unix seconds).
-The remaining space-separated fields are key-value pairs.  For
-example:
+For a two-dimensional dataset, its view and both of its underlying tables
+have the following columns:
 
 \begin{MyVerbatim}
-1093219980 root-servers.net 122 rfc1918-ptr 112 a-for-a 926 funny-qclass 16
-1093220040 root-servers.net 121 rfc1918-ptr 104 a-for-a 905 funny-qclass 15
-1093220100 root-servers.net 137 rfc1918-ptr 116 a-for-a 871 funny-qclass 12
+    server_id     SMALLINT NOT NULL,
+    node_id       SMALLINT NOT NULL,
+    start_time    INTEGER NOT NULL,
+    key1          VARCHAR NOT NULL,
+    key2          VARCHAR NOT NULL,
+    count         INTEGER NOT NULL
 \end{MyVerbatim}
 
-\subsection{Format 2}
-
 \noindent
-\begin{tt}time $j1$ $k1$:$N_{j1,k1}$:$k2$:$N_{j1,k2}$:... $j2$ $k1$:$N_{j2,k1}$:$k2$:$N_{j2,k2}$:... ...
-\end{tt}
+Tables for one-dimensional datasets\footnote{That is, datasets where one of
+the indexers is set to the Null indexer.} are the same, except without key2.
 
-\vspace{1ex}\noindent
-This is a two-dimensional time-series format.  In the above,
-$j$ represents the first dimension indexer and $k$ represents
-the second.  Key-value pairs for the second dimension are
-separated by colons, rather than space.  For example:
+The {\tt server\_id} and {\tt node\_id} columns reference the {\tt server}
+and {\tt node} tables, respectively.
 
+The {\tt start\_time} column contains seconds since the UNIX epoch.
+Time-series datasets record data in 1-minute buckets.  Other datasets
+accumulate data into 24-hour buckets; for them, {\tt start\_time} will always
+be the beginning of a UTC day.
+
+%Here is an example of some one-dimensional time series data:
+%\begin{MyVerbatim}
+%server_id   node_id   start_time   key1              count
+%---------   -------   ----------   ----              -----
+%        1         1   1093219980   root-servers.net    122
+%        1         1   1093219980   rfc1918-ptr         112
+%        1         1   1093219980   a-for-a             926
+%        1         1   1093219980   funny-qclass         16
+%        1         1   1093220040   root-servers.net    121
+%        1         1   1093220040   rfc1918-ptr         104
+%        1         1   1093220040   a-for-a             905
+%        1         1   1093220040   funny-qclass         15
+%        1         1   1093220100   root-servers.net    137
+%        1         1   1093220100   rfc1918-ptr         116
+%        1         1   1093220100   a-for-a             871
+%        1         1   1093220100   funny-qclass         12
+%\end{MyVerbatim}
+%
+
+Here is an example of some two-dimensional time series data:
 \begin{MyVerbatim}
-1093220160 recv icmp:2397:udp:136712:tcp:428 sent icmp:819:udp:119191:tcp:323
-1093220220 recv icmp:2229:udp:124708:tcp:495 sent icmp:716:udp:107652:tcp:350
-1093220280 recv udp:138212:icmp:2342:tcp:499 sent udp:120788:icmp:819:tcp:364
-1093220340 recv icmp:2285:udp:137107:tcp:468 sent icmp:733:udp:118522:tcp:341
+server_id   node_id   start_time  key1  key2   count
+---------   -------   ----------  ----  ----   -----
+        1         2   1093220160  recv  icmp    2397
+        1         2   1093220160  recv  udp   136712
+        1         2   1093220160  recv  tcp      428
+        1         2   1093220160  sent  icmp     819
+        1         2   1093220160  sent  udp   119191
+        1         2   1093220160  sent  tcp      323
+        1         2   1093220220  recv  icmp    2229
+        1         2   1093220220  recv  udp   124708
+        1         2   1093220220  recv  tcp      495
+        1         2   1093220220  sent  icmp     716
+        1         2   1093220220  sent  udp   107652
+        1         2   1093220220  sent  tcp      350
 \end{MyVerbatim}
 
-\subsection{Format 3}
+\subsection{Auxilliary Tables}
 
-\noindent
-\begin{tt}$k$ $N_{k}$
-\end{tt}
-
-\vspace{1ex}\noindent
-This format is used for one-dimensional datasets where the key space
-is (potentially) very large.  That is, putting all the key-value pairs
-on a single line would result in a very long line in the datafile.
-Furthermore, for these larger datasets, it is prohibitive to
-store the data as a time series.  Instead the counters are incremented
-over time.  For example:
-
+The {\tt server} table contains the name of each server, and
+has the following columns:
 \begin{MyVerbatim}
-10.0.160.0 3024
-10.0.20.0 92
-10.0.244.0 5934
+        server_id   SMALLINT NOT NULL,
+        name        VARCHAR NOT NULL
 \end{MyVerbatim}
 
-\subsection{Format 4}
-
-\noindent
-\begin{tt}$j$ $k$ $N_{j,k}$
-\end{tt}
-
-\vspace{1ex}\noindent
-This format is used for two-dimensional datasets where one or both
-key spaces are very large.  Again, counters are incremented over
-time, rather than storing the data as a time series.
-For example:
-
+The {\tt node} table contains node names, and has these columns:
 \begin{MyVerbatim}
-10.0.0.0 non-auth-tld 105
-10.0.0.0 ok 37383
-10.0.0.0 rfc1918-ptr 5941
-10.0.0.0 root-servers.net 1872
-10.0.1.0 a-for-a 6
-10.0.1.0 non-auth-tld 363
-10.0.1.0 ok 144
+        node_id     SMALLINT NOT NULL,
+        server_id   SMALLINT NOT NULL,
+        name        VARCHAR NOT NULL
 \end{MyVerbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
