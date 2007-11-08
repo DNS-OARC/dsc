@@ -22,7 +22,11 @@ domain_list all_tlds arpa .
 
 valid_domains f-root all_tlds
 
+
 dbi_datasource DBI:Pg:dbname=postgres
+
+# This may be a user with read-only access.
 dbi_username dsc
+
 #dbi_password secret
 
