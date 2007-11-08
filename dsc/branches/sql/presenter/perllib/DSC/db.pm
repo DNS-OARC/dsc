@@ -253,7 +253,7 @@ read_data => sub {
 	    $sql .= 'AND ' . $where . ' ';
 	}
 	$sql .= 'GROUP BY ' . join(', ', @$dbkeys) if ($needgroup);
-	print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	# print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	$sth = $dbh->prepare($sql);
 	$sth->execute(@params);
 
