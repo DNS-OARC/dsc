@@ -182,7 +182,7 @@ can find via CPAN:
 
 \begin{itemize}
 \setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
-%	\item Apache-DBI (Apache::DBI) (optional)
+	\item Apache-DBI (Apache::DBI) (optional)
 	\item CGI-Untaint (CGI::Untaint)
 	\item CGI.pm (CGI)
 	\item DBD-Pg (DBD::Pg)
@@ -335,6 +335,24 @@ You can skip the \path|put-file.pl| link if you plan to use
 If you cannot create symbolic links, you'll need to manually
 copy the scripts to the appropriate directory (even if they
 already exist from a previous version of {\dsc}).
+
+If you want to use mod\_perl to speed up the web interface by reducing perl
+startup overhead, you will need something like the following in your
+\path|httpd.conf| file:
+\begin{MyVerbatim}
+<Location /cgi-bin>
+    SetHandler  perl-script
+    PerlHandler Apache::Registry
+    Options +ExecCGI
+</Location>
+\end{MyVerbatim}
+
+If you want to use Apache::DBI to speed up the web interface by caching
+open database connections, you will also need to have the Apache-DBI module
+installed, and add the following in your \path|httpd.conf| file:
+\begin{MyVerbatim}
+PerlModule Apache::DBI
+\end{MyVerbatim}
 
 \section{Finish Data Import}
 
