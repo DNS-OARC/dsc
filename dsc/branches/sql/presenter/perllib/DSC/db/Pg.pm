@@ -66,7 +66,7 @@ $DSC::db::func->{Pg}{write_data} = sub {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}_${insert_suffix}";
-	my $start = Time::HiRes::gettimeofday;
+	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $t (keys %$A) {
@@ -78,7 +78,7 @@ $DSC::db::func->{Pg}{write_data} = sub {
 	}
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
-	    (Time::HiRes::gettimeofday - $start) * 1000;
+	    (Time::HiRes::gettimeofday - $start) * 1000 if $main::perfdbg;
 };
 
 # write 1-dimensional hash without time to table with 1 day buckets
@@ -86,7 +86,7 @@ $DSC::db::func->{Pg}{write_data} = sub {
 $DSC::db::func->{Pg}{write_data2} = sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}_${insert_suffix}";
-	my $start = Time::HiRes::gettimeofday;
+	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $k1 (keys %$href) {
@@ -95,7 +95,7 @@ $DSC::db::func->{Pg}{write_data2} = sub {
 	}
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
-	    (Time::HiRes::gettimeofday - $start) * 1000;
+	    (Time::HiRes::gettimeofday - $start) * 1000 if $main::perfdbg;
 };
 
 # write 2-dimensional hash without time to table with 1 day buckets
@@ -103,7 +103,7 @@ $DSC::db::func->{Pg}{write_data2} = sub {
 $DSC::db::func->{Pg}{write_data3} = sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}_${insert_suffix}";
-	my $start = Time::HiRes::gettimeofday;
+	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
 	foreach my $k1 (keys %$href) {
@@ -114,7 +114,7 @@ $DSC::db::func->{Pg}{write_data3} = sub {
 	}
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
-	    (Time::HiRes::gettimeofday - $start) * 1000;
+	    (Time::HiRes::gettimeofday - $start) * 1000 if $main::perfdbg;
 };
 
 #
@@ -124,7 +124,7 @@ $DSC::db::func->{Pg}{write_data4} = sub {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}_${insert_suffix}";
-	my $start = Time::HiRes::gettimeofday;
+	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	my ($B, $C);
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -140,7 +140,7 @@ $DSC::db::func->{Pg}{write_data4} = sub {
 	}
 	$dbh->pg_endcopy;
 	printf "wrote $nl rows to $tabname in %d ms\n",
-	    (Time::HiRes::gettimeofday - $start) * 1000;
+	    (Time::HiRes::gettimeofday - $start) * 1000 if $main::perfdbg;
 };
 
 1;
