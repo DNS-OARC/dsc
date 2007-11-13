@@ -5,10 +5,6 @@ RM="rm -rf"
 TD=`mktemp -d /tmp/XXXXXXXXXX`
 trap '${RM} $TD' EXIT
 
-if test -f CVS/Root ; then
-	CVSROOT=`cat CVS/Root`
-	export CVSROOT
-fi
 ROOT=`svn info | awk '$1 == "Repository" && $2 == "Root:" {print $3}'`
 
 cd $TD
