@@ -17,9 +17,6 @@ cd $TD
 TS=`date +%Y%m%d%H%M`
 DIR="dsc-${TS}${BRANCH2}"
 
-echo $DIR
-exit 0
-
 svn export $ROOT/dsc/$BRANCH $DIR
 
 ${RM} $DIR/collector/update-tmfbase.sh
