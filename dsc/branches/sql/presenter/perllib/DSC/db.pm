@@ -25,9 +25,7 @@ BEGIN {
 		&data_index_names
 	);
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-	@EXPORT_OK   = qw(
-		$key_type
-	);
+	@EXPORT_OK   = qw();
 }
 use vars      qw($datasource $username $password);
 use vars      @EXPORT;
@@ -40,7 +38,6 @@ END { }
 $datasource = undef;
 $username = undef;
 $password = undef;
-$key_type = 'VARCHAR(1024)';
 
 sub get_dbh {
     my %attrs = @_;
@@ -63,16 +60,18 @@ sub get_dbh {
 # non-driver-dependent db initialization
 sub generic_init_db($) {
     my ($dbh) = @_;
+    my $key_type = value('key_type', $dbh);
+    my $id_type = value('id_type', $dbh);
 
     $dbh->do("CREATE TABLE server (" .
-	"server_id   SMALLINT NOT NULL, " .
+	"server_id   $id_type NOT NULL, " .
 	"name        $key_type NOT NULL, " .
 	"CONSTRAINT server_pkey PRIMARY KEY (server_id), " .
 	"CONSTRAINT server_name_key UNIQUE (name))");
 
     $dbh->do("CREATE TABLE node (" .
-	"node_id     SMALLINT NOT NULL, " .
-	"server_id   SMALLINT NOT NULL, " .
+	"node_id     $id_type NOT NULL, " .
+	"server_id   $id_type NOT NULL, " .
 	"name        $key_type NOT NULL, " .
 	"CONSTRAINT node_pkey PRIMARY KEY (node_id), " .
 	"CONSTRAINT node_server_id_fkey FOREIGN KEY (server_id) " .
@@ -82,8 +81,8 @@ sub generic_init_db($) {
     $dbh->do("CREATE TABLE loaded_files (" .
 	"time        INTEGER NOT NULL, " .
 	"dataset     $key_type NOT NULL, " .
-	"server_id   SMALLINT NOT NULL, " .
-	"node_id     SMALLINT NOT NULL)");
+	"server_id   $id_type NOT NULL, " .
+	"node_id     $id_type NOT NULL)");
     $dbh->do("CREATE INDEX loaded_files_time ON loaded_files(time)");
 };
 
@@ -93,15 +92,23 @@ sub dofunc {
     my $funcname = shift;
     my $dbh = shift || die "missing dbh parameter in $funcname";
     my $drvname = $dbh->{Driver}->{Name};
-    my $func = $DSC::db::func->{$drvname}{$funcname};
+    my $func = $DSC::db::specific->{$drvname}{$funcname};
     if (!defined $func) {
-	$func = $DSC::db::default_func{$funcname};
+	$func = $DSC::db::default{$funcname};
 	if (!defined $func) {
 	    die "$funcname is not defined for driver $drvname\n";
 	}
-	$DSC::db::func{$drvname}{$funcname} = $func; # cache it
+	$DSC::db::specific{$drvname}{$funcname} = $func; # cache it
     }
     return &{$func}($dbh, @_);
+}
+
+sub value {
+    my $name = shift;
+    my $dbh = shift || die "missing dbh parameter in $name";
+    my $drvname = $dbh->{Driver}->{Name};
+    return $DSC::db::specific->{$drvname}{$name} || $DSC::db::default{$name}
+	|| die "no value for $name";
 }
 
 sub specific_init_db    { dofunc('specific_init_db', @_); }
@@ -119,11 +126,15 @@ sub write_data2         { dofunc('write_data2', @_); }
 sub write_data3         { dofunc('write_data3', @_); }
 sub write_data4         { dofunc('write_data4', @_); }
 
-# $DSC::db::default_func contains default implementations of those
-# operations that can be done portably.
-# $DSC::db::func{$driver_name} contains driver-specific implementations.
+# $DSC::db::default contains default values and function definitions.
+# of those operations that can be done portably.
+# $DSC::db::specific{$driver_name} contains driver-specific values and
+# function definitions.
 
-%DSC::db::default_func = (
+%DSC::db::default = (
+
+key_type => 'VARCHAR(1024)',
+id_type => 'SMALLINT',
 
 # Create db table(s) for a dataset.
 # A dataset is split across two tables:
@@ -141,12 +152,14 @@ sub write_data4         { dofunc('write_data4', @_); }
 #
 create_data_table => sub {
     my ($dbh, $tabname, $dbkeys) = @_;
+    my $key_type = value('key_type', $dbh);
+    my $id_type = value('id_type', $dbh);
 
     print STDERR "creating table $tabname\n";
     my $def =
 	"(" .
-	"  server_id     SMALLINT NOT NULL, " .
-	"  node_id       SMALLINT NOT NULL, " .
+	"  server_id     $id_type NOT NULL, " .
+	"  node_id       $id_type NOT NULL, " .
 	"  start_time    INTEGER NOT NULL, " . # unix timestamp
 	# "duration      INTEGER NOT NULL, " . # seconds
 	(join '', map("$_ $key_type NOT NULL, ", grep(/^key/, @$dbkeys))) .

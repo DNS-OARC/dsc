@@ -20,9 +20,9 @@ use vars      @EXPORT_OK;
 
 END { }
 
-$DSC::db::key_type = 'VARCHAR';
+$DSC::db::specific->{Pg}{key_type} = 'VARCHAR'; # postgres doesn't need max size
 
-$DSC::db::func->{Pg}{specific_init_db} = sub {
+$DSC::db::specific->{Pg}{specific_init_db} = sub {
     my ($dbh) = @_;
 
     $dbh->do('CREATE SEQUENCE seq_server_id');
@@ -34,7 +34,7 @@ $DSC::db::func->{Pg}{specific_init_db} = sub {
 	'nextval(\'seq_node_id\')');
 };
 
-$DSC::db::func->{Pg}{table_exists} = sub {
+$DSC::db::specific->{Pg}{table_exists} = sub {
     my ($dbh, $tabname) = @_;
     my $sth = $dbh->prepare_cached(
 	"SELECT 1 FROM pg_tables WHERE tablename = ?");
@@ -45,14 +45,14 @@ $DSC::db::func->{Pg}{table_exists} = sub {
 };
 
 # returns a reference to an array of data table names
-$DSC::db::func->{Pg}{data_table_names} = sub {
+$DSC::db::specific->{Pg}{data_table_names} = sub {
     my ($dbh) = @_;
     return $dbh->selectcol_arrayref("SELECT viewname FROM pg_views " .
 	"WHERE schemaname = 'dsc' AND viewname LIKE 'dsc_%'");
 };
 
 # returns a reference to an array of data table index names
-$DSC::db::func->{Pg}{data_index_names} = sub {
+$DSC::db::specific->{Pg}{data_index_names} = sub {
     my ($dbh) = @_;
     return $dbh->selectcol_arrayref("SELECT indexname FROM pg_indexes " .
 	"WHERE schemaname = 'dsc' AND indexname LIKE 'dsc_%'");
@@ -61,7 +61,7 @@ $DSC::db::func->{Pg}{data_index_names} = sub {
 #
 # write 1-dimensional hash with time to table with 1 minute buckets
 #
-$DSC::db::func->{Pg}{write_data} = sub {
+$DSC::db::specific->{Pg}{write_data} = sub {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}";
@@ -82,7 +82,7 @@ $DSC::db::func->{Pg}{write_data} = sub {
 
 # write 1-dimensional hash without time to table with 1 day buckets
 #
-$DSC::db::func->{Pg}{write_data2} = sub {
+$DSC::db::specific->{Pg}{write_data2} = sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}";
 	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
@@ -99,7 +99,7 @@ $DSC::db::func->{Pg}{write_data2} = sub {
 
 # write 2-dimensional hash without time to table with 1 day buckets
 #
-$DSC::db::func->{Pg}{write_data3} = sub {
+$DSC::db::specific->{Pg}{write_data3} = sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}";
 	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
@@ -119,7 +119,7 @@ $DSC::db::func->{Pg}{write_data3} = sub {
 #
 # write 2-dimensional hash with time to table with 1 minute buckets
 #
-$DSC::db::func->{Pg}{write_data4} = sub {
+$DSC::db::specific->{Pg}{write_data4} = sub {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
 	my $tabname = "dsc_${type}";
