@@ -259,12 +259,13 @@ sub extract_xml($$$) {
 	    $dbh->do("DELETE FROM ${tabname}_old $where_clause");
 	}
 
+	my $insert_suffix;
 	if ($archivable && !$withtime) {
 	    # write full 1-day dataset directly to _old table
-	    $DSC::db::insert_suffix = 'old';
+	    $insert_suffix = 'old';
 	} else {
 	    # quickly write 1-minute or partial day dataset to _new table
-	    $DSC::db::insert_suffix = 'new';
+	    $insert_suffix = 'new';
 	}
 
 	# merge/combine
@@ -287,8 +288,8 @@ sub extract_xml($$$) {
 
 	# write out the new data
 	#
-	&{$O->{data_writer}}($dbh, \%db, $output, $server_id, $node_id,
-	    $bucket_time);
+	&{$O->{data_writer}}($dbh, \%db, "${output}_${insert_suffix}",
+	    $server_id, $node_id, $bucket_time);
 
 	if ($archivable) {
 	    # Move old data from _new table to _old table.  We do this even

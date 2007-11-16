@@ -87,7 +87,6 @@ my $outfile = "$DATADIR/$PROG.stdout";
 
 my $dbh = get_dbh || die;
 $dbh->{RaiseError} = 1;
-$DSC::db::insert_suffix = 'old';
 
 if (@{data_index_names($dbh)}) {
     print "Warning: indexes on data tables may make import very slow.\n";
@@ -174,7 +173,7 @@ for my $server (sort { $a cmp $b } @servers) {
 
 		    my %data;
 		    &{$O->{flat_reader}}(\%data, $datafile);
-		    &{$O->{data_writer}}($dbh, \%data, $output,
+		    &{$O->{data_writer}}($dbh, \%data, "${output}_old",
 			$server_id, $node_id, $day);
 		    $totalimported++;
 		    $imported++;

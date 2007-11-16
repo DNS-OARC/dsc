@@ -1,7 +1,6 @@
 package DSC::extractor;
 
 use DBI;
-use DSC::db qw($insert_suffix);
 use POSIX;
 use Time::HiRes; # XXX for debugging
 
@@ -65,7 +64,7 @@ $DSC::db::func->{Pg}{data_index_names} = sub {
 $DSC::db::func->{Pg}{write_data} = sub {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_${type}_${insert_suffix}";
+	my $tabname = "dsc_${type}";
 	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -85,7 +84,7 @@ $DSC::db::func->{Pg}{write_data} = sub {
 #
 $DSC::db::func->{Pg}{write_data2} = sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_${type}_${insert_suffix}";
+	my $tabname = "dsc_${type}";
 	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -102,7 +101,7 @@ $DSC::db::func->{Pg}{write_data2} = sub {
 #
 $DSC::db::func->{Pg}{write_data3} = sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_${type}_${insert_suffix}";
+	my $tabname = "dsc_${type}";
 	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	$dbh->do("COPY $tabname FROM STDIN");
@@ -123,7 +122,7 @@ $DSC::db::func->{Pg}{write_data3} = sub {
 $DSC::db::func->{Pg}{write_data4} = sub {
 	# parameter $t is ignored.
 	my ($dbh, $A, $type, $server_id, $node_id, $t) = @_;
-	my $tabname = "dsc_${type}_${insert_suffix}";
+	my $tabname = "dsc_${type}";
 	my $start = Time::HiRes::gettimeofday if $main::perfdbg;
 	my $nl = 0;
 	my ($B, $C);

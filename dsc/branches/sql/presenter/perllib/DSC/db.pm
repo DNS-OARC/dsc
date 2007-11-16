@@ -26,7 +26,6 @@ BEGIN {
 	);
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 	@EXPORT_OK   = qw(
-		$insert_suffix
 		$key_type
 	);
 }
@@ -41,7 +40,6 @@ END { }
 $datasource = undef;
 $username = undef;
 $password = undef;
-$insert_suffix = 'new';
 $key_type = 'VARCHAR(1024)';
 
 sub get_dbh {
