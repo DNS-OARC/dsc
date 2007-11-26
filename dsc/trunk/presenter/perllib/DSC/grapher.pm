@@ -1207,6 +1207,7 @@ sub navbar_servers_nodes {
 	foreach my $server ( keys %{$CFG->{servers}} ) {
 		#print STDERR "server=$server\n";
 		$snippet .= "<li>" . navbar_item('server',$server,$server);
+		next if $CFG->{'hide_nodes'};
 		if ($ARGS{server} eq $server) {
 			foreach my $node (@{$CFG->{servers}{$server}}) {
 				$snippet .= '<li>' . sublist_item();

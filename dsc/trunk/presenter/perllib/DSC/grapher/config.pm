@@ -44,6 +44,9 @@ sub read_config {
 		if ($directive eq 'no_http_header') {
 			$CONFIG{$directive} = 1;
 		}
+		if ($directive eq 'hide_nodes') {
+			$CONFIG{$directive} = 1;
+		}
 		if ($directive eq 'timezone') {
 			$ENV{TZ} = $x[0];
 		}
