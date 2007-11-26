@@ -323,7 +323,7 @@ to determine that userid yet, so you must change the ownership manually:
 \end{MyVerbatim}
 
 Furthermore, you probably want to make sure the log file does not
-grow indefinately.  For example, on FreeBSD we add this line to \path|/etc/newsyslog.conf|:
+grow indefinitely.  For example, on FreeBSD we add this line to \path|/etc/newsyslog.conf|:
 
 \begin{MyVerbatim}
 /usr/local/dsc/var/log/put-file.log nobody:wheel        644  10    *    @T00  BN
@@ -770,7 +770,7 @@ example:
 
 \path|upload-x509.sh| looks for X.509 certificates in
 \path|/usr/local/dsc/certs|.  The client certificate should be named
-\path|/usr/local/dsc/certs/DEST/NODE.pem| and the CA certficiate
+\path|/usr/local/dsc/certs/DEST/NODE.pem| and the CA certificate
 should be named
 \path|/usr/local/dsc/certs/DEST/cacert.pem|.  Note that {\em DEST\/}
 and {\em NODE\/} must match the \path|upload-x509.sh|
@@ -1083,6 +1083,16 @@ required:
 	is currently hard-coded and designed only for IPv4 addresses.
 	It masks off the lower 24 bits and leaves only the first octet
 	in place.
+\item[hide\_nodes]
+	When the {\em hide\_nodes\/} directive is given, the presenter
+	will not display the list node names underneath the current
+	server.  This might be useful if you have a number of nodes
+	but only want viewers to see the server as a whole, without
+	exposing the particular nodes in the cluster.  Note, however,
+	that if someone already knows the name of a node they can
+	hand-craft query terms in the URL to display the data for
+	only that node.  In other words, the {\em hide\_nodes\/}
+	only provides ``security through obscurity.''
 \end{description}
 
 
@@ -1221,7 +1231,7 @@ ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
 
 {\dsc} includes only minimal support for collecting IP-layer
 stats.  Mostly we are interested in finding out the mix of
-IP protocols recieved by the DNS server.  It can also show us
+IP protocols received by the DNS server.  It can also show us
 if/when the DNS server is the subject of denial-of-service
 attack.
 Table~\ref{tbl-ip-indexers} shows the indexers for IP packets.
@@ -1549,12 +1559,12 @@ Please see
 for more sample XML files.
 
 The XML is not very strict and might cause XML purists to cringe.
-{\tt dsc} writes the XML files the old-fasioned way (with printf())
+{\tt dsc} writes the XML files the old-fashioned way (with printf())
 and reads them with Perl's XML::Simple module.
 Here is a possibly-valid DTD for the dataset XML format.
 Note, however, that the {\em LABEL1\/}
 and {\em LABEL2\/} strings are different
-for each dataaset:
+for each dataset:
 
 \begin{MyVerbatim}
 <!DOCTYPE ARRAY [  
