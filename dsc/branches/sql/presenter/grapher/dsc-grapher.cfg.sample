@@ -23,10 +23,11 @@ domain_list all_tlds arpa .
 valid_domains f-root all_tlds
 
 
-dbi_datasource DBI:Pg:dbname=postgres
+## Uncomment and optionally edit one of the dbi_datasource lines below.
+#dbi_datasource DBI:Pg:dbname=postgres
+#dbi_datasource DBI:mysql:dbname=dsc;mysql_local_infile=1
 
 # This may be a user with read-only access.
 dbi_username dsc
-
-#dbi_password secret
+dbi_password secret
 

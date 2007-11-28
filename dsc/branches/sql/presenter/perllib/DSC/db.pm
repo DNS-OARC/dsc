@@ -41,7 +41,7 @@ $password = undef;
 
 sub get_dbh {
     my %attrs = @_;
-    my %defaults = (AutoCommit => 0);
+    my %defaults = (AutoCommit => 0, RaiseError => 1, PrintError => 0);
     while (my ($key, $value) = each %defaults) {
 	$attrs{$key} = $value if (!defined $attrs{$key});
     }
@@ -60,19 +60,20 @@ sub get_dbh {
 # non-driver-dependent db initialization
 sub generic_init_db($) {
     my ($dbh) = @_;
-    my $key_type = value('key_type', $dbh);
+    my $name_type = value('name_type', $dbh);
     my $id_type = value('id_type', $dbh);
+    my $autoinc = value('autoinc', $dbh);
 
     $dbh->do("CREATE TABLE server (" .
-	"server_id   $id_type NOT NULL, " .
-	"name        $key_type NOT NULL, " .
+	"server_id   $id_type NOT NULL $autoinc, " .
+	"name        $name_type NOT NULL, " .
 	"CONSTRAINT server_pkey PRIMARY KEY (server_id), " .
 	"CONSTRAINT server_name_key UNIQUE (name))");
 
     $dbh->do("CREATE TABLE node (" .
-	"node_id     $id_type NOT NULL, " .
+	"node_id     $id_type NOT NULL $autoinc, " .
 	"server_id   $id_type NOT NULL, " .
-	"name        $key_type NOT NULL, " .
+	"name        $name_type NOT NULL, " .
 	"CONSTRAINT node_pkey PRIMARY KEY (node_id), " .
 	"CONSTRAINT node_server_id_fkey FOREIGN KEY (server_id) " .
 	    "REFERENCES server (server_id), " .
@@ -80,7 +81,7 @@ sub generic_init_db($) {
 
     $dbh->do("CREATE TABLE loaded_files (" .
 	"time        INTEGER NOT NULL, " .
-	"dataset     $key_type NOT NULL, " .
+	"dataset     $name_type NOT NULL, " .
 	"server_id   $id_type NOT NULL, " .
 	"node_id     $id_type NOT NULL)");
     $dbh->do("CREATE INDEX loaded_files_time ON loaded_files(time)");
@@ -133,8 +134,14 @@ sub write_data4         { dofunc('write_data4', @_); }
 
 %DSC::db::default = (
 
+name_type => 'VARCHAR(256)',
 key_type => 'VARCHAR(1024)',
 id_type => 'SMALLINT',
+autoinc => '',
+
+specific_init_db => sub {
+    # do nothing
+},
 
 # Create db table(s) for a dataset.
 # A dataset is split across two tables:
@@ -231,8 +238,10 @@ get_node_id => sub {
 
 #
 # read from a db table into a hash
-# TODO: if the requested time range does not overlap the ${tabname}_new table,
-# we can omit that table from the query.
+# Some db query optimizers don't do very well when selecting from a view that
+# is a union of _old and _new tables (mysql is particularly bad).  We can get
+# more predictable performance by doing simple queries on _old and _new
+# separately, and merging the results in perl.
 #
 read_data => sub {
 	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time,
@@ -244,38 +253,42 @@ read_data => sub {
 	my $needgroup = !$nogroup ||
 	    !defined $node_id && !(grep /^node_id/, @$dbkeys);
 	my @params = ();
-	my $sql = 'SELECT ' . join(', ', @$dbkeys);
-	$sql .= $needgroup ? ', SUM(count) ' : ', count ';
-	$sql .= "FROM $tabname WHERE ";
+	my $sql1 = 'SELECT ' . join(', ', @$dbkeys);
+	$sql1 .= $needgroup ? ', SUM(count) ' : ', count ';
+	$sql1 .= "FROM ${tabname}_";
+	my $sql2 = " WHERE ";
 	if (defined $end_time) {
-	    $sql .= 'start_time >= ? AND start_time < ? ';
+	    $sql2 .= 'start_time >= ? AND start_time < ? ';
 	    push @params, $start_time, $end_time;
 	} else {
-	    $sql .= 'start_time = ? ';
+	    $sql2 .= 'start_time = ? ';
 	    push @params, $start_time;
 	}
-	$sql .= 'AND server_id = ? ';
+	$sql2 .= 'AND server_id = ? ';
 	push @params, $server_id;
 	if (defined $node_id) {
-	    $sql .= 'AND node_id = ? ';
+	    $sql2 .= 'AND node_id = ? ';
 	    push @params, $node_id;
 	}
 	if ($where) {
-	    $sql .= 'AND ' . $where . ' ';
+	    $sql2 .= 'AND ' . $where . ' ';
 	}
-	$sql .= 'GROUP BY ' . join(', ', @$dbkeys) if ($needgroup);
-	# print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
-	$sth = $dbh->prepare($sql);
-	$sth->execute(@params);
+	$sql2 .= 'GROUP BY ' . join(', ', @$dbkeys) if ($needgroup);
 
-	while (my @row = $sth->fetchrow_array) {
-	    $nl++;
-	    if (scalar @$dbkeys == 1) {
-		$href->{$row[0]} = $row[1];
-	    } elsif (scalar @$dbkeys == 2) {
-		$href->{$row[0]}{$row[1]} = $row[2];
-	    } elsif (scalar @$dbkeys == 3) {
-		$href->{$row[0]}{$row[1]}{$row[2]} = $row[3];
+	for my $sfx ('old', 'new') {
+	    my $sql = $sql1 . $sfx . $sql2;
+	    # print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	    $sth = $dbh->prepare($sql);
+	    $sth->execute(@params);
+	    while (my @row = $sth->fetchrow_array) {
+		$nl++;
+		if (scalar @$dbkeys == 1) {
+		    $href->{$row[0]} += $row[1];
+		} elsif (scalar @$dbkeys == 2) {
+		    $href->{$row[0]}{$row[1]} += $row[2];
+		} elsif (scalar @$dbkeys == 3) {
+		    $href->{$row[0]}{$row[1]}{$row[2]} += $row[3];
+		}
 	    }
 	}
 	$dbh->commit;
