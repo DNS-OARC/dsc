@@ -1,6 +1,7 @@
-dbi_datasource DBI:Pg:dbname=postgres
+## Uncomment and optionally edit one of the dbi_datasource lines below.
+#dbi_datasource DBI:Pg:dbname=postgres
+#dbi_datasource DBI:mysql:dbname=dsc;mysql_local_infile=1
 
-# The named user must have write access to the database.
+## The named user must have write access to the database.
 dbi_username dsc
-
-#dbi_password secret
+dbi_password secret
