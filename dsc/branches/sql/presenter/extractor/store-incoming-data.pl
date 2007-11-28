@@ -167,7 +167,7 @@ sub extract_xml($$$) {
     die "no extractor for $dataset\n" unless defined($EX);
 
     my $sth = $dbh->prepare("SELECT 1 " . from_dummy($dbh) .
-	"WHERE EXISTS (SELECT 1 " .
+	" WHERE EXISTS (SELECT 1 " .
 	"FROM loaded_files WHERE time = ? AND " .
 	"dataset = ? AND " .
 	"server_id = ? AND node_id = ?)");
