@@ -104,9 +104,9 @@ want to create special {\em dsc\/} userids on both ends as well.
 \subsection{The Extractor}
 
 The XML extractor is a Perl script that reads the XML files from
-{\tt dsc\/} and stores the data in a PostgreSQL database for fast access
-by the graphing tools.
-Support for other databases are planned for the future.
+{\tt dsc\/} and stores the data in a PostgreSQL or MySQL database
+for fast access by the graphing tools.
+Support for other databases may be added in the future.
 
 \subsection{The Grapher}
 
@@ -214,20 +214,21 @@ Download\/} page has links to some pre-compiled binaries and packages.
 FreeBSD and NetBSD users can find Ploticus in the ports/packages
 collection.
 
-\section{Install and Configure PostgreSQL}
+\section{Install and Configure Database Server}
 
-{\dsc} uses PostgreSQL to store data for fast access.  You can find
-this software at \verb|http://www.postgresql.org/|.
+You may choose PostgreSQL or MySQL to store {\dsc} data.
+
+\subsection{PostgreSQL}
+You can find
+PostgreSQL software at \verb|http://www.postgresql.org/|.
 FreeBSD and NetBSD users can find PostgreSQL in the ports/packages
 collection.
-
+Although the postgres server and web server do not need to run on the same host,
+doing so will likely give better performance.
 Once PostgreSQL is installed, you must configure it as follows.
 See the PostgreSQL documentation for details.
 
 \begin{itemize}
-\item
-    We recommend enabling autovacuum, or writing a script to periodically run
-    {\tt VACUUM ANALYZE}.
 \item
     We recommend editing \path|pg_hba.conf| to change each method from
     {\tt trust} to {\tt md5}.
@@ -250,7 +251,53 @@ See the PostgreSQL documentation for details.
 \item
     For extra security, you may create a second user with read-only access
     to the {\tt dsc} schema, for use by the grapher.
+\item
+    We recommend enabling autovacuum, or writing a cron job to periodically run
+    {\tt VACUUM ANALYZE}.
 \end{itemize}
+
+\subsection{MySQL}
+You can find
+MySQL software at \verb|http://www.mysql.com/|.
+FreeBSD and NetBSD users can find MySQL in the ports/packages
+collection.
+The server must be built with support for the InnoDB engine (this should be
+true by default).
+The mysqld server and web server must run on the same host because
+they use {\tt LOAD DATA LOCAL INFILE}.
+Once MySQL is installed, you must configure it as follows.
+See the MySQL documentation for details.
+
+\begin{itemize}
+\item
+    We recommend assigning a password to the {\tt root} user.
+\item
+    Make sure the InnoDB data and indexes are stored on a large partition with
+    plenty of free space.
+    See the MySQL documentation for the {\tt innodb\_data\_file\_path}
+    configuration option.
+    Note that a typical {\dsc} installation for a large DNS root server
+    requires about 4GB to hold a year's worth of data.
+\item
+    Execute the following MySQL commands:
+\begin{MyVerbatim}[commandchars=\\\{\}]
+CREATE DATABASE dsc;
+CREATE USER dsc IDENTIFIED BY '{\it password}';
+GRANT ALL ON dsc.* TO dsc;
+\end{MyVerbatim}
+\item
+    For extra security, you may create a second user with read-only access
+    to the {\tt dsc} schema, for use by the grapher.
+\item
+    We recommend writing a cron job to periodically analyze tables in the dsc
+    database, e.g. with the shell command
+\begin{MyVerbatim}
+mysqlcheck -a -u dsc -B dsc
+\end{MyVerbatim}
+\end{itemize}
+
+
+\section{Initialize {\dsc} Database}
 
 Execute the following shell commands:
 \begin{MyVerbatim}
@@ -258,13 +305,16 @@ Execute the following shell commands:
 % cp extractor/dsc-extractor.cfg.sample /usr/local/dsc/etc/dsc-extractor.cfg
 \end{MyVerbatim}
 
-Then, edit \path|/usr/local/dsc/etc/dsc-extractor.cfg| to set the
+Edit \path|/usr/local/dsc/etc/dsc-extractor.cfg| to set the
 {\tt dbi\_datasource}, {\tt dbi\_username}, and {\tt dbi\_password}
 directives.
 The value of {\tt dbi\_datasource} must be a DBI data source name
-beginning with ``{\tt DBI:Pg:}''.
-The value of {\tt dbi\_username} must be the name of a database 
-user with read/write access to the {\tt dsc} schema.
+beginning with ``{\tt DBI:Pg:}'' (for PostgreSQL)
+or ``{\tt DBI:mysql:}'' (for MySQL).
+The value of {\tt dbi\_username} should be ``{\tt dsc}'' (or any other
+database user with permission to select, update, insert, delete, and
+create tables in the {\tt dsc} schema).  Then run the following
+shell command:
 
 \begin{MyVerbatim}
 % ./extractor/init-db.pl
@@ -314,7 +364,7 @@ Note that {\dsc}'s Perl modules are installed in the
 ``site\_perl'' directory.  You'll probably need {\em root\/}
 privileges to install files there.
 
-\section{CGI Symbolic Links}
+\section{CGI Setup}
 
 {\dsc} has a couple of CGI scripts that are installed
 into \path|/usr/local/dsc/libexec|.  You should add symbolic
@@ -380,8 +430,14 @@ All users should run the following command to create database indexes.
 \begin{MyVerbatim}
 % ./extractor/create-indexes.pl
 \end{MyVerbatim}
-If you imported old data, you will probably also want to run the postgres
-command ``{\tt VACUUM ANALYZE}'' now.
+If you imported old data, you will probably also want to analyze the tables
+now.
+\begin{itemize}
+\item
+    PostgreSQL: SQL command ``{\tt VACUUM ANALYZE}''
+\item
+    MySQL: shell command ``{\tt mysqladmin -a -uroot -p -B dsc}''
+\end{itemize}
 
 \section{/usr/local/dsc/data}
 
@@ -1132,7 +1188,8 @@ to read from the database:
 
 \begin{description}
 \item[dbi\_datasource]
-	Must be a DBI datasource descriptor beginning with ``DBI:Pg:''.
+	Must be a DBI datasource descriptor beginning with ``DBI:Pg:''
+	or ``DBI:mysql:''.
 \item[dbi\_username]
 	This may be the same ``dsc'' username used in 
 	\path|/usr/local/dsc/etc/dsc-extractor.cfg|,
@@ -1649,7 +1706,7 @@ XML file.
 
 Note that the contents of the XML file do not indicate
 where it came from.  In particular, the server and node that
-it came from are not present.  Instead, DSC relies on the
+it came from are not present.  Instead, {\dsc} relies on the
 presenter to store XML files in a directory hierarchy
 with the server and node as directory names.
 
