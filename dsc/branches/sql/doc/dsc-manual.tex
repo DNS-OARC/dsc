@@ -185,7 +185,6 @@ can find via CPAN:
 	\item Apache-DBI (Apache::DBI) (optional)
 	\item CGI-Untaint (CGI::Untaint)
 	\item CGI.pm (CGI)
-	\item DBD-Pg (DBD::Pg)
 	\item Digest-MD5 (Digest::MD5)
 	\item File-Flock (File::Flock)
 	\item File-Spec (File::Spec)
@@ -199,7 +198,12 @@ can find via CPAN:
 	\item Text-Template (Text::Template)
 	\item URI (URI::Escape)
 	\item XML-Simple (XML::Simple)
-
+\end{itemize}
+and one of the following modules, depending on your choice of database:
+\begin{itemize}
+\setlength{\itemsep}{0ex plus 0.5ex minus 0.0ex}
+	\item DBD-Pg (DBD::Pg)
+	\item DBD-mysql (DBD::mysql)
 \end{itemize}
 
 \noindent
@@ -298,6 +302,7 @@ mysqlcheck -a -u dsc -B dsc
 
 
 \section{Initialize {\dsc} Database}
+\label{sec-init-db}
 
 Execute the following shell commands:
 \begin{MyVerbatim}
@@ -305,16 +310,34 @@ Execute the following shell commands:
 % cp extractor/dsc-extractor.cfg.sample /usr/local/dsc/etc/dsc-extractor.cfg
 \end{MyVerbatim}
 
+\noindent
 Edit \path|/usr/local/dsc/etc/dsc-extractor.cfg| to set the
 {\tt dbi\_datasource}, {\tt dbi\_username}, and {\tt dbi\_password}
 directives.
-The value of {\tt dbi\_datasource} must be a DBI data source name
-beginning with ``{\tt DBI:Pg:}'' (for PostgreSQL)
-or ``{\tt DBI:mysql:}'' (for MySQL).
-The value of {\tt dbi\_username} should be ``{\tt dsc}'' (or any other
-database user with permission to select, update, insert, delete, and
-create tables in the {\tt dsc} schema).  Then run the following
-shell command:
+
+\begin{description}
+\item[dbi\_datasource]
+	Must be a DBI datasource descriptor beginning with ``DBI:Pg:''
+	or ``DBI:mysql:''.
+	MySQL users can make the driver read a configuration file
+	by appending
+	``{\tt ;mysql\_read\_default\_file={\it filename}}''
+	to the datasource.
+\item[dbi\_username]
+	This value should be ``{\tt dsc}'' (or any other database user with
+	permission to select, update, insert, delete, and
+	create tables in the {\tt dsc} schema).
+\item[dbi\_password]
+	Specifies the password corresponding to dbi\_username.
+	This directive may be omitted if the database
+	driver is able to determine the password by other means, e.g.
+	a PostgreSQL \path|~/.pgpass| file or
+	a MySQL configuration file specified with a
+	{\tt mysql\_read\_default\_file} datasource option.
+\end{description}
+
+\noindent
+Then run the following shell command:
 
 \begin{MyVerbatim}
 % ./extractor/init-db.pl
@@ -1183,21 +1206,13 @@ dbi_password secret
 Refer to Figure~\ref{fig-screenshot1} to see how
 the directives affect the visual display.
 
-The following directives are required to allow the grapher
-to read from the database:
-
-\begin{description}
-\item[dbi\_datasource]
-	Must be a DBI datasource descriptor beginning with ``DBI:Pg:''
-	or ``DBI:mysql:''.
-\item[dbi\_username]
-	This may be the same ``dsc'' username used in 
-	\path|/usr/local/dsc/etc/dsc-extractor.cfg|,
-	or for added security it may be another username with read-only
-	access to the dsc database.
-\item[dbi\_password]
-	Specifies the password corresponding to dbi\_username.
-\end{description}
+For a description of the
+{\tt dbi\_datasource}, {\tt dbi\_username}, and {\tt dbi\_password}
+directives, see Section \ref{sec-init-db}.
+The value of {\tt dbi\_username} may be the same as that used in 
+\path|/usr/local/dsc/etc/dsc-extractor.cfg|,
+or for added security it may be the name of another user with read-only
+access to the dsc database.
 
 The following three directives should always be set in
 the configuration file:
@@ -1845,7 +1860,8 @@ be the beginning of a UTC day.
 %\end{MyVerbatim}
 %
 
-Here is an example of some two-dimensional time series data:
+Here is an example of some data in the two-dimensional time series dataset
+direction\_vs\_ipproto:
 \begin{MyVerbatim}
 server_id   node_id   start_time  key1  key2   count
 ---------   -------   ----------  ----  ----   -----
