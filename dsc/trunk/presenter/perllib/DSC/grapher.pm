@@ -570,7 +570,7 @@ sub accum1d_plot {
 	Ploticus_categories(1);
 	my $areadef_opts = {
 		-title => $PLOT->{plottitle} . "\n" . time_descr(),
-		-rectangle => '1 1 6 6',
+		-rectangle => '2 1 7 6',
 		-yscaletype => 'categories',
 		-xstackfields => '2',
 	};
