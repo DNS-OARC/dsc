@@ -108,8 +108,9 @@ sub value {
     my $name = shift;
     my $dbh = shift || die "missing dbh parameter in $name";
     my $drvname = $dbh->{Driver}->{Name};
-    return $DSC::db::specific->{$drvname}{$name} || $DSC::db::default{$name}
-	|| die "no value for $name";
+    return $DSC::db::specific->{$drvname}{$name} if defined $DSC::db::specific->{$drvname}{$name};
+    return $DSC::db::default{$name} if defined $DSC::db::default{$name};
+    die "no value for $name";
 }
 
 sub specific_init_db    { dofunc('specific_init_db', @_); }
@@ -138,6 +139,7 @@ name_type => 'VARCHAR(256)',
 key_type => 'VARCHAR(1024)',
 id_type => 'SMALLINT',
 autoinc => '',
+usegroup => 1,
 
 specific_init_db => sub {
     # do nothing
@@ -254,6 +256,7 @@ read_data => sub {
 
 	my $needgroup = !$nogroup ||
 	    !defined $node_id && !(grep /^node_id/, @$dbkeys);
+	$needgroup &&= value('usegroup', $dbh);
 	my @params = ();
 	my $sql1 = 'SELECT ' . join(', ', @$dbkeys);
 	$sql1 .= $needgroup ? ', SUM(count) ' : ', count ';

@@ -25,6 +25,7 @@ $DSC::db::specific->{mysql} = {
 
 id_type => 'TINYINT', # smaller than SMALLINT
 autoinc => 'AUTO_INCREMENT',
+usegroup => 0, # mysql/innodb is slower than perl at grouping and summing
 
 from_dummy => sub {
     "FROM DUAL";
