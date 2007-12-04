@@ -25,7 +25,7 @@ valid_domains f-root all_tlds
 
 ## Uncomment and optionally edit one of the dbi_datasource lines below.
 #dbi_datasource DBI:Pg:dbname=postgres
-#dbi_datasource DBI:mysql:dbname=dsc;mysql_local_infile=1
+#dbi_datasource DBI:mysql:dbname=dsc
 
 # This may be a user with read-only access.
 dbi_username dsc
