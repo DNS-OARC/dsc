@@ -250,13 +250,15 @@ read_data => sub {
 	my $tabname = "dsc_$type";
 	my $sth;
 
+	my $drvname = $dbh->{Driver}->{Name};
+
 	my $needgroup = !$nogroup ||
 	    !defined $node_id && !(grep /^node_id/, @$dbkeys);
 	my @params = ();
 	my $sql1 = 'SELECT ' . join(', ', @$dbkeys);
 	$sql1 .= $needgroup ? ', SUM(count) ' : ', count ';
 	$sql1 .= "FROM ${tabname}_";
-	my $sql2 = " WHERE ";
+	my $sql2 = ' WHERE ';
 	if (defined $end_time) {
 	    $sql2 .= 'start_time >= ? AND start_time < ? ';
 	    push @params, $start_time, $end_time;
@@ -276,8 +278,10 @@ read_data => sub {
 	$sql2 .= 'GROUP BY ' . join(', ', @$dbkeys) if ($needgroup);
 
 	for my $sfx ('old', 'new') {
-	    my $sql = $sql1 . $sfx . $sql2;
-	    # print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	    my $post_table_func = $DSC::db::specific->{$drvname}{read_data_post_table};
+	    my $post_table = $post_table_func ? &{$post_table_func}("${tabname}_${sfx}") : '';
+	    my $sql = $sql1 . $sfx . $post_table . $sql2;
+	    print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	    $sth = $dbh->prepare($sql);
 	    $sth->execute(@params);
 	    while (my @row = $sth->fetchrow_array) {

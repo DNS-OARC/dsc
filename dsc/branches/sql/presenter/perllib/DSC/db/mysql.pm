@@ -76,6 +76,12 @@ data_index_names => sub {
 	"WHERE table_schema = 'dsc' AND index_name LIKE 'dsc_%'");
 },
 
+# returns an index hint, because mysql sometimes chooses badly
+read_data_post_table => sub {
+    my ($tabname) = @_;
+    return $tabname =~ /_old$/ ? " /*! USE INDEX(${tabname}_time) */" : '';
+},
+
 #
 # write 1-dimensional hash with time to table with 1 minute buckets
 #
