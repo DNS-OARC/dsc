@@ -88,16 +88,21 @@
 #define IP_OFFMASK 0x1fff
 #endif
 
-#define MAX_N_PCAP 10
-static int n_pcap = 0;
+struct _interface {
+	pcap_t *pcap;
+	int fd;
+	void (*handle_datalink) (const u_char *, int, transport_message *);
+};
+
+#define MAX_N_INTERFACES 10
+static int n_interfaces = 0;
 static int n_pcap_offline = 0;
-static pcap_t **pcap = NULL;
+static struct _interface *interfaces = NULL;
 static fd_set pcap_fdset;
 static int max_pcap_fds = 0;
 static unsigned short port53;
 
 char *bpf_program_str = NULL;
-void (*handle_datalink) (const u_char * pkt, int len, transport_message *tm) = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
 extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm,
@@ -827,6 +832,7 @@ void
 handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     transport_message tm;
+    struct _interface *i = (struct _interface *) udata;
 
 #if 0 /* enable this to test code with unaligned headers */
     char buf[PCAP_SNAPLEN+1];
@@ -844,7 +850,7 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
     tm.ts = hdr->ts;
-    handle_datalink(pkt, hdr->caplen, &tm);
+    i->handle_datalink(pkt, hdr->caplen, &tm);
 #if 0
     if (debug_flag && --debug_count == 0)
 	exit(0);
@@ -879,15 +885,16 @@ Pcap_init(const char *device, int promisc)
     struct bpf_program fp;
     int readfile_state = 0;
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *new_pcap;
     int x;
+    struct _interface *i;
 
-    if (pcap == NULL) {
-	pcap = xcalloc(MAX_N_PCAP, sizeof(*pcap));
+    if (interfaces == NULL) {
+	interfaces = xcalloc(MAX_N_INTERFACES, sizeof(*interfaces));
 	FD_ZERO(&pcap_fdset);
     }
-    assert(pcap);
-    assert(n_pcap < MAX_N_PCAP);
+    assert(interfaces);
+    assert(n_interfaces < MAX_N_INTERFACES);
+    i = &interfaces[n_interfaces];
 
     port53 = 53;
     last_ts.tv_sec = last_ts.tv_usec = 0;
@@ -895,63 +902,64 @@ Pcap_init(const char *device, int promisc)
     if (0 == stat(device, &sb))
 	readfile_state = 1;
     if (readfile_state) {
-	new_pcap = pcap_open_offline(device, errbuf);
+	i->pcap = pcap_open_offline(device, errbuf);
     } else {
-	new_pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1000, errbuf);
+	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1000, errbuf);
     }
-    if (NULL == new_pcap) {
+    if (NULL == i->pcap) {
 	syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
 	exit(1);
     }
     memset(&fp, '\0', sizeof(fp));
-    x = pcap_compile(new_pcap, &fp, bpf_program_str, 1, 0);
+    x = pcap_compile(i->pcap, &fp, bpf_program_str, 1, 0);
     if (x < 0) {
-	syslog(LOG_ERR, "pcap_compile failed: %s", pcap_geterr(new_pcap));
+	syslog(LOG_ERR, "pcap_compile failed: %s", pcap_geterr(i->pcap));
 	exit(1);
     }
-    x = pcap_setfilter(new_pcap, &fp);
+    x = pcap_setfilter(i->pcap, &fp);
     if (x < 0) {
-	syslog(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(new_pcap));
+	syslog(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(i->pcap));
 	exit(1);
     }
-    switch (pcap_datalink(new_pcap)) {
+    switch (pcap_datalink(i->pcap)) {
     case DLT_EN10MB:
-	handle_datalink = handle_ether;
+	i->handle_datalink = handle_ether;
 	break;
 #if USE_PPP
     case DLT_PPP:
-	handle_datalink = handle_ppp;
+	i->handle_datalink = handle_ppp;
 	break;
 #endif
 #ifdef DLT_LOOP
     case DLT_LOOP:
-	handle_datalink = handle_loop;
+	i->handle_datalink = handle_loop;
 	break;
 #endif
 #ifdef DLT_RAW
     case DLT_RAW:
-	handle_datalink = handle_raw;
+	i->handle_datalink = handle_raw;
 	break;
 #endif
     case DLT_NULL:
-	handle_datalink = handle_null;
+	i->handle_datalink = handle_null;
 	break;
     default:
 	syslog(LOG_ERR, "unsupported data link type %d",
-	    pcap_datalink(new_pcap));
+	    pcap_datalink(i->pcap));
 	exit(1);
 	break;
     }
-    if (pcap_file(new_pcap)) {
+    if (pcap_file(i->pcap)) {
 	n_pcap_offline++;
     } else {
+	i->fd = pcap_get_selectable_fd(i->pcap);
 	if (debug_flag)
-	    fprintf(stderr, "Pcap_init: FD_SET %d\n", pcap_fileno(new_pcap));
-	FD_SET(pcap_fileno(new_pcap), &pcap_fdset);
-	if (pcap_fileno(new_pcap) >= max_pcap_fds)
-	    max_pcap_fds = pcap_fileno(new_pcap) + 1;
+	    fprintf(stderr, "Pcap_init: FD_SET %d\n", i->fd);
+	FD_SET(i->fd, &pcap_fdset);
+	if (i->fd >= max_pcap_fds)
+	    max_pcap_fds = i->fd + 1;
     }
-    pcap[n_pcap++] = new_pcap;
+    n_interfaces++;
 }
 
 void
@@ -964,8 +972,9 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
     if (n_pcap_offline > 0) {
 	start_ts.tv_sec = 0;
 	start_ts.tv_usec = 0;
-	for (i = 0; i < n_pcap; i++) {
-	    pcap_dispatch(pcap[i], -1, handle_pcap, NULL);
+	for (i = 0; i < n_interfaces; i++) {
+	    struct _interface *I = &interfaces[i];
+	    pcap_dispatch(I->pcap, -1, handle_pcap, (u_char *) I);
 	}
 	finish_ts = last_ts;
     } else {
@@ -977,9 +986,10 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	    if (NULL == R) {
 		gettimeofday(&last_ts, NULL);
 	    }
-	    for (i = 0; i < n_pcap; i++) {
-		if (FD_ISSET(pcap_fileno(pcap[i]), &pcap_fdset)) {
-		    pcap_dispatch(pcap[i], 50, handle_pcap, NULL);
+	    for (i = 0; i < n_interfaces; i++) {
+		struct _interface *I = &interfaces[i];
+		if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
+		    pcap_dispatch(I->pcap, 50, handle_pcap, (u_char *) I);
 		}
 	    }
 	}
@@ -990,10 +1000,10 @@ void
 Pcap_close(void)
 {
     int i;
-    for (i = 0; i < n_pcap; i++)
-	pcap_close(pcap[i]);
-    free(pcap);
-    pcap = NULL;
+    for (i = 0; i < n_interfaces; i++)
+	pcap_close(interfaces[i].pcap);
+    free(interfaces);
+    interfaces = NULL;
 }
 
 int
