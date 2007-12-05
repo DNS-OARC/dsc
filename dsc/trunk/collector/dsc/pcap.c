@@ -47,7 +47,7 @@
 #include "syslog_debug.h"
 #include "hashtbl.h"
 
-#define PCAP_SNAPLEN 1460
+#define PCAP_SNAPLEN 65536
 #ifndef ETHER_HDR_LEN
 #define ETHER_ADDR_LEN 6
 #define ETHER_TYPE_LEN 2
@@ -666,10 +666,18 @@ handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
     free(i);
 
     /* Catch broken and empty packets */
-    if (((offset + payload_len) > len)
-        || (payload_len == 0)
-        || (payload_len > PCAP_SNAPLEN))
-        return;
+    if ((offset + payload_len) > len)
+	return;
+    if (payload_len == 0)
+	return;
+#if 0
+    /*
+     * PCAP_SNAPLEN is now 2^16 and payload_len is an unsiged 16
+     * bit int, so this will always be false
+     */
+    if (payload_len > PCAP_SNAPLEN)
+	return;
+#endif
 
     tm->proto = nexthdr;
     if (IPPROTO_UDP == nexthdr) {
@@ -904,7 +912,7 @@ Pcap_init(const char *device, int promisc)
     if (readfile_state) {
 	i->pcap = pcap_open_offline(device, errbuf);
     } else {
-	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1000, errbuf);
+	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 50, errbuf);
     }
     if (NULL == i->pcap) {
 	syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
