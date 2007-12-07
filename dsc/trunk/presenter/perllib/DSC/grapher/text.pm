@@ -35,36 +35,80 @@ use warnings;
 
   qtype => {
     description => '<p>The <strong>Queries by Qtype</strong> plot shows
-		the breakdown of queries by DNS query type:</p>
-		<ul>
-		<li>A - Queries for the IPv4 address of a name.  Usually
-		the most popular query type.
-		<li>NS - Queries for the authoritative nameservers for
-		a particular zone.  These are usually rare because end
-		users (and their software agents) do not normally send
-		NS queries.  NS records are normally included in the
-		authority section of every DNS message.
-		</ul>',
+	the breakdown of queries by DNS query type:</p>
+	<ul>
+	<li>A - Queries for the IPv4 address of a name.  Usually
+	the most popular query type.
+	<li>NS - Queries for the authoritative nameservers for
+	a particular zone.  These are usually rare because end
+	users (and their software agents) do not normally send
+	NS queries.  NS records are normally included in the
+	authority section of every DNS message.
+	</ul>
+        <p>Click on the legend to view the queries for a specific type.</p>',
   },
 
   dnssec_qtype => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>DNSSEC Query Types</strong> plot shows
+	queries recieved for certain DNSSEC-related query types (shown
+	in the legend).  The first-generation DNSSEC types
+	(SIG, KEY, NXT) have been obsoleted by newer, second-generation
+	types (DS, RRSIG, NSEC, DNSKEY).
+        <p>Click on the legend to view the queries for a specific type.</p>',
   },
 
   rcode => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Replies by Rcode</strong> plot shows
+	the breakdown of RCODE values in DNS responses:</p>
+	<ul>
+	<li>NOERROR - No error condition.
+	<li>SERVFAIL - The name server was unable to process the
+	query due to a problem with the name server.
+	<li>NXDOMAIN - The domain name referenced in the query does
+	not exist.
+	<li>REFUSED - The server refuses to perform the specified
+	operation for policy reasons.
+	<li>NXRRSET - Some RRset that ought to exist, does not exist (used
+	in dynamic updates).
+	<li>Other - All other response codes, including: FORMERR, NOTIMP, YXDOMAIN, YXRRSET, NOTAUTH, NOTZONE.
+	</ul>
+        <p>Click on the legend to view the queries for a specific RCODE.</p>',
   },
 
   opcode => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Messages by Opcode</strong> plot shows
+	the breakdown of OPCODE values, other than QUERY, in DNS queries.
+	Since QUERY is the most common opcode, its inclusion here would	
+	dominate the plot.  Some of the less common opcodes are:</p>
+	<ul>
+	<li>IQUERY - An "inverse query" which has been deprecated
+	in favor of the PTR query type.
+	<li>STATUS - A server status request.
+	<li>NOTIFY - Allows master servers to inform slave servers when a zone has changed.
+	<li>UPDATE - Add or delete RRs or RRsets from a zone.
+	<li>Other - All other opcode values, legitimate or not.
+	</ul>
+        <p>Click on the legend to view the queries for a specific opcode.</p>',
   },
 
   certain_qnames_vs_qtype => {
-    description => 'XX enter description here',
+    description => '<p>This plot shows
+	queries of type A, AAAA, or A6 for the name <strong>localhost</strong>
+	and anything under <strong>root-servers.net</strong>.  We chose these
+	names because, historically, the DNS root servers see a significant
+	number of queries for them.  These plots may be uninteresting on
+	normal nameservers.</p>
+	<p>Click on the legend to view the queries for a specific type/name
+	pair</p>',
+	
   },
 
   client_subnet_accum => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Busiest Client Subnet</strong> plot shows
+	the number of queries sent from each /24 network.  The horizontal
+	bars are colored based on the RIR where the address space is
+	registered, followed by a two-letter country code.
+	</p>',
   },
 
   client_subnet2_accum => {
