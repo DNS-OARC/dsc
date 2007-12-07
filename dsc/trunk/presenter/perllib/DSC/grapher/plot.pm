@@ -202,7 +202,7 @@ my $std_accum_yaxes = {
 	# XXX: 'shift' represents the old data hashref
 	DSC::grapher::munge_2d_to_1d(shift, [qw(localhost X.root-servers.net else)], [qw(1 28 38)])
     },
-    plottitle	=> 'Queries for localhost and X.root-servers-.net',
+    plottitle	=> 'Queries for localhost and X.root-servers.net',
     map_legend	=> 1,
   },
 
