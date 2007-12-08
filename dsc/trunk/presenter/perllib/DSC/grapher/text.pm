@@ -107,36 +107,73 @@ use warnings;
     description => '<p>The <strong>Busiest Client Subnet</strong> plot shows
 	the number of queries sent from each /24 network.  The horizontal
 	bars are colored based on the RIR where the address space is
-	registered, followed by a two-letter country code.
-	</p>',
+	registered, followed by a two-letter country code.</p>',
   },
 
   client_subnet2_accum => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Query Classifications by Subnets</strong> plot shows
+	a kind of "quality report" for each /24 subnet.   Queries are classified
+	according to a number of known misbehaviors, shown in the legend:
+	<ul>
+	<li>Malformed - The DNS message was malformed and could not be entirely parsed
+	<li>Src port 0 - The UDP query came from source port 0
+	<li>Funny Qtype - Query type was not one of the documented types
+	<li>Funny Qclass - Query class was not IN
+	<li>RFC1918PTR - The query type was PTR and the name was in an in-addr.arpa zone covered by RFC1918 private address space
+	<li>A-for-. - The query name was empty (equal to the root zone)
+	<li>A-for-A - The query name was already an IPv4 address
+	<li>localhost - The query was for localhost
+	<li>root-servers.net - The query was for a root-servers.net name
+	<li>Non-Authoritative TLD - The query was for a known-invalid TLD
+	<li>Unclassified - the query did not fall into one of the other categories.
+	</ul>
+        <p>Click on the legend to view the queries for a specific type.</p>',
   },
 
   client_subnet2_trace => {
-    description => 'XX enter description here',
+    description => '<p>This plot shows the same classification data, but
+	as a time series instead of per-subnet.</p>
+        <p>Click on the legend to view the queries for a specific type.</p>',
   },
 
   client_subnet2_count => {
-    description => 'XX enter description here',
+    description => '<p>This plot shows the same classification data, but
+	here we see the number of subnets sending each class of misbehavior
+	over time.</p>
+        <p>Click on the legend to view the queries for a specific type.</p>',
   },
 
   qtype_vs_all_tld => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Most Popular TLDs Queried</strong> plot shows
+	the types of queries for each TLD.</p>
+	<p>Click on one of the plot subtypes in the left-side menu to see
+	a subset of TLDs.</p>
+        <p>Click on the legend to view the queries for a specific type.</p>',
+	
   },
 
   qtype_vs_invalid_tld => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Most Popular TLDs Queried</strong> plot shows
+	the types of queries for each TLD.  Here we show only
+	<em>invalid</em> TLDs.  If you see TLDs listed here that
+	should be considered valid, then you need to set the
+	<em>domain_list</em> and </em>valid_domains</em> directives
+	in the dsc-grapher.cfg file.</p>',
   },
 
   qtype_vs_valid_tld => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Most Popular TLDs Queried</strong> plot shows
+	the types of queries for each TLD.  Here we show only
+	<em>valid</em> TLDs.  If this plot is empty, then you need to set the
+	<em>domain_list</em> and </em>valid_domains</em> directives
+	in the dsc-grapher.cfg file.</p>',
   },
 
   qtype_vs_numeric_tld => {
-    description => 'XX enter description here',
+    description => '<p>The <strong>Most Popular TLDs Queried</strong> plot shows
+	the types of queries for each TLD.  Here we show only
+	"TLDs" that are numeric.  Queries to TLDs are closely related to
+	A-for-A queries in the Classification plots.</p>',
   },
 
   direction_vs_ipproto => {
