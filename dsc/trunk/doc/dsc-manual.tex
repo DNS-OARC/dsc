@@ -1274,6 +1274,7 @@ Indexer & Label & Description \\
 \hline 
 ip\_direction & Direction & one of sent, recv, or other \\
 ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
+ip\_version & IP version number (4, 6) \\
 \hline
 \end{tabular}
 \caption{\label{tbl-ip-indexers}IP packet indexers}
@@ -1297,6 +1298,9 @@ Here are their longer descriptions:
 	Note that the {\em bpf\_program\/} setting affects all traffic
 	seen by {\dsc}.  If the program contains the word ``udp''
 	then you won't see any counts for non-UDP traffic.
+\item[ip\_version]
+	The IP version number, e.g.: 4 or 6.  Can be used to compare how much
+	traffic comes in via IPv6 compared to IPV4.
 \end{description}
 
 \subsection{IP Filters}
@@ -1330,6 +1334,7 @@ rcode & Rcode & DNS reply code \\
 rd\_bit & RD & Check if Recursion Desired bit set \\
 tld & TLD & TLD of the query name \\
 transport & Transport & Transport protocol for the DNS message (UDP or TCP) \\
+dns\_ip\_version & IP version of the packet carrying the DNS message \\
 \hline
 \end{tabular}
 \caption{\label{tbl-dns-indexers}DNS message indexers}
@@ -1420,6 +1425,8 @@ for DNS messages, and here are their descriptions:
 	the TLD of the first QNAME in a DNS message's question section.
 \item[transport]
 	Indicates whether the DNS message is carried via UDP or TCP\@.
+\item[dns\_ip\_version]
+	The IP version number that carried the DNS message.
 \end{description}
 
 \subsection{DNS Filters}

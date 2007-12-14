@@ -455,6 +455,44 @@ my $std_accum_yaxes = {
    }
   },
 
+  dns_ip_version => {
+    dataset     => 'dns_ip_version_vs_qtype',
+    plot_type   => 'trace',
+    keys	=> [qw(IPv4 IPv6 else)],
+    names	=> [qw(IPv4 IPv6 Other)],
+    colors	=> [qw(red brightgreen purple)],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    yaxes	=> {
+        rate => {
+            label => 'Queries Rate (q/s)',
+            divideflag => 1,
+            default => 1,
+        },
+        percent => {
+            label => 'Percent of Queries',
+            divideflag => 0,
+            default => 0,
+        },
+    },
+    plottitle   => 'IP Version Carrying DNS Queries',
+    map_legend	=> 1,
+    munge_func  => \&DSC::grapher::munge_sum_2d_to_1d,
+  },
+
+  dns_ip_version_vs_qtype => {
+    plot_type => 'accum2d',
+    divideflag 	=> 0,
+    keys	=> $qtype_keys,
+    names	=> $qtype_names,
+    colors	=> $qtype_colors,
+    data_reader => \&DSC::extractor::read_data3,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    yaxes	=> $std_accum_yaxes,
+    plottitle   => 'Query Types by IP version',
+    map_legend	=> 1,
+  },
+
   transport_vs_qtype => {
     dataset => 'transport_vs_qtype',
     plot_type => 'trace',

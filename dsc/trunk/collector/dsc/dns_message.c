@@ -36,6 +36,7 @@
 #include "rd_bit_index.h"
 #include "opcode_index.h"
 #include "transport_index.h"
+#include "dns_ip_version_index.h"
 #include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
@@ -280,6 +281,11 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
     if (0 == strcmp(in, "transport")) {
 	*ix = transport_indexer;
 	*it = transport_iterator;
+	return 1;
+    }
+    if (0 == strcmp(in, "dns_ip_version")) {
+	*ix = dns_ip_version_indexer;
+	*it = dns_ip_version_iterator;
 	return 1;
     }
     syslog(LOG_ERR, "unknown indexer '%s'", in);

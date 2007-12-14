@@ -331,6 +331,28 @@ my $client_subnet2_keys =   [ qw(
     },
   },
 
+  dns_ip_version_vs_qtype => {
+    ndim	=> 2,
+    type1	=> 'IPVersion',
+    type2       => 'Qtype',
+    outputs	=> {
+      dns_ip_version => {
+	keys2	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	data_munger => \&main::munge_elsify,
+	data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data4,
+      },
+      dns_ip_version_vs_qtype => {
+	keys2	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	data_munger	=> \&main::munge_elsify,
+	data_reader	=> \&DSC::extractor::read_data3,
+	data_merger	=> \&main::merge_accum2d,
+	data_writer	=> \&DSC::extractor::write_data3,
+	#data_trimer	=> \&main::trim_accum2d,
+      },
+    },
+  },
 );
 
 1;

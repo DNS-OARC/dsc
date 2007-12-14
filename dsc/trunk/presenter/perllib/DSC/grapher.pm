@@ -1252,6 +1252,10 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
 	}
 	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
+	push(@items, navbar_item('plot','dns_ip_version','IP Version'));
+	if ($pn =~ /dns_ip_version|dns_ip_version_vs_qtype/) {
+	    push(@items, sublist_item() . navbar_item('plot', 'dns_ip_version_vs_qtype', 'Query Types'));
+	}
 	push(@items, navbar_item('plot','transport_vs_qtype','DNS Transport'));
 	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
 	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));

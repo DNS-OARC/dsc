@@ -77,7 +77,7 @@ dataset ipv6_rsn_abusers dns All:null ClientAddr:client queries-only,aaaa-or-a6-
 dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
-
+# dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
 
 # bpf_vlan_tag_byte_order
 #
