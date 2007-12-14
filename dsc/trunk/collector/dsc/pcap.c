@@ -994,6 +994,11 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	    if (NULL == R) {
 		gettimeofday(&last_ts, NULL);
 	    }
+	    /*
+	     * Here we intentionally ignore the return value from
+	     * select() and always try to read from all pcaps. See
+	     * http://www.tcpdump.org/lists/workers/2002/09/msg00033.html
+	     */
 	    for (i = 0; i < n_interfaces; i++) {
 		struct _interface *I = &interfaces[i];
 		if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
