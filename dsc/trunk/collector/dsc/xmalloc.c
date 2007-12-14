@@ -5,6 +5,10 @@
 #include <memory.h>
 #include <errno.h>
 #include <syslog.h>
+#if defined (__SVR4) && defined (__sun)
+#include <string.h>
+#include <strings.h>
+#endif
 #include "xmalloc.h"
 #include "syslog_debug.h"
 
