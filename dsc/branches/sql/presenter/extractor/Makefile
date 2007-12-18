@@ -1,5 +1,5 @@
 
-LIBEXECS += refile-and-grok.pl
+LIBEXECS += store-incoming-data.pl
 LIBEXECS += put-file.pl
 
 ETCFILES  += dsc-extractor.cfg.sample
