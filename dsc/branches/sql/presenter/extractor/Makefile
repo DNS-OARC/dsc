@@ -1,10 +1,6 @@
 
 LIBEXECS += store-incoming-data.pl
 LIBEXECS += put-file.pl
-LIBEXECS += create-indexes.pl
-LIBEXECS += drop-indexes.pl
-LIBEXECS += import-flat-to-db.pl
-LIBEXECS += init-db.pl
 
 ETCFILES  += dsc-extractor.cfg.sample
 
