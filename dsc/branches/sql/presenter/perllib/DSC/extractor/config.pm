@@ -371,6 +371,8 @@ sub read_config {
 			$DSC::db::username = join ' ', @x;
 		} elsif ($directive eq 'dbi_password') {
 			$DSC::db::password = join ' ', @x;
+		} elsif ($directive eq 'dbi_schema') {
+			$DSC::db::schema = join ' ', @x;
 		}
 	}
 	close(F);

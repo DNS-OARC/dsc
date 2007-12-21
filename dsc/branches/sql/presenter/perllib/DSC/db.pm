@@ -27,7 +27,7 @@ BEGIN {
 	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
 	@EXPORT_OK   = qw();
 }
-use vars      qw($datasource $username $password);
+use vars      qw($datasource $username $password $schema $readergroup);
 use vars      @EXPORT;
 use vars      @EXPORT_OK;
 
@@ -38,6 +38,8 @@ END { }
 $datasource = undef;
 $username = undef;
 $password = undef;
+$schema = undef;
+$readergroup = undef;
 
 sub get_dbh {
     my %attrs = @_;
@@ -54,6 +56,9 @@ sub get_dbh {
     my $drivername = $dbh->{Driver}->{Name};
     # print STDERR "driver name: $drivername\n";
     require "DSC/db/${drivername}.pm";
+    $schema ||= $username;
+    $readergroup = "${schema}_readers";
+    postconnect($dbh);
     return $dbh;
 }
 
@@ -85,6 +90,10 @@ sub generic_init_db($) {
 	"server_id   $id_type NOT NULL, " .
 	"node_id     $id_type NOT NULL)");
     $dbh->do("CREATE INDEX loaded_files_time ON loaded_files(time)");
+
+    grant($dbh, 'select', 'server', $readergroup);
+    grant($dbh, 'select', 'node', $readergroup);
+    grant($dbh, 'select', 'loaded_files', $readergroup);
 };
 
 # Find and execute the driver-specific or default implementation of the
@@ -113,7 +122,9 @@ sub value {
     die "no value for $name";
 }
 
+sub postconnect         { dofunc('postconnect', @_); }
 sub specific_init_db    { dofunc('specific_init_db', @_); }
+sub grant               { dofunc('grant', @_); }
 sub from_dummy          { dofunc('from_dummy', @_); }
 sub get_server_id       { dofunc('get_server_id', @_); }
 sub get_node_id         { dofunc('get_node_id', @_); }
@@ -138,11 +149,21 @@ sub write_data4         { dofunc('write_data4', @_); }
 name_type => 'VARCHAR(256)',
 key_type => 'VARCHAR(1024)',
 id_type => 'SMALLINT',
+count_type => 'BIGINT', # BIGINT is not standard, but is common
 autoinc => '',
 usegroup => 1,
 
+postconnect => sub {
+    # do nothing
+},
+
 specific_init_db => sub {
     # do nothing
+},
+
+grant => sub {
+    my ($dbh, $priv, $obj, $user) = @_;
+    $dbh->do("GRANT $priv ON $obj TO $user") if defined $user;
 },
 
 # Create db table(s) for a dataset.
@@ -163,6 +184,7 @@ create_data_table => sub {
     my ($dbh, $tabname, $dbkeys) = @_;
     my $key_type = value('key_type', $dbh);
     my $id_type = value('id_type', $dbh);
+    my $count_type = value('count_type', $dbh);
 
     print STDERR "creating table $tabname\n";
     my $def =
@@ -172,7 +194,7 @@ create_data_table => sub {
 	"  start_time    INTEGER NOT NULL, " . # unix timestamp
 	# "duration      INTEGER NOT NULL, " . # seconds
 	(join '', map("$_ $key_type NOT NULL, ", grep(/^key/, @$dbkeys))) .
-	"  count         INTEGER NOT NULL " .
+	"  count         $count_type NOT NULL " .
 	## Omitting primary key and foreign keys improves performance of inserts	## without any real negative impacts.
 	# "CONSTRAINT $tabname_pkey PRIMARY KEY (server_id, node_id, start_time, key1), " .
 	# "CONSTRAINT $tabname_server_id_fkey FOREIGN KEY (server_id) " .
@@ -185,12 +207,14 @@ create_data_table => sub {
 	my $sql = "CREATE TABLE ${tabname}_${sfx} $def";
 	# print STDERR "SQL: $sql\n";
 	$dbh->do($sql);
+	grant($dbh, 'select', "${tabname}_${sfx}", $readergroup);
     }
     my $sql = "CREATE OR REPLACE VIEW $tabname AS " .
 	"SELECT * FROM ${tabname}_old UNION ALL " .
 	"SELECT * FROM ${tabname}_new";
     # print STDERR "SQL: $sql\n";
     $dbh->do($sql);
+    grant($dbh, 'select', $tabname, $readergroup);
 },
 
 create_data_indexes => sub {
@@ -284,7 +308,7 @@ read_data => sub {
 	    my $post_table_func = $DSC::db::specific->{$drvname}{read_data_post_table};
 	    my $post_table = $post_table_func ? &{$post_table_func}("${tabname}_${sfx}") : '';
 	    my $sql = $sql1 . $sfx . $post_table . $sql2;
-	    print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
+	    # print STDERR "SQL: $sql;  PARAMS: ", join(', ', @params), "\n";
 	    $sth = $dbh->prepare($sql);
 	    $sth->execute(@params);
 	    while (my @row = $sth->fetchrow_array) {

@@ -163,6 +163,10 @@ Installing the Presenter involves the following steps:
 \item
 	Install Perl dependencies
 \item
+	Install Ploticus
+\item
+	Install and configure database
+\item
 	Install {\dsc} software
 \item
 	Create X.509 certificates (optional)
@@ -172,6 +176,8 @@ Installing the Presenter involves the following steps:
 	Add some cron jobs
 \end{itemize}
 
+If you are running an older version of the Presenter, you do not need to shut
+it down until you are told to later in these instructions.
 
 \section{Install Perl Dependencies}
 
@@ -232,6 +238,8 @@ Although the postgres server and web server do not need to run on the same host,
 doing so will likely give better performance.
 Once PostgreSQL is installed, you must configure it as follows.
 See the PostgreSQL documentation for details.
+The recommended names used in the commands below can be changed unless
+otherwise noted.
 
 \begin{itemize}
 \item
@@ -240,22 +248,44 @@ See the PostgreSQL documentation for details.
     This will require all database logins to use a password.
     You will also need to add a password for the {\tt pgsql} superuser.
 \item
-    Create a user named {\tt dsc} (with a password).
+    Create a user named ``dsc'' (with a password).
+\begin{MyVerbatim}[commandchars=\\\{\}]
+CREATE USER dsc PASSWORD '{\it{}password}';
+\end{MyVerbatim}
 \item
     Make sure the PostgreSQL data is stored on a large partition with
     plenty of free space.  If it is not, you can create a tablespace
     on another partition.
     Note that a typical {\dsc} installation for a large DNS root server
     requires about 4GB to hold a year's worth of data.
+\begin{MyVerbatim}[commandchars=\\\{\}]
+CREATE TABLESPACE dsc OWNER dsc LOCATION '{\it{}directory}';
+\end{MyVerbatim}
 \item
-    Create a database named {\tt dsc} (on the tablespace you created in the
-    previous step).
+    Create a database named ``dsc'' (on the tablespace you created in the
+    previous step, if any).
+\begin{MyVerbatim}[commandchars=\\\{\}]
+CREATE DATABASE dsc WITH OWNER dsc;
+  {\it or}
+CREATE DATABASE dsc WITH OWNER dsc TABLESPACE dsc;
+\end{MyVerbatim}
 \item
-    Create a schema named {\tt dsc} in the {\tt dsc} database owned by the
-    {\tt dsc} user.
+    Create a schema named ``dsc'' in the {\dsc} database owned by the
+    {\dsc} user, and create a role with permission to use the schema.
+    The name of the role {\em must} be ``{\it schema}\_readers''.
+\begin{MyVerbatim}[commandchars=\\\{\}]
+\(\backslash\)c dsc
+CREATE SCHEMA dsc AUTHORIZATION dsc;
+CREATE ROLE dsc_readers;
+GRANT USAGE ON SCHEMA dsc TO dsc_readers;
+\end{MyVerbatim}
 \item
     For extra security, you may create a second user with read-only access
     to the {\tt dsc} schema, for use by the grapher.
+\begin{MyVerbatim}[commandchars=\\\{\}]
+CREATE USER dsc\_reader PASSWORD '{\it{}password}';
+GRANT dsc\_readers TO dsc\_reader;
+\end{MyVerbatim}
 \item
     We recommend enabling autovacuum, or writing a cron job to periodically run
     {\tt VACUUM ANALYZE}.
@@ -287,12 +317,16 @@ See the MySQL documentation for details.
     Execute the following MySQL commands:
 \begin{MyVerbatim}[commandchars=\\\{\}]
 CREATE DATABASE dsc;
-CREATE USER dsc IDENTIFIED BY '{\it password}';
+CREATE USER dsc IDENTIFIED BY '{\it{}password}';
 GRANT ALL ON dsc.* TO dsc;
 \end{MyVerbatim}
 \item
     For extra security, you may create a second user with read-only access
     to the {\tt dsc} schema, for use by the grapher.
+\begin{MyVerbatim}[commandchars=\\\{\}]
+CREATE USER dsc\_reader IDENTIFIED BY '{\it{}password}';
+GRANT SELECT ON dsc.* TO dsc\_reader;
+\end{MyVerbatim}
 \item
     We recommend writing a cron job to periodically analyze tables in the dsc
     database, e.g. with the shell command
@@ -313,7 +347,8 @@ Execute the following shell commands:
 
 \noindent
 Edit \path|/usr/local/dsc/etc/dsc-extractor.cfg| to set the
-{\tt dbi\_datasource}, {\tt dbi\_username}, and {\tt dbi\_password}
+{\tt dbi\_datasource}, {\tt dbi\_username}, {\tt dbi\_password},
+and {\tt dbi\_schema}
 directives.
 
 \begin{description}
@@ -335,6 +370,10 @@ directives.
 	a PostgreSQL \path|~/.pgpass| file or
 	a MySQL configuration file specified with a
 	{\tt mysql\_read\_default\_file} datasource option.
+\item[dbi\_schema]
+	The name of the schema where DSC data is stored.
+	If omitted, the schema defaults to the username.
+	Schema is not used by MySQL.
 \end{description}
 
 \noindent
@@ -343,6 +382,10 @@ Then run the following shell command:
 \begin{MyVerbatim}
 % ./extractor/init-db.pl
 \end{MyVerbatim}
+
+This will perform some essential initialization, but will not create
+DNS statistics tables.  Those tables will be created later as needed by
+the importer or extractor.
 
 If you want to preserve more than a few months of data from flat archived
 {\tt .dat} files from an earlier version of {\dsc}, and you want to minimize
@@ -445,7 +488,7 @@ After the import, you may remove the old archived files at any time
 (perhaps after making a backup copy of \path|/usr/local/dsc/data|).
 
 \begin{MyVerbatim}
-find /usr/local/dsc/data/*/* -type d -name '200*' | xargs rm -rf
+% find /usr/local/dsc/data/*/* -type d -name '200?????' | xargs rm -rf
 \end{MyVerbatim}
 
 \section{Finish Database Setup}
@@ -1197,6 +1240,7 @@ valid_domains isc isc_tlds
 dbi_datasource DBI:Pg:dbname=dsc
 dbi_username dsc
 dbi_password secret
+dbi_schema dsc
 \end{MyVerbatim}
 
 \begin{figure}
@@ -1208,12 +1252,13 @@ Refer to Figure~\ref{fig-screenshot1} to see how
 the directives affect the visual display.
 
 For a description of the
-{\tt dbi\_datasource}, {\tt dbi\_username}, and {\tt dbi\_password}
+{\tt dbi\_datasource}, {\tt dbi\_username}, {\tt dbi\_password},
+and {\tt dbi\_schema}
 directives, see Section \ref{sec-init-db}.
 The value of {\tt dbi\_username} may be the same as that used in 
 \path|/usr/local/dsc/etc/dsc-extractor.cfg|,
 or for added security it may be the name of another user with read-only
-access to the dsc database.
+access to the dsc database and schema.
 
 The following three directives should always be set in
 the configuration file:

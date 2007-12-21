@@ -24,6 +24,11 @@ $DSC::db::specific->{Pg} = {
 
 key_type => 'VARCHAR', # postgres doesn't need max size
 
+postconnect => sub {
+    my ($dbh) = @_;
+    $dbh->do("SET search_path TO $schema");
+},
+
 specific_init_db => sub {
     my ($dbh) = @_;
 

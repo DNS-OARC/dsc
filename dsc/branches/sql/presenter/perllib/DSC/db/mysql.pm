@@ -31,6 +31,11 @@ from_dummy => sub {
     "FROM DUAL";
 },
 
+grant => sub {
+    # Do nothing.  We don't need to grant on individual objects, since mysql
+    # allows grant on entire schema.
+},
+
 table_exists => sub {
     my ($dbh, $tabname) = @_;
 
