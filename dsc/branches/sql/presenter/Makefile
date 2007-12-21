@@ -1,6 +1,12 @@
 INSTALLDIR=/usr/local/dsc
 
-all clean install:
+all clean:
+	(cd cron; $(MAKE) $@)
+	(cd extractor; $(MAKE) $@)
+	(cd grapher; $(MAKE) $@)
+	(cd perllib; test -f Makefile || perl Makefile.PL ; $(MAKE) $@)
+
+install:
 	(cd cron; $(MAKE) $@)
 	(cd extractor; $(MAKE) $@)
 	(cd grapher; $(MAKE) $@)
