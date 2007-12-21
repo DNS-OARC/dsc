@@ -60,6 +60,17 @@ while (wait > 0) { }
 print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 # end
 
+my $mark_start;
+sub mark {
+	return unless $perfdbg;
+	my $msg = shift;
+	unless ($msg) {
+		$mark_start = Time::HiRes::gettimeofday;
+		return;
+	}
+	printf STDERR "MARK %7.2f :: $msg\n",
+		Time::HiRes::gettimeofday - $mark_start;
+}
 
 sub refile_and_grok_node($$$) {
     my ($server, $server_id, $node) = @_;
@@ -108,6 +119,7 @@ sub refile_and_grok_node($$$) {
     closedir DIR;
 
     my $n = 0;
+    my $ts1 = Time::HiRes::gettimeofday;
     for my $h (@xmls) {
 	if (!($h =~ /^(\d+)\.([^.]*)\.xml$/)) { next; }
 	if (++$n > 100) { last };
@@ -141,6 +153,10 @@ sub refile_and_grok_node($$$) {
 	    $dbh->commit;
 	    unlink "$DIR/$h" || die "$0: unlink $h: $!\n";
 	}
+    } continue {
+	my $ts2 = Time::HiRes::gettimeofday;
+	printf STDERR "$server/$node/$h took %.1f seconds\n", $ts2-$ts1;
+	$ts1 = $ts2;
     }
 
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
@@ -156,6 +172,7 @@ sub refile_and_grok_node($$$) {
 }
 
 sub extract_xml($$$) {
+    mark(undef);
     my ($dbh, $xmlfile, $server_id, $node_id) = @_;
     die "cant divine dataset" unless ($xmlfile =~ /^(\d+)\.(\w+)\.xml$/);
     my $file_time = $1;
@@ -179,8 +196,6 @@ sub extract_xml($$$) {
 
     my $start_time;
     my $grokked;
-    my $perfstart;
-    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
     if ($EX->{ndim} == 1) {
 	    ($start_time, $grokked) = grok_1d_xml($xmlfile, $EX->{type1});
     } elsif ($EX->{ndim} == 2) {
@@ -188,8 +203,7 @@ sub extract_xml($$$) {
     } else {
 	    die "unsupported ndim $EX->{ndim}\n";
     }
-    printf "grokked $xmlfile in %d ms\n",
-	(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+    mark("grokked $xmlfile");
     # round start time down to start of the minute
     $start_time = $start_time - $start_time % 60;
     my $yymmdd = &yymmdd($start_time);
@@ -204,7 +218,6 @@ sub extract_xml($$$) {
 	# transform the input into something for this particular
 	# output format
 	#
-	$perfstart = Time::HiRes::gettimeofday if $perfdbg;
 	my $grok_copy;
 	if (defined($O->{data_munger})) {
 		$grok_copy = &{$O->{data_munger}}($grokked, $O);
@@ -212,8 +225,7 @@ sub extract_xml($$$) {
 		$grok_copy = $grokked;
 	}
 	print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($dbg);
-	printf "munged $output in %d ms\n",
-	    (Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+	mark("munged $output");
 
 	my $tabname = "dsc_$output";
 	my $withtime = scalar (grep { /start_time/ } @{$O->{dbkeys}});
@@ -228,6 +240,7 @@ sub extract_xml($$$) {
 	    eval {
 		create_data_table($dbh, $tabname, $O->{dbkeys});
 		create_data_indexes($dbh, $tabname);
+	        mark("table and index created");
 	    };
 	    if ($@) {
 		my $SQLSTATE_UNIQUE_VIOLATION = "23505";
@@ -249,6 +262,7 @@ sub extract_xml($$$) {
 	    # read and delete the existing data
 	    return 0 if (0 > DSC::db::read_data($dbh, \%db, $output,
 		$server_id, $node_id, $bucket_time, undef, 1, $O->{dbkeys}));
+	    mark("read_data done");
 	    my $where_clause = "WHERE start_time = $bucket_time AND " .
 		"server_id = $server_id AND node_id = $node_id";
 	    # Normally, the existing data is in the _new table.  But we must
@@ -257,6 +271,7 @@ sub extract_xml($$$) {
 	    # index should make it very fast.)
 	    $dbh->do("DELETE FROM ${tabname}_new $where_clause");
 	    $dbh->do("DELETE FROM ${tabname}_old $where_clause");
+	    mark("DELETEs done");
 	}
 
 	my $insert_suffix;
@@ -270,38 +285,34 @@ sub extract_xml($$$) {
 
 	# merge/combine
 	#
-	$perfstart = Time::HiRes::gettimeofday if $perfdbg;
+	mark("merge starting");
 	&{$O->{data_merger}}($start_time, \%db, $grok_copy);
 	print STDERR 'POST MERGE db=', Dumper(\%db) if ($dbg);
-	printf "merged $output in %d ms\n",
-	    (Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+	mark("merged $output");
 
 	# trim
 	#
 	if (defined($O->{data_trimer}) && ((59*60) == ($start_time % 3600))) {
-	    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
 	    my $ntrim = &{$O->{data_trimer}}(\%db, $O);
 	    print "trimmed $ntrim records from $output\n" if ($ntrim);
-	    printf "trimmed $output in %d ms\n",
-		(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+	    mark("trimmed $output");
 	}
 
 	# write out the new data
 	#
 	&{$O->{data_writer}}($dbh, \%db, "${output}_${insert_suffix}",
 	    $server_id, $node_id, $bucket_time);
+	mark("stored $output");
 
 	if ($archivable) {
 	    # Move old data from _new table to _old table.  We do this even
 	    # on non-withtime tables in case a previous archival was missed).
-	    $perfstart = Time::HiRes::gettimeofday if $perfdbg;
 	    my $where_clause = "WHERE start_time <= $bucket_time " .
 		"AND server_id = $server_id AND node_id = $node_id";
 	    $dbh->do("INSERT INTO ${tabname}_old " .
 		"SELECT * FROM ${tabname}_new $where_clause");
 	    $dbh->do("DELETE FROM ${tabname}_new $where_clause");
-	    printf "archived $output in %d ms\n",
-		(Time::HiRes::gettimeofday - $perfstart) * 1000 if $perfdbg;
+	    mark("archived $output");
 	}
     }
 
