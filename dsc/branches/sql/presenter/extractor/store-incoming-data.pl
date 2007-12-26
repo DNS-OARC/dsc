@@ -13,8 +13,8 @@ use Time::HiRes; # XXX
 
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
-my $dbg = 1;
-my $perfdbg = 1;
+my $dbg = 0;
+my $perfdbg = 0;
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
