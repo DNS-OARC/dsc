@@ -13,8 +13,8 @@ use Time::HiRes; # XXX
 
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
-my $dbg = 0;
-my $perfdbg = 0;
+my $dbg = 1;
+my $perfdbg = 1;
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
@@ -28,17 +28,18 @@ open(STDERR, ">&1");
 
 print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
-my $dbh = get_dbh || die;
-$dbh->{RaiseError} = 1;
-
 opendir DATADIR, "." || die "$0: reading $DATADIR: $!\n";
 my @servers = grep { $_ !~ /^\./ && !-l && -d } readdir(DATADIR);
 closedir DATADIR;
 for my $server (@servers) {
 
     # get server id, or insert one if it does not exist
+    my $dbh = get_dbh || die;
+    $dbh->{RaiseError} = 1;
     my $server_id = get_server_id($dbh, $server);
     $dbh->commit;
+    $dbh->disconnect;
+    $dbh = undef;
 
     chdir "$DATADIR/$server";
     opendir SERVER, "." || die "$0: reading $DATADIR/$server: $!\n";
@@ -110,7 +111,12 @@ sub refile_and_grok_node($$$) {
 
     print "server_id = $server_id, node_id = $node_id\n";
 
-    my $DIR=".";
+    my $DIR;
+    foreach my $tdir (<incoming/*>, '.') {
+	$DIR=$tdir;
+	last if -d $DIR;
+    }
+
     opendir DIR, $DIR || die "$0: reading $DIR: $!\n";
     my @xmls = map { $_->[0] }		# Take the [0] of each pair...
 	sort { $a->[1] <=> $b->[1] }	# of a list of pairs sorted by [1]...
@@ -121,7 +127,7 @@ sub refile_and_grok_node($$$) {
     my $n = 0;
     my $ts1 = Time::HiRes::gettimeofday;
     for my $h (@xmls) {
-	if (!($h =~ /^(\d+)\.([^.]*)\.xml$/)) { next; }
+	if (!($h =~ /(\d+)\.([^.]*)\.xml$/)) { next; }
 	if (++$n > 100) { last };
 	my $secs = $1 - 60;
 	my $type = $2;
@@ -135,11 +141,11 @@ sub refile_and_grok_node($$$) {
 	    $h = $toname;
 	}
 
-	my $xml_result = eval { extract_xml($dbh, $h, $server_id, $node_id) };
+	my $xml_result = eval { extract_xml($dbh, "$DIR/$h", $server_id, $node_id) };
 	if (!defined $xml_result) {
 	    # other error
 	    -d "errors" || mkdir "errors";
-	    print STDERR "error processing $server/$node/$h\n";
+	    print STDERR "error processing $server/$node/$DIR/$h\n";
 	    print STDERR "$@\n" if $@;
 	    rename "$DIR/$h", "$DIR/errors/$h";
 	    $dbh->rollback;
@@ -174,7 +180,7 @@ sub refile_and_grok_node($$$) {
 sub extract_xml($$$) {
     mark(undef);
     my ($dbh, $xmlfile, $server_id, $node_id) = @_;
-    die "cant divine dataset" unless ($xmlfile =~ /^(\d+)\.(\w+)\.xml$/);
+    die "cant divine dataset" unless ($xmlfile =~ /(\d+)\.(\w+)\.xml$/);
     my $file_time = $1;
     my $dataset = $2;
     print STDERR "dataset is $dataset\n" if ($dbg);
