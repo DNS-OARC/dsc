@@ -344,8 +344,7 @@ add_qname_filter(const char *name, const char *pat)
 
 int
 dns_message_add_array(const char *name, const char *fn, const char *fi,
-    const char *sn, const char *si, const char *f, int min_count,
-    int max_cells)
+    const char *sn, const char *si, const char *f, dataset_opt opts)
 {
     filter_list *filters = NULL;
     IDXR *indexer1;
@@ -373,8 +372,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 	syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
 	return 0;
     }
-    a->theArray->opts.min_count = min_count;
-    a->theArray->opts.max_cells = max_cells;
+    a->theArray->opts = opts;
     assert(a->theArray);
     a->next = Arrays;
     Arrays = a;

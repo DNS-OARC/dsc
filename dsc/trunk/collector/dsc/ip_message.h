@@ -7,6 +7,7 @@
 #include <netinet/ip.h>
 
 #include "inX_addr.h"
+#include "dataset_opt.h"
 
 typedef struct _ip_message ip_message;
 struct _ip_message {
@@ -21,4 +22,4 @@ IPC ip_message_handle;
 
 void ip_message_report(void);
 int ip_message_add_array(const char *name, const char *fn, const char *fi,
-    const char *sn, const char *si, const char *f, int, int);
+    const char *sn, const char *si, const char *f, dataset_opt);

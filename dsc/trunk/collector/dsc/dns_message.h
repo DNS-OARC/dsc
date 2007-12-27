@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #include "inX_addr.h"
+#include "dataset_opt.h"
 
 #define MAX_QNAME_SZ 512
 
@@ -42,7 +43,7 @@ struct _dns_message {
 typedef void (DMC) (dns_message *);
 
 void dns_message_report(void);
-int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, int, int);
+int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, dataset_opt);
 const char * dns_message_tld(dns_message * m);
 void dns_message_init(void);
 
