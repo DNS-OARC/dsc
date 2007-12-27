@@ -139,12 +139,10 @@ interpret(const Pree &tree, int level)
 		dataset_opt opts;
 		opts.min_count = 0;	// min cell count to report
 		opts.max_cells = 0;	// max 2nd dim cells to print
-		opts.max_comps = 0;	// max domain name components
 		assert(tree.count() > 10);
 		for (unsigned int i=10; i<tree.count(); i++) {
 			getDatasetOptVal(tree[i], "min-count", opts.min_count);
 			getDatasetOptVal(tree[i], "max-cells", opts.max_cells);
-			getDatasetOptVal(tree[i], "max-components", opts.max_comps);
 		}
 		x = add_dataset(tree[1].image().c_str(),	// name
 			tree[2].image().c_str(),		// layer
