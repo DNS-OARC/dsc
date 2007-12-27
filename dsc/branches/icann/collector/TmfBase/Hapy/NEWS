@@ -1,0 +1,53 @@
+2004/02/04:  Hapy library 0.0.4 is released
+
+Hapy is a C++ runtime parser generator. Hapy
+parsers are good for parsing scripts, configuration
+files, and communication protocol messages.
+
+The fourth release adds semantic actions and character
+set/range builtin parsing rules. The release also
+contains performance optimizations and documentation
+improvements.
+
+
+2004/01/12:  Hapy library 0.0.3 is released
+
+Hapy is a C++ runtime parser generator. Hapy
+parsers are good for parsing scripts, configuration
+files, and communication protocol messages.
+
+The third release contains API improvements, compiler
+compatibility fixes, and performance optimizations.
+Hapy benchmarking methodology is now documented and is
+being reviewed by other parser generation projects
+prior to getting "officially" published. Please contact
+Hapy developers if you want to be in the loop.
+
+
+
+2003/12/25:  Hapy library 0.0.2 is released
+
+Hapy is a C++ runtime parser generator. Hapy
+parsers are good for parsing scripts, configuration
+files, and communication protocol messages.
+
+The second release contains GCC 3.2 and MS VC
+compatibility changes, a bug fix, and API
+improvements. The interface to parse message
+streams or interactive user input is now
+documented.
+
+
+
+2003/12/18:  Hapy library 0.0.1 is released
+
+Hapy is a C++ runtime parser generator. Need to
+parse a script, config file, or protocol message?
+Tired or scared of YACC? Insane compilation times
+and grammar surprises got your Spirit down? Well,
+parsing BNF-like grammars with Hapy is a snap.
+
+The first Hapy release comes with documentation
+and examples. The code is in active use, and stable
+releases will follow. Friendly support is
+available.
