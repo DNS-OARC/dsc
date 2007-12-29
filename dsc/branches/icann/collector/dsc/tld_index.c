@@ -84,3 +84,66 @@ tld_cmpfunc(const void *a, const void *b)
 {
 	return strcasecmp(a, b);
 }
+
+// ============================================================================
+
+static hashtbl *thirdldHash = NULL;
+static int thirdld_next_idx = 0;
+
+typedef struct {
+	char *name;
+	int index;
+} thirdldobj;
+
+int
+thirdld_indexer(const void *vp)
+{
+    const dns_message *m = vp;
+    const char *name;
+    thirdldobj *obj;
+    if (m->malformed)
+	return -1;
+    name = dns_message_nld((dns_message *) m, 3);
+    if (NULL == thirdldHash) {
+	thirdldHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc, free, free);
+	if (NULL == thirdldHash)
+	    return -1;
+    }
+    if ((obj = hash_find(name, thirdldHash)))
+	return obj->index;
+    obj = xcalloc(1, sizeof(*obj));
+    if (NULL == obj)
+	return -1;
+    obj->name = xstrdup(name);
+    if (NULL == obj->name) {
+	free(obj);
+	return -1;
+    }
+    obj->index = thirdld_next_idx;
+    if (0 != hash_add(obj->name, obj, thirdldHash)) {
+	free(obj->name);
+	free(obj);
+	return -1;
+    }
+    thirdld_next_idx++;
+    return obj->index;
+}
+
+int
+thirdld_iterator(char **label)
+{
+    thirdldobj *obj;
+    static char label_buf[MAX_QNAME_SZ];
+    if (0 == thirdld_next_idx)
+	return -1;
+    if (NULL == label) {
+	/* initialize and tell caller how big the array is */
+	hash_iter_init(thirdldHash);
+	return thirdld_next_idx;
+    }
+    if ((obj = hash_iterate(thirdldHash)) == NULL)
+	return -1;
+    snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->name);
+    *label = label_buf;
+    return obj->index;
+}

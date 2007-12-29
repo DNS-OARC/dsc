@@ -427,6 +427,21 @@ my $std_accum_yaxes = {
     map_legend	=> 1,
   },
 
+  qtype_vs_domain => {
+    dataset => 'qtype_vs_domain',
+    datafile => 'qtype_vs_domain',
+    plot_type => 'accum2d',
+    divideflag 	=> 0,
+    keys	=> $qtype_keys,
+    names	=> $qtype_names,
+    colors	=> $qtype_colors,
+    data_reader => \&DSC::extractor::read_data3,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    yaxes	=> $std_accum_yaxes,
+    plottitle   => 'Domains and Query Types',
+    map_legend	=> 1,
+  },
+
   direction_vs_ipproto => {
     dataset => 'direction_vs_ipproto',
     plot_type => 'trace',

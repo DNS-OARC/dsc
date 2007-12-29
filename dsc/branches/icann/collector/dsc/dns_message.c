@@ -238,6 +238,11 @@ dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
 	*it = tld_iterator;
 	return 1;
     }
+    if (0 == strcmp(in, "3ld")) {
+	*ix = thirdld_indexer;
+	*it = thirdld_iterator;
+	return 1;
+    }
     if (0 == strcmp(in, "certain_qnames")) {
 	*ix = certain_qnames_indexer;
 	*it = certain_qnames_iterator;
@@ -400,6 +405,23 @@ dns_message_tld(dns_message * m)
 	    m->tld = m->qname;
     }
     return m->tld;
+}
+
+const char *
+dns_message_nld(dns_message * m, int level)
+{
+	const char *nld = m->qname + strlen(m->qname) - 2;
+	while (level && nld >= m->qname) {
+	    if (*nld == '.')
+		if (0 == --level)
+		    break;
+	    nld--;
+	}
+	if (*nld == '.')
+	    nld++;
+	if (nld < m->qname)
+	    nld = m->qname;
+	return nld;
 }
 
 void

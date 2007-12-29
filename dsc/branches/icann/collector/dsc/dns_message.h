@@ -45,6 +45,7 @@ typedef void (DMC) (dns_message *);
 void dns_message_report(void);
 int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, dataset_opt);
 const char * dns_message_tld(dns_message * m);
+const char * dns_message_nld(dns_message * m, int level);
 void dns_message_init(void);
 
 #ifndef T_OPT

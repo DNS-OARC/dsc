@@ -649,7 +649,7 @@ sub accum2d_plot {
 	Ploticus_categories(1);
 	my $areadef_opts = {
 		-title => $PLOT->{plottitle} . "\n" . time_descr(),
-		-rectangle => '1 1 6 6',
+		-rectangle => '2 1 7 6',
 		-yscaletype => 'categories',
 		-xstackfields => join(',', 2..($ntypes+1)),
 	};
@@ -1240,6 +1240,7 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','qtype_vs_invalid_tld', 'invalid'));
 		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
 	}
+	push(@items, navbar_item('plot','qtype_vs_domain','Domains'));
 	push(@items, navbar_item('plot','client_addr_vs_rcode_accum','Rcodes by Client Address'));
 	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
 	push(@items, navbar_item('plot','ipv6_rsn_abusers_accum','IPv6 root abusers'));

@@ -216,6 +216,22 @@ my $client_subnet2_keys =   [ qw(
     },
   },
 
+  qtype_vs_domain => {
+    ndim	=> 2,
+    type1	=> 'Qtype',
+    type2	=> 'Domain',
+    outputs	=> {
+      qtype_vs_domain => {
+	keys2	=> [ qw(1 2 5 6 12 15 28 33 38 255 else) ],
+	data_munger	=> \&main::swap_dimensions,
+	data_reader	=> \&DSC::extractor::read_data3,
+	data_merger	=> \&main::merge_accum2d,
+	data_writer	=> \&DSC::extractor::write_data3,
+	data_trimer	=> \&main::trim_accum2d,
+      },
+    },
+  },
+
   client_addr_vs_rcode => {
     ndim	=> 2,
     type1	=> 'Rcode',
