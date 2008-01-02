@@ -49,6 +49,8 @@ my $CFG;	# from dsc-cfg.pl
 my $PLOT;	# = $DSC::grapher::plot::PLOTS{name}
 my $TEXT;	# = $DSC::grapher::text::TEXTS{name}
 my $ACCUM_TOP_N;
+my $ACCUM_IMG_HEIGHT_SLOPE = 0.093;
+my $ACCUM_IMG_HEIGHT_INTCP = 1.3;
 my $cgi;
 my $now;
 
@@ -151,6 +153,7 @@ sub run {
 		$ARGS{yaxis},
 		$ARGS{key});
 
+	$ACCUM_TOP_N = $PLOT->{accum_top_n} if $PLOT->{accum_top_n};
 	$ACCUM_TOP_N = 20 if ($ARGS{mini});
 
 	if ('html' eq $ARGS{content}) {
@@ -637,19 +640,24 @@ sub accum2d_plot {
 	my $ntypes = @plotnames;
 	my $start = time;
 	my $mapfile = undef;
+	my $height = ($ACCUM_TOP_N * $ACCUM_IMG_HEIGHT_SLOPE) + $ACCUM_IMG_HEIGHT_INTCP;
 
 	ploticus_init("png", "$pngfile.new");
 	if ($PLOT->{map_legend}) {
 		$mapfile = cache_mapfile_path($cache_name);
 		ploticus_arg("-csmap", "");
 		ploticus_arg("-mapfile", "$mapfile.new");
+		my $page_height = 2 + $height;
+		ploticus_arg("-pagesize", "10,$page_height");
 	}
 	ploticus_begin();
 	Ploticus_getdata($tf->filename());
-	Ploticus_categories(1);
+	Ploticus_categories(1, {-listsize => $ACCUM_TOP_N});
+	
+	my $y_max = 1 + $height;
 	my $areadef_opts = {
 		-title => $PLOT->{plottitle} . "\n" . time_descr(),
-		-rectangle => '2 1 7 6',
+		-rectangle => "2 1 7 $y_max",
 		-yscaletype => 'categories',
 		-xstackfields => join(',', 2..($ntypes+1)),
 	};

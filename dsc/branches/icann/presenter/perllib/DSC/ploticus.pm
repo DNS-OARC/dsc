@@ -311,8 +311,10 @@ sub Ploticus_legend {
 
 sub Ploticus_categories {
 	my $catfield = shift;
+	my $ropts = shift;
 	P("#proc categories");
 	P("axis: y");
+	PO($ropts, 'listsize');
 	P("datafield: $catfield");
 }
 

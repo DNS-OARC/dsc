@@ -440,6 +440,7 @@ my $std_accum_yaxes = {
     yaxes	=> $std_accum_yaxes,
     plottitle   => 'Domains and Query Types',
     map_legend	=> 1,
+    # accum_top_n	=> 256,
   },
 
   direction_vs_ipproto => {
