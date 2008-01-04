@@ -895,6 +895,17 @@ The configuration file currently understands the following directives:
 
 	Example: {\tt run\_dir "/var/run/dsc";\/}
 
+\item[minfree\_bytes]
+
+	If the filesystem where {\tt dsc\/} writes its XML files
+	does not have at least this much free space, then
+	{\tt dsc\/} will not write the XML files.  This prevents
+	{\tt dsc\/} from filling up the filesystem.  The XML
+	files that would have been written are simply lost and
+	cannot be receovered.  {\tt dsc\/} will begin writing
+	XML files again when the filesystem has the necessary
+	free space.
+
 \item[bpf\_program]
 
 	A Berkeley Packet Filter program string.  Normally you
