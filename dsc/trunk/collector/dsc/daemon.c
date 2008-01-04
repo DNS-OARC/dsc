@@ -15,6 +15,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/param.h>
+#include <sys/mount.h>
 
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -30,6 +32,7 @@ int nodaemon_flag = 0;
 
 extern void cip_net_indexer_init(void);
 extern void ParseConfig(const char *);
+extern uint64_t minfree_bytes;
 
 void
 daemonize(void)
@@ -78,6 +81,19 @@ write_pid_file(void)
     }
     fprintf(fp, "%d\n", getpid());
     fclose(fp);
+}
+
+int
+disk_is_full(void)
+{
+    struct statfs s;
+    uint64_t avail_bytes;
+    if (statfs(".", &s) < 0)
+	 return 0;	/* assume not */
+    avail_bytes = s.f_bsize*s.f_bavail;
+    if (avail_bytes < minfree_bytes)
+	return 1;
+    return 0;
 }
 
 void
@@ -160,8 +176,13 @@ main(int argc, char *argv[])
 	    if (0 == cpid) {
 		Pcap_run(dns_message_handle, ip_message_handle);
 		if (0 == fork()) {
-		    dns_message_report();
-		    ip_message_report();
+		    if (disk_is_full()) {
+		        syslog(LOG_NOTICE,
+			    "Not enough free disk space to write XML files");
+		    } else {
+		        dns_message_report();
+		        ip_message_report();
+		    }
 		}
 		_exit(0);
 	    } else {
