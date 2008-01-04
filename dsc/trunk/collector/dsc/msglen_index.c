@@ -32,3 +32,9 @@ msglen_iterator(char **label)
     *label = label_buf;
     return next_iter++;
 }
+
+void
+msglen_reset()
+{
+    largest = 0;
+}

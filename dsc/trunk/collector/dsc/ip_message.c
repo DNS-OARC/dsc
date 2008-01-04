@@ -24,26 +24,23 @@ ip_message_handle(const ip_message *ip)
 	md_array_count(a->theArray, ip);
 }
 
-static int
-ip_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)
+static indexer_t indexers[] = {
+    { "ip_direction", ip_direction_indexer, ip_direction_iterator, NULL },
+    { "ip_proto",     ip_proto_indexer,     ip_proto_iterator,     ip_proto_reset },
+    { "ip_version",   ip_version_indexer,   ip_version_iterator,   ip_version_reset },
+    { NULL,           NULL,                 NULL,                  NULL }
+};
+
+static indexer_t *
+ip_message_find_indexer(const char *in)
 {
-    if (0 == strcmp(in, "ip_direction")) {
-	*ix = ip_direction_indexer;
-	*it = ip_direction_iterator;
-	return 1;
-    }
-    if (0 == strcmp(in, "ip_proto")) {
-	*ix = ip_proto_indexer;
-	*it = ip_proto_iterator;
-	return 1;
-    }
-    if (0 == strcmp(in, "ip_version")) {
-	*ix = ip_version_indexer;
-	*it = ip_version_iterator;
-	return 1;
+    indexer_t *indexer;
+    for (indexer = indexers; indexer->name; indexer++) {
+        if (0 == strcmp(in, indexer->name))
+            return indexer;
     }
     syslog(LOG_ERR, "unknown indexer '%s'", in);
-    return 0;
+    return NULL;
 }
 
 static int
@@ -58,10 +55,10 @@ ip_message_find_filters(const char *fn, filter_list ** fl)
 	    continue;
 	}
 	syslog(LOG_ERR, "unknown filter '%s'", t);
-	free(copy);
+	xfree(copy);
 	return 0;
     }
-    free(copy);
+    xfree(copy);
     return 1;
 }
 
@@ -70,15 +67,12 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
     const char *sn, const char *si, const char *f, dataset_opt opts)
 {
     filter_list *filters = NULL;
-    IDXR *indexer1;
-    HITR *iterator1;
-    IDXR *indexer2;
-    HITR *iterator2;
+    indexer_t *indexer1, *indexer2;
     md_array_list *a;
 
-    if (0 == ip_message_find_indexer(fi, &indexer1, &iterator1))
+    if (NULL == (indexer1 = ip_message_find_indexer(fi)))
 	return 0;
-    if (0 == ip_message_find_indexer(si, &indexer2, &iterator2))
+    if (NULL == (indexer2 = ip_message_find_indexer(si)))
 	return 0;
     if (0 == ip_message_find_filters(f, &filters))
 	return 0;
@@ -87,8 +81,7 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
     if (NULL == a)
 	return 0;
     a->theArray = md_array_create(name, filters,
-	fn, indexer1, iterator1,
-	sn, indexer2, iterator2);
+	fn, indexer1, sn, indexer2);
     a->theArray->opts = opts;
     assert(a->theArray);
     a->next = Arrays;
@@ -102,4 +95,12 @@ ip_message_report(void)
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
 	md_array_print(a->theArray, &xml_printer);
+}
+
+void
+ip_message_clear_arrays(void)
+{
+    md_array_list *a;
+    for (a = Arrays; a; a = a->next)
+	md_array_clear(a->theArray);
 }

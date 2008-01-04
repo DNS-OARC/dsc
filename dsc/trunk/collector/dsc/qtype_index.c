@@ -43,3 +43,9 @@ qtype_iterator(char **label)
     *label = label_buf;
     return next_iter++;
 }
+
+void
+qtype_reset()
+{
+    next_idx = 0;
+}

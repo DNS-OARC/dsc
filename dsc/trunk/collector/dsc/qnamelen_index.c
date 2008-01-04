@@ -37,3 +37,9 @@ qnamelen_iterator(char **label)
     *label = label_buf;
     return next_iter++;
 }
+
+void
+qnamelen_reset()
+{
+    largest = 0;
+}
