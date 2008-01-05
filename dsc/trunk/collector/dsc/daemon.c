@@ -172,7 +172,7 @@ main(int argc, char *argv[])
 	if (0 == fork()) {
 	    /* Child dumps data from its copy of the arena. */
 	    if (disk_is_full()) {
-		syslog(LOG_NOTICE, "Not enough free disk space to write XML files");
+		syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
 	    } else {
 		/*amalloc_report();*/
 		dns_message_report();

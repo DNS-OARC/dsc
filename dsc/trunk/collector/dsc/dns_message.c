@@ -198,6 +198,7 @@ static indexer_t indexers[] = {
     { "rd_bit",               rd_bit_indexer,               rd_bit_iterator,               NULL },
     { "opcode",               opcode_indexer,               opcode_iterator,               opcode_reset },
     { "transport",            transport_indexer,            transport_iterator,            NULL },
+    { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },
     { NULL,                   NULL,                         NULL,                          NULL }
 };
 
@@ -208,11 +209,6 @@ dns_message_find_indexer(const char *in)
     for (indexer = indexers; indexer->name; indexer++) {
 	if (0 == strcmp(in, indexer->name))
 	    return indexer;
-    }
-    if (0 == strcmp(in, "dns_ip_version")) {
-	*ix = dns_ip_version_indexer;
-	*it = dns_ip_version_iterator;
-	return 1;
     }
     syslog(LOG_ERR, "unknown indexer '%s'", in);
     return NULL;

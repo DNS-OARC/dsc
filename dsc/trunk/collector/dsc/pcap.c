@@ -1035,7 +1035,7 @@ Pcap_init(const char *device, int promisc)
 	    max_pcap_fds = i->fd + 1;
     }
     n_interfaces++;
-    if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_pcap > n_pcap_offline)) {
+    if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_interfaces > n_pcap_offline)) {
 	syslog(LOG_ERR, "%s", "offline interface must be only interface");
 	exit(1);
     }
