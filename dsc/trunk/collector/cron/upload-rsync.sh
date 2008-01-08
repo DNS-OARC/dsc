@@ -27,6 +27,10 @@ perl -e 'sleep((rand 10) + 5)'
 
 cd $PREFIX/var/run/$NODE/upload/$DEST
 
+YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
+test -n "$YYYYMMDD" || exit 0
+cd $YYYYMMDD
+
 exec > $PROG.out
 exec 2>&1
 
@@ -39,3 +43,5 @@ k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
 md5 $k > MD5s
 rsync -av MD5s $k $RPATH | grep '\.xml$' | xargs rm -v
+
+cd ..; rmdir $YYYYMMDD 2>/dev/null

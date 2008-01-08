@@ -31,6 +31,10 @@ perl -e 'sleep((rand 10) + 5)'
 
 cd $PREFIX/run/$NODE/upload/$DEST
 
+YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
+test -n "$YYYYMMDD" || exit 0
+cd $YYYYMMDD
+
 exec > $PROG.out
 exec 2>&1
 
@@ -46,3 +50,5 @@ UPLOAD="--upload $TF"
 set +e
 $CURL $SRVAUTH $CLTAUTH $UPLOAD $URI | awk '$1 == "Stored" {print $2}' | xargs rm -v
 rm -f $TF
+
+cd ..; rmdir $YYYYMMDD 2>/dev/null
