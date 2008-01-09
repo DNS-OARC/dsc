@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <syslog.h>
 
 #include "xmalloc.h"
@@ -192,27 +191,13 @@ compare(const void *A, const void *B)
 }
 
 int
-md_array_print(md_array * a, md_array_printer * pr)
+md_array_print(md_array * a, md_array_printer * pr, FILE *fp)
 {
-    int fd;
-    FILE *fp;
-    char fname[128];
-    char tname[128];
     char *label1;
     char *label2;
     int i1;
     int i2;
 
-    snprintf(fname, 128, "%d.%s.xml", Pcap_finish_time(), a->name);
-    snprintf(tname, 128, "%s.XXXXXXXXX", fname);
-    fd = mkstemp(tname);
-    if (fd < 0)
-	return -1;
-    fp = fdopen(fd, "w");
-    if (NULL == fp) {
-	close(fd);
-	return -1;
-    }
     a->d1.indexer->iter_fn(NULL);
     pr->start_array(fp, a->name);
     pr->d1_type(fp, a->d1.type);
@@ -275,13 +260,6 @@ md_array_print(md_array * a, md_array_printer * pr)
     }
     pr->finish_data(fp);
     pr->finish_array(fp);
-    /*
-     * XXX need chmod because files are written as root, but
-     * may be processed by a non-priv user
-     */
-    fchmod(fd, 0664);
-    fclose(fp);
-    rename(tname, fname);
     return 0;
 }
 

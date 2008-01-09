@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -42,7 +43,7 @@ struct _dns_message {
 
 typedef void (DMC) (dns_message *);
 
-void dns_message_report(void);
+void dns_message_report(FILE *);
 int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, dataset_opt);
 const char * dns_message_tld(dns_message * m);
 void dns_message_init(void);

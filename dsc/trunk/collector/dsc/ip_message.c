@@ -90,11 +90,11 @@ ip_message_add_array(const char *name, const char *fn, const char *fi,
 }
 
 void
-ip_message_report(void)
+ip_message_report(FILE *fp)
 {
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
-	md_array_print(a->theArray, &xml_printer);
+	md_array_print(a->theArray, &xml_printer, fp);
 }
 
 void

@@ -17,6 +17,7 @@
 #include <time.h>
 #include <sys/param.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
 
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -107,6 +108,51 @@ usage(void)
     exit(1);
 }
 
+static int
+dump_reports(void)
+{
+    int fd;
+    FILE *fp;
+    char fname[128];
+    char tname[128];
+
+    if (disk_is_full()) {
+	syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
+	return 1;
+    }
+    snprintf(fname, 128, "%d.dscdata.xml", Pcap_finish_time());
+    snprintf(tname, 128, "%s.XXXXXXXXX", fname);
+    fd = mkstemp(tname);
+    if (fd < 0) {
+	syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+	return 1;
+    }
+    fp = fdopen(fd, "w");
+    if (NULL == fp) {
+	syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+	close(fd);
+	return 1;
+    }
+    if (debug_flag)
+	fprintf(stderr, "writing to %s\n", tname);
+    fprintf(fp, "<dscdata>\n");
+    /* amalloc_report(); */
+    dns_message_report(fp);
+    ip_message_report(fp);
+    fprintf(fp, "</dscdata>\n");
+
+    /*
+     * XXX need chmod because files are written as root, but may be processed
+     * by a non-priv user
+     */
+    fchmod(fd, 0664);
+    fclose(fp);
+    if (debug_flag)
+	fprintf(stderr, "renaming to %s\n", fname);
+    rename(tname, fname);
+    return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -130,7 +176,7 @@ main(int argc, char *argv[])
 	    promisc_flag = 0;
 	    break;
 	case 'd':
-	    debug_flag = 1;
+	    debug_flag++;
 	    nodaemon_flag = 1;
 	    break;
 	default:
@@ -170,14 +216,7 @@ main(int argc, char *argv[])
 	if (debug_flag)
 	    gettimeofday(&break_start, NULL);
 	if (0 == fork()) {
-	    /* Child dumps data from its copy of the arena. */
-	    if (disk_is_full()) {
-		syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
-	    } else {
-		/*amalloc_report();*/
-		dns_message_report();
-		ip_message_report();
-	    }
+	    dump_reports();
 	    _exit(0);
 	}
 	/* Parent quickly frees and clears its copy of the data so it can
@@ -201,7 +240,7 @@ main(int argc, char *argv[])
 	    }
 	}
 
-    } while (result > 0);
+    } while (result > 0 && debug_flag == 0);
 
     Pcap_close();
     return 0;

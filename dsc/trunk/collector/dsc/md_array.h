@@ -69,6 +69,6 @@ void md_array_clear(md_array *);
 int md_array_count(md_array *, const void *);
 md_array *md_array_create(const char *name, filter_list *,
     const char *, indexer_t *, const char *, indexer_t *);
-int md_array_print(md_array * a, md_array_printer * pr);
+int md_array_print(md_array * a, md_array_printer * pr, FILE *fp);
 filter_list ** md_array_filter_list_append(filter_list **fl, FLTR *f);
 FLTR * md_array_create_filter(const char *name, filter_func *, const void *context);

@@ -91,7 +91,7 @@ void
 dns_message_handle(dns_message * m)
 {
     md_array_list *a;
-    if (debug_flag)
+    if (debug_flag > 1)
 	dns_message_print(m);
     for (a = Arrays; a; a = a->next)
 	md_array_count(a->theArray, m);
@@ -298,11 +298,11 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 }
 
 void
-dns_message_report(void)
+dns_message_report(FILE *fp)
 {
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
-	md_array_print(a->theArray, &xml_printer);
+	md_array_print(a->theArray, &xml_printer, fp);
 }
 
 void
