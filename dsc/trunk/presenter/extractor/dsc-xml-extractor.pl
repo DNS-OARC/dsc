@@ -12,6 +12,7 @@ use DSC::extractor::config;
 use Data::Dumper;
 use Proc::PID::File;
 use POSIX qw(nice);
+use XML::Simple;
 
 my $pid_basename = pid_basename('dsc-xml-extractor');
 die "$pid_basename Already running!" if Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename);
@@ -82,6 +83,29 @@ sub extract {
 	my $dataset = $1;
 	print STDERR "dataset is $dataset\n" if ($dbg);
 
+        my $XS = XML::Simple->new(searchpath => '.', forcearray => 1);
+        my $XML = $XS->XMLin($xmlfile);
+
+	# this is the old way -- one dataset per file
+	#
+	if ($dataset ne 'dscdata') {
+		return extract_dataset($XML, $dataset);
+	}
+
+	# this is the new way of grouping all datasets
+	# together into a single file
+	#
+	while (my ($k,$v) = each %{$XML->{array}}) {
+		extract_dataset($v, $k) or die "dataset $k extraction failed";
+	}
+	return 1;
+}
+
+sub extract_dataset {
+	my $XML = shift;
+	my $dataset = shift;
+	print STDERR "dataset is $dataset\n" if ($dbg);
+
 	my $EX = $DSC::extractor::config::DATASETS{$dataset};
 	print STDERR 'EX=', Dumper($EX) if ($dbg);
 	die "no extractor for $dataset\n" unless defined($EX);
@@ -89,9 +113,9 @@ sub extract {
 	my $start_time;
 	my $grokked;
 	if ($EX->{ndim} == 1) {
-		($start_time, $grokked) = grok_1d_xml($xmlfile, $EX->{type1});
+		($start_time, $grokked) = grok_1d_xml($XML, $EX->{type1});
 	} elsif ($EX->{ndim} == 2) {
-		($start_time, $grokked) = grok_2d_xml($xmlfile, $EX->{type1}, $EX->{type2});
+		($start_time, $grokked) = grok_2d_xml($XML, $EX->{type1}, $EX->{type2});
 	} else {
 		die "unsupported ndim $EX->{ndim}\n";
 	}
@@ -136,7 +160,7 @@ sub extract {
 
 		# write out the new data file
 		#
-		&{$O->{data_writer}}($dbref, "$yymmdd/$dataset/$output.dat");
+		&{$O->{data_writer}}($dbref, "$yymmdd/$output.dat");
 
 	}
 	return 1;

@@ -1,6 +1,5 @@
 package DSC::extractor;
 
-use XML::Simple;
 use POSIX;
 use Digest::MD5;
 #use File::Flock;
@@ -25,7 +24,6 @@ BEGIN {
 		&write_data4
 		&grok_1d_xml
 		&grok_2d_xml
-#		&grok_array_xml
 		&elsify_unwanted_keys
 		&replace_keys
 		$SKIPPED_KEY
@@ -117,7 +115,7 @@ sub write_data {
 	my $B;
 	my $lock = lock_file($fn);
 	my $md = Digest::MD5->new;
-	open(OUT, ">$fn.new") || die $!;
+	open(OUT, ">$fn.new") || die "$fn.new: $!";
 	foreach my $k (sort {$a <=> $b} keys %$A) {
 		next unless defined($B = $A->{$k});
 		my $line = join(' ', $k, %$B) . "\n";
@@ -313,10 +311,8 @@ sub write_data4 {
 ##############################################################################
 
 sub grok_1d_xml {
-	my $fname = shift || die "grok_1d_xml() expected fname";
+	my $XML = shift || die "grok_1d_xml() expected XML obj";
 	my $L2 = shift || die "grok_1d_xml() expected L2";
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
 	my %result;
 	my $aref = $XML->{data}[0]->{All};
 	foreach my $k1ref (@$aref) {
@@ -329,11 +325,9 @@ sub grok_1d_xml {
 }
 
 sub grok_2d_xml {
-	my $fname = shift || die;
+	my $XML = shift || die "grok_1d_xml() expected XML obj";
 	my $L1 = shift || die;
 	my $L2 = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
 	my %result;
 	my $aref = $XML->{data}[0]->{$L1};
 	foreach my $k1ref (@$aref) {
