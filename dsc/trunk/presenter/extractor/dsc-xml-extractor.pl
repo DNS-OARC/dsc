@@ -72,7 +72,7 @@ sub read_db {
         my $db = $DBCACHE->{$yymmdd}->{$dataset}->{$output};
         return $db if $db;
         my %foo = ();
-        exit(254) if (&{$O->{data_reader}}(\%foo, "$yymmdd/$dataset/$output.dat") < 0);
+        exit(254) if (&{$O->{data_reader}}(\%foo, "$yymmdd/$output.dat") < 0);
         print STDERR "read $yymmdd/$dataset/$output.dat\n";
         return $DBCACHE->{$yymmdd}->{$dataset}->{$output} = \%foo;
 }
