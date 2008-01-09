@@ -25,7 +25,7 @@ BEGIN {
 		&write_data4
 		&grok_1d_xml
 		&grok_2d_xml
-		&grok_array_xml
+#		&grok_array_xml
 		&elsify_unwanted_keys
 		&replace_keys
 		$SKIPPED_KEY
@@ -346,22 +346,22 @@ sub grok_2d_xml {
 	($XML->{start_time}, \%result);
 }
 
-sub grok_array_xml {
-	my $fname = shift || die;
-	my $L2 = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
-	my $aref = $XML->{data}[0]->{All};
-	my @result;
-	foreach my $k1ref (@$aref) {
-		my $rcode_aref = $k1ref->{$L2};
-		foreach my $k2ref (@$rcode_aref) {
-			my $k2 = $k2ref->{val};
-			$result[$k2] = $k2ref->{count};
-		}
-	}
-	($XML->{start_time}, @result);
-}
+#sub grok_array_xml {
+#	my $fname = shift || die;
+#	my $L2 = shift || die;
+#	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
+#	my $XML = $XS->XMLin($fname);
+#	my $aref = $XML->{data}[0]->{All};
+#	my @result;
+#	foreach my $k1ref (@$aref) {
+#		my $rcode_aref = $k1ref->{$L2};
+#		foreach my $k2ref (@$rcode_aref) {
+#			my $k2 = $k2ref->{val};
+#			$result[$k2] = $k2ref->{count};
+#		}
+#	}
+#	($XML->{start_time}, @result);
+#}
 
 sub elsify_unwanted_keys {
 	my $hashref = shift;
