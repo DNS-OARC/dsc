@@ -99,6 +99,21 @@ my $std_accum_yaxes = {
 
 %PLOTS = (
 
+  byserver => {
+    dataset 	=> 'qtype',
+    datafile	=> 'qtype',
+    keys	=> [ qw(a b c d e f g h i j k l m n o) ],
+    names	=> [ qw(a b c d e f g h i j k l m n o) ],
+    colors	=> [ qw (red orange yellow brightgreen brightblue
+		     purple magenta redorange yellow2 green darkblue
+		     yelloworange powderblue claret lavender ) ],
+    dbkeys      => [ 'start_time', 'server_id' ],
+    plot_type	=> 'trace',
+    yaxes	=> $std_trace_yaxes,
+    plottitle	=> 'Queries by Server',
+    menutitle	=> 'By Server',
+  },
+
   bynode => {
     dataset 	=> 'qtype',
     datafile	=> 'qtype',
@@ -111,6 +126,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Queries by Node',
+    menutitle	=> 'By Node',
   },
 
   qtype => {
@@ -122,6 +138,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Queries by QType',
+    menutitle	=> 'Common Qtypes',
     map_legend	=> 1,
   },
 
@@ -135,6 +152,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'DNSSEC-related Queries by QType',
+    menutitle	=> 'DNSSEC Qtypes',
     map_legend	=> 1,
   },
 
@@ -147,6 +165,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Replies by Rcode',
+    menutitle	=> 'Rcodes',
     map_legend	=> 1,
   },
 
@@ -159,6 +178,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'Messages by Opcode (excluding QUERY)',
+    menutitle	=> 'Opcodes',
     map_legend	=> 1,
   },
 
@@ -202,6 +222,7 @@ my $std_accum_yaxes = {
 	DSC::grapher::munge_2d_to_1d(shift, [qw(localhost X.root-servers.net else)], [qw(1 28 38)])
     },
     plottitle	=> 'Queries for localhost and X.root-servers-.net',
+    menutitle	=> 'Popular Names',
     map_legend	=> 1,
   },
 
@@ -225,6 +246,7 @@ my $std_accum_yaxes = {
     munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
     yaxes	=> $std_accum_yaxes,
     plottitle	=> 'Busiest Client Subnets',
+    menutitle	=> 'Client Geography',
     map_legend	=> 1,
   },
 
@@ -238,6 +260,7 @@ my $std_accum_yaxes = {
 #    munge_func	=> \&DSC::grapher::munge_anonymize_ip,
 #    yaxes	=> $std_trace_yaxes,
 #    plottitle	=> '# /24s seen per minute',
+#    menutitle	=> 'Subnets',
 #    map_legend	=> 0,
 #  },
 
@@ -249,7 +272,8 @@ my $std_accum_yaxes = {
     names	=> $client_subnet2_names,
     colors	=> $client_subnet2_colors,
     dbkeys      => [ 'key1', 'key2' ],
-    plottitle	=> 'Query Classifications by Subnets',
+    plottitle	=> 'Query Classifications of Busiest Clients',
+    menutitle	=> 'Classification by Client',
     map_legend	=> 1,
     munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
@@ -262,7 +286,8 @@ my $std_accum_yaxes = {
     names	=> $client_subnet2_names,
     colors	=> $client_subnet2_colors,
     dbkeys      => [ 'start_time', 'key1' ],
-    plottitle	=> 'Query Classifications by Subnets',
+    plottitle	=> 'Query Classifications over Time',
+    menutitle	=> 'Query Classification',
     map_legend	=> 1,
   },
 
@@ -276,19 +301,20 @@ my $std_accum_yaxes = {
     dbkeys      => [ 'start_time', 'key1' ],
     yaxes	=> {
 	rate => {
-	    label => '# Client Subnets',
+	    label => '# of Client Subnets',
 	    divideflag => 0,
 	    default => 1,
 	},
-	percent => {
-	    label => 'Percent of Subnets',
-    	    divideflag => 0,
-	    default => 0,
-	},
+### percent is broken.
+#	percent => {
+#	    label => '% of Client Subnets',
+#    	    divideflag => 0,
+#	    default => 0,
+#	},
     },
-    plottitle	=> 'Query Classifications by Subnets',
+    plottitle	=> 'Client Subnets per Query Classification over Time',
+    menutitle	=> 'Clients per Classification',
     map_legend	=> 1,
-    munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
 
   qtype_vs_all_tld => {
@@ -301,7 +327,8 @@ my $std_accum_yaxes = {
     colors	=> $qtype_colors,
     dbkeys      => [ 'key1', 'key2' ],
     yaxes	=> $std_accum_yaxes,
-    plottitle   => 'Most Popular TLDs Queried',
+    plottitle   => 'Most-Queried TLDs',
+    menutitle	=> 'Most-Queried TLDs',
     map_legend	=> 1,
   },
 
@@ -338,7 +365,8 @@ my $std_accum_yaxes = {
 	    default => 0,
 	},
     },
-    plottitle   => 'Most Popular TLDs Queried',
+    plottitle   => 'Most-Queried Invalid TLDs',
+    menutitle	=> 'Invalid TLDs',
     map_legend	=> 1,
   },
 
@@ -375,7 +403,8 @@ my $std_accum_yaxes = {
 	    default => 0,
 	},
     },
-    plottitle  	=> 'Most Popular TLDs Queried',
+    plottitle  	=> 'Most-Queried Valid TLDs',
+    menutitle	=> 'Valid TLDs',
     map_legend	=> 1,
   },
 
@@ -395,7 +424,6 @@ my $std_accum_yaxes = {
     names	=> $qtype_names,
     colors	=> $qtype_colors,
     dbkeys      => [ 'key1', 'key2' ],
-    yaxes	=> $std_accum_yaxes,
     yaxes	=>  {
 	rate => {
 	    label => 'Mean Query Rate (q/s)',
@@ -413,7 +441,8 @@ my $std_accum_yaxes = {
 	    default => 0,
 	},
     },
-    plottitle  	=> 'Most Popular TLDs Queried',
+    plottitle  	=> 'Most-Queried Numeric TLDs',
+    menutitle	=> 'Numeric TLDs',
     map_legend	=> 1,
   },
 
@@ -439,6 +468,7 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'Received packets by IP protocol',
+    menutitle	=> 'IP Protocols Received',
     map_legend	=> 1,
   },
 
@@ -465,6 +495,7 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'Transmitted packets by IP protocol',
+    menutitle	=> 'IP Protocols Sent',
     map_legend	=> 1,
   },
 
@@ -489,6 +520,7 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'IP packet direction',
+    menutitle	=> 'IP packet direction',
     map_legend	=> 1,
   },
 
@@ -509,6 +541,7 @@ my $std_accum_yaxes = {
     dbkeys      => [ 'start_time', 'key1' ],
     nogroup     => 1, # all columns are selected or constrained to single value
     plottitle   => 'Queries Containing Internationalized Qnames',
+    menutitle	=> 'IDN Qnames',
   },
 
   rd_bit => {
@@ -519,7 +552,8 @@ my $std_accum_yaxes = {
     colors	=> [qw(purple)],
     dbkeys      => [ 'start_time', 'key1' ],
     nogroup     => 1, # all columns are selected or constrained to single value
-    plottitle   => 'Queries With Recursion Desired bit set',
+    plottitle   => 'Queries with Recursion Desired bit set',
+    menutitle	=> 'RD bit',
   },
 
   do_bit => {
@@ -532,7 +566,8 @@ my $std_accum_yaxes = {
     colors	=> [qw(red)],
     dbkeys      => [ 'start_time', 'key1' ],
     nogroup     => 1, # all columns are selected or constrained to single value
-    plottitle   => 'Queries With DNSSEC OK bit set',
+    plottitle   => 'Queries with DNSSEC OK bit set',
+    menutitle	=> 'DO bit',
   },
 
   edns_version => {
@@ -544,6 +579,7 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     plottitle	=> 'EDNS Version Numbers',
+    menutitle	=> 'EDNS Version',
     map_legend	=> 1,
   },
 
@@ -560,12 +596,13 @@ my $std_accum_yaxes = {
 	    default => 1,
 	},
 	percent => {
-	    label => '% of Queries',
+	    label => 'Percent of Queries',
 	    divideflag => 0,
 	    default => 0,
 	},
     },
     plottitle	=> 'Query Name Lengths',
+    menutitle	=> 'Qname Length',
     xaxislabel	=> 'Name Length (bytes)',
     map_legend	=> 1,
   },
@@ -583,12 +620,13 @@ my $std_accum_yaxes = {
 	    default => 1,
 	},
 	percent => {
-	    label => '% of Queries',
+	    label => 'Percent of Queries',
 	    divideflag => 0,
 	    default => 0,
 	},
     },
     plottitle	=> 'Reply Code Message Lengths',
+    menutitle	=> 'Reply Length',
     xaxislabel	=> 'DNS Message Size (bytes)',
     map_legend	=> 1,
  },
@@ -601,7 +639,8 @@ my $std_accum_yaxes = {
     names	=> [ qw(NOERROR FORMERR SERVFAIL NXDOMAIN NOTIMPL REFUSED) ],
     colors	=> [ qw(brightgreen red purple blue orange magenta ) ],
     dbkeys      => [ 'key1', 'key2' ],
-    plottitle	=> 'Rcodes and Addrs',
+    plottitle	=> 'Rcodes by Client Address',
+    menutitle	=> 'Rcodes by Client Address',
     map_legend	=> 1,
     munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
@@ -617,6 +656,7 @@ my $std_accum_yaxes = {
     dbkeys      => [ 'key1' ],
     yaxes	=> $std_accum_yaxes,
     plottitle	=> 'Clients sending excessive root-servers.net queries',
+    menutitle	=> 'IPv6 Root Abusers',
     map_legend	=> 1,
     munge_func 	=> \&DSC::grapher::munge_anonymize_ip,
   },
@@ -629,6 +669,7 @@ my $std_accum_yaxes = {
     colors	=> [qw(red brightgreen purple)],
     dbkeys      => [ 'start_time', 'key1', 'key2' ],
     plottitle   => 'CHAOS Queries',
+    menutitle	=> 'CHAOS',
     map_legend	=> 1,
     munge_func  => sub {
 	# XXX: 'shift' represents the old data hashref

@@ -52,6 +52,11 @@ my $TEXT;	# = $DSC::grapher::text::TEXTS{name}
 my $ACCUM_TOP_N;
 my $cgi;
 my $now;
+my %servers;
+my $dbh;
+my $base_uri;
+my @valid_domains;
+my %serverset;
 
 # we have to make this damn hack for mod_perl, which makes it unsafe
 # to modify $PLOT
@@ -70,11 +75,16 @@ sub prepare {
 	$cgi = new CGI();
 	$now = time;
 	$use_data_uri = 0 if defined $cgi->param('x');
+	@valid_domains = ();
+	%serverset = ();
 }
 
 sub cgi { $cgi; }
 
 sub run {
+	$base_uri = $ENV{REQUEST_URI};
+	$base_uri =~ s/\?.*//; # remove parameters
+
 	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
 	# read config file early so we can set back the clock if necessary
 	#
@@ -86,8 +96,8 @@ sub run {
 	debug(2, "Client is = " . ($ENV{REMOTE_ADDR}||'') . ":" . ($ENV{REMOTE_PORT}||''));
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
 	my $untaint = CGI::Untaint->new($cgi->Vars);
-	$ARGS{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
-	$ARGS{node} = $untaint->extract(-as_printable => 'node')	|| 'all';
+	$ARGS{server} = [$cgi->param('server')]	|| [()];
+	$ARGS{node} = [$cgi->param('node')]	|| [()];
 	$ARGS{window} = $untaint->extract(-as_integer => 'window')	|| 3600*4;
 	$ARGS{binsize} = $untaint->extract(-as_integer => 'binsize')	|| default_binsize($ARGS{window});
 	$ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'bynode';
@@ -96,22 +106,31 @@ sub run {
 	$ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $now;
 	$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis')	|| undef;
 	$ARGS{key} = $untaint->extract(-as_printable => 'key');		# sanity check below
+	$ARGS{nocache} = defined $cgi->param('nocache');
 
 	$PLOT = $DSC::grapher::plot::PLOTS{$ARGS{plot}};
 	$TEXT = $DSC::grapher::text::TEXTS{$ARGS{plot}};
-	error("Unknown plot type: $ARGS{plot}") unless (defined ($PLOT));
-	error("Unknown server: $ARGS{server}") unless ('none' eq $ARGS{server} || defined ($CFG->{servers}{$ARGS{server}}));
-	error("Unknown node: $ARGS{node}") unless ('all' eq $ARGS{node} || (grep {$_ eq $ARGS{node}} @{$CFG->{servers}{$ARGS{server}}}));
+	error("Unknown plot type: $ARGS{plot}")
+	    unless (defined ($PLOT));
 	error("Time window cannot be larger than a month") if ($ARGS{window} > 86400*31);
 	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 	$dbg_lvl = $PLOT->{debugflag} if defined($PLOT->{debugflag});
 
-	@plotkeys = @{$PLOT->{keys}};
-	@plotnames = @{$PLOT->{names}};
-	@plotcolors = @{$PLOT->{colors}};
+	$dbh = get_dbh;
+	load_servers();
 
 	# Sanity checking on CGI args
-	#
+
+	for my $server (@{$ARGS{server}}) {
+	    error("Unknown server: $server")
+		unless $servers{$server}
+	}
+	for my $sn (@{$ARGS{node}}) {
+	    my ($server, $node) = split('/', $sn);
+	    error("Unknown node: $sn")
+		unless $servers{$server}->{nodes}->{$node};
+	}
+
 	if (!defined($ARGS{yaxis})) {
 		$ARGS{yaxis} = find_default_yaxis_type();
 	} elsif (!defined($PLOT->{yaxes}{$ARGS{yaxis}})) {
@@ -125,24 +144,56 @@ sub run {
 
 	$ARGS{end} = $now if ($ARGS{end} > $now);
 
-	if (defined($ARGS{key}) && grep {$_ eq $ARGS{key}} @{$PLOT->{keys}}) {
-		@plotkeys = ();
-		@plotnames = ();
-		@plotcolors = ();
-		for (my $i = 0; $i<int(@{$PLOT->{keys}}); $i++) {
-			next unless ($ARGS{key} eq ${$PLOT->{keys}}[$i]);
-			push(@plotkeys, ${$PLOT->{keys}}[$i]);
-			push(@plotnames, ${$PLOT->{names}}[$i]);
-			push(@plotcolors, ${$PLOT->{colors}}[$i]);
+	@plotkeys = ();
+	@plotnames = ();
+	@plotcolors = ();
+
+	if ('bynode' eq $ARGS{plot}) {
+	    # special case
+	    for my $server (keys %servers) {
+		my $allnodes = (grep $server eq $_, @{$ARGS{server}});
+		for my $node (keys %{$servers{$server}->{nodes}}) {
+		    my $name = $server . '/' . $node;
+		    if ($allnodes || grep $name eq $_, @{$ARGS{node}}) {
+			push @plotkeys, $servers{$server}->{nodes}->{$node};
+			push @plotnames, $server . '/' . $node;
+			my $i = $servers{$server}->{nodes}->{$node} - 1;
+			$i %= $#{$PLOT->{colors}} + 1;
+			push @plotcolors, ${$PLOT->{colors}}[$i];
+		    }
 		}
+	    }
+	} elsif ('byserver' eq $ARGS{plot}) {
+	    # special case
+	    for my $server (keys %servers) {
+		if (grep($_ eq $server, @{$ARGS{server}}) ||
+		    grep($_ =~ m!^$server/!, @{$ARGS{node}}))
+		{
+		    push @plotkeys, $servers{$server}->{id};
+		    push @plotnames, $server;
+		    my $i = $servers{$server}->{id} - 1;
+		    $i %= $#{$PLOT->{colors}} + 1;
+		    push @plotcolors, ${$PLOT->{colors}}[$i];
+		}
+	    }
+	} elsif (defined($ARGS{key}) && grep {$_ eq $ARGS{key}} @{$PLOT->{keys}}) {
+	    for (my $i = 0; $i<int(@{$PLOT->{keys}}); $i++) {
+		next unless ($ARGS{key} eq ${$PLOT->{keys}}[$i]);
+		push(@plotkeys, ${$PLOT->{keys}}[$i]);
+		push(@plotnames, ${$PLOT->{names}}[$i]);
+		push(@plotcolors, ${$PLOT->{colors}}[$i]);
+	    }
 	} else {
-		delete $ARGS{key};
+	    @plotkeys = @{$PLOT->{keys}};
+	    @plotnames = @{$PLOT->{names}};
+	    @plotcolors = @{$PLOT->{colors}};
+	    delete $ARGS{key};
 	}
 
-
 	debug(1, "ARGS=" . Dumper(\%ARGS));
-	my $cache_name = cache_name($ARGS{server},
-		$ARGS{node},
+	my $cache_name = cache_name(
+		join(' ', @{$ARGS{server}}),
+		join(' ', @{$ARGS{node}}),
 		$ARGS{plot} . ($CFG->{anonymize_ip} ? '_anon' : ''),
 		$ARGS{end},
 		$ARGS{window},
@@ -151,12 +202,13 @@ sub run {
 		$ARGS{yaxis},
 		$ARGS{key});
 
+	debug(1, "cache_name = %s", $cache_name);
 	$ACCUM_TOP_N = 20 if ($ARGS{mini});
 
 	if ('html' eq $ARGS{content}) {
 		if (!reason_to_not_plot()) {
 			debug(1, "no reason to not plot");
-			if (!check_image_cache($cache_name)) {
+			if ($ARGS{nocache} || !check_image_cache($cache_name)) {
 				debug(1, "need to make cached image");
 				make_image($cache_name);
 			}
@@ -165,19 +217,23 @@ sub run {
 		my $t = Text::Template->new(
 			TYPE => 'FILE',
 			SOURCE => $source,
-			DELIMITERS => ['[', ']']
+			DELIMITERS => ['[[', ']]']
 		);
 		error("Text::Template failed for plot.page") unless defined ($t);
 		print $cgi->header(-type=>'text/html',-expires=>$expires_time)
 			unless (defined($CFG->{'no_http_header'}));
 		my %vars_to_pass = (
+			action => $base_uri,
+			init_plottypes => init_plottypes(),
 			navbar_servers_nodes => navbar_servers_nodes(),
 			navbar_plot => navbar_plot(),
 			navbar_window => navbar_window(),
+			navbar_arrows => navbar_arrows(),
 			navbar_yaxis => navbar_yaxis(),
 			img_with_map => img_with_map($cache_name),
 			description => $TEXT->{description},
-			title => "DSC: $PLOT->{plottitle}: $ARGS{server}/$ARGS{node}",
+			title => "DSC: " . ($PLOT->{plottitle}) . ": " .
+			    join(", ", map(CGI::escapeHTML($_), @{$ARGS{server}}, @{$ARGS{node}})),
 		);
 		print $t->fill_in(
 			PACKAGE => 'DSC::grapher::template',
@@ -195,10 +251,12 @@ sub run {
 }
 
 sub reason_to_not_plot {
-	return 'Please select a server' if ($ARGS{server} eq 'none');
-	return 'Please select a plot' if ($ARGS{plot} eq 'none');
-	my $PLOT = $DSC::grapher::plot::PLOTS{$ARGS{plot}};
-	return 'Please select a Query Attributes sub-item' if ($PLOT->{plot_type} eq 'none');
+	return 'Please select one or more servers or nodes.'
+	    if (!@{$ARGS{server}} && !@{$ARGS{node}});
+	return 'Please select a plot.'
+	    if ($ARGS{plot} eq 'none');
+	return 'Please select (nodes of) a single server.'
+	    if ($ARGS{plot} =~ /valid_tld/ && scalar(keys %serverset) > 1);
 	undef;
 }
 
@@ -211,7 +269,9 @@ sub make_image {
 
 	return unless defined($PLOT);
 	return if ($PLOT->{plot_type} eq 'none');
-	debug(1, "Plotting $PLOT->{plottitle}: $ARGS{server} $ARGS{node} $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}");
+	debug(1, "Plotting $PLOT->{plottitle}: " .
+	    join(',', @{$ARGS{server}}, @{$ARGS{node}}) .
+	    " $ARGS{plot} $ARGS{end} $ARGS{window} $ARGS{binsize}");
 	$start = time;
 	$data = load_data();
 	debug(5, 'data=' . Dumper($data)) if ($dbg_lvl >= 5);
@@ -250,6 +310,20 @@ sub datafile_name {
 	return $PLOT->{datafile} || $plot;
 }
 
+sub load_servers {
+    # get server and node ids
+    my $sth = $dbh->prepare(
+	"SELECT server.name, server.server_id, node.name, node.node_id " .
+	"FROM node JOIN server ON server.server_id = node.server_id");
+    $sth->execute();
+    while (my @row = $sth->fetchrow_array) {
+	my ($server, $server_id, $node, $node_id) = @row;
+	$servers{$server}->{id} = $server_id;
+	$servers{$server}->{nodes}->{$node} = $node_id;
+    }
+    debug(2, 'servers=' . Dumper(%servers)) if ($dbg_lvl >= 2);
+}
+
 sub load_data {
 	my %hash;
 	my $start = time;
@@ -258,32 +332,28 @@ sub load_data {
 	my $first = $ARGS{end} - $ARGS{window};
 	my $nl = 0;
 	my $datafile = datafile_name($ARGS{plot});
-	my $dbh = get_dbh;
 
-	# get server and node ids
-	my ($server_id) = $dbh->selectrow_array(
-	    "SELECT server_id FROM server WHERE name = ?",
-	    undef, $ARGS{server});
-	my %node_id;
-	my $aref;
-	my $sth = $dbh->prepare(
-	    "SELECT name, node_id FROM node WHERE server_id = ?");
-	$sth->execute($server_id);
-	while ($aref = $sth->fetch) {
-	    $node_id{$aref->[0]} = $aref->[1];
+	my $server_ids = [];
+	my $node_ids = [];
+
+	# get ids of requested servers and nodes
+	for my $server (@{$ARGS{server}}) {
+	    push @$server_ids, $servers{$server}->{id};
+	    $serverset{$server} = 1;
+	}
+	for my $sn (@{$ARGS{node}}) {
+	    my ($server, $node) = split('/', $sn);
+	    debug(3, "server=$server, node=$node");
+	    push @$node_ids, $servers{$server}->{nodes}->{$node};
+	    $serverset{$server} = 1;
 	}
 
 	# load data
-	my $node_id = ($ARGS{node} eq 'all') ? undef :
-	    ($node_id{$ARGS{node}} || 0);
 	debug(1, "reading $datafile");
-	$nl += DSC::db::read_data($dbh, \%hash, $datafile, $server_id, $node_id,
+	$nl += DSC::db::read_data($dbh, \%hash, $datafile,
+	    $server_ids, $node_ids,
 	    $first, $last, $PLOT->{nogroup}, $PLOT->{dbkeys}, $PLOT->{where});
-	if ('bynode' eq $ARGS{plot}) {
-	    # special case
-	    @plotkeys = values %node_id;
-	    @plotnames = keys %node_id;
-	}
+
 	my $stop = time;
 	debug(1, "reading datafile took %d seconds, %d lines",
 		$stop-$start,
@@ -510,7 +580,7 @@ sub trace_plot {
 		delete $copy{key};
 		my $uri = urlpath(%copy);
 		$uri .= '&key=@KEY@';
-		debug(1, "click URI = $uri");
+		debug(1, "click URI = %s", $uri);
 		$bars_opts->{-legend_clickmapurl_tmpl} = $uri;
 	}
 
@@ -587,7 +657,7 @@ sub accum1d_plot {
 		delete $copy{key};
 		my $uri = urlpath(%copy);
 		$uri .= '&key=@KEY@';
-		debug(1, "click URI = $uri");
+		debug(1, "click URI = %s", $uri);
 		$bars_opts->{-legend_clickmapurl_tmpl} = $uri;
 	}
  
@@ -667,7 +737,7 @@ sub accum2d_plot {
 		delete $copy{key};
 		my $uri = urlpath(%copy);
 		$uri .= '&key=@KEY@';
-		debug(1, "click URI = $uri");
+		debug(1, "click URI = %s", $uri);
 		$bars_opts->{-legend_clickmapurl_tmpl} = $uri;
 	}
  
@@ -735,7 +805,7 @@ sub hist2d_plot {
 		delete $copy{key};
 		my $uri = urlpath(%copy);
 		$uri .= '&key=@KEY@';
-		debug(1, "click URI = $uri");
+		debug(1, "click URI = %s", $uri);
 		$bars_opts->{-legend_clickmapurl_tmpl} = $uri;
 	}
 
@@ -755,7 +825,7 @@ sub hist2d_plot {
 sub error {
 	my $msg = shift;
 	print $cgi->header(-type=>'text/html',-expires=>$expires_time);
-	print "<h2>$0 ERROR</h2><p>$msg\n";
+	print "<h2>$0 ERROR</h2><p>" . CGI::escapeHTML($msg) . "\n";
 	exit(1);
 }
 
@@ -933,11 +1003,10 @@ sub image_to_buf {
 	$buf;
 }
 
-my @valid_domains = ();
-
 sub valid_tld_filter {
 	my $tld = shift;
-	@valid_domains = DSC::grapher::config::get_valid_domains($ARGS{server})
+	@valid_domains = DSC::grapher::config::get_valid_domains(
+	    (keys %serverset)[0])
 		unless @valid_domains;
 	grep {$_ && $tld eq $_} @valid_domains;
 }
@@ -1014,12 +1083,20 @@ sub img_with_map {
 
 sub urlpath {
 	my %args = @_;
-	my $cgi = $ENV{REQUEST_URI} || '';
-	if ((my $n = index($cgi,'?')) > 0) {
-		$cgi = substr($cgi,0,$n);
-	}
 	delete_default_args(\%args);
-	"$cgi?" . join('&', map {"$_=" . uri_escape($args{$_})} keys %args);
+	my @newargs;
+	while (my ($key, $value) = each %args) {
+	    next unless $value;
+	    if (ref $value) {
+		# reference to a list of values
+		push @newargs, map {"$key=" . uri_escape($_)} @$value;
+	    } else {
+		# single value
+		push @newargs, "$key=" . uri_escape($value);
+	    }
+	}
+
+	"$base_uri?" . join('&', @newargs);
 }
 
 sub merge_args {
@@ -1044,8 +1121,6 @@ sub delete_default_args {
 	unless (defined($pn)) {
 		carp "oops";
 	}
-	delete $href->{server} if ('none' eq $href->{server});
-	delete $href->{node} if ('all' eq $href->{node});
 	delete $href->{binsize} if (default_binsize($ARGS{window}) == $href->{binsize});
 	delete $href->{binsize} unless ($DSC::grapher::plot::PLOTS{$pn}->{plot_type} eq 'trace');
 	delete $href->{end} if ((abs($now - $href->{end}) / $href->{window}) < 0.20);
@@ -1055,9 +1130,6 @@ sub delete_default_args {
 	delete $href->{mini} if (0 == $href->{mini});
 	delete $href->{yaxis} if (find_default_yaxis_type() eq $href->{yaxis});
 }
-
-sub server { $ARGS{server}; }
-sub node { $ARGS{node}; }
 
 sub a_markup {
 	my $h = shift;
@@ -1096,8 +1168,26 @@ sub navbar_item {
 	my $class = ($val eq $ARGS{$arg}) ? 'current' : undef;
 	my %newargs;
 	$newargs{$arg} = $val;
-	$newargs{node} = 'all' if ($arg eq 'server');
 	a_markup(urlpath(merge_args(%newargs)), $label, $class) . "\n";
+}
+
+sub navbar_checkbox {
+	my $arg = shift;
+	my $val = shift;
+	my $label = shift;
+	my $attrs = { type => 'checkbox', name => $arg, value => $val };
+	$attrs->{checked} = 'checked' if (grep $val eq $_, @{$ARGS{$arg}});
+	html_markup('input', $attrs, undef) . $label;
+}
+
+sub navbar_option {
+	my $arg = shift;
+	my $val = shift;
+	my $label = shift;
+	my $attrs = shift || {};
+	$attrs->{value} = $val;
+	$attrs->{selected} = 'selected' if ($val eq $ARGS{$arg});
+	html_markup('option', $attrs, $label) . "\n";
 }
 
 sub navbar_arrow_item {
@@ -1113,108 +1203,176 @@ sub navbar_arrow_item {
 sub sublist_item { '&rsaquo;&nbsp;'; }
 
 sub navbar_servers_nodes {
-	my $snippet = '';
-	$snippet .= "<ul>\n";
-	my @items;
-	foreach my $server ( keys %{$CFG->{servers}} ) {
-		#print STDERR "server=$server\n";
-		$snippet .= "<li>" . navbar_item('server',$server,$server);
-		if ($ARGS{server} eq $server) {
-			foreach my $node (@{$CFG->{servers}{$server}}) {
-				$snippet .= '<li>' . sublist_item();
-				$snippet .= navbar_item('node',$node,$node);
-			}
-		}
+    my $buf = '';
+    $buf .= "<ul>\n";
+    my @items;
+    foreach my $server ( keys %{$CFG->{servers}} ) {
+	#print STDERR "server=$server\n";
+	$buf .= "<li><div>" . navbar_checkbox('server',$server,$server) . "</div>\n";
+	$buf .= "<ul>\n";
+	foreach my $node (@{$CFG->{servers}{$server}}) {
+	    $buf .= html_markup('li', undef, navbar_checkbox('node',"$server/$node",$node)) . "\n";
 	}
-	$snippet .= "</ul>\n";
-	$snippet;
+	$buf .= "</ul></li>\n";
+    }
+    $buf .= "</ul>\n";
+    $buf;
+}
+
+sub navbar_plot_option($) {
+    my $val = shift;
+    my $label = shift;
+
+    my $PLOT = $DSC::grapher::plot::PLOTS{$val};
+    navbar_option('plot', $val, $PLOT->{menutitle});
 }
 
 sub navbar_plot {
-	my @items = ();
-	my $pn = $ARGS{plot} || die;
-	push(@items, navbar_item('plot','bynode','By Node')) if ($ARGS{node} eq 'all');
-	push(@items, navbar_item('plot','qtype','Qtypes'));
-	if ($pn eq 'qtype' || $pn eq 'dnssec_qtype') {
-		push(@items, sublist_item() . navbar_item('plot','dnssec_qtype','DNSSEC Qtypes'));
-	}
-	push(@items, navbar_item('plot','rcode','Rcodes'));
-	push(@items, navbar_item('plot','client_subnet2_accum','Classification'));
-	if ($pn =~ /^client_subnet2/) {
-		push(@items, sublist_item() . navbar_item('plot','client_subnet2_trace', 'trace'));
-		push(@items, sublist_item() . navbar_item('plot','client_subnet2_count', 'count'));
-	}
-	push(@items, navbar_item('plot','client_subnet_accum','Client Geography'));
-	push(@items, navbar_item('plot','qtype_vs_all_tld','TLDs'));
-	if ($pn =~ /qtype_vs_.*_tld/) {
-		push(@items, sublist_item() . navbar_item('plot','qtype_vs_valid_tld', 'valid'));
-		push(@items, sublist_item() . navbar_item('plot','qtype_vs_invalid_tld', 'invalid'));
-		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
-	}
-	push(@items, navbar_item('plot','client_addr_vs_rcode_accum','Rcodes by Client Address'));
-	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
-	push(@items, navbar_item('plot','ipv6_rsn_abusers_accum','IPv6 root abusers'));
-	push(@items, navbar_item('plot','opcode','Opcodes'));
-	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
-	if ($pn =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
-		push(@items, sublist_item() . navbar_item('plot','idn_qname', 'IDN Qnames'));
-		push(@items, sublist_item() . navbar_item('plot','rd_bit', 'RD bit'));
-		push(@items, sublist_item() . navbar_item('plot','do_bit', 'DO bit'));
-		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
-	}
-	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
-	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
-	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
-	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
-	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
+    my @items = ();
+    push(@items, navbar_plot_option('byserver'));
+    push(@items, navbar_plot_option('bynode'));
+    #push(@items, '<optgroup label="Qtypes">');
+	push(@items, navbar_plot_option('qtype'));
+	push(@items, navbar_plot_option('dnssec_qtype'));
+    #push(@items, '</optgroup>');
+    push(@items, navbar_plot_option('rcode'));
+    push(@items, navbar_plot_option('client_subnet2_accum'));
+	push(@items, navbar_plot_option('client_subnet2_trace'));
+	push(@items, navbar_plot_option('client_subnet2_count'));
+    push(@items, navbar_plot_option('client_subnet_accum'));
+    #push(@items, '<optgroup label="TLDs">');
+	push(@items, navbar_plot_option('qtype_vs_all_tld'));
+	push(@items, navbar_plot_option('qtype_vs_valid_tld'));
+	push(@items, navbar_plot_option('qtype_vs_invalid_tld'));
+	push(@items, navbar_plot_option('qtype_vs_numeric_tld'));
+    #push(@items, '</optgroup>');
+    push(@items, navbar_plot_option('client_addr_vs_rcode_accum'));
+    push(@items, navbar_plot_option('certain_qnames_vs_qtype'));
+    push(@items, navbar_plot_option('ipv6_rsn_abusers_accum'));
+    push(@items, navbar_plot_option('opcode'));
+    #push(@items, '<optgroup label="Query Attributes">');
+	push(@items, navbar_plot_option('idn_qname'));
+	push(@items, navbar_plot_option('rd_bit'));
+	push(@items, navbar_plot_option('do_bit'));
+	push(@items, navbar_plot_option('edns_version'));
+    #push(@items, '</optgroup>');
+    push(@items, navbar_plot_option('chaos_types_and_names'));
+    push(@items, navbar_plot_option('direction_vs_ipproto'));
+    push(@items, navbar_plot_option('qtype_vs_qnamelen'));
+    push(@items, navbar_plot_option('rcode_vs_replylen'));
+    join('', @items);
 }
 
 # This is function called from an "HTML" file by the template parser
 #
 sub navbar_window {
-	my @items = ();
-	my $pn = $ARGS{plot};
-	my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
-	if (defined($PLOT->{plot_type}) && $PLOT->{plot_type} =~ /^accum|^hist/) {
-		foreach my $w (@{$CFG->{accum_windows}}) {
-			push(@items, navbar_item('window',units_to_seconds($w),$w));
-		}
-		my @arrows;
-		push(@arrows, navbar_arrow_item(-$ARGS{window}, '1leftarrow',
-			"Backward " . seconds_to_units($ARGS{window})));
-		push(@arrows, navbar_arrow_item($ARGS{window}, '1rightarrow',
-			"Forward " . seconds_to_units($ARGS{window})));
-		push(@items, html_markup("div", {class=>'center'}, join("&nbsp;&nbsp;", @arrows)));
+    my @accum_windows = ();
+    my @trace_windows = ();
+    my @windows = ();
+    my $accum_class = 'accum1d accum2d hist2d';
+    my $trace_class = 'trace';
+    my $pn = $ARGS{plot};
+    my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
+    my $w;
+
+    # merge trace_windows and accum_windows
+    foreach my $w (@{$CFG->{trace_windows}}) {
+	push(@trace_windows, [units_to_seconds($w), $w, $trace_class]);
+    }
+    foreach my $w (@{$CFG->{accum_windows}}) {
+	push(@accum_windows, [units_to_seconds($w), $w, $accum_class]);
+    }
+    while (@trace_windows && @accum_windows) {
+	if ($trace_windows[0][0] == $accum_windows[0][0]) {
+	    shift @trace_windows;
+	    $w = shift @accum_windows;
+	    $w->[2] = $trace_class.' '.$accum_class;
+	} elsif ($trace_windows[0][0] < $accum_windows[0][0]) {
+	    $w = shift @trace_windows;
 	} else {
-		# trace
-		foreach my $w (@{$CFG->{trace_windows}}) {
-			push(@items, navbar_item('window',units_to_seconds($w),$w));
-		}
-		my @arrows;
-		push(@arrows, navbar_arrow_item(-$ARGS{window}, '2leftarrow',
-			"Backward " . seconds_to_units($ARGS{window})));
-		push(@arrows, navbar_arrow_item(-$ARGS{window}/2, '1leftarrow',
-			"Backward " . seconds_to_units($ARGS{window}/2)));
-		push(@arrows, navbar_arrow_item($ARGS{window}/2, '1rightarrow',
-			"Forward " . seconds_to_units($ARGS{window}/2)));
-		push(@arrows, navbar_arrow_item($ARGS{window}, '2rightarrow',
-			"Forward " . seconds_to_units($ARGS{window})));
-		push(@items, html_markup("div", {class=>'center'}, join("&nbsp;&nbsp;", @arrows)));
+	    $w = shift @accum_windows;
 	}
-	join('<br>', @items);
+	push @windows, $w;
+    }
+    push @windows, @trace_windows;
+    push @windows, @accum_windows;
+
+    my $buf = '';
+    foreach my $w (@windows) {
+	$buf .= navbar_option('window', $w->[0], $w->[1], {class=>$w->[2]});
+    }
+
+    $buf .= html_markup('input', {type=>'hidden', name=>'end', value=>$ARGS{end}}, undef);
+    if ($ARGS{nocache}) {
+	$buf .= html_markup('input', {type=>'hidden', name=>'nocache'}, undef);
+    }
+    if ($ARGS{key}) {
+	$buf .= html_markup('input', {type=>'hidden', name=>'key', value=>$ARGS{key}}, undef);
+    }
+    $buf;
+}
+
+# This is function called from an "HTML" file by the template parser
+#
+sub navbar_arrows {
+    my @arrows = ();
+
+#    navbar_option('end', $ARGS{end}+$delta, 
+#	"Backward " . seconds_to_units($ARGS{window})));
+
+    push(@arrows, navbar_arrow_item(-$ARGS{window}, '2leftarrow',
+	"Backward " . seconds_to_units($ARGS{window})));
+    push(@arrows, navbar_arrow_item(-$ARGS{window}/2, '1leftarrow',
+	"Backward " . seconds_to_units($ARGS{window}/2)));
+    push(@arrows, navbar_arrow_item($ARGS{window}/2, '1rightarrow',
+	"Forward " . seconds_to_units($ARGS{window}/2)));
+    push(@arrows, navbar_arrow_item($ARGS{window}, '2rightarrow',
+	"Forward " . seconds_to_units($ARGS{window})));
+
+    join("&nbsp;&nbsp;", @arrows);
 }
 
 
 # This is function called from an "HTML" file by the template parser
 #
-sub navbar_yaxis {
-	my @items = ();
-	my $pn = $ARGS{plot};
-	my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
-	foreach my $t (keys %{$PLOT->{yaxes}}) {
-		push(@items, navbar_item('yaxis',$t, $PLOT->{yaxes}{$t}{label}));
+sub init_plottypes {
+    my $buf = "var PLOTS = {\n";
+    while (my ($pn, $PLOT) = (each %DSC::grapher::plot::PLOTS)) {
+	next if $PLOT->{plot_type} eq 'none';
+	$buf .= "  $pn: {\n";
+	$buf .= "    plot_type:  \"" . $PLOT->{plot_type} . "\",\n";
+	$buf .= "    axes: { ";
+	for my $t (qw(rate count percent)) {
+	    $buf .= "$t: ";
+	    if ($PLOT->{yaxes}{$t}{label}) {
+		$buf .= '"' . $PLOT->{yaxes}{$t}{label} . '"';
+	    } else {
+		$buf .= 'null';
+	    }
+	    $buf .= ", ";
 	}
-	join('<br>', @items);
+	$buf .= "},\n";
+	$buf .= "  },\n";
+    }
+    $buf .= "};\n";
+    $buf;
+}
+
+# This is function called from an "HTML" file by the template parser
+#
+sub navbar_yaxis {
+    my @items = ();
+    my $pn = $ARGS{plot};
+    my $PLOT = $DSC::grapher::plot::PLOTS{$pn};
+    for my $t (qw(rate count percent)) {
+	if ($PLOT->{yaxes}{$t}{label}) {
+	    push(@items, navbar_option('yaxis', $t, $PLOT->{yaxes}{$t}{label}));
+	} else {
+	    push(@items, navbar_option('yaxis', $t, $t,
+		{style=>'display:none;', disabled=>'disabled'}));
+	}
+    }
+    join('', @items);
 }
 
 sub units_to_seconds {

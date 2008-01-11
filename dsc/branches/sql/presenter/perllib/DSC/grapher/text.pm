@@ -21,16 +21,14 @@ use warnings;
 
 %TEXTS = (
 
+  byserver => {
+    description => '<p>The <strong>Queries by Server</strong> plot shows the
+		number of queries sent to each server.',
+  },
+
   bynode => {
     description => '<p>The <strong>Queries by Node</strong> plot shows the
-		amount of queries coming from each node in the server
-		cluster.  If you would like to see the traffic for
-		a single node, select the node name in the Servers/Nodes
-		menu on the left.</p>
-		<p>Note that the <em>By Node</em> option disappears from the
-		Plots list when you are viewing the data for a single node.
-		It reappears if you click on the Server name in the
-		Servers/Nodes menu.</p>',
+		number of queries sent to each node.',
   },
 
   qtype => {

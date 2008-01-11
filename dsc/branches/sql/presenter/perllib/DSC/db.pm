@@ -270,7 +270,7 @@ get_node_id => sub {
 # separately, and merging the results in perl.
 #
 read_data => sub {
-	my ($dbh, $href, $type, $server_id, $node_id, $start_time, $end_time,
+	my ($dbh, $href, $type, $server_ids, $node_ids, $start_time, $end_time,
 	    $nogroup, $dbkeys, $where) = @_;
 	my $nl = 0;
 	my $tabname = "dsc_$type";
@@ -279,7 +279,7 @@ read_data => sub {
 	my $drvname = $dbh->{Driver}->{Name};
 
 	my $needgroup = !$nogroup ||
-	    !defined $node_id && !(grep /^node_id/, @$dbkeys);
+	    (!@$node_ids && !(grep /^node_id/, @$dbkeys));
 	$needgroup &&= value('usegroup', $dbh);
 	my @params = ();
 	my $sql1 = 'SELECT ' . join(', ', @$dbkeys);
@@ -293,11 +293,14 @@ read_data => sub {
 	    $sql2 .= 'start_time = ? ';
 	    push @params, $start_time;
 	}
-	$sql2 .= 'AND server_id = ? ';
-	push @params, $server_id;
-	if (defined $node_id) {
-	    $sql2 .= 'AND node_id = ? ';
-	    push @params, $node_id;
+	if (@$server_ids || @$node_ids) {
+	    my @sn = ();
+	    $sql2 .= "AND (" .
+	    join(' OR ',
+		map('server_id=?', @$server_ids),
+		map('node_id=?', @$node_ids)) .
+	    ") ";
+	    push @params, @$server_ids, @$node_ids;
 	}
 	if ($where) {
 	    $sql2 .= 'AND ' . $where . ' ';
