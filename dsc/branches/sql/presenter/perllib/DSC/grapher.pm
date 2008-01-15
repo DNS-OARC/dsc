@@ -9,6 +9,7 @@ use DSC::grapher::config;
 
 use POSIX;
 use List::Util qw(max);
+use Getopt::Long;
 use CGI;
 use CGI::Untaint;
 use Data::Dumper;
@@ -28,7 +29,6 @@ BEGIN {
 	@EXPORT	 = qw(
 		&prepare
 		&run
-		&cgi
 	);
 	%EXPORT_TAGS = ( );
 	@EXPORT_OK   = qw();
@@ -72,41 +72,95 @@ sub prepare {
 	$CFG = ();	# from dsc-cfg.pl
 	$PLOT = undef;
 	$ACCUM_TOP_N = 40;
-	$cgi = new CGI();
+	$base_uri = $ENV{REQUEST_URI};
+	if ($base_uri) {
+	    $base_uri =~ s/\?.*//; # remove parameters
+	    $cgi = new CGI();
+	    $use_data_uri = 0 if defined $cgi->param('x');
+	}
 	$now = time;
-	$use_data_uri = 0 if defined $cgi->param('x');
 	@valid_domains = ();
 	%serverset = ();
 }
 
-sub cgi { $cgi; }
+sub usage() {
+    print STDERR <<EOF
+
+Usage: $0 [options] fileprefix
+
+Options:
+  --server=servername
+  --node=nodename
+  --window=n (in seconds)
+  --binsize=n (in seconds)
+  --plot=plotname
+  --mini
+  --end=n (unix timestamp)
+  --yaxis={rate,count,percent}
+  --key=keyname
+  --dbg_lvl=n
+
+EOF
+}
 
 sub run {
-	$base_uri = $ENV{REQUEST_URI};
-	$base_uri =~ s/\?.*//; # remove parameters
-
 	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
 	# read config file early so we can set back the clock if necessary
 	#
 	$CFG = DSC::grapher::config::read_config($cfgfile);
-	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	$now -= $CFG->{embargo} if defined $CFG->{embargo};
 
-	debug(1, "===> starting at " . POSIX::strftime('%+', localtime($now)));
-	debug(2, "Client is = " . ($ENV{REMOTE_ADDR}||'') . ":" . ($ENV{REMOTE_PORT}||''));
+	if ($cgi) {
+	    debug(1, "===> starting at " . POSIX::strftime('%+', localtime($now)));
+	    debug(2, "Client is = " . ($ENV{REMOTE_ADDR}||'') . ":" .
+		($ENV{REMOTE_PORT}||''));
+	    # get HTTP parameters
+	    my $untaint = CGI::Untaint->new($cgi->Vars);
+	    $ARGS{server} = [$cgi->param('server')];
+	    $ARGS{node} = [$cgi->param('node')];
+	    $ARGS{window} = $untaint->extract(-as_integer => 'window');
+	    $ARGS{binsize} = $untaint->extract(-as_integer => 'binsize');
+	    $ARGS{plot} = $untaint->extract(-as_printable => 'plot');
+	    $ARGS{content} = $untaint->extract(-as_printable => 'content');
+	    $ARGS{mini} = $untaint->extract(-as_integer => 'mini');
+	    $ARGS{end} = $untaint->extract(-as_integer => 'end');
+	    $ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis') || undef;
+	    $ARGS{key} = $untaint->extract(-as_printable => 'key');
+	    $ARGS{nocache} = defined $cgi->param('nocache');
+	    # http defaults
+	    $ARGS{content} ||= 'html';
+	} else {
+	    # get command line arguments
+	    $ARGS{dbg_lvl} = \$dbg_lvl;
+	    if (!GetOptions(\%ARGS,
+		"server=s@",
+		"node=s@",
+		"window=i",
+		"binsize=i",
+		"plot=s",
+		"mini",
+		"end=i",
+		"yaxis=s",
+		"key=s",
+		"dbg_lvl=i",
+		) || ($#ARGV != 0))
+	    {
+		usage();
+		exit(1);
+	    }
+	    $ARGS{output} = $ARGV[0];
+	}
+
+	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
-	my $untaint = CGI::Untaint->new($cgi->Vars);
-	$ARGS{server} = [$cgi->param('server')]	|| [()];
-	$ARGS{node} = [$cgi->param('node')]	|| [()];
-	$ARGS{window} = $untaint->extract(-as_integer => 'window')	|| 3600*4;
-	$ARGS{binsize} = $untaint->extract(-as_integer => 'binsize')	|| default_binsize($ARGS{window});
-	$ARGS{plot} = $untaint->extract(-as_printable => 'plot')	|| 'bynode';
-	$ARGS{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
-	$ARGS{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
-	$ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $now;
-	$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis')	|| undef;
-	$ARGS{key} = $untaint->extract(-as_printable => 'key');		# sanity check below
-	$ARGS{nocache} = defined $cgi->param('nocache');
+
+	# common defaults
+	$ARGS{server} ||= [()];
+	$ARGS{node} ||= [()];
+	$ARGS{window} ||= 3600*4;
+	$ARGS{binsize} ||= default_binsize($ARGS{window});
+	$ARGS{plot} ||= 'bynode';
+	$ARGS{end} ||= $now;
 
 	$PLOT = $DSC::grapher::plot::PLOTS{$ARGS{plot}};
 	$TEXT = $DSC::grapher::text::TEXTS{$ARGS{plot}};
@@ -191,21 +245,21 @@ sub run {
 	}
 
 	debug(1, "ARGS=" . Dumper(\%ARGS));
-	my $cache_name = cache_name(
-		join(' ', @{$ARGS{server}}),
-		join(' ', @{$ARGS{node}}),
-		$ARGS{plot} . ($CFG->{anonymize_ip} ? '_anon' : ''),
-		$ARGS{end},
-		$ARGS{window},
-		$ARGS{binsize},
-		$ARGS{mini},
-		$ARGS{yaxis},
-		$ARGS{key});
-
-	debug(1, "cache_name = %s", $cache_name);
 	$ACCUM_TOP_N = 20 if ($ARGS{mini});
 
-	if ('html' eq $ARGS{content}) {
+	if ($cgi) {
+	    my $cache_name = cache_name(
+		    join(' ', @{$ARGS{server}}),
+		    join(' ', @{$ARGS{node}}),
+		    $ARGS{plot} . ($CFG->{anonymize_ip} ? '_anon' : ''),
+		    $ARGS{end},
+		    $ARGS{window},
+		    $ARGS{binsize},
+		    $ARGS{mini},
+		    $ARGS{yaxis},
+		    $ARGS{key});
+	    debug(1, "cache_name = %s", $cache_name);
+	    if ('html' eq $ARGS{content}) {
 		if (!reason_to_not_plot()) {
 			debug(1, "no reason to not plot");
 			if ($ARGS{nocache} || !check_image_cache($cache_name)) {
@@ -239,14 +293,26 @@ sub run {
 			PACKAGE => 'DSC::grapher::template',
 			HASH => \%vars_to_pass,
 			);
-	} else {
-		make_image($cache_name) unless (!reason_to_not_plot() && check_image_cache($cache_name));
+	    } else {
+		make_image($cache_name) unless (reason_to_not_plot() || check_image_cache($cache_name));
 		if (-f cache_image_path($cache_name)) {
 			print $cgi->header(-type=>'image/png',-expires=>$expires_time)
 			    unless (defined($CFG->{'no_http_header'}));
 			cat_image($cache_name);
 		}
+	    }
+
+	} else {
+	    if (my $reason = reason_to_not_plot()) {
+		error($reason);
+	    } else {
+		make_image($ARGS{output});
+		unless (cached_image_size($ARGS{output}) > 0) {
+		    error("No data to display at this time");
+		}
+	    }
 	}
+
 	debug(1, "<=== finished at " . POSIX::strftime('%+', localtime($now)));
 }
 
@@ -542,7 +608,7 @@ sub trace_plot {
 	my $mapfile = undef;
 
 	ploticus_init("png", "$pngfile.new");
-	if ($PLOT->{map_legend}) {
+	if ($cgi && $PLOT->{map_legend}) {
 		$mapfile = cache_mapfile_path($cache_name);
 		ploticus_arg("-csmap", "");
 		ploticus_arg("-mapfile", "$mapfile.new");
@@ -614,7 +680,7 @@ sub accum1d_plot {
 	my $mapfile = undef;
 
 	ploticus_init("png", "$pngfile.new");
-	if ($PLOT->{map_legend}) {
+	if ($cgi && $PLOT->{map_legend}) {
 		$mapfile = cache_mapfile_path($cache_name);
 		ploticus_arg("-csmap", "");
 		ploticus_arg("-mapfile", "$mapfile.new");
@@ -693,7 +759,7 @@ sub accum2d_plot {
 	my $mapfile = undef;
 
 	ploticus_init("png", "$pngfile.new");
-	if ($PLOT->{map_legend}) {
+	if ($cgi && $PLOT->{map_legend}) {
 		$mapfile = cache_mapfile_path($cache_name);
 		ploticus_arg("-csmap", "");
 		ploticus_arg("-mapfile", "$mapfile.new");
@@ -764,7 +830,7 @@ sub hist2d_plot {
 	my $mapfile = undef;
 
 	ploticus_init("png", "$pngfile.new");
-	if ($PLOT->{map_legend}) {
+	if ($cgi && $PLOT->{map_legend}) {
 		$mapfile = cache_mapfile_path($cache_name);
 		ploticus_arg("-csmap", "");
 		ploticus_arg("-mapfile", "$mapfile.new");
@@ -824,8 +890,12 @@ sub hist2d_plot {
 
 sub error {
 	my $msg = shift;
-	print $cgi->header(-type=>'text/html',-expires=>$expires_time);
-	print "<h2>$0 ERROR</h2><p>" . CGI::escapeHTML($msg) . "\n";
+	if ($cgi) {
+	    print $cgi->header(-type=>'text/html',-expires=>$expires_time);
+	    print "<h2>$0 ERROR</h2><p>" . CGI::escapeHTML($msg) . "\n";
+	} else {
+	    print STDERR "$0 ERROR: " . $msg . "\n";
+	}
 	exit(1);
 }
 
@@ -940,12 +1010,12 @@ sub cache_name {
 
 sub cache_image_path {
 	my $prefix = shift || die;
-	"/usr/local/dsc/cache/$prefix.png";
+	($cgi ? "/usr/local/dsc/cache/" : "") . "$prefix.png";
 }
 
 sub cache_mapfile_path {
 	my $prefix = shift || die;
-	"/usr/local/dsc/cache/$prefix.map";
+	($cgi ? "/usr/local/dsc/cache/" : "") . "$prefix.map";
 }
 
 # return 0 if we should generate a cached image
@@ -1057,7 +1127,7 @@ sub img_with_map {
 	}
 
 	unless (cached_image_size($cache_name) > 0) {
-		return "<div class=\"notice\">No Data To Display At This Time</div>";
+		return "<div class=\"notice\">No data to display at this time</div>";
 	}
 
 	my $pn = $ARGS{plot};
@@ -1127,7 +1197,7 @@ sub delete_default_args {
 	delete $href->{window} if (3600*4 == $href->{window});
 	delete $href->{plot} if ('none' eq $href->{plot});
 	delete $href->{content} if ('html' eq $href->{content});
-	delete $href->{mini} if (0 == $href->{mini});
+	delete $href->{mini} if (!$href->{mini});
 	delete $href->{yaxis} if (find_default_yaxis_type() eq $href->{yaxis});
 }
 
