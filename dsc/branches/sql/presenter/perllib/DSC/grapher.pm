@@ -89,8 +89,8 @@ sub usage() {
 Usage: $0 [options] fileprefix
 
 Options:
-  --server=servername
-  --node=nodename
+  --server=servername (may be repeated)
+  --node=nodename (may be repeated)
   --window=n (in seconds)
   --binsize=n (in seconds)
   --plot=plotname

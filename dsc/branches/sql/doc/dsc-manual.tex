@@ -1217,9 +1217,7 @@ clock synchronized to the correct time.
 
 \chapter{Viewing {\dsc} Graphs}
 
-To view {\dsc} data in a web browser, simply enter the
-URL to the \path|dsc-grapher.pl| CGI.   But before you
-do that, you'll need to create a grapher configuration file.
+\section{Configuration}
 
 \path|dsc-grapher.pl| uses a simple configuration file to set certain
 menu and database options.  This  configuration file is
@@ -1337,8 +1335,41 @@ required:
 \end{description}
 
 
+\section{Viewing in a Web Browser}
+
+To view {\dsc} data in a web browser, simply enter the
+URL to the \path|dsc-grapher.pl| CGI.  But before you
+do that, you'll need to create a grapher configuration file
+as described in the previous section.
+
 The first few times you try \path|dsc-grapher.pl|, be sure to run
 {\tt tail -f} on the HTTP server error.log file.
+
+\section{Generating Plots from the Command Line}
+
+You can also run \path|dsc-grapher.pl| directly from the command line
+to generate a plot image file.  The usage is:
+
+\begin{MyVerbatim}[commandchars=\\\{\}]
+dsc-grapher.pl [{\it{}options}] {\it{}fileprefix}
+\end{MyVerbatim}
+The generated image will be put in a file named ``{\it fileprefix}.png''.
+
+The options correspond to the parameters you can set in the web interface.
+All have reasonable defaults except for {\tt --server} and {\tt --node}.
+
+\begin{tabular}{lp{55ex}}
+  {\tt --plot={\it plot}} & type of plot (default: {\tt bynode}) \\
+  {\tt --server={\it server}} & name of server; may be repeated \\
+  {\tt --node={\it node}} & name of node; may be repeated \\
+  {\tt --window={\it n}} & the time range, in seconds \\
+  {\tt --binsize={\it n}} & size of bins in time-based plots, in seconds (default is based on window) \\
+  {\tt --end={\it n}} & unix timestamp of end of window (default: now) \\
+  {\tt --yaxis={\it type}} & choice of dependent axis:
+	{\tt rate}, {\tt count}, or {\tt percent} \\
+  {\tt --key={\it key}} & plot only the single named key \\
+  {\tt --mini} & generate a small plot \\
+\end{tabular}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
