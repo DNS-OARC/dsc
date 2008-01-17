@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 cd /usr/local/dsc/data
 for SERVER in *; do
 	test -d $SERVER || continue
@@ -18,7 +20,7 @@ for SERVER in *; do
 					echo -n '      '
 					mv -v $DAT .
 				done
-				rmdir *
+				ls | grep -v '\.dat$' | xargs rmdir
 			cd ..
 		done
 		cd ..
