@@ -729,7 +729,7 @@ This installs five files:
 \begin{Verbatim}
 /usr/local/dsc/bin/dsc
 /usr/local/dsc/etc/dsc.conf.sample
-/usr/local/dsc/libexec/upload-prep.sh
+/usr/local/dsc/libexec/upload-prep.pl
 /usr/local/dsc/libexec/upload-rsync.sh
 /usr/local/dsc/libexec/upload-x509.sh
 \end{Verbatim}
@@ -756,14 +756,14 @@ enough disk space to queue a lot of XML files in the
 event of an outage.
 
 In general we want to be able to upload XML files to multiple
-presenters.  This is the reason behind the {\tt upload-prep.sh}
+presenters.  This is the reason behind the {\tt upload-prep.pl}
 script.  This script runs every 60 seconds from cron:
 
 \begin{MyVerbatim}
-* * * * * /usr/local/dsc/libexec/upload-prep.sh
+* * * * * /usr/local/dsc/libexec/upload-prep.pl
 \end{MyVerbatim}
 
-{\tt upload-prep.sh} looks for \path|dsc.conf| files in
+{\tt upload-prep.pl} looks for \path|dsc.conf| files in
 \path|/usr/local/dsc/etc| by default.  For each config file
 found, it cd's to the {\em run\_dir\/} and links\footnote{as in
 ``hard link'' made with \path|/bin/ln|.}
@@ -785,7 +785,7 @@ might look like:
 % mkdir $prefix/run/ns0/upload/archive
 \end{MyVerbatim}
 
-With that directory structure, the {\tt upload-prep.sh} script moves
+With that directory structure, the {\tt upload-prep.pl} script moves
 XML files from the \path|ns0| directory to the two
 upload directories, \path|oarc| and \path|archive|.
 
@@ -1345,7 +1345,7 @@ rcode & Rcode & DNS reply code \\
 rd\_bit & RD & Check if Recursion Desired bit set \\
 tld & TLD & TLD of the query name \\
 transport & Transport & Transport protocol for the DNS message (UDP or TCP) \\
-dns\_ip\_version & IP version of the packet carrying the DNS message \\
+dns\_ip\_version & IPVersion & IP version of the packet carrying the DNS message \\
 \hline
 \end{tabular}
 \caption{\label{tbl-dns-indexers}DNS message indexers}
