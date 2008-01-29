@@ -15,14 +15,30 @@ use POSIX qw(nice);
 use XML::Simple;
 
 my $pid_basename = pid_basename('dsc-xml-extractor');
-die "$pid_basename Already running!" if Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename);
+if (Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename)) {
+	warn "$pid_basename Already running!";
+	exit(0);
+}
 nice(19);
 
 my $dbg = 0;
 my $DBCACHE;
 my $N = 0;
 
-foreach my $fn (<*.xml incoming/*/*.xml>) {
+foreach my $yyyymmdd (<incoming/????-??-??>) {
+	process_xml_dir("$yyyymmdd/*.xml");
+	rmdir $yyyymmdd;
+	exit(0);
+}
+# backward compatibility.  look for XML files in $node dir if
+# there was no incoming/yyyy-mm-dd dir
+process_xml_dir('*.xml');
+exit(0);
+
+sub process_xml_dir {
+    my $theGlob = shift;
+    print "globbing $theGlob\n";
+    foreach my $fn (glob $theGlob) {
 	my $donefn = get_donefn($fn);
 	if (-s $donefn) {
 		print STDERR "removing duplicate $fn in ", `pwd`, "\n";
@@ -38,12 +54,13 @@ foreach my $fn (<*.xml incoming/*/*.xml>) {
 	unless (defined $x) {
 		warn "extract died with ", $@, "\n";
 		mkdir ("errors", 0755) unless (-d "errors");
-		rename ($fn, "errors/$fn") || warn "rename $fn -> errors/$fn: $!";
+		rename ($fn, "errors") || warn "rename $fn -> errors/$fn: $!";
 		next;
 	}
 	next unless ($x > 0);
 	rename($fn, $donefn) or die "$fn -> $donefn: $!";
 	last if (300 == $N++);
+    }
 }
 
 sub get_donefn {
