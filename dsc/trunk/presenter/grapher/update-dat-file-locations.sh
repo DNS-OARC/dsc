@@ -20,7 +20,7 @@ for SERVER in *; do
 					echo -n '      '
 					mv -v $DAT .
 				done
-				ls | grep -v '\.dat$' | xargs rmdir
+				ls | grep -v '\.dat$' | xargs rmdir || true
 			cd ..
 		done
 		cd ..
