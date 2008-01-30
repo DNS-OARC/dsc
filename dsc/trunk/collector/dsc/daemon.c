@@ -18,6 +18,9 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#ifdef linux
+#include <sys/statfs.h>
+#endif
 
 #include "xmalloc.h"
 #include "dns_message.h"
