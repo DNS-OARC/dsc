@@ -1,0 +1,110 @@
+2008-01-09 Duane Wessels
+
+    Changed the location of the presenter's ".dat" files.  Previously
+    there were stored in a directory such as 20080109/qtype/qtype.dat
+    and now they will be moved one directory up and stored as
+    20080109/qtype.dat.
+
+    The source distribution includes a script found at
+    presenter/grapher/update-dat-file-locations.sh that will traverse
+    the /usr/local/dsc/data directory and move all the .dat files
+    one level up.
+
+    When upgrading to this version of DSC you should first stop the
+    refile-and-grok.sh cron job, install the DSC software, and then
+    run the update-dat-file-locations.sh script (after reading it).
+
+2008-01-09 Duane Wessels
+
+    Data passed from collector to presenter is now contained in a
+    single XML file, rather than one XML file per dataset.  This
+    should significantly reduce filesystem pressure (i.e., 20x fewer
+    files to be stored and sent) on both sides.
+
+2008-01-07 Duane Wessels
+
+    The collector now stores to-be-uploaded XML files in
+    date-named subdirectories.  This reduces filesystem pressure
+    in the event that the collector cannot communicate with the
+    presenter for an extended period of time.
+
+    To accomodate this change, the upload-prep.sh script has been
+    replaced with a Perl version, named upload-prep.pl.  After
+    installing DSC you should change your cron job to use the new
+    script.
+
+2008-01-04 Ken Keys
+   
+    Previously, a child was forked for each collection interval.
+    Memory allocated for collected data was freed by simply exiting
+    the child.  But this left no way to preserve any data across
+    intervals.
+
+    Now, interval collectors do not fork.  To avoid the tedious,
+    slow, and error-prone nature of normal malloc-and-free memory
+    management, we instead store non-persistent data in memory
+    allocated from an "arena", which can be freed quickly and safely.
+    We don't need to free individual allocations, but we do need
+    to reset some pointers to allocated memory.
+
+    TCP resets are now properly handled and TCP state is freed
+    if a connection has been idle for too long.
+
+2008-01-04 Duane Wessels
+
+    The collector configuration (dsc.conf) has a new 'minfree_bytes'
+    directive.  If the amount of free disk space on dsc's partition
+    falls below this limit, dsc will not write any XML files -- that
+    data will be lost.
+
+    The default value is 5 MB.
+
+2007-12-14 Alexander Gall
+
+    Added a 'dns_ip_version' indexer so that we can track DNS messages
+    sent over v4 and v6.
+
+2007-12-04 Duane Wessels
+
+    Fixed a collector bug when listening on multiple interfaces of
+    different datalink types (e.g., eth0 and lo).
+
+2007-11-26 Duane Wessels
+
+    Added a 'hide_nodes' feature to dsc-grapher.cfg.  If 'hide_nodes'
+    is given, then the navigation menu will not display the nodes
+    underneath a server.  Note, however, that knowledgeable users
+    could still view individual node data by manually if they know
+    the names by specifying it in the URL query terms.
+
+2007-10-09 Duane Wessels
+
+    Changed the presenter to not use "data URIs" by default.  Now
+    Internet Explorer users should be happier.
+
+2007/06/14 Duane Wessels
+
+    Added -f command line option to keep 'dsc' collector as a foreground
+    process.
+
+2007-06-11 Duane Wessels
+
+    dsc-xml-extractor.pl now looks for incoming XML files in
+    "incoming/YYYY-MM-DD" directories.
+
+2007-06-07 Duane Wessels
+
+    New TCP code did not compile cleanly on Linux.  Added some
+    #ifdefs and macros for Linux compatibility on TCP headers.
+
+2007-05-15 Ken Keys, Duane Wessels
+
+    TCP support
+    New 'transport' indexer for DNS messages.  Indicates whether message
+    arrived over UDP or TCP.
+
+2007-04-04 Duane Wessels
+
+    IPv6 support
+    New 'ip_version' indexer.  Indicates whether DNS message arrived
+    via IPv4 or IPv6.
