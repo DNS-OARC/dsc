@@ -33,6 +33,10 @@ cd $PREFIX/run-$NODE/to-$DEST
 #xec > $PROG.out
 #xec 2>&1
 
+YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
+test -n "$YYYYMMDD" || exit 0
+cd $YYYYMMDD
+
 k=`ls -r | grep \.xml$ | head -500` || true
 test -n "$k" || exit 0
 
@@ -60,5 +64,7 @@ tar czf - $k \
 		fi
 	  done \
 	| xargs rm
+
+cd ..; rmdir $YYYYMMDD 2>/dev/null
 
 exit 0

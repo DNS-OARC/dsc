@@ -79,9 +79,11 @@
 #define th_seq seq
 #define TCPFLAGFIN(a) (a)->fin
 #define TCPFLAGSYN(a) (a)->syn
+#define TCPFLAGRST(a) (a)->rst
 #else
 #define TCPFLAGSYN(a) ((a)->th_flags&TH_SYN)
 #define TCPFLAGFIN(a) ((a)->th_flags&TH_FIN)
+#define TCPFLAGRST(a) ((a)->th_flags&TH_RST)
 #endif
 
 #ifndef IP_OFFMASK
@@ -136,6 +138,7 @@ handle_udp(const struct udphdr *udp, int len, transport_message *tm)
 
 #define MAX_TCP_WINDOW_SIZE (0xFFFF << 14)
 #define MAX_TCP_STATE 65535
+#define MAX_TCP_IDLE 60 /* tcpstate is tossed if idle for this many seconds */
 
 /* These numbers define the sizes of small arrays which are simpler to work
  * with than dynamically allocated lists. */
@@ -173,13 +176,23 @@ typedef struct {
 } tcp_segbuf_t;
 
 /* TCP reassembly state */
-typedef struct {
+typedef struct tcpstate {
+    tcpHashkey_t key;
+    struct tcpstate *newer, *older;
+    long last_use;
     uint32_t seq_start; /* seq# of length field of next DNS msg */
     short msgbufs; /* number of msgbufs in use */
     int8_t fin; /* have we seen a FIN? */
     tcp_msgbuf_t *msgbuf[MAX_TCP_MSGS];
     tcp_segbuf_t *segbuf[MAX_TCP_SEGS];
 } tcpstate_t;
+
+/* List of tcpstates ordered by time of last use, so we can quickly identify
+ * and discard stale entries. */
+struct {
+    tcpstate_t *oldest;
+    tcpstate_t *newest;
+} tcpList;
 
 static void
 tcpstate_reset(tcpstate_t *tcpstate, uint32_t seq)
@@ -191,14 +204,14 @@ tcpstate_reset(tcpstate_t *tcpstate, uint32_t seq)
 	tcpstate->msgbufs = 0;
 	for (i = 0; i < MAX_TCP_MSGS; i++) {
 	    if (tcpstate->msgbuf[i]) {
-		free(tcpstate->msgbuf[i]);
+		xfree(tcpstate->msgbuf[i]);
 		tcpstate->msgbuf[i] = NULL;
 	    }
 	}
     }
     for (i = 0; i < MAX_TCP_SEGS; i++) {
 	if (tcpstate->segbuf[i]) {
-	    free(tcpstate->segbuf[i]);
+	    xfree(tcpstate->segbuf[i]);
 	    tcpstate->segbuf[i] = NULL;
 	}
     }
@@ -208,7 +221,7 @@ static void
 tcpstate_free(void *p)
 {
     tcpstate_reset((tcpstate_t *)p, 0);
-    free(p);
+    xfree(p);
 }
 
 static unsigned int
@@ -250,9 +263,6 @@ tcp_cmpfunc(const void *a, const void *b)
  * order), and dns messages that do not necessarily start on segment
  * boundaries.
  *
- * TODO:
- * - handle RST 
- * - deallocate state for connections that have been idle too long
  */
 void
 handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
@@ -262,7 +272,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     uint16_t dnslen;
     int segoff, seglen;
 
-    if (debug_flag)
+    if (debug_flag > 1)
 	fprintf(stderr, "handle_tcp_segment(): seq=%u, len=%d\n", seq, len);
 
     if (len <= 0) /* there is no more payload */
@@ -272,7 +282,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	/* payload is 2-byte length field plus 0 or more bytes of DNS message */
 	if (len < sizeof(uint16_t)) {
 	    /* makes no sense */
-	    if (debug_flag)
+	    if (debug_flag > 1)
 		fprintf(stderr, "handle_tcp_segment: nonsense len in first segment\n");
 	    return;
 	}
@@ -281,7 +291,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	len -= sizeof(uint16_t);
 	segment += sizeof(uint16_t);
 	seq += sizeof(uint16_t);
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp_segment: first segment; dnslen = %d\n", dnslen);
 	if (len >= dnslen) {
 	    /* this segment contains a complete message - avoid the reassembly
@@ -289,7 +299,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    handle_dns(segment, dnslen, tm, dns_message_callback);
 	    /* handle the trailing part of the segment */
 	    if (len > dnslen) {
-		if (debug_flag)
+		if (debug_flag > 1)
 		    fprintf(stderr, "handle_tcp_segment: segment tail\n");
 		handle_tcp_segment(segment + dnslen, len - dnslen,
 		    seq + dnslen, tcpstate, tm);
@@ -299,7 +309,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	/* allocate a msgbuf for reassembly */
 	for (m = 0; tcpstate->msgbuf[m]; ) {
 	    if (++m == MAX_TCP_MSGS) {
-		if (debug_flag)
+		if (debug_flag > 1)
 		    fprintf(stderr, "handle_tcp_segment: out of msgbufs\n");
 		return;
 	    }
@@ -315,7 +325,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	tcpstate->msgbuf[m]->holes = 1;
 	tcpstate->msgbuf[m]->hole[0].start = len;
 	tcpstate->msgbuf[m]->hole[0].len = dnslen - len;
-	if (debug_flag) {
+	if (debug_flag > 1) {
 	    fprintf(stderr, "handle_tcp_segment: new msgbuf %d: seq = %u, dnslen = %d, hole start = %d, hole len = %d\n",
 		m,
 		tcpstate->msgbuf[m]->seq,
@@ -337,7 +347,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 		tcpstate->segbuf[s] = NULL;
 		handle_tcp_segment(segbuf->buf, segbuf->len, segbuf->seq,
 		    tcpstate, tm);
-		free(segbuf);
+		xfree(segbuf);
 	    }
 	}
 	return;
@@ -347,17 +357,17 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     for (m = 0; ; m++) {
 	if (m >= MAX_TCP_MSGS) {
 	    /* seg does not match any msgbuf; just hold on to it. */
-	    if (debug_flag)
+	    if (debug_flag > 1)
 		fprintf(stderr, "handle_tcp_segment: seg does not match any msgbuf\n");
 
 	    if (seq - tcpstate->seq_start > MAX_TCP_WINDOW_SIZE) {
-		if (debug_flag)
+		if (debug_flag > 1)
 		    fprintf(stderr, "handle_tcp_segment: seg is outside window; discarding\n");
 		return;
 	    }
 	    for (s = 0; ; s++) {
 		if (s >= MAX_TCP_SEGS) {
-		    if (debug_flag)
+		    if (debug_flag > 1)
 			fprintf(stderr, "handle_tcp_segment: out of segbufs\n");
 		    return;
 		}
@@ -367,7 +377,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 		tcpstate->segbuf[s]->seq = seq;
 		tcpstate->segbuf[s]->len = len;
 		memcpy(tcpstate->segbuf[s]->buf, segment, len);
-		if (debug_flag) {
+		if (debug_flag > 1) {
 		    fprintf(stderr, "handle_tcp_segment: new segbuf %d: seq = %u, len = %d\n",
 			s,
 			tcpstate->segbuf[s]->seq,
@@ -387,7 +397,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    if (segoff + len > tcpstate->msgbuf[m]->dnslen) {
 		/* segment would overflow msgbuf */
 		seglen = tcpstate->msgbuf[m]->dnslen - segoff;
-		if (debug_flag)
+		if (debug_flag > 1)
 		    fprintf(stderr, "handle_tcp_segment: using partial segment %d\n", seglen);
 	    } else {
 		seglen = len;
@@ -409,7 +419,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	if (segoff + seglen <= hole_start)
 	    continue; /* segment is totally before hole */
 	/* The segment overlaps this hole.  Delete the hole. */
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp_segment: overlaping hole %d: %d %d\n", i, hole_start, hole_len);
 	tcpstate->msgbuf[m]->hole[i].len = 0;
 	tcpstate->msgbuf[m]->holes--;
@@ -419,7 +429,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    newhole->start = segoff + seglen;
 	    newhole->len = (hole_start + hole_len) - newhole->start;
 	    tcpstate->msgbuf[m]->holes++;
-	    if (debug_flag)
+	    if (debug_flag > 1)
 		fprintf(stderr, "handle_tcp_segment: new post-hole %d: %d %d\n", i, newhole->start, newhole->len);
 	}
 	if (segoff > hole_start) {
@@ -427,7 +437,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    int j;
 	    for (j=0; ; j++) {
 		if (j == MAX_TCP_HOLES) {
-		    if (debug_flag)
+		    if (debug_flag > 1)
 			fprintf(stderr, "handle_tcp_segment: out of hole descriptors\n");
 		    return;
 		}
@@ -439,7 +449,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    tcpstate->msgbuf[m]->holes++;
 	    newhole->start = hole_start;
 	    newhole->len = segoff - hole_start;
-	    if (debug_flag)
+	    if (debug_flag > 1)
 		fprintf(stderr, "handle_tcp_segment: new pre-hole %d: %d %d\n", j, newhole->start, newhole->len);
 	}
 	if (segoff >= hole_start &&
@@ -454,23 +464,56 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     /* copy payload to appropriate location in reassembly buffer */
     memcpy(&tcpstate->msgbuf[m]->buf[segoff], segment, seglen);
 
-    if (debug_flag)
+    if (debug_flag > 1)
 	fprintf(stderr, "handle_tcp_segment: holes remaining: %d\n", tcpstate->msgbuf[m]->holes);
 
     if (tcpstate->msgbuf[m]->holes == 0) {
 	/* We now have a completely reassembled dns message */
 	handle_dns(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm, dns_message_callback);
-	free(tcpstate->msgbuf[m]);
+	xfree(tcpstate->msgbuf[m]);
 	tcpstate->msgbuf[m] = NULL;
 	tcpstate->msgbufs--;
     }
 
     if (seglen < len) {
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp_segment: segment tail\n");
 	handle_tcp_segment(segment + seglen, len - seglen, seq + seglen,
 	    tcpstate, tm);
     }
+}
+
+static void
+tcpList_add_newest(tcpstate_t *tcpstate)
+{
+    tcpstate->older = tcpList.newest;
+    tcpstate->newer = NULL;
+    *(tcpList.newest ? &tcpList.newest->newer : &tcpList.oldest) = tcpstate;
+    tcpList.newest = tcpstate;
+}
+
+static void
+tcpList_remove(tcpstate_t *tcpstate)
+{
+    *(tcpstate->older ? &tcpstate->older->newer : &tcpList.oldest) =
+	tcpstate->newer;
+    *(tcpstate->newer ? &tcpstate->newer->older : &tcpList.newest) =
+	tcpstate->older;
+}
+
+void
+tcpList_remove_older_than(long t)
+{
+    int n = 0;
+    tcpstate_t *tcpstate;
+    while (tcpList.oldest && tcpList.oldest->last_use < t) {
+	tcpstate = tcpList.oldest;
+	tcpList_remove(tcpstate);
+	hash_remove(&tcpstate->key, tcpHash);
+	n++;
+    }
+    if (debug_flag > 1)
+	fprintf(stderr, "discarded %d old tcpstates\n", n);
 }
 
 void
@@ -479,7 +522,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
     int offset = tcp->th_off << 2;
     uint32_t seq;
     tcpstate_t *tcpstate = NULL;
-    tcpHashkey_t key, *newkey;
+    tcpHashkey_t key;
     char label[384];
 
     tm->src_port = nptohs(&tcp->th_sport);
@@ -490,7 +533,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
     key.sport = tm->src_port;
     key.dport = tm->dst_port;
 
-    if (debug_flag) {
+    if (debug_flag > 1) {
 	char *p = label;
 	inXaddr_ntop(&key.src_ip_addr, p, 128);
 	p += strlen(p);
@@ -500,26 +543,26 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	p += sprintf(p, ":%d ", key.dport);
     }
 
-    if (debug_flag)
+    if (debug_flag > 1)
 	fprintf(stderr, "handle_tcp(): %s\n", label);
 
     if (port53 != key.dport && port53 != key.sport)
 	return;
 
     if (NULL == tcpHash) {
-        tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc,
-	    free, tcpstate_free);
+        tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc, 0,
+	    NULL, tcpstate_free);
 	if (NULL == tcpHash)
 	    return;
     }
 
     seq = nptohl(&tcp->th_seq);
     len -= offset; /* len = length of TCP payload */
-    if (debug_flag)
+    if (debug_flag > 1)
 	fprintf(stderr, "handle_tcp: seq = %u, len = %d", seq, len);
 
     tcpstate = hash_find(&key, tcpHash);
-    if (debug_flag) {
+    if (debug_flag > 1) {
 	if (tcpstate)
 	    fprintf(stderr, ", seq_start = %u, msgs = %d\n", tcpstate->seq_start, tcpstate->msgbufs);
 	else
@@ -530,13 +573,37 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	/* There's no existing state, and this is not the start of a stream.
 	 * We have no way to synchronize with the stream, so we give up.
 	 * (This commonly happens for the final ACK in response to a FIN.) */
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp: no state\n");
 	return;
     }
 
+    if (tcpstate)
+	tcpList_remove(tcpstate); /* remove from its current position */
+
+    if (TCPFLAGRST(tcp)) {
+	if (debug_flag > 1)
+	    fprintf(stderr, "handle_tcp: RST at %u\n", seq);
+
+	/* remove the state for this direction */
+	if (tcpstate)
+	    hash_remove(&key, tcpHash); /* this also frees tcpstate */
+
+	/* remove the state for the opposite direction */
+	key.src_ip_addr = tm->dst_ip_addr;
+	key.dst_ip_addr = tm->src_ip_addr;
+	key.sport = tm->dst_port;
+	key.dport = tm->src_port;
+	tcpstate = hash_find(&key, tcpHash);
+	if (tcpstate) {
+	    tcpList_remove(tcpstate);
+	    hash_remove(&key, tcpHash); /* this also frees tcpstate */
+	}
+	return;
+    }
+
     if (TCPFLAGSYN(tcp)) {
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp: SYN at %u\n", seq);
 	seq++; /* skip the syn */
 	if (tcpstate) {
@@ -546,14 +613,8 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	    if (!tcpstate)
 		return;
 	    tcpstate_reset(tcpstate, seq);
-	    newkey = xmalloc(sizeof(*newkey));
-	    if (!newkey) {
-		free(tcpstate);
-		return;
-	    }
-	    *newkey = key;
-	    if (0 != hash_add(newkey, tcpstate, tcpHash)) {
-		free(newkey);
+	    tcpstate->key = key;
+	    if (0 != hash_add(&tcpstate->key, tcpstate, tcpHash)) {
 		tcpstate_free(tcpstate);
 		return;
 	    }
@@ -564,16 +625,21 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 
     if (TCPFLAGFIN(tcp) && !tcpstate->fin) {
 	/* End of tcp stream */
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp: FIN at %u\n", seq);
 	tcpstate->fin = 1;
     }
 
     if (tcpstate->fin && tcpstate->msgbufs == 0) {
 	/* FIN was seen, and there are no incomplete msgbufs left */
-	if (debug_flag)
+	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp: connection done\n");
-	hash_remove(&key, tcpHash);
+	hash_remove(&key, tcpHash); /* this also frees tcpstate */
+
+    } else {
+	/* We're keeping this tcpstate.  Store it in tcpList by age. */
+	tcpstate->last_use = tm->ts.tv_sec;
+	tcpList_add_newest(tcpstate);
     }
 }
 
@@ -609,12 +675,12 @@ handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 void
 handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
 {
-    ip_message *i;
+    ip_message i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
     uint16_t payload_len = nptohs(&ip6->ip6_plen);
 
-    if (debug_flag)
+    if (debug_flag > 1)
 	fprintf(stderr, "handle_ipv6()\n");
 
     /*
@@ -655,15 +721,13 @@ handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
         payload_len -= ext_hdr_len;
     }                           /* while */
 
-    i = xcalloc(1, sizeof(*i));
-    i->version = 6;
+    i.version = 6;
     inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
     inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
-    i->src = tm->src_ip_addr;
-    i->dst = tm->dst_ip_addr;
-    i->proto = nexthdr;
-    ip_message_callback(i);
-    free(i);
+    i.src = tm->src_ip_addr;
+    i.dst = tm->dst_ip_addr;
+    i.proto = nexthdr;
+    ip_message_callback(&i);
 
     /* Catch broken and empty packets */
     if ((offset + payload_len) > len)
@@ -805,7 +869,7 @@ match_vlan(const u_char *pkt)
 	vlan = ntohs(vlan) & 0xfff;
     else
 	vlan = vlan & 0xfff;
-    if (debug_flag)
+    if (debug_flag > 1)
 	fprintf(stderr, "vlan is %d\n", vlan);
     for (i = 0; i < n_vlan_ids; i++)
 	if (vlan_ids[i] == vlan)
@@ -849,12 +913,6 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 #endif
 
     last_ts = hdr->ts;
-    if (start_ts.tv_sec == 0)
-	start_ts = last_ts;
-#if 0
-    if (debug_flag)
-	fprintf(stderr, "handle_pcap()\n");
-#endif
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
     tm.ts = hdr->ts;
@@ -876,6 +934,10 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 fd_set *
 Pcap_select(const fd_set * theFdSet, int sec, int usec)
 {
+    /* XXX BUG: libpcap may have already buffered a packet that we have not
+     * processed yet, but this select will not wake up until new data arrives
+     * on the socket.  This problem is serious only if there are long gaps
+     * between packets. */
     static fd_set R;
     struct timeval to;
     to.tv_sec = sec;
@@ -906,6 +968,7 @@ Pcap_init(const char *device, int promisc)
 
     port53 = 53;
     last_ts.tv_sec = last_ts.tv_usec = 0;
+    finish_ts.tv_sec = finish_ts.tv_usec = 0;
 
     if (0 == stat(device, &sb))
 	readfile_state = 1;
@@ -968,26 +1031,41 @@ Pcap_init(const char *device, int promisc)
 	    max_pcap_fds = i->fd + 1;
     }
     n_interfaces++;
+    if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_interfaces > n_pcap_offline)) {
+	syslog(LOG_ERR, "%s", "offline interface must be only interface");
+	exit(1);
+    }
 }
 
-void
+int
 Pcap_run(DMC * dns_callback, IPC * ip_callback)
 {
     int i;
+    int result = 1;
+#   define INTERVAL 60
 
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
     if (n_pcap_offline > 0) {
-	start_ts.tv_sec = 0;
-	start_ts.tv_usec = 0;
-	for (i = 0; i < n_interfaces; i++) {
-	    struct _interface *I = &interfaces[i];
-	    pcap_dispatch(I->pcap, -1, handle_pcap, (u_char *) I);
-	}
-	finish_ts = last_ts;
+	result = 0;
+	if (finish_ts.tv_sec > 0)
+	    finish_ts.tv_sec += INTERVAL;
+	do {
+	    result = pcap_dispatch(interfaces[0].pcap, -1, handle_pcap,
+		(u_char *) &interfaces[0]);
+	    if (result <= 0) /* error or EOF */
+		break;
+	    if (start_ts.tv_sec == 0) {
+		start_ts = last_ts;
+		finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
+		finish_ts.tv_usec = 0;
+	    }
+	} while (last_ts.tv_sec < finish_ts.tv_sec);
+	if (result <= 0)
+	    finish_ts = last_ts; /* finish was cut short */
     } else {
 	gettimeofday(&start_ts, NULL);
-	finish_ts.tv_sec = ((start_ts.tv_sec / 60) + 1) * 60;
+	finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
 	finish_ts.tv_usec = 0;
 	while (last_ts.tv_sec < finish_ts.tv_sec) {
 	    fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
@@ -1003,10 +1081,13 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 		struct _interface *I = &interfaces[i];
 		if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
 		    pcap_dispatch(I->pcap, 50, handle_pcap, (u_char *) I);
+		    /* XXX should check for errors here */
 		}
 	    }
 	}
     }
+    tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
+    return result;
 }
 
 void
@@ -1015,7 +1096,7 @@ Pcap_close(void)
     int i;
     for (i = 0; i < n_interfaces; i++)
 	pcap_close(interfaces[i].pcap);
-    free(interfaces);
+    xfree(interfaces);
     interfaces = NULL;
 }
 

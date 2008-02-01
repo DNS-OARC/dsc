@@ -14,6 +14,7 @@
 extern "C" int add_local_address(const char *);
 extern "C" int open_interface(const char *);
 extern "C" int set_run_dir(const char *);
+extern "C" int set_minfree_bytes(const char *);
 extern "C" int set_pid_file(const char *);
 extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
@@ -47,7 +48,8 @@ enum {
 	ctBVTBO,		// bpf_vlan_tag_byte_order
 	ctMatchVlan,
 	ctQnameFilter,
-	ctConfig = 30,
+	ctMinfreeBytes,
+	ctConfig = 40,
 	ctMax
 } configToken;
 
@@ -67,6 +69,7 @@ Rule rHostOrNet;
 
 Rule rInterface("Interface", 0);
 Rule rRunDir("RunDir", 0);
+Rule rMinfreeBytes("MinfreeBytes", 0);
 Rule rPidFile("PidFile", 0);
 Rule rLocalAddr("LocalAddr", 0);
 Rule rPacketFilterProg("PacketFilterProg", 0);
@@ -118,6 +121,13 @@ interpret(const Pree &tree, int level)
 		assert(tree.count() > 1);
                 if (set_run_dir(remove_quotes(tree[1].image()).c_str()) != 1) {
 			cerr << "interpret() failure in run_dir" << endl;
+			return 0;
+		}
+	} else
+        if (tree.rid() == rMinfreeBytes.id()) {
+		assert(tree.count() > 1);
+                if (set_minfree_bytes(tree[1].image().c_str()) != 1) {
+			cerr << "interpret() failure in minfree_bytes" << endl;
 			return 0;
 		}
 	} else
@@ -223,6 +233,7 @@ ParseConfig(const char *fn)
 	// rule/line level
 	rInterface = "interface" >>rBareToken >>";" ;
 	rRunDir = "run_dir" >>rQuotedToken >>";" ;
+	rMinfreeBytes = "minfree_bytes" >>rDecimalNumber >>";" ;
 	rPidFile = "pid_file" >>rQuotedToken >>";" ;
 	rLocalAddr = "local_address" >>rIPAddress >>";" ;
 	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
@@ -240,6 +251,7 @@ ParseConfig(const char *fn)
 	rConfig = *(
 		rInterface |
 		rRunDir |
+		rMinfreeBytes |
 		rPidFile |
 		rLocalAddr |
 		rPacketFilterProg |
@@ -267,6 +279,7 @@ ParseConfig(const char *fn)
 	// commit points
         rInterface.committed(true);
         rRunDir.committed(true);
+        rMinfreeBytes.committed(true);
         rLocalAddr.committed(true);
         rPacketFilterProg.committed(true);
         rDataset.committed(true);

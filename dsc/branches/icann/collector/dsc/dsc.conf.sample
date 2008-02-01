@@ -14,6 +14,14 @@ local_address ::1;
 #
 run_dir "/usr/local/dsc/var/run";
 
+# minfree_bytes
+#
+#	If the filesystem has less than this amount of free
+#	space, then dsc will not write its XML files to disk.
+#	The data will be lost.
+#
+minfree_bytes 5000000;
+
 # pid_file
 #
 #	filename where DSC should store its process-id

@@ -36,3 +36,10 @@ dns_ip_version_iterator(char **label)
     snprintf(*label = label_buf, 20, "IPv%d", next_iter);
     return next_iter++;
 }
+
+void
+dns_ip_version_reset(void)
+{
+    largest = 0;
+}
+

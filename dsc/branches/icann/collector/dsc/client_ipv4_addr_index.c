@@ -28,19 +28,19 @@ cip_indexer(const void *vp)
 	return -1;
     if (NULL == theHash) {
 	theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc,
-	    NULL, free);
+	    1, NULL, afree);
 	if (NULL == theHash)
 	    return -1;
     }
     if ((obj = hash_find(&m->client_ip_addr, theHash)))
 	return obj->index;
-    obj = xcalloc(1, sizeof(*obj));
+    obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
     obj->addr = m->client_ip_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
-	free(obj);
+	afree(obj);
 	return -1;
     }
     next_idx++;
@@ -63,6 +63,13 @@ cip_iterator(char **label)
     inXaddr_ntop(&obj->addr, label_buf, 128);
     *label = label_buf;
     return obj->index;
+}
+
+void
+cip_reset()
+{
+    theHash = NULL;
+    next_idx = 0;
 }
 
 static unsigned int

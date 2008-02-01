@@ -33,7 +33,7 @@ cip_net_indexer(const void *vp)
 	return -1;
     if (NULL == theHash) {
 	theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc,
-	    NULL, free);
+	    1, NULL, afree);
 	if (NULL == theHash)
 	    return -1;
     }
@@ -45,13 +45,13 @@ cip_net_indexer(const void *vp)
 	masked_addr = inXaddr_mask(&m->client_ip_addr, &v4mask);
     if ((obj = hash_find(&masked_addr, theHash)))
 	return obj->index;
-    obj = xcalloc(1, sizeof(*obj));
+    obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
     obj->addr = masked_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
-	free(obj);
+	afree(obj);
 	return -1;
     }
     next_idx++;
@@ -74,6 +74,13 @@ cip_net_iterator(char **label)
     inXaddr_ntop(&obj->addr, label_buf, 128);
     *label = label_buf;
     return obj->index;
+}
+
+void
+cip_net_reset()
+{
+    theHash = NULL;
+    next_idx = 0;
 }
 
 void

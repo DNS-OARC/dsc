@@ -258,7 +258,6 @@ sub datafile_path {
 		$ARGS{server},
 		$node,
 		yymmdd($when),
-		$dataset,
 		"$datafile.dat");
 }
 

@@ -35,3 +35,9 @@ opcode_iterator(char **label)
     snprintf(*label = label_buf, 20, "%d", next_iter);
     return next_iter++;
 }
+
+void
+opcode_reset()
+{
+    largest = 0;
+}

@@ -15,6 +15,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#ifdef linux
+#include <sys/statfs.h>
+#endif
 
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -30,6 +36,7 @@ int nodaemon_flag = 0;
 
 extern void cip_net_indexer_init(void);
 extern void ParseConfig(const char *);
+extern uint64_t minfree_bytes;
 
 void
 daemonize(void)
@@ -80,6 +87,19 @@ write_pid_file(void)
     fclose(fp);
 }
 
+int
+disk_is_full(void)
+{
+    struct statfs s;
+    uint64_t avail_bytes;
+    if (statfs(".", &s) < 0)
+	 return 0;	/* assume not */
+    avail_bytes = s.f_bsize*s.f_bavail;
+    if (avail_bytes < minfree_bytes)
+	return 1;
+    return 0;
+}
+
 void
 usage(void)
 {
@@ -91,11 +111,58 @@ usage(void)
     exit(1);
 }
 
+static int
+dump_reports(void)
+{
+    int fd;
+    FILE *fp;
+    char fname[128];
+    char tname[128];
+
+    if (disk_is_full()) {
+	syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
+	return 1;
+    }
+    snprintf(fname, 128, "%d.dscdata.xml", Pcap_finish_time());
+    snprintf(tname, 128, "%s.XXXXXXXXX", fname);
+    fd = mkstemp(tname);
+    if (fd < 0) {
+	syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+	return 1;
+    }
+    fp = fdopen(fd, "w");
+    if (NULL == fp) {
+	syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+	close(fd);
+	return 1;
+    }
+    if (debug_flag)
+	fprintf(stderr, "writing to %s\n", tname);
+    fprintf(fp, "<dscdata>\n");
+    /* amalloc_report(); */
+    dns_message_report(fp);
+    ip_message_report(fp);
+    fprintf(fp, "</dscdata>\n");
+
+    /*
+     * XXX need chmod because files are written as root, but may be processed
+     * by a non-priv user
+     */
+    fchmod(fd, 0664);
+    fclose(fp);
+    if (debug_flag)
+	fprintf(stderr, "renaming to %s\n", fname);
+    rename(tname, fname);
+    return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
     int x;
     extern DMC dns_message_handle;
+    int result;
+    struct timeval break_start = {0,0};
 
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -112,7 +179,7 @@ main(int argc, char *argv[])
 	    promisc_flag = 0;
 	    break;
 	case 'd':
-	    debug_flag = 1;
+	    debug_flag++;
 	    nodaemon_flag = 1;
 	    break;
 	default:
@@ -133,48 +200,50 @@ main(int argc, char *argv[])
     	daemonize();
     write_pid_file();
 
-    /*
-     * I'm using fork() in this loop, (a) out of laziness, and (b)
-     * because I'm worried we might drop packets.  Making sure each
-     * child collector runs for a small amount of time (60 secodns)
-     * means I can be lazy about memory management (leaks).  To
-     * minimize the chance for dropped packets, I'd like to spawn
-     * a new collector as soon as (or even before) the current
-     * collector exits.
-     */
-
     if (!debug_flag) {
         syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
         sleep(60 - (time(NULL) % 60));
     }
     syslog(LOG_INFO, "%s", "Running");
 
-    if (debug_flag) {
-	Pcap_run(dns_message_handle, ip_message_handle);
-	dns_message_report();
-	ip_message_report();
+    do {
+	useArena(); /* Initialize a memory arena for data collection. */
+	if (debug_flag && break_start.tv_sec > 0) {
+	    struct timeval now;
+	    gettimeofday(&now, NULL);
+	    syslog(LOG_INFO, "inter-run processing delay: %ld ms",
+		(now.tv_usec - break_start.tv_usec) / 1000 +
+		1000 * (now.tv_sec - break_start.tv_sec));
+	}
+	result = Pcap_run(dns_message_handle, ip_message_handle);
+	if (debug_flag)
+	    gettimeofday(&break_start, NULL);
+	if (0 == fork()) {
+	    dump_reports();
+	    _exit(0);
+	}
+	/* Parent quickly frees and clears its copy of the data so it can
+	   resume processing packets. */
+	freeArena();
+	dns_message_clear_arrays();
+	ip_message_clear_arrays();
 
-    } else {
-	for (;;) {
-	    pid_t cpid = fork();
-	    if (0 == cpid) {
-		Pcap_run(dns_message_handle, ip_message_handle);
-		if (0 == fork()) {
-		    dns_message_report();
-		    ip_message_report();
-		}
-		_exit(0);
-	    } else {
-		int cstatus = 0;
-		syslog(LOG_DEBUG, "waiting for child pid %d", (int) cpid);
-		while (waitpid(cpid, &cstatus, 0) < 0)
-		    (void) 0;
+	{
+	    /* Reap children. (Most recent probably has not exited yet, but
+	     * older ones should have.) */
+	    int cstatus = 0;
+	    pid_t pid;
+	    while ((pid = waitpid(0, &cstatus, WNOHANG)) > 0) {
 		if (WIFSIGNALED(cstatus))
-		    syslog(LOG_NOTICE, "child exited with signal %d, status %d",
-			    WTERMSIG(cstatus), WEXITSTATUS(cstatus));
+		    syslog(LOG_NOTICE, "child %d exited with signal %d",
+			pid, WTERMSIG(cstatus));
+		if (WIFEXITED(cstatus) && WEXITSTATUS(cstatus) != 0)
+		    syslog(LOG_NOTICE, "child %d exited with status %d",
+			pid, WEXITSTATUS(cstatus));
 	    }
 	}
-    }
+
+    } while (result > 0 && debug_flag == 0);
 
     Pcap_close();
     return 0;
