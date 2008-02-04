@@ -338,7 +338,6 @@ in advance and make those writable.
 % mkdir /usr/local/dsc/data/x-root/blah/
 % mkdir /usr/local/dsc/data/x-root/blah/incoming/
 % chgrp nobody /usr/local/dsc/data/x-root/blah/
-% chmod 2775 /usr/local/dsc/data/x-root/blah/
 % chmod 2775 /usr/local/dsc/data/x-root/blah/incoming/
 \end{MyVerbatim}
 
@@ -354,7 +353,8 @@ The directory structure is the same as above (for X.509).  The only
 differences are that:
 \begin{itemize}
 \item
-	The {\em server\/} subdirectories must be made in advance.
+	The {\em server\/}, {\em node\/}, and {\em incoming\/}
+	directories must be made in advance.
 \item
 	The directories should be writable by the userid associated
 	with the {\em rsync}/{\em ssh\/} connection.  You may want
