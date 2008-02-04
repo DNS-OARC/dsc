@@ -336,8 +336,10 @@ in advance and make those writable.
 \begin{MyVerbatim}
 % mkdir /usr/local/dsc/data/x-root/
 % mkdir /usr/local/dsc/data/x-root/blah/
+% mkdir /usr/local/dsc/data/x-root/blah/incoming/
 % chgrp nobody /usr/local/dsc/data/x-root/blah/
 % chmod 2775 /usr/local/dsc/data/x-root/blah/
+% chmod 2775 /usr/local/dsc/data/x-root/blah/incoming/
 \end{MyVerbatim}
 
 Make sure that \path|/usr/local/dsc/data/| is on a large partition with
@@ -848,6 +850,15 @@ Here is how you might use it in a crontab:
 * * * * * /usr/local/dsc/libexec/upload-rsync.sh ns0 archive \
 	dsc@archive.oarc.isc.org:/usr/local/dsc/data/Server/ns0
 \end{MyVerbatim}
+
+Also note that \path|upload-rsync.sh| will actually store the remote
+XML files in \path|incoming/YYYY-MM-DD| subdirectories.  That is,
+if your {em RSYNC-DEST\/} is \path|host:/usr/local/dsc/data/Server/ns0|
+then files will actually be written to
+\path|/usr/local/dsc/data/Server/ns0/incoming/YYYY-MM-DD| on {\em host},
+where \path|YYYY-MM-DD| is replaced by the year, month, and date of the
+XML files.  These subdirectories reduce filesystem pressure in the event
+of backlogs.
 
 {\em rsync\/} over {\em ssh\/} requires you to use RSA or DSA public keys
 that do not have a passphrase.  If you do not want to use one of 
