@@ -42,6 +42,6 @@ fi
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
 md5 $k > MD5s
-rsync -av MD5s $k $RPATH | grep '\.xml$' | xargs rm -v
+rsync -av MD5s $k $RPATH/incoming/$YYYYMMDD | grep '\.xml$' | xargs rm -v
 
 cd ..; rmdir $YYYYMMDD 2>/dev/null
