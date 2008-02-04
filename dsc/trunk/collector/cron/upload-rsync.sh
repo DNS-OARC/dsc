@@ -25,7 +25,7 @@ trap "rm -f $PIDF" EXIT
 
 perl -e 'sleep((rand 10) + 5)'
 
-cd $PREFIX/var/run/$NODE/upload/$DEST
+cd $PREFIX/run/$NODE/upload/$DEST
 
 YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
 test -n "$YYYYMMDD" || exit 0
