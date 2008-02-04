@@ -18,7 +18,7 @@ END { }
 
 use strict;
 use warnings;
-use IO::Socket::INET;
+use Net::DNS::Resolver;
 
 my $qtype_keys	= [ qw(1 2  5     6   12  15 28   33  38 255 else) ];
 my $qtype_names	= [ qw(A NS CNAME SOA PTR MX AAAA SRV A6 ANY Other) ];
@@ -740,20 +740,17 @@ my %FPDNSCACHE;
 
 sub fpdns_query($) {
         my $addr = shift;
-	my $ans = 'NoAns';
-	my $sock = IO::Socket::INET->new("dns-oarc.measurement-factory.com:8053");
-	return $ans unless ($sock);
-	print $sock "$addr\n";
-	my $rin = '';
-	my $rout = '';
-	vec($rin,fileno($sock),1) = 1;
-	select($rout=$rin, undef, undef, 1.0);
-	if (vec($rout,fileno($sock),1)) {
-		$ans = <$sock>;
-		chomp($ans);
+	my $noans = 'NoAns';
+	my $res = Net::DNS::Resolver->new;
+	my $qname = join('.', reverse(split(/\./, $addr)), 'fpdns.measurement-factory.com');
+	my $pkt = $res->query($qname, 'TXT');
+	return $noans unless $pkt;
+	return $noans unless $pkt->answer;
+	foreach my $rr ($pkt->answer) {
+		next unless $rr->type eq 'TXT';
+		return $rr->txtdata;
 	}
-	close($sock);
-	$ans;
+	return $noans;
 }
 
 sub guess_software($) {
