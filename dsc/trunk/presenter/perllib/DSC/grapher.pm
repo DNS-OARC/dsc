@@ -104,8 +104,8 @@ sub run {
 	error("Unknown server: $ARGS{server}") unless ('none' eq $ARGS{server} || defined ($CFG->{servers}{$ARGS{server}}));
 	error("Unknown node: $ARGS{node}") unless ('all' eq $ARGS{node} || (grep {$_ eq $ARGS{node}} @{$CFG->{servers}{$ARGS{server}}}));
 	error("Time window cannot be larger than a month") if ($ARGS{window} > 86400*31);
-	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 	$dbg_lvl = $PLOT->{debugflag} if defined($PLOT->{debugflag});
+	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 
 	@plotkeys = @{$PLOT->{keys}};
 	@plotnames = @{$PLOT->{names}};
@@ -346,15 +346,18 @@ sub accum1d_data_to_tmpfile {
 	delete $data->{$SKIPPED_KEY};
 	delete $data->{$SKIPPED_SUM_KEY};
 	$n = 0;
+	debug(2, "accum1d_data_to_tmpfile: sorting $data...");
 	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
-		print $tf join(' ',
+		debug(2, "accum1d_data_to_tmpfile: k1=$k1");
+		$tf->print(join(' ',
 			$k1,
 			$data->{$k1} / $accum_win,
 			&{$PLOT->{label_func}}($k1),
 			&{$PLOT->{color_func}}($k1),
-			), "\n";
+			), "\n");
 		last if (++$n == $ACCUM_TOP_N);
 	}
+	debug(1, "accum1d_data_to_tmpfile: loop done...");
 	close($tf);
 	my $stop = time;
 	debug(1, "writing $n lines to tmpfile took %d seconds, %d lines",
