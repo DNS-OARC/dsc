@@ -5,14 +5,14 @@ set -e
 PATH=/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 export PATH
 PROG=`basename $0`
-PREFIX=/udir/wessels/dsc
+PREFIX=/usr/local/dsc
 
 NODE=$1; shift
 DEST=$1; shift
 LOGIN=$1; shift
 
 SSH="/usr/local/bin/ssh"
-ID="$PREFIX/etc/to-$DEST-certs/$NODE.id"
+ID="$PREFIX/certs/$DEST/$NODE.id"
 
 PIDF="/tmp/$PROG-$NODE-$DEST.pid"
 if test -f $PIDF; then
@@ -28,7 +28,7 @@ trap "rm -f $PIDF" EXIT
 
 perl -e 'sleep((rand 10) + 5)'
 
-cd $PREFIX/run-$NODE/to-$DEST
+cd $PREFIX/run/$NODE/upload/$DEST
 
 #xec > $PROG.out
 #xec 2>&1
