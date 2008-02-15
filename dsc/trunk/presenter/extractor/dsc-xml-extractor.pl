@@ -54,7 +54,12 @@ sub process_xml_dir {
 	unless (defined $x) {
 		warn "extract died with ", $@, "\n";
 		mkdir ("errors", 0755) unless (-d "errors");
-		rename ($fn, "errors") || warn "rename $fn -> errors/$fn: $!";
+		#
+		# perl's rename is a pain.  it doesn't work
+		# across devices and maybe doesn't strip leading
+		# directory components from the target name?
+		#
+		system "mv $fn errors || rm -f $fn";
 		next;
 	}
 	next unless ($x > 0);
