@@ -1674,22 +1674,28 @@ for each dataset:
 The file name should be of the format:
 
 \begin{quote}
-{\em timestamp\/}.{\em dataset\/}.xml
+{\em timestamp\/}.dscdata.xml
 \end{quote}
 
 \noindent
 For example:
 
 \begin{quote}
-1154649660.qtype\_vs\_qnamelen.xml
+1154649660.dscdata.xml
 \end{quote}
+
+NOTE: Versions of DSC prior to 2008-01-30 used a different naming
+convention.  Instead of ``dscdata'' the XML file was named after
+the dataset that generated the data.  The current XML extraction
+code still supports the older naming convention for backward compatibility.
+If the second component of the XML file name is not ``dscdata'' then
+the extractor assume it is a dataset name.
 
 \noindent
 Dataset names come from {\em dsc.conf\/}, and should match the NAME
-attribute of the ARRAY tag in the XML file.  The timestamp is in
+attribute of the ARRAY tag inside the XML file.  The timestamp is in
 Unix epoch seconds and is usually the same as the {\em stop\_time\/}
 value.
-
 
 
 \section{Archived Data Format}
