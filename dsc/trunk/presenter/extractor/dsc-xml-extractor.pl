@@ -57,7 +57,7 @@ sub process_xml_dir {
 	my $x = eval { extract($fn); };
 	unless (defined $x) {
 		warn "extract died with ", $@, "\n";
-		mkdir ("errors", 0755) unless (-d "errors");
+		Mkdir ("errors", 0755);
 		#
 		# perl's rename is a pain.  it doesn't work
 		# across devices and maybe doesn't strip leading
@@ -79,10 +79,10 @@ sub get_donefn {
 	my $when = $1;
 	my $type = $2;
 	my $yymmdd = &yymmdd($when - 60);
-	mkdir ("$yymmdd", 0755) unless (-d "$yymmdd");	# where the .dat files go!
-	mkdir ("done", 0775) unless (-d "done");
-	mkdir ("done/$yymmdd", 0755) unless (-d "done/$yymmdd");
-	mkdir ("done/$yymmdd/$type", 0755) unless (-d "done/$yymmdd/$type");
+	Mkdir ("$yymmdd", 0755); # where the .dat files go!
+	Mkdir ("done", 0775);
+	Mkdir ("done/$yymmdd", 0755);
+	Mkdir ("done/$yymmdd/$type", 0755);
 	return "done/$yymmdd/$type/$when.$type.xml";
 }
 
@@ -346,4 +346,11 @@ sub trim_accum2d {
 		delete $data->{$k1} unless (keys %{$data->{$k1}});
 	}
 	$ndel;
+}
+
+sub Mkdir {
+	my $dir = shift;
+	my $mode = shift;
+	return if -d $dir;
+	mkdir($dir, $mode) or die ("$dir: $!");
 }
