@@ -14,6 +14,9 @@ use Proc::PID::File;
 use POSIX qw(nice);
 use XML::Simple;
 
+my $MAX_FILES = 1000;
+my $MAX_TIME = 270;
+
 my $pid_basename = pid_basename('dsc-xml-extractor');
 if (Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename)) {
 	warn "$pid_basename Already running!";
@@ -37,17 +40,18 @@ exit(0);
 
 sub process_xml_dir {
     my $theGlob = shift;
+    my $start = time;
     print "globbing $theGlob\n";
     foreach my $fn (glob $theGlob) {
 	my $donefn = get_donefn($fn);
 	if (-s $donefn) {
-		print STDERR "removing duplicate $fn in ", `pwd`, "\n";
-		unlink $fn;
+		print STDERR "removing duplicate $fn in ", `pwd`; 
+		unlink $fn || warn "$fn: $!";
 		next;
 	}
 	if (-f $donefn) {
-		print STDERR "removing empty $donefn in ", `pwd`, "\n";
-		unlink $donefn;
+		print STDERR "removing empty $donefn in ", `pwd`;
+		unlink $donefn || warn "$donefn: $!";
 	}
 	print "extract $fn\n";
 	my $x = eval { extract($fn); };
@@ -64,7 +68,8 @@ sub process_xml_dir {
 	}
 	next unless ($x > 0);
 	rename($fn, $donefn) or die "$fn -> $donefn: $!";
-	last if (300 == $N++);
+	last if ($MAX_FILES == $N++);
+	last if (time - $start > $MAX_TIME);
     }
 }
 
@@ -74,9 +79,11 @@ sub get_donefn {
 	my $when = $1;
 	my $type = $2;
 	my $yymmdd = &yymmdd($when - 60);
-	mkdir ("$yymmdd", 0755) unless (-d "$yymmdd");
-	mkdir ("$yymmdd/$type", 0755) unless (-d "$yymmdd/$type");
-	return "$yymmdd/$type/$when.$type.xml";
+	mkdir ("$yymmdd", 0755) unless (-d "$yymmdd");	# where the .dat files go!
+	mkdir ("done", 0775) unless (-d "done");
+	mkdir ("done/$yymmdd", 0755) unless (-d "done/$yymmdd");
+	mkdir ("done/$yymmdd/$type", 0755) unless (-d "done/$yymmdd/$type");
+	return "done/$yymmdd/$type/$when.$type.xml";
 }
 
 sub pid_basename {
