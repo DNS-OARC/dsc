@@ -18,7 +18,7 @@ my $MAX_FILES = 1000;
 my $MAX_TIME = 270;
 
 my $pid_basename = pid_basename('dsc-xml-extractor');
-if (Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename)) {
+if (Proc::PID::File->running(dir => '.', name => $pid_basename)) {
 	warn "$pid_basename Already running!";
 	exit(0);
 }
