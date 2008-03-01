@@ -10,7 +10,8 @@ while (<>) {
 	chomp;
 	next if (/backlog/);
 	if (-d $_) {
-		rmdir $_;
+		my @sb = stat $_;
+		rmdir $_ if ($sb[9] < $cutoff);
 		next;
 	}
 	next unless (/\.xml/);
