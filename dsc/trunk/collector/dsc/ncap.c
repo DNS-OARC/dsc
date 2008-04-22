@@ -126,7 +126,6 @@ Ncap_init(const char *device, int promisc)
 	syslog(LOG_ERR, "NC->add_*() error: %s", "some error");
 	exit(1);
     }
-fprintf(stderr, "Ncap_init success on %s\n", device);
 }
 
 int
@@ -142,7 +141,6 @@ Ncap_run(DMC * dns_callback, IPC * ip_callback)
     TIMEVAL_TO_TIMESPEC(&tv, &start_ts);
     finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
     finish_ts.tv_nsec = 0;
-fprintf(stderr, "Ncap_run until %d\n", (int) finish_ts.tv_sec);
     while (last_ts.tv_sec < finish_ts.tv_sec) {
 	NC->collect(NC, 1, handle_ncap, NULL);
     }
