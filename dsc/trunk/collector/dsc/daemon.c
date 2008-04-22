@@ -26,6 +26,9 @@
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#if USE_NCAP
+#include "ncap.h"
+#endif
 #include "syslog_debug.h"
 
 char *progname = NULL;
@@ -123,7 +126,11 @@ dump_reports(void)
 	syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
 	return 1;
     }
+#if USE_NCAP
+    snprintf(fname, 128, "%d.dscdata.xml", Ncap_finish_time());
+#else
     snprintf(fname, 128, "%d.dscdata.xml", Pcap_finish_time());
+#endif
     snprintf(tname, 128, "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
@@ -215,7 +222,11 @@ main(int argc, char *argv[])
 		(now.tv_usec - break_start.tv_usec) / 1000 +
 		1000 * (now.tv_sec - break_start.tv_sec));
 	}
+#if USE_NCAP
+	result = Ncap_run(dns_message_handle, ip_message_handle);
+#else
 	result = Pcap_run(dns_message_handle, ip_message_handle);
+#endif
 	if (debug_flag)
 	    gettimeofday(&break_start, NULL);
 	if (0 == fork()) {
@@ -245,6 +256,10 @@ main(int argc, char *argv[])
 
     } while (result > 0 && debug_flag == 0);
 
+#if USE_NCAP
+    Ncap_close();
+#else
     Pcap_close();
+#endif
     return 0;
 }

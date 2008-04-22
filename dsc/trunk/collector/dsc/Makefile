@@ -1,7 +1,8 @@
 PROG=dsc
 HAPY=../TmfBase/Hapy
-CFLAGS=-g -Wall -DUSE_IPV6=1 -I $(HAPY)/src/include
+CFLAGS=-g -Wall -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
 CPPFLAGS = ${CFLAGS}
+LDFLAGS += -L/usr/local/lib
 TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
 
@@ -9,6 +10,7 @@ OBJS=\
 	base64.o \
 	generic_counter.o \
 	pcap.o \
+	ncap.o \
 	dns_protocol.o \
 	dns_message.o \
 	ip_message.o \
@@ -47,6 +49,7 @@ OBJS=\
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
 LIBS=\
 	-lpcap \
+	-lncap \
 	$(LIBHAPY)
 
 all:  $(PROG)
