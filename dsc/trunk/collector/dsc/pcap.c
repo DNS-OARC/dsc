@@ -264,7 +264,7 @@ tcp_cmpfunc(const void *a, const void *b)
  * boundaries.
  *
  */
-void
+static void
 handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     transport_message *tm)
 {
@@ -501,7 +501,7 @@ tcpList_remove(tcpstate_t *tcpstate)
 	tcpstate->older;
 }
 
-void
+static void
 tcpList_remove_older_than(long t)
 {
     int n = 0;
@@ -516,7 +516,7 @@ tcpList_remove_older_than(long t)
 	fprintf(stderr, "discarded %d old tcpstates\n", n);
 }
 
-void
+static void
 handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 {
     int offset = tcp->th_off << 2;
@@ -643,7 +643,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
     }
 }
 
-void
+static void
 handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 {
     int offset = ip->ip_hl << 2;
@@ -672,7 +672,7 @@ handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 }
 
 #if USE_IPV6
-void
+static void
 handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
 {
     ip_message i;
@@ -752,7 +752,7 @@ handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
 }
 #endif /* USE_IPV6 */
 
-void
+static void
 handle_ip(const struct ip * ip, int len, transport_message *tm)
 {
     /* note: ip->ip_v does not work if header is not int-aligned */
@@ -799,7 +799,7 @@ is_family_inet(unsigned int family)
 }
 
 #if USE_PPP
-void
+static void
 handle_ppp(const u_char * pkt, int len, transport_message *tm)
 {
     char buf[PCAP_SNAPLEN];
@@ -827,7 +827,7 @@ handle_ppp(const u_char * pkt, int len, transport_message *tm)
 
 #endif
 
-void
+static void
 handle_null(const u_char * pkt, int len, transport_message *tm)
 {
     unsigned int family;
@@ -837,7 +837,7 @@ handle_null(const u_char * pkt, int len, transport_message *tm)
 }
 
 #ifdef DLT_LOOP
-void
+static void
 handle_loop(const u_char * pkt, int len, transport_message *tm)
 {
     unsigned int family;
@@ -849,7 +849,7 @@ handle_loop(const u_char * pkt, int len, transport_message *tm)
 #endif
 
 #ifdef DLT_RAW
-void
+static void
 handle_raw(const u_char * pkt, int len, transport_message *tm)
 {
     handle_ip((struct ip *) pkt, len, tm);
@@ -857,7 +857,7 @@ handle_raw(const u_char * pkt, int len, transport_message *tm)
 
 #endif
 
-int
+static int
 match_vlan(const u_char *pkt)
 {
     unsigned short vlan;
@@ -877,7 +877,7 @@ match_vlan(const u_char *pkt)
     return 0;
 }
 
-void
+static void
 handle_ether(const u_char * pkt, int len, transport_message *tm)
 {
     struct ether_header *e = (void *) pkt;
@@ -900,7 +900,7 @@ handle_ether(const u_char * pkt, int len, transport_message *tm)
     }
 }
 
-void
+static void
 handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     transport_message tm;
@@ -931,7 +931,7 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 
 
 
-fd_set *
+static fd_set *
 Pcap_select(const fd_set * theFdSet, int sec, int usec)
 {
     /* XXX BUG: libpcap may have already buffered a packet that we have not
