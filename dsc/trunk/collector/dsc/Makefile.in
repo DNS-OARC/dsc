@@ -47,10 +47,7 @@ OBJS=\
 	inX_addr.o
 
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
-LIBS=\
-	-lpcap \
-	-lncap \
-	$(LIBHAPY)
+LIBS=@LIBS@ $(LIBHAPY)
 
 all:  $(PROG)
 
@@ -90,6 +87,8 @@ $(HAPY)/Makefile:
 export:
 	CVSROOT=`cat CVS/Root`; cd /tmp; cvs -d $$CVSROOT export -r HEAD -d dsc-`date +%Y%m%d` dsc
 
-configure.in: configure.scan
+configure: configure.scan
 	autoconf configure.scan > _$@
+	autoheader configure.scan
 	mv _$@ $@
+	chmod 755 $@

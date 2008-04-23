@@ -11,7 +11,7 @@
 #include "syslog_debug.h"
 
 int promisc_flag;
-#if USE_NCAP
+#if HAVE_LIBNCAP
 void Ncap_init(const char *device, int promisc);
 #endif
 void Pcap_init(const char *device, int promisc);
@@ -21,7 +21,7 @@ int
 open_interface(const char *interface)
 {
     syslog(LOG_INFO, "Opening interface %s", interface);
-#if USE_NCAP
+#if HAVE_LIBNCAP
     Ncap_init(interface, promisc_flag);
 #else
     Pcap_init(interface, promisc_flag);

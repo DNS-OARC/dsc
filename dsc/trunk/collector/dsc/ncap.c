@@ -5,7 +5,7 @@
  * reserved.  See the LICENSE file for details.
  */
 
-#if USE_NCAP
+#if HAVE_LIBNCAP
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -165,4 +165,4 @@ Ncap_finish_time(void)
     return (int) finish_ts.tv_sec;
 }
 
-#endif /* USE_NCAP */
+#endif /* HAVE_LIBNCAP */

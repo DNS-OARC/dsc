@@ -1,5 +1,5 @@
 
-#if USE_NCAP
+#if HAVE_LIBNCAP
 void Ncap_init(const char *device, int promisc);
 int Ncap_run(DMC *, IPC *);
 void Ncap_close(void);
