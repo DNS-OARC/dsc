@@ -27,12 +27,12 @@ perl -e 'sleep((rand 10) + 5)'
 
 cd $PREFIX/run/$NODE/upload/$DEST
 
+exec > $PROG.out
+exec 2>&1
+
 YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
 test -n "$YYYYMMDD" || exit 0
 cd $YYYYMMDD
-
-exec > $PROG.out
-exec 2>&1
 
 if test -f $HOME/.ssh/dsc_uploader_id ; then
 	RSYNC_RSH="ssh -i $HOME/.ssh/dsc_uploader_id"
