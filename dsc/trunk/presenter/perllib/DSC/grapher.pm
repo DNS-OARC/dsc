@@ -320,7 +320,7 @@ sub trace_data_to_tmpfile {
 		$ARGS{window},
 		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
 	my $stop = time;
-	debug(1, "writing tmpfile took %d seconds, %d lines",
+	debug(1, "writing trace tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$nl);
 	$nl
@@ -360,7 +360,7 @@ sub accum1d_data_to_tmpfile {
 	debug(1, "accum1d_data_to_tmpfile: loop done...");
 	close($tf);
 	my $stop = time;
-	debug(1, "writing $n lines to tmpfile took %d seconds, %d lines",
+	debug(1, "writing accum tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$n);
 	$n;
