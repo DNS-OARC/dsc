@@ -47,7 +47,7 @@ sub process_xml_dir {
     foreach my $fn (glob $theGlob) {
 	my $donefn = get_donefn($fn);
 	if (-s $donefn) {
-		print STDERR "removing duplicate $fn in ", `pwd`; 
+		print STDERR "removing duplicate $fn in ", `pwd`;
 		unlink $fn || warn "$fn: $!";
 		next;
 	}
