@@ -89,3 +89,7 @@ $(HAPY)/Makefile:
 
 export:
 	CVSROOT=`cat CVS/Root`; cd /tmp; cvs -d $$CVSROOT export -r HEAD -d dsc-`date +%Y%m%d` dsc
+
+configure.in: configure.scan
+	autoconf configure.scan > _$@
+	mv _$@ $@
