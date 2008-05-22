@@ -66,6 +66,11 @@ sub process_xml_dir {
 		# directory components from the target name?
 		#
 		system "mv $fn errors || rm -f $fn";
+		my ($V,$D,$F) = File::Spec->splitpath($fn);
+		if (open (ERR, ">errors/$F.err")) {
+			print ERR "extract died with ", $@, "\n";
+			close(ERR);
+		}
 		next;
 	}
 	next unless ($x > 0);
