@@ -19,5 +19,5 @@ while (<>) {
 	my $t = $1;
 	next if ($t > $cutoff);
 	#print "removing $_\n";
-	unlink $_ or die "$_";
+	unlink $_ or warn "$_: $!";
 }
