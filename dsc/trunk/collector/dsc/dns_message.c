@@ -37,6 +37,7 @@
 #include "opcode_index.h"
 #include "transport_index.h"
 #include "dns_ip_version_index.h"
+#include "dns_source_port_index.h"
 #include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
@@ -199,6 +200,7 @@ static indexer_t indexers[] = {
     { "opcode",               opcode_indexer,               opcode_iterator,               opcode_reset },
     { "transport",            transport_indexer,            transport_iterator,            NULL },
     { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },
+    { "dns_source_port",      dns_source_port_indexer,      dns_source_port_iterator,      dns_source_port_reset },
     { NULL,                   NULL,                         NULL,                          NULL }
 };
 

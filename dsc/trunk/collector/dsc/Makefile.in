@@ -39,6 +39,7 @@ OBJS=\
 	opcode_index.o \
 	transport_index.o \
 	dns_ip_version_index.o \
+	dns_source_port_index.o \
 	ParseConfig.o \
 	config_hooks.o \
 	hashtbl.o \
