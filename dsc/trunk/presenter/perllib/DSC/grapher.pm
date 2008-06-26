@@ -77,6 +77,7 @@ sub cgi { $cgi; }
 
 sub run {
 	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
+	my $cmdline = shift;
 	# read config file early so we can set back the clock if necessary
 	#
 	$CFG = DSC::grapher::config::read_config($cfgfile);
@@ -84,6 +85,18 @@ sub run {
 	$now -= $CFG->{embargo} if defined $CFG->{embargo};
 
 	debug(1, "===> starting at " . POSIX::strftime('%+', localtime($now)));
+	if ($cmdline) {
+	$ARGS{server} = $cmdline->{'server'}	|| 'none';
+	$ARGS{node} = $cmdline->{'node'}	|| 'all';
+	$ARGS{window} = $cmdline->{'window'}	|| 3600*4;
+	$ARGS{binsize} = $cmdline->{'binsize'}	|| default_binsize($ARGS{window});
+	$ARGS{plot} = $cmdline->{'plot'}	|| 'bynode';
+	$ARGS{content} = 			   'png';
+	$ARGS{mini} = $cmdline->{'mini'}	|| 0;
+	$ARGS{end} = $cmdline->{'end'}		|| $now;
+	$ARGS{yaxis} = $cmdline->{'yaxis'}	|| undef;
+	$ARGS{key} = $cmdline->{'key'};		# sanity check below
+	} else {
 	debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
 	my $untaint = CGI::Untaint->new($cgi->Vars);
@@ -97,6 +110,7 @@ sub run {
 	$ARGS{end} = $untaint->extract(-as_integer => 'end')		|| $now;
 	$ARGS{yaxis} = $untaint->extract(-as_printable => 'yaxis')	|| undef;
 	$ARGS{key} = $untaint->extract(-as_printable => 'key');		# sanity check below
+	}
 
 	$PLOT = $DSC::grapher::plot::PLOTS{$ARGS{plot}};
 	$TEXT = $DSC::grapher::text::TEXTS{$ARGS{plot}};
@@ -235,8 +249,13 @@ sub make_image {
 		accum2d_plot($datafile, $ARGS{binsize}, $cache_name);
 	} elsif ($PLOT->{plot_type} eq 'hist2d') {
 		# like for qtype_vs_qnamelen
+		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
 		hist2d_data_to_tmpfile($data, $datafile) and
 		hist2d_plot($datafile, $ARGS{binsize}, $cache_name);
+	} elsif ($PLOT->{plot_type} eq 'srcport') {
+		# for plotting client source ports
+		srcport_data_to_tmpfile($data, $datafile) and
+		srcport_plot($datafile, $ARGS{binsize}, $cache_name);
 	} else {
 		error("Unknown plot type: $PLOT->{plot_type}");
 	}
@@ -312,18 +331,29 @@ sub trace_data_to_tmpfile {
 	my $data = shift;
 	my $tf = shift;
 	my $start = time;
-	my $nl = Ploticus_create_datafile($data,
+	my $nl;
+	if (1 == $PLOT->{data_dim}) {
+	    $nl = Ploticus_create_datafile_keyless($data,
 		\@plotkeys,
 		$tf,
 		$ARGS{binsize},
 		$ARGS{end},
 		$ARGS{window},
 		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
+	} else {
+	    $nl = Ploticus_create_datafile($data,
+		\@plotkeys,
+		$tf,
+		$ARGS{binsize},
+		$ARGS{end},
+		$ARGS{window},
+		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
+	}
 	my $stop = time;
 	debug(1, "writing trace tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$nl);
-	$nl
+	$nl;
 }
 
 # calculate the amount of time in an 'accum' dataset.
@@ -456,6 +486,25 @@ sub hist2d_data_to_tmpfile {
 	my $stop = time;
 	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
 	#system "cat $tf 1>&2";
+	$nl;
+}
+
+sub srcport_data_to_tmpfile {
+	my $data = shift;
+	my $tf = shift;
+	my $start = time;
+	delete $data->{$SKIPPED_KEY};
+	delete $data->{$SKIPPED_SUM_KEY};
+	
+	my $nl = 0;
+	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
+		print $tf "$nl $data->{$k1}\n";
+		$nl++;
+	}
+	close($tf);
+	my $stop = time;
+	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
+	#system "head $tf 1>&2";
 	$nl;
 }
 
@@ -762,6 +811,74 @@ sub hist2d_plot {
 	Ploticus_yaxis($yaxis_opts);
 	Ploticus_bars($bars_opts);
 	Ploticus_legend() unless ($ARGS{mini});
+	ploticus_end();
+
+	rename("$pngfile.new", $pngfile);
+	rename("$mapfile.new", $mapfile) if defined($mapfile);
+	my $stop = time;
+	debug(1, "ploticus took %d seconds", $stop-$start);
+}
+
+sub srcport_plot {
+	my $tf = shift;
+	my $binsize = shift;	# ignored
+	my $cache_name = shift;
+	my $pngfile = cache_image_path($cache_name);
+	my $ntypes = @plotnames;
+	my $start = time;
+	my $mapfile = undef;
+
+	ploticus_init("png", "$pngfile.new");
+	ploticus_arg("-maxrows", "50000");
+	if ($PLOT->{map_legend}) {
+		$mapfile = cache_mapfile_path($cache_name);
+		ploticus_arg("-csmap", "");
+		ploticus_arg("-mapfile", "$mapfile.new");
+	}
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	my $areadef_opts = {
+		-title => $PLOT->{plottitle} . "\n" . time_descr(),
+		-rectangle => '1 1 6 4',
+		-yfields => join(',', 2..($ntypes+1)),
+		-xscaletype => 'log+1',
+	};
+	my $yaxis_opts = {
+		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
+		-grid => 'yes',
+	};
+	my $xaxis_opts = {
+		-label => $PLOT->{xaxislabel},
+	};
+	my $lines_opts = {
+		-labelsarrayref => \@plotnames,
+		-colorsarrayref => \@plotcolors,
+		-indexesarrayref => [0..$ntypes-1],
+	};
+	my $legend_opts = {
+		-reverseorder => 'no',
+	};
+
+	if ($ARGS{mini}) {
+		$areadef_opts->{-title} = $PLOT->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 3 4';
+		delete($xaxis_opts->{-label});
+	}
+
+	if (defined($mapfile)) {
+		my %copy = %ARGS;
+		delete $copy{key};
+		my $uri = urlpath(%copy);
+		$uri .= '&key=@KEY@';
+		debug(1, "click URI = $uri");
+		$lines_opts->{-legend_clickmapurl_tmpl} = $uri;
+	}
+
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	Ploticus_lines($lines_opts);
+	#Ploticus_legend() unless ($ARGS{mini});
 	ploticus_end();
 
 	rename("$pngfile.new", $pngfile);
@@ -1262,6 +1379,7 @@ sub navbar_plot {
 	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
 	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
 	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
+	push(@items, navbar_item('plot','client_ports_count','Source Ports'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 

@@ -274,7 +274,6 @@ my $std_accum_yaxes = {
   client_subnet2_count => {
     dataset	=> 'client_subnet2',
     plot_type	=> 'trace',
-    yaxes	=> $std_trace_yaxes,
     keys	=> $client_subnet2_keys,
     names	=> $client_subnet2_names,
     colors	=> $client_subnet2_colors,
@@ -576,8 +575,7 @@ my $std_accum_yaxes = {
         foreach my $t (keys %$data) {
                 foreach my $k1 (keys %{$data->{$t}}) {
                         foreach my $k2 (keys %{$data->{$t}{$k1}}) {
-                                $newdata{$t}{$k1} += $data->{$t}{$k1}{$k2}
-;
+                                $newdata{$t}{$k1} += $data->{$t}{$k1}{$k2};
                         }
                 }
         }
@@ -732,6 +730,26 @@ my $std_accum_yaxes = {
 	# XXX: 'shift' represents the old data hashref
 	DSC::grapher::munge_2d_to_1d(shift, [qw(16)], [qw(version.bind hostname.bind else)])
    }
+  },
+
+  client_ports_count => {
+    dataset => 'client_ports',
+    plot_type => 'trace',
+    keys	=> [ qw(All) ],
+    names	=> [ qw(all) ],
+    colors	=> [ qw(red) ],
+    data_reader => \&DSC::extractor::read_data2,
+    data_summer => \&DSC::grapher::data_summer_0d,
+    yaxes	=> {
+	rate => {
+	    label => '# Unique Ports',
+	    divideflag => 0,
+	    default => 1,
+	},
+    },
+    plottitle	=> '# unique ports seen per minute',
+    map_legend	=> 0,
+    data_dim    => 1,
   },
 
 );
