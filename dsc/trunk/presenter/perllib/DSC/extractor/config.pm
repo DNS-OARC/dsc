@@ -355,15 +355,19 @@ my $client_subnet2_keys =   [ qw(
   },
 
   client_ports => {
-    ndim	=> 2,
-    type2	=> 'ClientAddr',
+    ndim	=> 1,
     type1	=> 'Port',
     outputs	=> {
-      client_ports_accum => {
-#	data_munger => \&main::swap_dimensions,
-	data_reader => \&DSC::extractor::read_data3,
-	data_merger => \&main::merge_accum2d,
-	data_writer => \&DSC::extractor::write_data3,
+      client_subnet_count => {
+	data_munger	=> \&main::accum1d_to_count,
+	data_reader	=> \&DSC::extractor::read_data2,
+	data_merger	=> \&main::merge_trace,
+	data_writer	=> \&DSC::extractor::write_data2,
+      },
+      client_subnet_accum => {
+	data_merger	=> \&main::merge_accum1d,
+	data_reader	=> \&DSC::extractor::read_data2,
+	data_writer	=> \&DSC::extractor::write_data2,
       },
     },
   },
