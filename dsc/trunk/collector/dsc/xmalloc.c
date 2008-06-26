@@ -78,8 +78,10 @@ newArena(size_t size)
     Arena *arena;
     size = align(size, ALIGNMENT);
     arena = malloc(HEADERSIZE + size);
-    if (NULL == arena)
-	syslog(LOG_CRIT, "amalloc: %s", strerror(errno));
+    if (NULL == arena) {
+	syslog(LOG_CRIT, "amalloc %d: %s", (int) size, strerror(errno));
+	return NULL;
+    }
     arena->prevArena = NULL;
     arena->nextAlloc = (u_char*)arena + HEADERSIZE;
     arena->end = arena->nextAlloc + size;
@@ -119,6 +121,8 @@ amalloc(size_t size)
 	}
 	/* Move on to a new chunk. */
 	Arena *new = newArena(CHUNK_SIZE);
+	if (NULL == new)
+		return NULL;
 	new->prevArena = currentArena;
 	currentArena = new;
     }
