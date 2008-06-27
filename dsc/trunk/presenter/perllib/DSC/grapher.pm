@@ -332,7 +332,7 @@ sub trace_data_to_tmpfile {
 	my $tf = shift;
 	my $start = time;
 	my $nl;
-	if (1 == $PLOT->{data_dim}) {
+	if (defined($PLOT->{data_dim}) && 1 == $PLOT->{data_dim}) {
 	    $nl = Ploticus_create_datafile_keyless($data,
 		\@plotkeys,
 		$tf,
@@ -1379,7 +1379,7 @@ sub navbar_plot {
 	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
 	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
 	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
-	push(@items, navbar_item('plot','client_ports_count','Source Ports'));
+	push(@items, navbar_item('plot','client_port_range','Source Ports'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 

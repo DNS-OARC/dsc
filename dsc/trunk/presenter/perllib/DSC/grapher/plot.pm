@@ -23,6 +23,18 @@ use Net::DNS::Resolver;
 my $qtype_keys	= [ qw(1 2  5     6   12  15 28   33  38 255 else) ];
 my $qtype_names	= [ qw(A NS CNAME SOA PTR MX AAAA SRV A6 ANY Other) ];
 my $qtype_colors = [ qw(red orange yellow brightgreen brightblue purple magenta redorange yellow2 green darkblue) ];
+my $port_range_colors = [qw(
+xrgb(FF0000) xrgb(FF2200) xrgb(FF4100) xrgb(FF6300) xrgb(FF7600) xrgb(FF8500) xrgb(FF9600) xrgb(FFA600)
+xrgb(FFB500) xrgb(FFC700) xrgb(FFD800) xrgb(FFE700) xrgb(FFF800) xrgb(EBFF00) xrgb(CCFF00) xrgb(AAFF00)
+xrgb(77FF00) xrgb(33FF00) xrgb(14E000) xrgb(00C41B) xrgb(00B560) xrgb(00A682) xrgb(008F9E) xrgb(006EB0)
+xrgb(004FBF) xrgb(0330C9) xrgb(141EB8) xrgb(230FA8) xrgb(340099) xrgb(3D0099) xrgb(4D0099) xrgb(660099)
+)];
+my $port_range_keys = [ qw(
+0-2047 2048-4095 4096-6143 6144-8191 8192-10239 10240-12287 12288-14335 14336-16383
+16384-18431 18432-20479 20480-22527 22528-24575 24576-26623 26624-28671 28672-30719 30720-32767
+32768-34815 34816-36863 36864-38911 38912-40959 40960-43007 43008-45055 45056-47103 47104-49151
+49152-51199 51200-53247 53248-55295 55296-57343 57344-59391 59392-61439 61440-63487 63488-65535
+)];
 
 my $client_subnet2_keys =   [ qw(
 	ok
@@ -750,6 +762,53 @@ my $std_accum_yaxes = {
     plottitle	=> '# unique ports seen per minute',
     map_legend	=> 0,
     data_dim    => 1,
+  },
+
+  client_port_range => {
+    dataset => 'client_port_range',
+    plot_type => 'trace',
+    keys	=> $port_range_keys,
+    names	=> $port_range_keys,
+    colors	=> $port_range_colors,
+    data_reader => \&DSC::extractor::read_data,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    yaxes	=> {
+	# just like $std_trace_yaxes, but we want percent to be the default
+	rate => {
+	    label => 'Query Rate (q/s)',
+	    divideflag => 1,
+	    default => 0,
+	},
+	percent => {
+	    label => 'Percent of Queries',
+    	    divideflag => 0,
+	    default => 1,
+	},
+    },
+    plottitle	=> 'Port Range',
+    map_legend	=> 0,
+    # ARGH, Ploticus only supports stacking of 40 fields, so
+    # here we change the original 64 bins into 32 bins.
+    munge_func  => sub {
+	use Data::Dumper;
+	open(X, ">/tmp/tt");
+        my $data = shift;
+	print X Dumper($data);
+        my %newdata;
+	for (my $fbin = 0; $fbin < 64; $fbin++) {
+		my $tbin = $fbin >> 1;
+		my $fkey = sprintf "%d-%d", $fbin << 10, (($fbin + 1) << 10) - 1;
+		my $tkey = sprintf "%d-%d", $tbin << 11, (($tbin + 1) << 11) - 1;
+print X "fbin=$fbin, tbin=$tbin\n";
+print X "fkey=$fkey, tkey=$tkey\n";
+        	foreach my $t (keys %$data) {
+			$newdata{$t}{$tkey} += $data->{$t}{$fkey} if $data->{$t}{$fkey};
+		}
+	}
+	print X Dumper(\%newdata);
+	close(X);
+        \%newdata;
+   }
   },
 
 );
