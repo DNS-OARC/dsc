@@ -201,6 +201,7 @@ static indexer_t indexers[] = {
     { "transport",            transport_indexer,            transport_iterator,            NULL },
     { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },
     { "dns_source_port",      dns_source_port_indexer,      dns_source_port_iterator,      dns_source_port_reset },
+    { "dns_sport_range",      dns_sport_range_indexer,      dns_sport_range_iterator,      dns_sport_range_reset },
     { NULL,                   NULL,                         NULL,                          NULL }
 };
 
