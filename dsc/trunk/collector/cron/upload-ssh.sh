@@ -11,6 +11,12 @@ NODE=$1; shift
 DEST=$1; shift
 LOGIN=$1; shift
 
+if test -f /usr/bin/md5sum ; then
+        MD5=/usr/bin/md5sum
+else
+        MD5=md5
+fi
+
 SSH="/usr/local/bin/ssh"
 ID="$PREFIX/certs/$DEST/$NODE.id"
 
@@ -59,7 +65,7 @@ tar czf - $k \
 		esac
 
 		# if the MD5 matches, remove the local file.
-		if [ "$md5" = "`md5 < $file`" ]; then
+		if [ "$md5" = "`cat $file | $MD5 | awk '{print $1}'`" ]; then
 			echo -n "$file "
 		fi
 	  done \
