@@ -22,5 +22,6 @@ WriteMakefile(
 		Text::Template => 0,
 		URI::Escape => 0,
 		XML::Simple => 0,
+		Net::DNS::Resolver => 0,
     },
 );
