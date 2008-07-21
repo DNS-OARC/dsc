@@ -41,8 +41,6 @@ fi
 
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
-md5 $k > MD5s
-rsync -av MD5s $k $RPATH/incoming/$YYYYMMDD | grep '\.xml$' | xargs rm -v
+rsync -av --remove-source-files $k $RPATH/incoming/$YYYYMMDD
 
-rm -f MD5s
 cd ..; rmdir $YYYYMMDD 2>/dev/null
