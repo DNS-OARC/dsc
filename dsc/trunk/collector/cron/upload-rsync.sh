@@ -44,4 +44,5 @@ test -n "$k" || exit 0
 md5 $k > MD5s
 rsync -av MD5s $k $RPATH/incoming/$YYYYMMDD | grep '\.xml$' | xargs rm -v
 
+rm -f MD5s
 cd ..; rmdir $YYYYMMDD 2>/dev/null
