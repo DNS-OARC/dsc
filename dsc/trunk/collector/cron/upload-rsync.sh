@@ -42,5 +42,6 @@ fi
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
 rsync -av --remove-source-files $k $RPATH/incoming/$YYYYMMDD
+# rsync -av $k $RPATH/incoming/$YYYYMMDD | grep '\.xml$' | xargs rm -v
 
 cd ..; rmdir $YYYYMMDD 2>/dev/null
