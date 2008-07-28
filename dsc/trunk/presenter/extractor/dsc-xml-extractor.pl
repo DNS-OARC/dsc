@@ -21,7 +21,7 @@ my $MAX_TIME = 270;
 # dsc-xml-extractor.pid already locked at Proc/PID/File.pm line 99
 my $pid_basename = pid_basename('dsc-xml-extractor');
 if (Proc::PID::File->running(dir => '/var/tmp', name => $pid_basename)) {
-	warn "$pid_basename Already running!";
+	warn "$pid_basename Already running!" if -t STDERR;
 	exit(0);
 }
 nice(19);
