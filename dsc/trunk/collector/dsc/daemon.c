@@ -18,7 +18,15 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
-#ifdef linux
+#if HAVE_STATVFS
+#if HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+#endif
+#if HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
+#if HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
 #endif
 
@@ -93,11 +101,18 @@ write_pid_file(void)
 int
 disk_is_full(void)
 {
-    struct statfs s;
     uint64_t avail_bytes;
+#if HAVE_STATVFS
+    struct statvfs s;
+    if (statvfs(".", &s) < 0)
+	return 0;	/* assume not */
+    avail_bytes = s.f_frsize*s.f_bavail;
+#else
+    struct statfs s;
     if (statfs(".", &s) < 0)
 	 return 0;	/* assume not */
     avail_bytes = s.f_bsize*s.f_bavail;
+#endif
     if (avail_bytes < minfree_bytes)
 	return 1;
     return 0;
