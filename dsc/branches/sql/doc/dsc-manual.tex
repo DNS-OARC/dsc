@@ -204,6 +204,8 @@ can find via CPAN:
 	\item Text-Template (Text::Template)
 	\item URI (URI::Escape)
 	\item XML-Simple (XML::Simple)
+	\item Net-DNS-Resolver (Net::DNS::Resolver)
+
 \end{itemize}
 and one of the following modules, depending on your choice of database:
 \begin{itemize}
@@ -529,8 +531,9 @@ in advance and make those writable.
 \begin{MyVerbatim}
 % mkdir /usr/local/dsc/data/x-root/
 % mkdir /usr/local/dsc/data/x-root/blah/
+% mkdir /usr/local/dsc/data/x-root/blah/incoming/
 % chgrp nobody /usr/local/dsc/data/x-root/blah/
-% chmod 2775 /usr/local/dsc/data/x-root/blah/
+% chmod 2775 /usr/local/dsc/data/x-root/blah/incoming/
 \end{MyVerbatim}
 
 Unlike in previous versions of \dsc, \path|/usr/local/dsc/data/|
@@ -543,7 +546,8 @@ The directory structure is the same as above (for X.509).  The only
 differences are that:
 \begin{itemize}
 \item
-	The {\em server\/} subdirectories must be made in advance.
+	The {\em server\/}, {\em node\/}, and {\em incoming\/}
+	directories must be made in advance.
 \item
 	The directories should be writable by the userid associated
 	with the {\em rsync}/{\em ssh\/} connection.  You may want
@@ -917,7 +921,7 @@ This installs five files:
 \begin{Verbatim}
 /usr/local/dsc/bin/dsc
 /usr/local/dsc/etc/dsc.conf.sample
-/usr/local/dsc/libexec/upload-prep.sh
+/usr/local/dsc/libexec/upload-prep.pl
 /usr/local/dsc/libexec/upload-rsync.sh
 /usr/local/dsc/libexec/upload-x509.sh
 \end{Verbatim}
@@ -944,14 +948,14 @@ enough disk space to queue a lot of XML files in the
 event of an outage.
 
 In general we want to be able to upload XML files to multiple
-presenters.  This is the reason behind the {\tt upload-prep.sh}
+presenters.  This is the reason behind the {\tt upload-prep.pl}
 script.  This script runs every 60 seconds from cron:
 
 \begin{MyVerbatim}
-* * * * * /usr/local/dsc/libexec/upload-prep.sh
+* * * * * /usr/local/dsc/libexec/upload-prep.pl
 \end{MyVerbatim}
 
-{\tt upload-prep.sh} looks for \path|dsc.conf| files in
+{\tt upload-prep.pl} looks for \path|dsc.conf| files in
 \path|/usr/local/dsc/etc| by default.  For each config file
 found, it cd's to the {\em run\_dir\/} and links\footnote{as in
 ``hard link'' made with \path|/bin/ln|.}
@@ -973,7 +977,7 @@ might look like:
 % mkdir $prefix/run/ns0/upload/archive
 \end{MyVerbatim}
 
-With that directory structure, the {\tt upload-prep.sh} script moves
+With that directory structure, the {\tt upload-prep.pl} script moves
 XML files from the \path|ns0| directory to the two
 upload directories, \path|oarc| and \path|archive|.
 
@@ -1036,6 +1040,15 @@ Here is how you might use it in a crontab:
 * * * * * /usr/local/dsc/libexec/upload-rsync.sh ns0 archive \
 	dsc@archive.oarc.isc.org:/usr/local/dsc/data/Server/ns0
 \end{MyVerbatim}
+
+Also note that \path|upload-rsync.sh| will actually store the remote
+XML files in \path|incoming/YYYY-MM-DD| subdirectories.  That is,
+if your {em RSYNC-DEST\/} is \path|host:/usr/local/dsc/data/Server/ns0|
+then files will actually be written to
+\path|/usr/local/dsc/data/Server/ns0/incoming/YYYY-MM-DD| on {\em host},
+where \path|YYYY-MM-DD| is replaced by the year, month, and date of the
+XML files.  These subdirectories reduce filesystem pressure in the event
+of backlogs.
 
 {\em rsync\/} over {\em ssh\/} requires you to use RSA or DSA public keys
 that do not have a passphrase.  If you do not want to use one of 
@@ -1544,12 +1557,15 @@ msglen & MsgLen & The DNS message length \\
 null & All & A ``no-op'' indexer \\
 opcode & Opcode & DNS message opcode \\
 qclass & - & Query class \\
+qname & Qname & Full query name \\
 qnamelen & QnameLen & Length of the query name \\
 qtype & Qtype & DNS query type \\
 query\_classification & Class & A classification for bogus queries \\
 rcode & Rcode & DNS reply code \\
 rd\_bit & RD & Check if Recursion Desired bit set \\
 tld & TLD & TLD of the query name \\
+transport & Transport & Transport protocol for the DNS message (UDP or TCP) \\
+dns\_ip\_version & IPVersion & IP version of the packet carrying the DNS message \\
 \hline
 \end{tabular}
 \caption{\label{tbl-dns-indexers}DNS message indexers}
@@ -1862,22 +1878,28 @@ for each dataaset:
 The file name should be of the format:
 
 \begin{quote}
-{\em timestamp\/}.{\em dataset\/}.xml
+{\em timestamp\/}.dscdata.xml
 \end{quote}
 
 \noindent
 For example:
 
 \begin{quote}
-1154649660.qtype\_vs\_qnamelen.xml
+1154649660.dscdata.xml
 \end{quote}
+
+NOTE: Versions of DSC prior to 2008-01-30 used a different naming
+convention.  Instead of ``dscdata'' the XML file was named after
+the dataset that generated the data.  The current XML extraction
+code still supports the older naming convention for backward compatibility.
+If the second component of the XML file name is not ``dscdata'' then
+the extractor assume it is a dataset name.
 
 \noindent
 Dataset names come from {\em dsc.conf\/}, and should match the NAME
-attribute of the ARRAY tag in the XML file.  The timestamp is in
+attribute of the ARRAY tag inside the XML file.  The timestamp is in
 Unix epoch seconds and is usually the same as the {\em stop\_time\/}
 value.
-
 
 
 \section{Database Structure}

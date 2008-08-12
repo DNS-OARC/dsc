@@ -34,6 +34,17 @@ my $client_subnet2_keys =   [ qw(
 	malformed
 	) ];
 
+my $port_range_keys = [ qw(
+0-1023 1024-2047 2048-3071 3072-4095 4096-5119 5120-6143 6144-7167 7168-8191
+8192-9215 9216-10239 10240-11263 11264-12287 12288-13311 13312-14335 14336-15359 15360-16383
+16384-17407 17408-18431 18432-19455 19456-20479 20480-21503 21504-22527 22528-23551 23552-24575
+24576-25599 25600-26623 26624-27647 27648-28671 28672-29695 29696-30719 30720-31743 31744-32767
+32768-33791 33792-34815 34816-35839 35840-36863 36864-37887 37888-38911 38912-39935 39936-40959
+40960-41983 41984-43007 43008-44031 44032-45055 45056-46079 46080-47103 47104-48127 48128-49151
+49152-50175 50176-51199 51200-52223 52224-53247 53248-54271 54272-55295 55296-56319 56320-57343
+57344-58367 58368-59391 59392-60415 60416-61439 61440-62463 62464-63487 63488-64511 64512-65535
+)];
+
 %DATASETS = (
 
   qtype => {
@@ -352,6 +363,38 @@ my $client_subnet2_keys =   [ qw(
 	flat_reader => \&DSC::extractor::read_flat_data4,
 	data_merger => \&main::merge_trace,
 	data_writer => \&DSC::db::write_data4,
+      },
+    },
+  },
+
+
+  client_ports => {
+    ndim	=> 1,
+    type1	=> 'Port',
+    outputs	=> {
+      client_ports_count => {
+	data_munger	=> \&main::accum1d_to_count,
+	data_reader	=> \&DSC::extractor::read_data2,
+	data_merger	=> \&main::merge_trace,
+	data_writer	=> \&DSC::extractor::write_data2,
+      },
+      client_ports_accum => {
+	data_merger	=> \&main::merge_accum1d,
+	data_reader	=> \&DSC::extractor::read_data2,
+	data_writer	=> \&DSC::extractor::write_data2,
+      },
+    },
+  },
+
+  client_port_range => {
+    ndim	=> 1,
+    type1	=> 'PortRange',
+    outputs	=> {
+      client_port_range => {
+	keys        => $port_range_keys,
+	data_reader => \&DSC::extractor::read_data,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data,
       },
     },
   },

@@ -105,6 +105,7 @@ EOF
 
 sub run {
 	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
+	my $cmdline = shift;
 	# read config file early so we can set back the clock if necessary
 	#
 	$CFG = DSC::grapher::config::read_config($cfgfile);
@@ -153,6 +154,7 @@ sub run {
 
 	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
+	}
 
 	# common defaults
 	$ARGS{server} ||= [()];
@@ -167,8 +169,8 @@ sub run {
 	error("Unknown plot type: $ARGS{plot}")
 	    unless (defined ($PLOT));
 	error("Time window cannot be larger than a month") if ($ARGS{window} > 86400*31);
-	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 	$dbg_lvl = $PLOT->{debugflag} if defined($PLOT->{debugflag});
+	debug(3, "PLOT=" . Dumper($PLOT)) if ($dbg_lvl >= 3);
 
 	$dbh = get_dbh;
 	load_servers();
@@ -362,8 +364,13 @@ sub make_image {
 		accum2d_plot($datafile, $ARGS{binsize}, $cache_name);
 	} elsif ($PLOT->{plot_type} eq 'hist2d') {
 		# like for qtype_vs_qnamelen
+		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
 		hist2d_data_to_tmpfile($data, $datafile) and
 		hist2d_plot($datafile, $ARGS{binsize}, $cache_name);
+	} elsif ($PLOT->{plot_type} eq 'srcport') {
+		# for plotting client source ports
+		srcport_data_to_tmpfile($data, $datafile) and
+		srcport_plot($datafile, $ARGS{binsize}, $cache_name);
 	} else {
 		error("Unknown plot type: $PLOT->{plot_type}");
 	}
@@ -431,18 +438,29 @@ sub trace_data_to_tmpfile {
 	my $data = shift;
 	my $tf = shift;
 	my $start = time;
-	my $nl = Ploticus_create_datafile($data,
+	my $nl;
+	if (defined($PLOT->{data_dim}) && 1 == $PLOT->{data_dim}) {
+	    $nl = Ploticus_create_datafile_keyless($data,
 		\@plotkeys,
 		$tf,
 		$ARGS{binsize},
 		$ARGS{end},
 		$ARGS{window},
 		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
+	} else {
+	    $nl = Ploticus_create_datafile($data,
+		\@plotkeys,
+		$tf,
+		$ARGS{binsize},
+		$ARGS{end},
+		$ARGS{window},
+		$PLOT->{yaxes}{$ARGS{yaxis}}{divideflag});
+	}
 	my $stop = time;
-	debug(1, "writing tmpfile took %d seconds, %d lines",
+	debug(1, "writing trace tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$nl);
-	$nl
+	$nl;
 }
 
 # calculate the amount of time in an 'accum' dataset.
@@ -467,18 +485,21 @@ sub accum1d_data_to_tmpfile {
 	delete $data->{$SKIPPED_KEY};
 	delete $data->{$SKIPPED_SUM_KEY};
 	$n = 0;
+	debug(2, "accum1d_data_to_tmpfile: sorting $data...");
 	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
-		print $tf join(' ',
+		debug(2, "accum1d_data_to_tmpfile: k1=$k1");
+		$tf->print(join(' ',
 			$k1,
 			$data->{$k1} / $accum_win,
 			&{$PLOT->{label_func}}($k1),
 			&{$PLOT->{color_func}}($k1),
-			), "\n";
+			), "\n");
 		last if (++$n == $ACCUM_TOP_N);
 	}
+	debug(1, "accum1d_data_to_tmpfile: loop done...");
 	close($tf);
 	my $stop = time;
-	debug(1, "writing $n lines to tmpfile took %d seconds, %d lines",
+	debug(1, "writing accum tmpfile took %d seconds, %d lines",
 		$stop-$start,
 		$n);
 	$n;
@@ -574,6 +595,25 @@ sub hist2d_data_to_tmpfile {
 	my $stop = time;
 	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
 	#system "cat $tf 1>&2";
+	$nl;
+}
+
+sub srcport_data_to_tmpfile {
+	my $data = shift;
+	my $tf = shift;
+	my $start = time;
+	delete $data->{$SKIPPED_KEY};
+	delete $data->{$SKIPPED_SUM_KEY};
+	
+	my $nl = 0;
+	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
+		print $tf "$nl $data->{$k1}\n";
+		$nl++;
+	}
+	close($tf);
+	my $stop = time;
+	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
+	#system "head $tf 1>&2";
 	$nl;
 }
 
@@ -880,6 +920,74 @@ sub hist2d_plot {
 	Ploticus_yaxis($yaxis_opts);
 	Ploticus_bars($bars_opts);
 	Ploticus_legend() unless ($ARGS{mini});
+	ploticus_end();
+
+	rename("$pngfile.new", $pngfile);
+	rename("$mapfile.new", $mapfile) if defined($mapfile);
+	my $stop = time;
+	debug(1, "ploticus took %d seconds", $stop-$start);
+}
+
+sub srcport_plot {
+	my $tf = shift;
+	my $binsize = shift;	# ignored
+	my $cache_name = shift;
+	my $pngfile = cache_image_path($cache_name);
+	my $ntypes = @plotnames;
+	my $start = time;
+	my $mapfile = undef;
+
+	ploticus_init("png", "$pngfile.new");
+	ploticus_arg("-maxrows", "50000");
+	if ($PLOT->{map_legend}) {
+		$mapfile = cache_mapfile_path($cache_name);
+		ploticus_arg("-csmap", "");
+		ploticus_arg("-mapfile", "$mapfile.new");
+	}
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	my $areadef_opts = {
+		-title => $PLOT->{plottitle} . "\n" . time_descr(),
+		-rectangle => '1 1 6 4',
+		-yfields => join(',', 2..($ntypes+1)),
+		-xscaletype => 'log+1',
+	};
+	my $yaxis_opts = {
+		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
+		-grid => 'yes',
+	};
+	my $xaxis_opts = {
+		-label => $PLOT->{xaxislabel},
+	};
+	my $lines_opts = {
+		-labelsarrayref => \@plotnames,
+		-colorsarrayref => \@plotcolors,
+		-indexesarrayref => [0..$ntypes-1],
+	};
+	my $legend_opts = {
+		-reverseorder => 'no',
+	};
+
+	if ($ARGS{mini}) {
+		$areadef_opts->{-title} = $PLOT->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 3 4';
+		delete($xaxis_opts->{-label});
+	}
+
+	if (defined($mapfile)) {
+		my %copy = %ARGS;
+		delete $copy{key};
+		my $uri = urlpath(%copy);
+		$uri .= '&key=@KEY@';
+		debug(1, "click URI = $uri");
+		$lines_opts->{-legend_clickmapurl_tmpl} = $uri;
+	}
+
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	Ploticus_lines($lines_opts);
+	#Ploticus_legend() unless ($ARGS{mini});
 	ploticus_end();
 
 	rename("$pngfile.new", $pngfile);
@@ -1298,6 +1406,7 @@ sub navbar_plot_option($) {
 }
 
 sub navbar_plot {
+<<<<<<< .working
     my @items = ();
     push(@items, navbar_plot_option('byserver'));
     push(@items, navbar_plot_option('bynode'));
@@ -1331,6 +1440,50 @@ sub navbar_plot {
     push(@items, navbar_plot_option('qtype_vs_qnamelen'));
     push(@items, navbar_plot_option('rcode_vs_replylen'));
     join('', @items);
+=======
+	my @items = ();
+	my $pn = $ARGS{plot} || die;
+	push(@items, navbar_item('plot','bynode','By Node')) if ($ARGS{node} eq 'all');
+	push(@items, navbar_item('plot','qtype','Qtypes'));
+	if ($pn eq 'qtype' || $pn eq 'dnssec_qtype') {
+		push(@items, sublist_item() . navbar_item('plot','dnssec_qtype','DNSSEC Qtypes'));
+	}
+	push(@items, navbar_item('plot','rcode','Rcodes'));
+	push(@items, navbar_item('plot','client_subnet2_accum','Classification'));
+	if ($pn =~ /^client_subnet2/) {
+		push(@items, sublist_item() . navbar_item('plot','client_subnet2_trace', 'trace'));
+		push(@items, sublist_item() . navbar_item('plot','client_subnet2_count', 'count'));
+	}
+	push(@items, navbar_item('plot','client_subnet_accum','Client Geography'));
+	push(@items, navbar_item('plot','qtype_vs_all_tld','TLDs'));
+	if ($pn =~ /qtype_vs_.*_tld/) {
+		push(@items, sublist_item() . navbar_item('plot','qtype_vs_valid_tld', 'valid'));
+		push(@items, sublist_item() . navbar_item('plot','qtype_vs_invalid_tld', 'invalid'));
+		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
+	}
+	push(@items, navbar_item('plot','client_addr_vs_rcode_accum','Rcodes by Client Address'));
+	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
+	push(@items, navbar_item('plot','ipv6_rsn_abusers_accum','IPv6 root abusers'));
+	push(@items, navbar_item('plot','opcode','Opcodes'));
+	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
+	if ($pn =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
+		push(@items, sublist_item() . navbar_item('plot','idn_qname', 'IDN Qnames'));
+		push(@items, sublist_item() . navbar_item('plot','rd_bit', 'RD bit'));
+		push(@items, sublist_item() . navbar_item('plot','do_bit', 'DO bit'));
+		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
+	}
+	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
+	push(@items, navbar_item('plot','dns_ip_version','IP Version'));
+	if ($pn =~ /dns_ip_version|dns_ip_version_vs_qtype/) {
+	    push(@items, sublist_item() . navbar_item('plot', 'dns_ip_version_vs_qtype', 'Query Types'));
+	}
+	push(@items, navbar_item('plot','transport_vs_qtype','DNS Transport'));
+	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
+	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
+	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
+	push(@items, navbar_item('plot','client_port_range','Source Ports'));
+	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
+>>>>>>> .merge-right.r10282
 }
 
 # This is function called from an "HTML" file by the template parser

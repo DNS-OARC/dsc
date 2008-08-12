@@ -17,7 +17,7 @@ BEGIN {
 		&ploticus_begin
 		&ploticus_end
 		&Ploticus_create_datafile
-		&Ploticus_create_datafile_type2
+		&Ploticus_create_datafile_keyless
 		&Ploticus_getdata
 		&Ploticus_areadef
 		&Ploticus_bars_vstacked
@@ -94,17 +94,6 @@ sub Ploticus_create_datafile {
 	return 0 unless (keys %newhash);
 
 	#
-	# if our dataset is empty, create some fake entries with zeros
-	# so that ploticus doesn't puke
-	#
-	#unless ((keys %newhash)) {
-	#	foreach my $k1 (@$keysarrayref) {
-	#		$newhash{$cutoff}{$k1} = 0;
-	#		$COUNT{$cutoff}{$k1} = 1;
-	#	}
-	#}
-
-	#
 	# now write the new data
 	#
 	my $nl = 0;
@@ -121,38 +110,51 @@ sub Ploticus_create_datafile {
 	$nl;
 }
 
-sub Ploticus_create_datafile_type2 {
+sub Ploticus_create_datafile_keyless {
 	my $hashref = shift;
+	my $keysarrayref = shift;
 	my $FH = shift;
 	my $time_bin_size = shift || 60;
+	my $end = shift;
 	my $window = shift;
+	my $divideflag = shift;
 	my %newhash;
-	my $now = $main::now || time;
-	# my $cutoff = $now - $window; # SQL query already did cutoff
 	my %COUNT;
+	# my $cutoff = $end - $window; # SQL query already did cutoff
+	$divideflag = 0 unless defined($divideflag);
 	#
 	# convert the original data into possibly larger bins
 	#
-	foreach my $fromkey (keys %$hashref) {
+	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
 		# note $fromkey is a time_t.
-		# next if ($fromkey < $cutoff); # SQL query already did cutoff
+		next if ($fromkey < $cutoff);
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
-		if (defined($hashref->{$fromkey})) {
-			$newhash{$tokey} += $hashref->{$fromkey};
-		}
+		$newhash{$tokey} += $hashref->{$fromkey};
 		# always increment the denominator, even for undef values
 		# otherwise averaging comes out wrong, and really creates
 		# problems with missing data on percentage plots
 		$COUNT{$tokey}++;
 	}
+
+	#
+	# bail here for empty datasets;
+	#
+	return 0 unless (keys %newhash);
+
 	#
 	# now write the new data
 	#
-	foreach my $tokey (sort {$a <=> $b} keys %newhash) {
-		my $timestr = POSIX::strftime($strftimefmt, localtime($tokey));
-		print $FH $timestr, ' ', defined($newhash{$tokey}) ? $newhash{$tokey} / ($COUNT{$tokey}) : '-', "\n";
+	my $nl = 0;
+	my $DF = $divideflag ? 60 : 1;
+	foreach my $tokey (sort {$a <=> $b} keys %newhash ) {
+		print $FH join(' ',
+			POSIX::strftime($strftimefmt, localtime($tokey)),
+			defined($newhash{$tokey}) ? $newhash{$tokey} / ($DF*$COUNT{$tokey}): '-'
+			), "\n";
+		$nl++;
 	}
 	close($FH);
+	$nl;
 }
 
 sub Ploticus_getdata {
@@ -184,6 +186,8 @@ sub Ploticus_areadef{
 	PO($ropts, 'yscaletype');
 	if (defined($ropts->{-ystackfields})) {
 		P("yautorange: datafield=$ropts->{-ystackfields} combomode=stack lowfix=0");
+	} elsif (defined ($ropts->{-yfields})) {
+		P("yautorange: datafield=$ropts->{-yfields}");
 	}
 }
 

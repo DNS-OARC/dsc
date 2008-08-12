@@ -18,7 +18,7 @@ domain_list all_tlds pr ps pt pw py qa re ro ru rw sa sb sc sd se sg sh si sj sk
 domain_list all_tlds sn so sr st sv sy sz tc td tf tg th tj tk tm tn to tp tr tt tv tw
 domain_list all_tlds tz ua ug uk um us uy uz va vc ve vg vi vn vu wf ws ye yt yu za zm
 domain_list all_tlds zw aero biz com coop info museum name net org pro gov edu mil int
-domain_list all_tlds arpa .
+domain_list all_tlds arpa asia paris eu .
 
 valid_domains f-root all_tlds
 

@@ -15,11 +15,25 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
+#if HAVE_STATVFS
+#if HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+#endif
+#if HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
+#if HAVE_SYS_STATFS_H
+#include <sys/statfs.h>
+#endif
 
 #include "xmalloc.h"
 #include "dns_message.h"
 #include "ip_message.h"
 #include "pcap.h"
+#if HAVE_LIBNCAP
+#include "ncap.h"
+#endif
 #include "syslog_debug.h"
 
 char *progname = NULL;
@@ -80,6 +94,26 @@ write_pid_file(void)
     fclose(fp);
 }
 
+int
+disk_is_full(void)
+{
+    uint64_t avail_bytes;
+#if HAVE_STATVFS
+    struct statvfs s;
+    if (statvfs(".", &s) < 0)
+	return 0;	/* assume not */
+    avail_bytes = s.f_frsize*s.f_bavail;
+#else
+    struct statfs s;
+    if (statfs(".", &s) < 0)
+	 return 0;	/* assume not */
+    avail_bytes = s.f_bsize*s.f_bavail;
+#endif
+    if (avail_bytes < minfree_bytes)
+	return 1;
+    return 0;
+}
+
 void
 usage(void)
 {
@@ -89,6 +123,55 @@ usage(void)
     fprintf(stderr, "\t-f\tForeground mode.  Don't become a daemon.\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode.\n");
     exit(1);
+}
+
+static int
+dump_reports(void)
+{
+    int fd;
+    FILE *fp;
+    char fname[128];
+    char tname[128];
+
+    if (disk_is_full()) {
+	syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
+	return 1;
+    }
+#if HAVE_LIBNCAP
+    snprintf(fname, 128, "%d.dscdata.xml", Ncap_finish_time());
+#else
+    snprintf(fname, 128, "%d.dscdata.xml", Pcap_finish_time());
+#endif
+    snprintf(tname, 128, "%s.XXXXXXXXX", fname);
+    fd = mkstemp(tname);
+    if (fd < 0) {
+	syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+	return 1;
+    }
+    fp = fdopen(fd, "w");
+    if (NULL == fp) {
+	syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+	close(fd);
+	return 1;
+    }
+    if (debug_flag)
+	fprintf(stderr, "writing to %s\n", tname);
+    fprintf(fp, "<dscdata>\n");
+    /* amalloc_report(); */
+    dns_message_report(fp);
+    ip_message_report(fp);
+    fprintf(fp, "</dscdata>\n");
+
+    /*
+     * XXX need chmod because files are written as root, but may be processed
+     * by a non-priv user
+     */
+    fchmod(fd, 0664);
+    fclose(fp);
+    if (debug_flag)
+	fprintf(stderr, "renaming to %s\n", fname);
+    rename(tname, fname);
+    return 0;
 }
 
 int
@@ -149,10 +232,31 @@ main(int argc, char *argv[])
     }
     syslog(LOG_INFO, "%s", "Running");
 
-    if (debug_flag) {
-	Pcap_run(dns_message_handle, ip_message_handle);
-	dns_message_report();
-	ip_message_report();
+    do {
+	useArena(); /* Initialize a memory arena for data collection. */
+	if (debug_flag && break_start.tv_sec > 0) {
+	    struct timeval now;
+	    gettimeofday(&now, NULL);
+	    syslog(LOG_INFO, "inter-run processing delay: %ld ms",
+		(now.tv_usec - break_start.tv_usec) / 1000 +
+		1000 * (now.tv_sec - break_start.tv_sec));
+	}
+#if HAVE_LIBNCAP
+	result = Ncap_run(dns_message_handle, ip_message_handle);
+#else
+	result = Pcap_run(dns_message_handle, ip_message_handle);
+#endif
+	if (debug_flag)
+	    gettimeofday(&break_start, NULL);
+	if (0 == fork()) {
+	    dump_reports();
+	    _exit(0);
+	}
+	/* Parent quickly frees and clears its copy of the data so it can
+	   resume processing packets. */
+	freeArena();
+	dns_message_clear_arrays();
+	ip_message_clear_arrays();
 
     } else {
 	for (;;) {
@@ -176,6 +280,10 @@ main(int argc, char *argv[])
 	}
     }
 
+#if HAVE_LIBNCAP
+    Ncap_close();
+#else
     Pcap_close();
+#endif
     return 0;
 }

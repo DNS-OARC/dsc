@@ -36,6 +36,7 @@
 #include "rd_bit_index.h"
 #include "opcode_index.h"
 #include "transport_index.h"
+#include "dns_source_port_index.h"
 #include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
@@ -173,6 +174,33 @@ qname_filter(const void *vp, const void *ctx)
     return (0 == regexec(r, m->qname, 0, NULL, 0));
 }
 
+static indexer_t indexers[] = {
+    { "client",               cip_indexer,                  cip_iterator,                  cip_reset },
+    { "cip4_addr",            cip_indexer,                  cip_iterator,                  cip_reset },     /* compatibility */
+    { "client_subnet",        cip_net_indexer,              cip_net_iterator,              cip_net_reset },
+    { "cip4_net",             cip_net_indexer,              cip_net_iterator,              cip_net_reset }, /* compatibility */
+    { "null",                 null_indexer,                 null_iterator,                 NULL },
+    { "qclass",               qclass_indexer,               qclass_iterator,               qclass_reset },
+    { "qnamelen",             qnamelen_indexer,             qnamelen_iterator,             qnamelen_reset },
+    { "qname",                qname_indexer,                qname_iterator,                qname_reset },
+    { "msglen",               msglen_indexer,               msglen_iterator,               msglen_reset },
+    { "qtype",                qtype_indexer,                qtype_iterator,                qtype_reset },
+    { "rcode",                rcode_indexer,                rcode_iterator,                rcode_reset },
+    { "tld",                  tld_indexer,                  tld_iterator,                  tld_reset },
+    { "certain_qnames",       certain_qnames_indexer,       certain_qnames_iterator,       NULL },
+    { "query_classification", query_classification_indexer, query_classification_iterator, NULL },
+    { "idn_qname",            idn_qname_indexer,            idn_qname_iterator,            NULL },
+    { "edns_version",         edns_version_indexer,         edns_version_iterator,         NULL },
+    { "do_bit",               do_bit_indexer,               do_bit_iterator,               NULL },
+    { "d0_bit",               do_bit_indexer,               do_bit_iterator,               NULL },          /* compat for bug */
+    { "rd_bit",               rd_bit_indexer,               rd_bit_iterator,               NULL },
+    { "opcode",               opcode_indexer,               opcode_iterator,               opcode_reset },
+    { "transport",            transport_indexer,            transport_iterator,            NULL },
+    { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },
+    { "dns_source_port",      dns_source_port_indexer,      dns_source_port_iterator,      dns_source_port_reset },
+    { "dns_sport_range",      dns_sport_range_indexer,      dns_sport_range_iterator,      dns_sport_range_reset },
+    { NULL,                   NULL,                         NULL,                          NULL }
+};
 
 static int
 dns_message_find_indexer(const char *in, IDXR ** ix, HITR ** it)

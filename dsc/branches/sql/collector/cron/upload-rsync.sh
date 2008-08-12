@@ -30,6 +30,10 @@ cd $PREFIX/run/$NODE/upload/$DEST
 exec > $PROG.out
 exec 2>&1
 
+YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
+test -n "$YYYYMMDD" || exit 0
+cd $YYYYMMDD
+
 if test -f $HOME/.ssh/dsc_uploader_id ; then
 	RSYNC_RSH="ssh -i $HOME/.ssh/dsc_uploader_id"
 	export RSYNC_RSH
@@ -37,5 +41,5 @@ fi
 
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
-md5 -r $k > MD5s
-rsync -av MD5s $k $RPATH | grep '\.xml$' | xargs rm -v
+rsync -av --remove-source-files $k $RPATH/incoming/$YYYYMMDD/
+# rsync -av $k $RPATH/incoming/$YYYYMMDD/ | grep '\.xml$' | xargs rm -v
