@@ -8,6 +8,7 @@
 #include "md_array.h"
 #include "pcap.h"
 #include "base64.h"
+#include "xmalloc.h"
 
 static const char *d1_type_s;	/* XXX barf */
 static const char *d2_type_s;	/* XXX barf */
@@ -66,7 +67,7 @@ d1_begin(void *pr_data, char *l)
     }
     fprintf(fp, "    <%s val=\"%s\"%s>\n", d1_type_s, l, e ? b64 : "");
     if (e)
-	free(e);
+	xfree(e);
 }
 
 static void
@@ -85,7 +86,7 @@ print_element(void *pr_data, char *l, int val)
     fprintf(fp, " count=\"%d\"", val);
     fprintf(fp, "/>\n");
     if (e)
-	free(e);
+	xfree(e);
 }
 
 static void

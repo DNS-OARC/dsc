@@ -55,7 +55,7 @@ ip_local_address(const char *presentation)
 	return 0;
     if (inXaddr_pton(presentation, &n->addr) != 1) {
 	fprintf(stderr, "yucky IP address %s\n", presentation);
-	free(n);
+	xfree(n);
 	return 0;
     }
     n->next = local_addrs;

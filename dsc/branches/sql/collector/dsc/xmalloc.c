@@ -5,12 +5,17 @@
 #include <memory.h>
 #include <errno.h>
 #include <syslog.h>
+#if defined (__SVR4) && defined (__sun)
+#include <string.h>
+#include <strings.h>
+#endif
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #include "xmalloc.h"
 #include "syslog_debug.h"
 
+/********** xmalloc **********/
 
 void *
 xmalloc(size_t size)
@@ -47,6 +52,13 @@ xstrdup(const char *s)
 	    syslog(LOG_CRIT, "strdup: %s", strerror(errno));
 	return p;
 }
+
+void
+xfree(void *p)
+{
+	free(p);
+}
+
 
 /********** amalloc **********/
 

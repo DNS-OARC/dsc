@@ -9,14 +9,17 @@
 
 #include <errno.h>
 
+#include "dataset_opt.h"
+
 extern "C" int add_local_address(const char *);
 extern "C" int open_interface(const char *);
 extern "C" int set_run_dir(const char *);
+extern "C" int set_minfree_bytes(const char *);
 extern "C" int set_pid_file(const char *);
 extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
 	const char *secondname, const char *secondindexer,
-	const char *filtername, int min_count, int max_cells);
+	const char *filtername, dataset_opt opts);
 extern "C" int set_bpf_vlan_tag_byte_order(const char *);
 extern "C" int set_bpf_program(const char *);
 extern "C" int set_match_vlan(const char *);
@@ -45,7 +48,8 @@ enum {
 	ctBVTBO,		// bpf_vlan_tag_byte_order
 	ctMatchVlan,
 	ctQnameFilter,
-	ctConfig = 30,
+	ctMinfreeBytes,
+	ctConfig = 40,
 	ctMax
 } configToken;
 
@@ -65,6 +69,7 @@ Rule rHostOrNet;
 
 Rule rInterface("Interface", 0);
 Rule rRunDir("RunDir", 0);
+Rule rMinfreeBytes("MinfreeBytes", 0);
 Rule rPidFile("PidFile", 0);
 Rule rLocalAddr("LocalAddr", 0);
 Rule rPacketFilterProg("PacketFilterProg", 0);
@@ -119,6 +124,13 @@ interpret(const Pree &tree, int level)
 			return 0;
 		}
 	} else
+        if (tree.rid() == rMinfreeBytes.id()) {
+		assert(tree.count() > 1);
+                if (set_minfree_bytes(tree[1].image().c_str()) != 1) {
+			cerr << "interpret() failure in minfree_bytes" << endl;
+			return 0;
+		}
+	} else
         if (tree.rid() == rPidFile.id()) {
 		assert(tree.count() > 1);
                 if (set_pid_file(remove_quotes(tree[1].image()).c_str()) != 1) {
@@ -134,12 +146,13 @@ interpret(const Pree &tree, int level)
 		}
         } else
 	if (tree.rid() == rDataset.id()) {
-		int min_count = 0;
-		int max_cells = 0;
+		dataset_opt opts;
+		opts.min_count = 0;	// min cell count to report
+		opts.max_cells = 0;	// max 2nd dim cells to print
 		assert(tree.count() > 10);
 		for (unsigned int i=10; i<tree.count(); i++) {
-			getDatasetOptVal(tree[i], "min-count", min_count);
-			getDatasetOptVal(tree[i], "max-cells", max_cells);
+			getDatasetOptVal(tree[i], "min-count", opts.min_count);
+			getDatasetOptVal(tree[i], "max-cells", opts.max_cells);
 		}
 		x = add_dataset(tree[1].image().c_str(),	// name
 			tree[2].image().c_str(),		// layer
@@ -148,8 +161,7 @@ interpret(const Pree &tree, int level)
 			tree[6].image().c_str(),		// 2nd dim name
 			tree[8].image().c_str(),		// 2nd dim indexer
 			tree[9].image().c_str(),		// filter name
-			min_count,				// min cell count to report
-			max_cells);				// max 2nd dim cells to print
+			opts);
 		if (x != 1) {
 			cerr << "interpret() failure in dataset" << endl;
 			return 0;
@@ -221,6 +233,7 @@ ParseConfig(const char *fn)
 	// rule/line level
 	rInterface = "interface" >>rBareToken >>";" ;
 	rRunDir = "run_dir" >>rQuotedToken >>";" ;
+	rMinfreeBytes = "minfree_bytes" >>rDecimalNumber >>";" ;
 	rPidFile = "pid_file" >>rQuotedToken >>";" ;
 	rLocalAddr = "local_address" >>rIPAddress >>";" ;
 	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
@@ -238,6 +251,7 @@ ParseConfig(const char *fn)
 	rConfig = *(
 		rInterface |
 		rRunDir |
+		rMinfreeBytes |
 		rPidFile |
 		rLocalAddr |
 		rPacketFilterProg |
@@ -265,6 +279,7 @@ ParseConfig(const char *fn)
 	// commit points
         rInterface.committed(true);
         rRunDir.committed(true);
+        rMinfreeBytes.committed(true);
         rLocalAddr.committed(true);
         rPacketFilterProg.committed(true);
         rDataset.committed(true);

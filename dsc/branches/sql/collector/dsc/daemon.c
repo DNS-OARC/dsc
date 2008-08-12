@@ -15,6 +15,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
 #if HAVE_STATVFS
 #if HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
@@ -44,6 +47,7 @@ int nodaemon_flag = 0;
 
 extern void cip_net_indexer_init(void);
 extern void ParseConfig(const char *);
+extern uint64_t minfree_bytes;
 
 void
 daemonize(void)
@@ -179,6 +183,8 @@ main(int argc, char *argv[])
 {
     int x;
     extern DMC dns_message_handle;
+    int result;
+    struct timeval break_start = {0,0};
 
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -195,7 +201,7 @@ main(int argc, char *argv[])
 	    promisc_flag = 0;
 	    break;
 	case 'd':
-	    debug_flag = 1;
+	    debug_flag++;
 	    nodaemon_flag = 1;
 	    break;
 	default:
@@ -215,16 +221,6 @@ main(int argc, char *argv[])
     if (!nodaemon_flag)
     	daemonize();
     write_pid_file();
-
-    /*
-     * I'm using fork() in this loop, (a) out of laziness, and (b)
-     * because I'm worried we might drop packets.  Making sure each
-     * child collector runs for a small amount of time (60 secodns)
-     * means I can be lazy about memory management (leaks).  To
-     * minimize the chance for dropped packets, I'd like to spawn
-     * a new collector as soon as (or even before) the current
-     * collector exits.
-     */
 
     if (!debug_flag) {
         syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
@@ -258,27 +254,22 @@ main(int argc, char *argv[])
 	dns_message_clear_arrays();
 	ip_message_clear_arrays();
 
-    } else {
-	for (;;) {
-	    pid_t cpid = fork();
-	    if (0 == cpid) {
-		Pcap_run(dns_message_handle, ip_message_handle);
-		if (0 == fork()) {
-		    dns_message_report();
-		    ip_message_report();
-		}
-		_exit(0);
-	    } else {
-		int cstatus = 0;
-		syslog(LOG_DEBUG, "waiting for child pid %d", (int) cpid);
-		while (waitpid(cpid, &cstatus, 0) < 0)
-		    (void) 0;
+	{
+	    /* Reap children. (Most recent probably has not exited yet, but
+	     * older ones should have.) */
+	    int cstatus = 0;
+	    pid_t pid;
+	    while ((pid = waitpid(0, &cstatus, WNOHANG)) > 0) {
 		if (WIFSIGNALED(cstatus))
-		    syslog(LOG_NOTICE, "child exited with signal %d, status %d",
-			    WTERMSIG(cstatus), WEXITSTATUS(cstatus));
+		    syslog(LOG_NOTICE, "child %d exited with signal %d",
+			pid, WTERMSIG(cstatus));
+		if (WIFEXITED(cstatus) && WEXITSTATUS(cstatus) != 0)
+		    syslog(LOG_NOTICE, "child %d exited with status %d",
+			pid, WEXITSTATUS(cstatus));
 	    }
 	}
-    }
+
+    } while (result > 0 && debug_flag == 0);
 
 #if HAVE_LIBNCAP
     Ncap_close();

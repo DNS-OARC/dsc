@@ -45,3 +45,9 @@ rcode_iterator(char **label)
     *label = label_buf;
     return next_iter++;
 }
+
+void
+rcode_reset()
+{
+    next_idx = 0;
+}

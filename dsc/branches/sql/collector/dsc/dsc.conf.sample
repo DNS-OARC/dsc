@@ -14,6 +14,14 @@ local_address ::1;
 #
 run_dir "/usr/local/dsc/var/run";
 
+# minfree_bytes
+#
+#	If the filesystem has less than this amount of free
+#	space, then dsc will not write its XML files to disk.
+#	The data will be lost.
+#
+minfree_bytes 5000000;
+
 # pid_file
 #
 #	filename where DSC should store its process-id
@@ -78,7 +86,7 @@ dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
 dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
-
+# dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
 
 # bpf_vlan_tag_byte_order
 #
