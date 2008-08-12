@@ -39,6 +39,8 @@ sub read_config {
 			$CONFIG{$directive} = 1;
 		} elsif ($directive eq 'no_http_header') {
 			$CONFIG{$directive} = 1;
+		} elsif ($directive eq 'hide_nodes') {
+			$CONFIG{$directive} = 1;
 		} elsif ($directive eq 'timezone') {
 			$ENV{TZ} = $x[0];
 		} elsif ($directive eq 'domain_list') {
