@@ -1,3 +1,29 @@
+2008-08-12 Duane Wessels
+
+    Attempt to improve portability (on Solaris) by checking for
+    libresolv, libnsl, and libsocket.  Also check for statvfs() vs
+    statvs() in configure.
+
+2008-07-29 Duane Wessels
+
+    Updates to collector/cron/upload-rsync.sh so that it behaves
+    better with new date-based directories on both collector and
+    presenter.
+
+2008-06-27 Duane Wessels
+
+    Added a source port range dataset (for about-to-be-announced
+    vulnerability that can be mititgated by improving source port
+    randomness).
+
+2008-04-22 Duane Wessels
+
+    Added ./configure script for presenter/dsc code.
+
+2008-04-22 Duane Wessels
+
+    Added support for capturing NCAP data streams.
+
 2008-01-09 Duane Wessels
 
     Changed the location of the presenter's ".dat" files.  Previously
