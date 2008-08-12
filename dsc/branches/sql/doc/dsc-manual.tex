@@ -9,19 +9,71 @@
   {MyVerbatim}{Verbatim}
   {frame=lines,framerule=0.8mm,fontsize=\small}
 
+\renewcommand{\abstractname}{}
 
 \begin{document}
 
 \begin{titlepage}
 \title{DSC Manual}
-\author{Duane Wessels\\
-The Measurement Factory, Inc.\\
+\author{Duane Wessels, Measurement Factory\\
+Ken Keys, CAIDA\\
 \\
 http://dns.measurement-factory.com/tools/dsc/}
 \date{\today}
 \end{titlepage}
 
 \maketitle
+
+\begin{abstract}
+\setlength{\parskip}{1ex}
+\section{Copyright}
+
+The DNS Statistics Collector (dsc)
+
+Copyright 2007 by The Measurement Factory, Inc. and Internet Systems
+Consortium, Inc.
+
+{\em info@measurement-factory.com\/}, {\em info@isc.org\/}
+
+\section{License}
+
+{\dsc} is licensed under the terms of the BSD license:
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+Neither the name of The Measurement Factory nor the names of its
+contributors may be used to endorse or promote products derived
+from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+\section{Contributors}
+\begin{itemize}
+\item Duane Wessels, Measurement Factory
+\item Ken Keys, Cooperative Association for Internet Data Analysis
+\end{itemize}
+\end{abstract}
+
+
+
 \tableofcontents
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +90,7 @@ a busy DNS server.
 \item A data presenter, where data is archived and rendered
 \item A method for securely transferring data from the collector
 	to the presenter
-\item Utilities and scripts that parse XML and store data from the collector
+\item Utilities and scripts that parse XML and archive files from the collector
 \item Utilities and scripts that generate graphs and HTML pages
 \end{itemize}
 
@@ -116,7 +168,7 @@ database and generate Ploticus scriptfiles to generate plots.  Plots
 are always generated on demand via the CGI application.
 
 \path|dsc-grapher.pl| is the script that displays graphs from the
-stored data.  
+archived data.  
 
 
 \section{Architecture}
@@ -221,7 +273,7 @@ turn requires the {\em expat\/} package.
 \section{Install Ploticus}
 
 {\dsc} uses Ploticus to generate plots and graphs.  You can find
-this software at \verb|http://ploticus.sourceforge.net/|.  The {\em
+this software at \verb|http://ploticus.sourceforge.net|.  The {\em
 Download\/} page has links to some pre-compiled binaries and packages.
 FreeBSD and NetBSD users can find Ploticus in the ports/packages
 collection.
@@ -433,13 +485,12 @@ Note that {\dsc}'s Perl modules are installed in the
 ``site\_perl'' directory.  You'll probably need {\em root\/}
 privileges to install files there.
 
-\section{CGI Setup}
+\section{CGI Symbolic Links}
 
 {\dsc} has a couple of CGI scripts that are installed
 into \path|/usr/local/dsc/libexec|.  You should add symbolic
 links from your HTTP server's \path|cgi-bin| directory to
-these scripts (if they do not already exist from a previous
-version of {\dsc}).
+these scripts.
 
 Both of these scripts have been designed to be mod\_perl-friendly.
 
@@ -452,8 +503,7 @@ Both of these scripts have been designed to be mod\_perl-friendly.
 You can skip the \path|put-file.pl| link if you plan to use
 {\em rsync\/} to transfer XML files.
 If you cannot create symbolic links, you'll need to manually
-copy the scripts to the appropriate directory (even if they
-already exist from a previous version of {\dsc}).
+copy the scripts to the appropriate directory.
 
 If you want to use mod\_perl to speed up the web interface by reducing perl
 startup overhead, you will need something like the following in your
@@ -569,7 +619,7 @@ to determine that userid yet, so you must change the ownership manually:
 \end{MyVerbatim}
 
 Furthermore, you probably want to make sure the log file does not
-grow indefinately.  For example, on FreeBSD we add this line to \path|/etc/newsyslog.conf|:
+grow indefinitely.  For example, on FreeBSD we add this line to \path|/etc/newsyslog.conf|:
 
 \begin{MyVerbatim}
 /usr/local/dsc/var/log/put-file.log nobody:wheel        644  10    *    @T00  BN
@@ -1013,7 +1063,7 @@ example:
 
 \path|upload-x509.sh| looks for X.509 certificates in
 \path|/usr/local/dsc/certs|.  The client certificate should be named
-\path|/usr/local/dsc/certs/DEST/NODE.pem| and the CA certficiate
+\path|/usr/local/dsc/certs/DEST/NODE.pem| and the CA certificate
 should be named
 \path|/usr/local/dsc/certs/DEST/cacert.pem|.  Note that {\em DEST\/}
 and {\em NODE\/} must match the \path|upload-x509.sh|
@@ -1083,9 +1133,10 @@ The configuration file currently understands the following directives:
 	Specifies the DNS server's local IP address.  It is used
 	to determine the ``direction'' of an IP packet: sending,
 	receiving, or other.  You may specify multiple local addresses
-	(separated by whitespace) if necessary.
+	by repeating the {\em local\_address} line any number of times.
 
 	Example: {\tt local\_address 172.16.0.1;\/}
+	Example: {\tt local\_address 2001:4f8:0:2::13;\/}
 
 \item[run\_dir]
 
@@ -1094,6 +1145,17 @@ The configuration file currently understands the following directives:
 	any core dumps.
 
 	Example: {\tt run\_dir "/var/run/dsc";\/}
+
+\item[minfree\_bytes]
+
+	If the filesystem where {\tt dsc\/} writes its XML files
+	does not have at least this much free space, then
+	{\tt dsc\/} will not write the XML files.  This prevents
+	{\tt dsc\/} from filling up the filesystem.  The XML
+	files that would have been written are simply lost and
+	cannot be recovered.  {\tt dsc\/} will begin writing
+	XML files again when the filesystem has the necessary
+	free space.
 
 \item[bpf\_program]
 
@@ -1106,12 +1168,12 @@ The configuration file currently understands the following directives:
 
 	However, if you want to monitor multiple DNS servers with
 	separate {\dsc} instances on one collector box, then you
-	may need to use {\em bfp\_program} to make sure that each
+	may need to use {\em bpf\_program} to make sure that each
 	{\tt dsc} process sees only the traffic it should see.
 
 	Note that this directive must go before the {\em interface\/}
 	directive because {\tt dsc\/} makes only one pass through
-	the configuration file and the BFP filter is set when the
+	the configuration file and the BPF filter is set when the
 	interface is initialized.
 
 	Example: {\tt bpf\_program "dst host 192.168.1.1";\/}
@@ -1196,6 +1258,7 @@ dataset rd_bit dns All:null RD:rd_bit queries-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
 dataset ipv6_rsn_abusers dns All:null ClientAddr:client
         queries-only,aaaa-or-a6-only,root-servers-n et-only max-cells=50;
+dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
 
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto
         any;
@@ -1230,7 +1293,9 @@ clock synchronized to the correct time.
 
 \chapter{Viewing {\dsc} Graphs}
 
-\section{Configuration}
+To view {\dsc} data in a web browser, simply enter the
+URL to the \path|dsc-grapher.pl| CGI.   But before you
+do that, you'll need to create a grapher configuration file.
 
 \path|dsc-grapher.pl| uses a simple configuration file to set certain
 menu and database options.  This  configuration file is
@@ -1345,15 +1410,18 @@ required:
 	is currently hard-coded and designed only for IPv4 addresses.
 	It masks off the lower 24 bits and leaves only the first octet
 	in place.
+\item[hide\_nodes]
+	When the {\em hide\_nodes\/} directive is given, the presenter
+	will not display the list node names underneath the current
+	server.  This might be useful if you have a number of nodes
+	but only want viewers to see the server as a whole, without
+	exposing the particular nodes in the cluster.  Note, however,
+	that if someone already knows the name of a node they can
+	hand-craft query terms in the URL to display the data for
+	only that node.  In other words, the {\em hide\_nodes\/}
+	only provides ``security through obscurity.''
 \end{description}
 
-
-\section{Viewing in a Web Browser}
-
-To view {\dsc} data in a web browser, simply enter the
-URL to the \path|dsc-grapher.pl| CGI.  But before you
-do that, you'll need to create a grapher configuration file
-as described in the previous section.
 
 The first few times you try \path|dsc-grapher.pl|, be sure to run
 {\tt tail -f} on the HTTP server error.log file.
@@ -1508,6 +1576,7 @@ Indexer & Label & Description \\
 \hline 
 ip\_direction & Direction & one of sent, recv, or other \\
 ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
+ip\_version & IP version number (4, 6) \\
 \hline
 \end{tabular}
 \caption{\label{tbl-ip-indexers}IP packet indexers}
@@ -1516,7 +1585,7 @@ ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
 
 {\dsc} includes only minimal support for collecting IP-layer
 stats.  Mostly we are interested in finding out the mix of
-IP protocols recieved by the DNS server.  It can also show us
+IP protocols received by the DNS server.  It can also show us
 if/when the DNS server is the subject of denial-of-service
 attack.
 Table~\ref{tbl-ip-indexers} shows the indexers for IP packets.
@@ -1531,6 +1600,9 @@ Here are their longer descriptions:
 	Note that the {\em bpf\_program\/} setting affects all traffic
 	seen by {\dsc}.  If the program contains the word ``udp''
 	then you won't see any counts for non-UDP traffic.
+\item[ip\_version]
+	The IP version number, e.g.: 4 or 6.  Can be used to compare how much
+	traffic comes in via IPv6 compared to IPV4.
 \end{description}
 
 \subsection{IP Filters}
@@ -1654,6 +1726,10 @@ for DNS messages, and here are their descriptions:
 	clients.
 \item[tld]
 	the TLD of the first QNAME in a DNS message's question section.
+\item[transport]
+	Indicates whether the DNS message is carried via UDP or TCP\@.
+\item[dns\_ip\_version]
+	The IP version number that carried the DNS message.
 \end{description}
 
 \subsection{DNS Filters}
@@ -1844,12 +1920,12 @@ Please see
 for more sample XML files.
 
 The XML is not very strict and might cause XML purists to cringe.
-{\tt dsc} writes the XML files the old-fasioned way (with printf())
+{\tt dsc} writes the XML files the old-fashioned way (with printf())
 and reads them with Perl's XML::Simple module.
 Here is a possibly-valid DTD for the dataset XML format.
 Note, however, that the {\em LABEL1\/}
 and {\em LABEL2\/} strings are different
-for each dataaset:
+for each dataset:
 
 \begin{MyVerbatim}
 <!DOCTYPE ARRAY [  
@@ -1978,7 +2054,7 @@ server_id   node_id   start_time  key1  key2   count
         1         2   1093220220  sent  tcp      350
 \end{MyVerbatim}
 
-\subsection{Auxilliary Tables}
+\subsection{Auxiliary Tables}
 
 The {\tt server} table contains the name of each server, and
 has the following columns:
@@ -2010,9 +2086,6 @@ The {\tt node} table contains node names, and has these columns:
 \item
 	{\dsc} perl modules are installed in the ``site\_perl'' directory
 	but they should probably be installed under /usr/local/dsc.
-
-\item
-	{\dsc} collector does not grok DNS/TCP transactions yet.
 
 \item
 	{\dsc} collector silently drops UDP frags
