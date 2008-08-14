@@ -13,10 +13,10 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([ncap], [ncap_create])
-AC_CHECK_LIB([pcap], [pcap_open_live])
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])
+AC_CHECK_LIB([pcap], [pcap_open_live])
 
 # Checks for header files.
 AC_HEADER_STDC
