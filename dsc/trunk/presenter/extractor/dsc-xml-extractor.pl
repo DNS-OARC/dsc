@@ -8,6 +8,7 @@ use strict;
 
 use Cwd;
 use DSC::extractor;
+use DSC::extractor qw($SKIPPED_KEY $SKIPPED_SUM_KEY);
 use DSC::extractor::config;
 use Data::Dumper;
 use Proc::PID::File;
