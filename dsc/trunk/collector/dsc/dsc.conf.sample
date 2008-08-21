@@ -78,6 +78,7 @@ dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client replies-only max-
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname chaos-class,queries-only;
 dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
 dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
+dataset edns_bufsiz dns All:null EDNSBufSiz:edns_bufsiz queries-only;
 dataset do_bit dns All:null D0:do_bit queries-only;
 dataset rd_bit dns All:null RD:rd_bit queries-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
