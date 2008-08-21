@@ -32,6 +32,7 @@
 #include "idn_qname_index.h"
 #include "query_classification_index.h"
 #include "edns_version_index.h"
+#include "edns_bufsiz_index.h"
 #include "do_bit_index.h"
 #include "rd_bit_index.h"
 #include "opcode_index.h"
@@ -194,6 +195,7 @@ static indexer_t indexers[] = {
     { "query_classification", query_classification_indexer, query_classification_iterator, NULL },
     { "idn_qname",            idn_qname_indexer,            idn_qname_iterator,            NULL },
     { "edns_version",         edns_version_indexer,         edns_version_iterator,         NULL },
+    { "edns_bufsiz",          edns_bufsiz_indexer,          edns_bufsiz_iterator,         NULL },
     { "do_bit",               do_bit_indexer,               do_bit_iterator,               NULL },
     { "d0_bit",               do_bit_indexer,               do_bit_iterator,               NULL },          /* compat for bug */
     { "rd_bit",               rd_bit_indexer,               rd_bit_iterator,               NULL },

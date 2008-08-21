@@ -38,7 +38,7 @@ use vars @EXPORT_OK;
 END { }
 
 # constants
-my $dbg_lvl = 0;
+my $dbg_lvl = 9;
 my $DATAROOT = '/usr/local/dsc/data';
 my $CacheImageTTL = 60; # 1 min
 my $expires_time = '+1m';
@@ -1369,6 +1369,7 @@ sub navbar_plot {
 		push(@items, sublist_item() . navbar_item('plot','rd_bit', 'RD bit'));
 		push(@items, sublist_item() . navbar_item('plot','do_bit', 'DO bit'));
 		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
+		push(@items, sublist_item() . navbar_item('plot','edns_bufsiz', 'EDNS buffer size'));
 	}
 	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
 	push(@items, navbar_item('plot','dns_ip_version','IP Version'));

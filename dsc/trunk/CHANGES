@@ -1,3 +1,8 @@
+2008-08-21 Duane Wessels
+
+    Added an EDNS bufsiz indexer so we can collect buffer sizes
+    advertised by clients.
+
 2008-08-12 Duane Wessels
 
     Attempt to improve portability (on Solaris) by checking for
