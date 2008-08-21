@@ -34,6 +34,7 @@ OBJS=\
 	query_classification_index.o \
 	idn_qname_index.o \
 	edns_version_index.o \
+	edns_bufsiz_index.o \
 	do_bit_index.o \
 	rd_bit_index.o \
 	opcode_index.o \
