@@ -91,6 +91,20 @@ my $std_trace_yaxes = {
 	},
     };
 
+my $pct_trace_yaxes = {
+	# just like $std_trace_yaxes, but we want percent to be the default
+	rate => {
+	    label => 'Query Rate (q/s)',
+	    divideflag => 1,
+	    default => 0,
+	},
+	percent => {
+	    label => 'Percent of Queries',
+    	    divideflag => 0,
+	    default => 1,
+	},
+    };
+
 my $std_accum_yaxes = {
 	rate => {
 	    label => 'Mean Query Rate (q/s)',
@@ -728,19 +742,7 @@ my $std_accum_yaxes = {
     colors	=> $port_range_colors,
     data_reader => \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
-    yaxes	=> {
-	# just like $std_trace_yaxes, but we want percent to be the default
-	rate => {
-	    label => 'Query Rate (q/s)',
-	    divideflag => 1,
-	    default => 0,
-	},
-	percent => {
-	    label => 'Percent of Queries',
-    	    divideflag => 0,
-	    default => 1,
-	},
-    },
+    yaxes	=> $pct_trace_yaxes,
     plottitle	=> 'Port Range',
     map_legend	=> 0,
     # ARGH, Ploticus only supports stacking of 40 fields, so
@@ -755,8 +757,6 @@ my $std_accum_yaxes = {
 		my $tbin = $fbin >> 1;
 		my $fkey = sprintf "%d-%d", $fbin << 10, (($fbin + 1) << 10) - 1;
 		my $tkey = sprintf "%d-%d", $tbin << 11, (($tbin + 1) << 11) - 1;
-print X "fbin=$fbin, tbin=$tbin\n";
-print X "fkey=$fkey, tkey=$tkey\n";
         	foreach my $t (keys %$data) {
 			$newdata{$t}{$tkey} += $data->{$t}{$fkey} if $data->{$t}{$fkey};
 		}
@@ -765,6 +765,20 @@ print X "fkey=$fkey, tkey=$tkey\n";
 	close(X);
         \%newdata;
    }
+  },
+
+  edns_bufsiz => {
+    debug => 1,
+    dataset => 'edns_bufsiz',
+    plot_type => 'trace',
+    keys	=> [qw(None 0-511 512-1023 1024-1535 1536-2047 2048-2559 2560-3071 3072-3583 3584-4095 4096-4607)],
+    names	=> [qw(None 0-511 512-1023 1024-1535 1536-2047 2048-2559 2560-3071 3072-3583 3584-4095 4096-4607)],
+    colors	=> [ qw(red orange yellow brightgreen brightblue purple magenta redorange yellow2 green darkblue) ],
+    data_reader => \&DSC::extractor::read_data,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    yaxes	=> $pct_trace_yaxes,
+    plottitle	=> 'EDNS Buffer Sizes',
+    map_legend	=> 0,
   },
 
 );

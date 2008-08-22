@@ -1466,11 +1466,12 @@ sub navbar_plot {
 	push(@items, navbar_item('plot','ipv6_rsn_abusers_accum','IPv6 root abusers'));
 	push(@items, navbar_item('plot','opcode','Opcodes'));
 	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
-	if ($pn =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version/) {
+	if ($pn =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version|edns_bufsiz/) {
 		push(@items, sublist_item() . navbar_item('plot','idn_qname', 'IDN Qnames'));
 		push(@items, sublist_item() . navbar_item('plot','rd_bit', 'RD bit'));
 		push(@items, sublist_item() . navbar_item('plot','do_bit', 'DO bit'));
 		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
+		push(@items, sublist_item() . navbar_item('plot','edns_bufsiz', 'EDNS buffer size'));
 	}
 	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
 	push(@items, navbar_item('plot','dns_ip_version','IP Version'));

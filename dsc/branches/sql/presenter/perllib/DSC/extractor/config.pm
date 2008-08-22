@@ -399,6 +399,18 @@ my $port_range_keys = [ qw(
     },
   },
 
+  edns_bufsiz => {
+    ndim	=> 1,
+    type1	=> 'EDNSBufSiz',
+    outputs	=> {
+      edns_bufsiz => {
+	data_reader => \&DSC::extractor::read_data,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data,
+      },
+    },
+  },
+
 );
 
 sub read_config {

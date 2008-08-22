@@ -122,6 +122,7 @@ grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message
     someclass = nptohs(buf + offset + 2);
     if (sometype == T_OPT) {
 	m->edns.found = 1;
+	m->edns.bufsiz = someclass;
 	memcpy(&m->edns.version, buf + offset + 5, 1);
 	us = nptohs(buf + offset + 6);
 	m->edns.DO = (us >> 15) & 0x01;		/* RFC 3225 */

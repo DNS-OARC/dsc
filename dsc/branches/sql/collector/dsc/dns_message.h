@@ -37,6 +37,7 @@ struct _dns_message {
 	unsigned int found:1;	/* set if we found an OPT RR */
 	unsigned int DO:1;	/* set if DNSSEC DO bit is set */
 	unsigned char version;	/* version field from OPT RR */
+	unsigned short bufsiz;	/* class field from OPT RR */
     } edns;
     /* ... */
 };
