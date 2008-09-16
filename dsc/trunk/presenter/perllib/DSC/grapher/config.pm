@@ -30,7 +30,16 @@ sub read_config {
 		my $directive = shift @x;
 		if ($directive eq 'server') {
 			my $servername = shift @x;
-			$CONFIG{servers}{$servername} = \@x;
+			foreach my $t ($@) {
+				my $fn = $t;
+				my @rn = ($t);
+				if ($t =~ /^([^=]+)=(.*)/$) {
+					$fn = $1;
+					@rn = split(/,/, $2);
+				}
+				push ($t, @{$CONFIG{servers}{$servername}});
+				$CONFIG{nodemap}{$servername}{$fn} = \@rn;
+			}
 		} elsif ($directive =~ /windows$/) {
 			$CONFIG{$directive} = \@x;
 		} elsif ($directive eq 'embargo') {

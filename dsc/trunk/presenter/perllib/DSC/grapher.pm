@@ -299,10 +299,11 @@ sub load_data {
 		$last = $first + 86400;
 	}
 	foreach my $node (@{$CFG->{servers}{$ARGS{server}}}) {
-	    next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
+	  next if ($ARGS{node} ne 'all' && $node ne $ARGS{node});
+	  foreach my $real_node (@{$CFG->{nodemap}{$ARGS{server}}{$node}}) {
 	    for (my $t = $first; $t <= $last; $t += 86400) {
 		my %thash;
-		my $datafile = datafile_path($ARGS{plot}, $node, $t);
+		my $datafile = datafile_path($ARGS{plot}, $real_node, $t);
 		debug(1, "reading $datafile");
 		#warn "$datafile: $!\n" unless (-f $datafile);
 		if ('bynode' eq $ARGS{plot}) {
@@ -319,6 +320,7 @@ sub load_data {
 			&{$PLOT->{data_summer}}(\%thash, \%hash);
 		}
 	    }
+	  }
 	}
 	my $stop = time;
 	debug(1, "reading datafile took %d seconds, %d lines",
