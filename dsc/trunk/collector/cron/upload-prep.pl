@@ -24,7 +24,7 @@ foreach my $conf (</usr/local/dsc/etc/*.conf>) {
 	next unless open (CONF, $conf);
 	my $rundir = undef;
 	while (<CONF>) {
-		$rundir = $1 if (/run_dir\s+"([^"]+)"/);
+		$rundir = $1 if (/^run_dir\s+"([^"]+)"/);
 	}
 	close(CONF);
 	next unless $rundir;
