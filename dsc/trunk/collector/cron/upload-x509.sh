@@ -31,12 +31,12 @@ perl -e 'sleep((rand 10) + 5)'
 
 cd $PREFIX/run/$NODE/upload/$DEST
 
+exec > $PROG.out
+exec 2>&1
+
 YYYYMMDD=`ls | grep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | head -1`
 test -n "$YYYYMMDD" || exit 0
 cd $YYYYMMDD
-
-exec > $PROG.out
-exec 2>&1
 
 k=`ls -r | grep xml$ | head -500` || true
 test -n "$k" || exit 0
@@ -51,4 +51,5 @@ set +e
 $CURL $SRVAUTH $CLTAUTH $UPLOAD $URI | awk '$1 == "Stored" {print $2}' | xargs rm -v
 rm -f $TF
 
+rm -f MD5s
 cd ..; rmdir $YYYYMMDD 2>/dev/null
