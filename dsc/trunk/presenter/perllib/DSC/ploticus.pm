@@ -76,6 +76,7 @@ sub Ploticus_create_datafile {
 	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
 		# note $fromkey is a time_t.
 		next if ($fromkey < $cutoff);
+		next if ($fromkey > $end);	# if clock skew
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
 		foreach my $k1 (@$keysarrayref) {
 			if (defined($hashref->{$fromkey}{$k1})) {
@@ -128,6 +129,7 @@ sub Ploticus_create_datafile_keyless {
 	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
 		# note $fromkey is a time_t.
 		next if ($fromkey < $cutoff);
+		next if ($fromkey > $end);	# if clock skew
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
 		$newhash{$tokey} += $hashref->{$fromkey};
 		# always increment the denominator, even for undef values
