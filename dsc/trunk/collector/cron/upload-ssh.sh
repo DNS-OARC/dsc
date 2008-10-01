@@ -44,13 +44,13 @@ test -n "$YYYYMMDD" || exit 0
 cd $YYYYMMDD
 
 k=`ls -r | grep \.xml$ | head -500` || true
-test -n "$k" || exit 0
+if test -n "$k" ; then
 
-# dsc receiver doesn't like + in filename
-#
-NODE=`echo $NODE | sed -e 's/+/_/g'`
+    # dsc receiver doesn't like + in filename
+    #
+    NODE=`echo $NODE | sed -e 's/+/_/g'`
 
-tar czf - $k \
+    tar czf - $k \
 	| $SSH -i $ID $LOGIN "dsc $NODE" \
 	| while read marker md5 file x; do
 		# ignore lines not beginning with the word "MD5".
@@ -70,6 +70,8 @@ tar czf - $k \
 		fi
 	  done \
 	| xargs rm
+
+fi
 
 cd ..; rmdir $YYYYMMDD 2>/dev/null
 
