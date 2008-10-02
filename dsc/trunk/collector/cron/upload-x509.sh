@@ -39,17 +39,18 @@ test -n "$YYYYMMDD" || exit 0
 cd $YYYYMMDD
 
 k=`ls -r | grep xml$ | head -500` || true
-test -n "$k" || exit 0
-md5 -r $k > MD5s
-TF=`mktemp /tmp/put.XXXXXXXXXXXXX`
-tar czf $TF MD5s $k
-mv $TF $TF.tar
-TF="$TF.tar"
-UPLOAD="--upload $TF"
+if test -n "$k" ; then
+    md5 -r $k > MD5s
+    TF=`mktemp /tmp/put.XXXXXXXXXXXXX`
+    tar czf $TF MD5s $k
+    mv $TF $TF.tar
+    TF="$TF.tar"
+    UPLOAD="--upload $TF"
 
-set +e
-$CURL $SRVAUTH $CLTAUTH $UPLOAD $URI | awk '$1 == "Stored" {print $2}' | xargs rm -v
-rm -f $TF
+    set +e
+    $CURL $SRVAUTH $CLTAUTH $UPLOAD $URI | awk '$1 == "Stored" {print $2}' | xargs rm -v
+    rm -f $TF
+fi
 
 rm -f MD5s
 cd ..; rmdir $YYYYMMDD 2>/dev/null
