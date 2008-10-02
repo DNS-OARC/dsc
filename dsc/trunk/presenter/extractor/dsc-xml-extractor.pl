@@ -59,7 +59,7 @@ sub process_xml_dir {
 	print "extract $fn\n";
 	my $x = eval { extract($fn); };
 	unless (defined $x) {
-		warn "extract died with ", $@, "\n";
+		warn "extract died with '", $@, "'\n";
 		Mkdir ("errors", 0755);
 		#
 		# perl's rename is a pain.  it doesn't work
@@ -69,7 +69,7 @@ sub process_xml_dir {
 		system "mv $fn errors || rm -f $fn";
 		my ($V,$D,$F) = File::Spec->splitpath($fn);
 		if (open (ERR, ">errors/$F.err")) {
-			print ERR "extract died with ", $@, "\n";
+			print ERR "extract died with '", $@, "'\n";
 			close(ERR);
 		}
 		next;
@@ -145,7 +145,10 @@ sub extract_dataset {
 
 	my $EX = $DSC::extractor::config::DATASETS{$dataset};
 	print STDERR 'EX=', Dumper($EX) if ($dbg);
-	die "no extractor for $dataset\n" unless defined($EX);
+	unless (defined($EX)) {
+		warn "no extractor for $dataset\n" unless defined($EX);
+		return 1;
+	}
 
 	my $start_time;
 	my $grokked;
