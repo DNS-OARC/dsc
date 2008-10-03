@@ -793,9 +793,7 @@ my $std_accum_yaxes = {
     # here we change the original 64 bins into 32 bins.
     munge_func  => sub {
 	use Data::Dumper;
-	open(X, ">/tmp/tt");
         my $data = shift;
-	print X Dumper($data);
         my %newdata;
 	for (my $fbin = 0; $fbin < 64; $fbin++) {
 		my $tbin = $fbin >> 1;
@@ -805,8 +803,6 @@ my $std_accum_yaxes = {
 			$newdata{$t}{$tkey} += $data->{$t}{$fkey} if $data->{$t}{$fkey};
 		}
 	}
-	print X Dumper(\%newdata);
-	close(X);
         \%newdata;
    }
   },
