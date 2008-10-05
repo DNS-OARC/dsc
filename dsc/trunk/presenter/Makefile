@@ -7,11 +7,11 @@ all clean:
 	(cd perllib; test -f Makefile || perl Makefile.PL ; $(MAKE) $@)
 
 install:
-	install -d -m 755 $(INSTALLDIR)/data/
-	install -d -m 755 $(INSTALLDIR)/cache/
-	install -d -m 755 $(INSTALLDIR)/etc/
-	install -d -m 755 $(INSTALLDIR)/var/
-	install -d -m 755 $(INSTALLDIR)/var/log/
+	test -d $(INSTALLDIR)/data/ || install -d -m 755 $(INSTALLDIR)/data/
+	test -d $(INSTALLDIR)/cache/ || install -d -m 755 $(INSTALLDIR)/cache/
+	test -d $(INSTALLDIR)/etc/ || install -d -m 755 $(INSTALLDIR)/etc/
+	test -d $(INSTALLDIR)/var/ || install -d -m 755 $(INSTALLDIR)/var/
+	test -d $(INSTALLDIR)/var/log/ || install -d -m 755 $(INSTALLDIR)/var/log/
 	(cd perllib; test -f Makefile || perl Makefile.PL ; $(MAKE) $@)
 	(cd cron; $(MAKE) $@)
 	(cd extractor; $(MAKE) $@)
