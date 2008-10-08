@@ -128,6 +128,8 @@ sub Ploticus_create_datafile_keyless {
 	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
 		# note $fromkey is a time_t.
 		next if ($fromkey < $cutoff);
+		next if ($fromkey > $end);	# if clock skew
+		next if ($fromkey > $end);	# if clock skew
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
 		$newhash{$tokey} += $hashref->{$fromkey};
 		# always increment the denominator, even for undef values
@@ -411,6 +413,7 @@ sub ploticus_arg {
 
 sub ploticus_begin {
 	die "wrong state" unless (1 == $ploticus_state);
+	#system "ls -ld /usr/local/bin/pl /usr/local/bin/ploticus 1>&2";
 	my $prog = (grep {-f $_} qw(/usr/local/bin/ploticus /usr/local/bin/pl))[0];
 	my $cmd = join(" ",
 		$prog,

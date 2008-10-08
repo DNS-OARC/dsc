@@ -40,8 +40,9 @@ if test -f $HOME/.ssh/dsc_uploader_id ; then
 fi
 
 k=`ls -r | grep xml$ | head -500` || true
-test -n "$k" || exit 0
-rsync -av --remove-source-files $k $RPATH/incoming/$YYYYMMDD/
-# rsync -av $k $RPATH/incoming/$YYYYMMDD/ | grep '\.xml$' | xargs rm -v
+if test -n "$k" ; then
+    rsync -av --remove-source-files $k $RPATH/incoming/$YYYYMMDD/
+    # rsync -av $k $RPATH/incoming/$YYYYMMDD/ | grep '\.xml$' | xargs rm -v
+fi
 
 cd ..; rmdir $YYYYMMDD 2>/dev/null

@@ -1,5 +1,5 @@
 server f-root pao1 sfo2
-server k-root A B C
+server k-root A=k1.A,k2.A B=k1.B,k2.B C=k1.C,k2.C
 trace_windows 1hour 4hour 1day 1week
 accum_windows 1day 2days 3days 1week
 embargo 0
@@ -7,22 +7,40 @@ embargo 0
 #no_http_header
 #hide_nodes
 
-domain_list all_tlds ac ad ae af ag ai al am an ao aq ar as at au aw az ba bb bd be bf
-domain_list all_tlds bg bh bi bj bm bn bo br bs bt bv bw by bz ca cc cd cf cg ch ci ck
-domain_list all_tlds cl cm cn co cr cu cv cx cy cz de dj dk dm do dz ec ee eg eh er es
-domain_list all_tlds et fi fj fk fm fo fr ga gd ge gf gg gh gi gl gm gn gp gq gr gs gt
-domain_list all_tlds gu gw gy hk hm hn hr ht hu id ie il im in io iq ir is it je jm jo
-domain_list all_tlds jp ke kg kh ki km kn kp kr kw ky kz la lb lc li lk lr ls lt lu lv
-domain_list all_tlds ly ma mc md mg mh mk ml mm mn mo mp mq mr ms mt mu mv mw mx my mz
-domain_list all_tlds na nc ne nf ng ni nl no np nr nu nz om pa pe pf pg ph pk pl pm pn
-domain_list all_tlds pr ps pt pw py qa re ro ru rw sa sb sc sd se sg sh si sj sk sl sm
-domain_list all_tlds sn so sr st sv sy sz tc td tf tg th tj tk tm tn to tp tr tt tv tw
-domain_list all_tlds tz ua ug uk um us uy uz va vc ve vg vi vn vu wf ws ye yt yu za zm
-domain_list all_tlds zw aero biz com coop info museum name net org pro gov edu mil int
-domain_list all_tlds arpa asia paris eu .
+#
+# To update domain_list all_tlds:
+# dig @f.root-servers.net . axfr \
+#   | awk '$3=="IN" && $4=="NS" {print $1}' \
+#   | tr A-Z a-z \
+#   | sed -e 's/\.$//' \
+#   | grep . \
+#   | sort \
+#   | uniq \
+#   | fmt 50 \
+#   | sed -e 's/^/domain_list all_tlds /'
+
+domain_list all_tlds ac ad ae aero af ag ai al am an ao aq ar arpa as
+domain_list all_tlds asia at au aw ax az ba bb bd be bf bg bh bi biz bj
+domain_list all_tlds bm bn bo br bs bt bv bw by bz ca cat cc cd cf cg ch
+domain_list all_tlds ci ck cl cm cn co com coop cr cu cv cx cy cz de dj
+domain_list all_tlds dk dm do dz ec edu ee eg er es et eu fi fj fk fm fo
+domain_list all_tlds fr ga gb gd ge gf gg gh gi gl gm gn gov gp gq gr gs
+domain_list all_tlds gt gu gw gy hk hm hn hr ht hu id ie il im in info
+domain_list all_tlds int io iq ir is it je jm jo jobs jp ke kg kh ki km
+domain_list all_tlds kn kp kr kw ky kz la lb lc li lk lr ls lt lu lv ly
+domain_list all_tlds ma mc md me mg mh mil mk ml mm mn mo mobi mp mq mr
+domain_list all_tlds ms mt mu museum mv mw mx my mz na name nc ne net nf
+domain_list all_tlds ng ni nl no np nr nu nz om org pa pe pf pg ph pk pl
+domain_list all_tlds pm pn pr pro ps pt pw py qa re ro rs ru rw sa sb sc
+domain_list all_tlds sd se sg sh si sj sk sl sm sn so sr st su sv sy sz
+domain_list all_tlds tc td tel tf tg th tj tk tl tm tn to tp tr travel
+domain_list all_tlds tt tv tw tz ua ug uk us uy uz va vc ve vg vi vn vu
+domain_list all_tlds wf ws xn--0zwm56d xn--11b5bs3a9aj6g xn--80akhbyknj4f
+domain_list all_tlds xn--9t4b11yi5a xn--deba0ad xn--g6w251d xn--hgbk6aj7f53bba
+domain_list all_tlds xn--hlcj6aya9esc7a xn--jxalpdlp xn--kgbechtv xn--zckzah
+domain_list all_tlds ye yt yu za zm zw
 
 valid_domains f-root all_tlds
-
 
 ## Uncomment and optionally edit one of the dbi_datasource lines below.
 #dbi_datasource DBI:Pg:dbname=dsc

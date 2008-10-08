@@ -38,7 +38,7 @@ for conf in /usr/local/dsc/etc/*.conf ; do
 	#
 	# extract run_dir from a dsc.conf file
 	#
-	rundir=`perl -ne 'print $1 if /run_dir\s+"([^"]+)"/' $conf`
+	rundir=`perl -ne 'print $1 if /^run_dir\s+"([^"]+)"/' $conf`
 	cd $rundir;
 
 	#xec > $PROG.out

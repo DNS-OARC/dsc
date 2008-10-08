@@ -1,4 +1,5 @@
 INSTALLDIR=/usr/local/dsc
+MKDIRS=data cache etc var var/log
 
 all clean:
 	(cd cron; $(MAKE) $@)
@@ -7,11 +8,12 @@ all clean:
 	(cd perllib; test -f Makefile || perl Makefile.PL ; $(MAKE) $@)
 
 install:
-	install -d -m 755 $(INSTALLDIR)/data/
-	install -d -m 755 $(INSTALLDIR)/cache/
-	install -d -m 755 $(INSTALLDIR)/etc/
-	install -d -m 755 $(INSTALLDIR)/var/
-	install -d -m 755 $(INSTALLDIR)/var/log/
+	@for f in ${MKDIRS} ; do \
+	if test -d ${INSTALLDIR}/$$f ; then true ; else \
+		echo install -d -m 755 $(INSTALLDIR)/$$f/ ; \
+		install -d -m 755 $(INSTALLDIR)/$$f/ ; \
+	fi \
+	done
 	(cd perllib; test -f Makefile || perl Makefile.PL ; $(MAKE) $@)
 	(cd cron; $(MAKE) $@)
 	(cd extractor; $(MAKE) $@)

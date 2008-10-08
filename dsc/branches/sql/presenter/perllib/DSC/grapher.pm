@@ -417,7 +417,7 @@ sub load_data {
 	for my $sn (@{$ARGS{node}}) {
 	    my ($server, $node) = split('/', $sn);
 	    debug(3, "server=$server, node=$node");
-	    push @$node_ids, $servers{$server}->{nodes}->{$node};
+	    push @$node_ids, @{$CFG->{nodemap}{$servers{$server}->{nodes}->{$node}}};
 	    $serverset{$server} = 1;
 	}
 
@@ -1406,7 +1406,6 @@ sub navbar_plot_option($) {
 }
 
 sub navbar_plot {
-<<<<<<< .working
     my @items = ();
     push(@items, navbar_plot_option('byserver'));
     push(@items, navbar_plot_option('bynode'));
@@ -1434,57 +1433,13 @@ sub navbar_plot {
 	push(@items, navbar_plot_option('rd_bit'));
 	push(@items, navbar_plot_option('do_bit'));
 	push(@items, navbar_plot_option('edns_version'));
+	push(@items, navbar_plot_option('edns_bufsiz'));
     #push(@items, '</optgroup>');
     push(@items, navbar_plot_option('chaos_types_and_names'));
     push(@items, navbar_plot_option('direction_vs_ipproto'));
     push(@items, navbar_plot_option('qtype_vs_qnamelen'));
     push(@items, navbar_plot_option('rcode_vs_replylen'));
     join('', @items);
-=======
-	my @items = ();
-	my $pn = $ARGS{plot} || die;
-	push(@items, navbar_item('plot','bynode','By Node')) if ($ARGS{node} eq 'all');
-	push(@items, navbar_item('plot','qtype','Qtypes'));
-	if ($pn eq 'qtype' || $pn eq 'dnssec_qtype') {
-		push(@items, sublist_item() . navbar_item('plot','dnssec_qtype','DNSSEC Qtypes'));
-	}
-	push(@items, navbar_item('plot','rcode','Rcodes'));
-	push(@items, navbar_item('plot','client_subnet2_accum','Classification'));
-	if ($pn =~ /^client_subnet2/) {
-		push(@items, sublist_item() . navbar_item('plot','client_subnet2_trace', 'trace'));
-		push(@items, sublist_item() . navbar_item('plot','client_subnet2_count', 'count'));
-	}
-	push(@items, navbar_item('plot','client_subnet_accum','Client Geography'));
-	push(@items, navbar_item('plot','qtype_vs_all_tld','TLDs'));
-	if ($pn =~ /qtype_vs_.*_tld/) {
-		push(@items, sublist_item() . navbar_item('plot','qtype_vs_valid_tld', 'valid'));
-		push(@items, sublist_item() . navbar_item('plot','qtype_vs_invalid_tld', 'invalid'));
-		push(@items, sublist_item() . navbar_item('plot','qtype_vs_numeric_tld', 'numeric'));
-	}
-	push(@items, navbar_item('plot','client_addr_vs_rcode_accum','Rcodes by Client Address'));
-	push(@items, navbar_item('plot','certain_qnames_vs_qtype','Popular Names'));
-	push(@items, navbar_item('plot','ipv6_rsn_abusers_accum','IPv6 root abusers'));
-	push(@items, navbar_item('plot','opcode','Opcodes'));
-	push(@items, navbar_item('plot','query_attrs','Query Attributes'));
-	if ($pn =~ /query_attrs|idn_qname|rd_bit|do_bit|edns_version|edns_bufsiz/) {
-		push(@items, sublist_item() . navbar_item('plot','idn_qname', 'IDN Qnames'));
-		push(@items, sublist_item() . navbar_item('plot','rd_bit', 'RD bit'));
-		push(@items, sublist_item() . navbar_item('plot','do_bit', 'DO bit'));
-		push(@items, sublist_item() . navbar_item('plot','edns_version', 'EDNS version'));
-		push(@items, sublist_item() . navbar_item('plot','edns_bufsiz', 'EDNS buffer size'));
-	}
-	push(@items, navbar_item('plot','chaos_types_and_names','CHAOS'));
-	push(@items, navbar_item('plot','dns_ip_version','IP Version'));
-	if ($pn =~ /dns_ip_version|dns_ip_version_vs_qtype/) {
-	    push(@items, sublist_item() . navbar_item('plot', 'dns_ip_version_vs_qtype', 'Query Types'));
-	}
-	push(@items, navbar_item('plot','transport_vs_qtype','DNS Transport'));
-	push(@items, navbar_item('plot','direction_vs_ipproto','IP Protocols'));
-	push(@items, navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
-	push(@items, navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
-	push(@items, navbar_item('plot','client_port_range','Source Ports'));
-	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
->>>>>>> .merge-right.r10282
 }
 
 # This is function called from an "HTML" file by the template parser
