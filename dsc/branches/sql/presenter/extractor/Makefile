@@ -8,7 +8,12 @@ ETCFILES  += dsc-extractor.cfg.sample
 INSTALLDIR=/usr/local/dsc
 
 all:
-	@for f in ${LIBEXECS} ; do echo "perl -c $$f"; perl -c $$f; done
+	@if perl -c -e 'use DSC::extractor;' 2>/dev/null ; then \
+	for f in ${LIBEXECS} ; do \
+		echo "perl -c $$f" ; \
+		perl -c $$f ; \
+	done \
+	fi
 
 install: all
 	@if test -n "$(INSTALLDIR)" ; then echo "installing in $$INSTALLDIR" ; else echo "set INSTALLDIR first"; false ; fi
