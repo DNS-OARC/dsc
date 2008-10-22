@@ -10,11 +10,12 @@ use DSC::extractor qw($SKIPPED_KEY $SKIPPED_SUM_KEY);
 use DSC::extractor::config;
 use Data::Dumper;
 use Time::HiRes; # XXX
+use Getopt::Std;
 
+my %opts;
+getopts('dp', \%opts);
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
-my $dbg = 0;
-my $perfdbg = 0;
 
 read_config("$DSCDIR/etc/dsc-extractor.cfg");
 
@@ -23,8 +24,10 @@ chdir $DATADIR || die "chdir $DATADIR: $!\n";
 my $PROG=$0;
 $PROG =~ s/^.*\///;
 
+unless ($opts{d}) {
 open(STDOUT, ">$PROG.stdout") || die "$PROG: writing $PROG.stdout: $!\n";
 open(STDERR, ">&1");
+}
 
 print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
@@ -63,7 +66,7 @@ print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
 my $mark_start;
 sub mark {
-	return unless $perfdbg;
+	return unless $opts{p};
 	my $msg = shift;
 	unless ($msg) {
 		$mark_start = Time::HiRes::gettimeofday;
@@ -75,6 +78,7 @@ sub mark {
 
 sub refile_and_grok_node($$$) {
     my ($server, $server_id, $node) = @_;
+print STDERR "refile_and_grok_node($server,$server_id,$node)\n" if $opts{d};
     my $node_id = 0;
     my $pidf_is_mine = 0;
     my ($sth, @row);
@@ -100,8 +104,10 @@ sub refile_and_grok_node($$$) {
     print PIDF "$$\n";
     close PIDF;
 
+unless ($opts{d}) {
     open(STDOUT, ">$PROG.stdout") || die "$PROG: writing $PROG.stdout: $!\n";
     open(STDERR, ">$PROG.stderr") || die "$PROG: writing $PROG.stderr: $!\n";
+}
 
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
@@ -183,10 +189,10 @@ sub extract_xml($$$) {
     die "cant divine dataset" unless ($xmlfile =~ /(\d+)\.(\w+)\.xml$/);
     my $file_time = $1;
     my $dataset = $2;
-    print STDERR "dataset is $dataset\n" if ($dbg);
+    print STDERR "dataset is $dataset\n" if ($opts{d});
 
     my $EX = $DSC::extractor::config::DATASETS{$dataset};
-    print STDERR 'EX=', Dumper($EX) if ($dbg);
+    print STDERR 'EX=', Dumper($EX) if ($opts{d});
     die "no extractor for $dataset\n" unless defined($EX);
 
     my $sth = $dbh->prepare("SELECT 1 " . from_dummy($dbh) .
@@ -214,10 +220,10 @@ sub extract_xml($$$) {
     $start_time = $start_time - $start_time % 60;
     my $yymmdd = &yymmdd($start_time);
 
-    print STDERR 'grokked=', Dumper($grokked) if ($dbg);
+    print STDERR 'grokked=', Dumper($grokked) if ($opts{d});
 
     foreach my $output (keys %{$EX->{outputs}}) {
-	print STDERR "output=$output\n" if ($dbg);
+	print STDERR "output=$output\n" if ($opts{d});
 	my %db;
 	my $O =  $EX->{outputs}{$output};
 
@@ -230,7 +236,7 @@ sub extract_xml($$$) {
 	} else {
 		$grok_copy = $grokked;
 	}
-	print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($dbg);
+	print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($opts{d});
 	mark("munged $output");
 
 	my $tabname = "dsc_$output";
@@ -293,7 +299,7 @@ sub extract_xml($$$) {
 	#
 	mark("merge starting");
 	&{$O->{data_merger}}($start_time, \%db, $grok_copy);
-	print STDERR 'POST MERGE db=', Dumper(\%db) if ($dbg);
+	print STDERR 'POST MERGE db=', Dumper(\%db) if ($opts{d});
 	mark("merged $output");
 
 	# trim
@@ -341,11 +347,11 @@ sub munge_elsify {
 	eval Data::Dumper->Dump([$input], ['copy']);
 	if ($O->{keys}) {
 		# A 1D dataset
-		print STDERR "elsifiying 1D dataset\n" if ($dbg);
+		print STDERR "elsifiying 1D dataset\n" if ($opts{d});
 		elsify_unwanted_keys($copy, $O->{keys});
 	} elsif ($O->{keys2}) {
 		# A 2D dataset
-		print STDERR "elsifiying 2D dataset\n" if ($dbg);
+		print STDERR "elsifiying 2D dataset\n" if ($opts{d});
 		foreach my $k1 (keys %$copy) {
 			&elsify_unwanted_keys(\%{$copy->{$k1}}, $O->{keys2});
 		}
