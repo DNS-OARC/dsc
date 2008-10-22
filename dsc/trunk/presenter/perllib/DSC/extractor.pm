@@ -325,7 +325,7 @@ sub grok_1d_xml {
 }
 
 sub grok_2d_xml {
-	my $XML = shift || die "grok_1d_xml() expected XML obj";
+	my $XML = shift || die "grok_2d_xml() expected XML obj";
 	my $L1 = shift || die;
 	my $L2 = shift || die;
 	my %result;
