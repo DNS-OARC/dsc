@@ -367,21 +367,22 @@ my $port_range_keys = [ qw(
     },
   },
 
-
   client_ports => {
-    ndim	=> 1,
-    type1	=> 'Port',
-    outputs	=> {
+    ndim        => 1,
+    type1       => 'Port',
+    outputs     => {
       client_ports_count => {
-	data_munger	=> \&main::accum1d_to_count,
-	data_reader	=> \&DSC::extractor::read_data2,
-	data_merger	=> \&main::merge_trace,
-	data_writer	=> \&DSC::extractor::write_data2,
+	dbkeys      => [ 'key1', ],
+	data_munger     => \&main::accum1d_to_count,
+	data_reader     => \&DSC::extractor::read_data2,
+	data_merger     => \&main::merge_trace,
+	data_writer     => \&DSC::extractor::write_data2,
       },
       client_ports_accum => {
-	data_merger	=> \&main::merge_accum1d,
-	data_reader	=> \&DSC::extractor::read_data2,
-	data_writer	=> \&DSC::extractor::write_data2,
+	dbkeys      => [ 'key1', ],
+	data_merger     => \&main::merge_accum1d,
+	data_reader     => \&DSC::extractor::read_data2,
+	data_writer     => \&DSC::extractor::write_data2,
       },
     },
   },
@@ -392,9 +393,10 @@ my $port_range_keys = [ qw(
     outputs	=> {
       client_port_range => {
 	keys        => $port_range_keys,
+	dbkeys      => [ 'start_time', 'key1', ],
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
-	data_writer => \&DSC::extractor::write_data,
+	data_writer => \&DSC::db::write_data,
       },
     },
   },
@@ -404,9 +406,10 @@ my $port_range_keys = [ qw(
     type1	=> 'EDNSBufSiz',
     outputs	=> {
       edns_bufsiz => {
+	dbkeys      => [ 'start_time', 'key1', ],
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
-	data_writer => \&DSC::extractor::write_data,
+	data_writer => \&DSC::db::write_data,
       },
     },
   },

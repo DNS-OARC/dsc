@@ -64,21 +64,8 @@ while (wait > 0) { }
 print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 # end
 
-my $mark_start;
-sub mark {
-	return unless $opts{p};
-	my $msg = shift;
-	unless ($msg) {
-		$mark_start = Time::HiRes::gettimeofday;
-		return;
-	}
-	printf STDERR "MARK %7.2f :: $msg\n",
-		Time::HiRes::gettimeofday - $mark_start;
-}
-
 sub refile_and_grok_node($$$) {
     my ($server, $server_id, $node) = @_;
-print STDERR "refile_and_grok_node($server,$server_id,$node)\n" if $opts{d};
     my $node_id = 0;
     my $pidf_is_mine = 0;
     my ($sth, @row);
@@ -151,9 +138,20 @@ unless ($opts{d}) {
 	if (!defined $xml_result) {
 	    # other error
 	    -d "errors" || mkdir "errors";
-	    print STDERR "error processing $server/$node/$DIR/$h\n";
-	    print STDERR "$@\n" if $@;
-	    rename "$DIR/$h", "$DIR/errors/$h";
+	    warn "error processing $server/$node/$DIR/$h\n";
+	    warn "extract died with '", $@, "'\n";
+	    Mkdir ("errors", 0755);
+	    #
+	    # perl's rename is a pain.  it doesn't work
+	    # across devices and maybe doesn't strip leading
+	    # directory components from the target name?
+	    #
+	    system "mv $h errors || rm -f $h";
+	    my ($V,$D,$F) = File::Spec->splitpath($h);
+	    if (open (ERR, ">errors/$F.err")) {
+		print ERR "extract died with '", $@, "'\n";
+		close(ERR);
+	    }
 	    $dbh->rollback;
 	} elsif ($xml_result == 0) {
 	    # error while reading file
@@ -171,6 +169,7 @@ unless ($opts{d}) {
 	$ts1 = $ts2;
     }
 
+    rmdir $DIR;
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
     if (-s "$PROG.stderr") {
@@ -183,39 +182,27 @@ unless ($opts{d}) {
     }
 }
 
-sub extract_xml($$$) {
-    mark(undef);
-    my ($dbh, $xmlfile, $server_id, $node_id) = @_;
-    die "cant divine dataset" unless ($xmlfile =~ /(\d+)\.(\w+)\.xml$/);
-    my $file_time = $1;
-    my $dataset = $2;
-    print STDERR "dataset is $dataset\n" if ($opts{d});
+
+sub extract_dataset($$$$$) {
+    my ($dbh, $XML, $dataset, $server_id, $node_id) = @_;
 
     my $EX = $DSC::extractor::config::DATASETS{$dataset};
     print STDERR 'EX=', Dumper($EX) if ($opts{d});
-    die "no extractor for $dataset\n" unless defined($EX);
-
-    my $sth = $dbh->prepare("SELECT 1 " . from_dummy($dbh) .
-	" WHERE EXISTS (SELECT 1 " .
-	"FROM loaded_files WHERE time = ? AND " .
-	"dataset = ? AND " .
-	"server_id = ? AND node_id = ?)");
-    $sth->execute($file_time, $dataset, $server_id, $node_id);
-    if ($sth->fetchrow_array) {
-	print STDERR "skipping duplicate $xmlfile\n";
-	return 1; # do nothing, successfully
+    unless (defined($EX)) {
+    	warn "no extractor for $dataset\n";
+	return 1;
     }
 
     my $start_time;
     my $grokked;
     if ($EX->{ndim} == 1) {
-	    ($start_time, $grokked) = grok_1d_xml($xmlfile, $EX->{type1});
+	    ($start_time, $grokked) = grok_1d_xml($XML, $EX->{type1});
     } elsif ($EX->{ndim} == 2) {
-	    ($start_time, $grokked) = grok_2d_xml($xmlfile, $EX->{type1}, $EX->{type2});
+	    ($start_time, $grokked) = grok_2d_xml($XML, $EX->{type1}, $EX->{type2});
     } else {
 	    die "unsupported ndim $EX->{ndim}\n";
     }
-    mark("grokked $xmlfile");
+    mark("grokked $dataset XML");
     # round start time down to start of the minute
     $start_time = $start_time - $start_time % 60;
     my $yymmdd = &yymmdd($start_time);
@@ -328,12 +315,51 @@ sub extract_xml($$$) {
 	}
     }
 
-    # Remember that we've processed this file.
-    $sth = $dbh->prepare("INSERT INTO loaded_files " .
-	"(time, dataset, server_id, node_id) VALUES (?, ?, ?, ?)");
-    $sth->execute($file_time, $dataset, $server_id, $node_id);
-
     return 1; # success
+}
+
+sub extract_xml($$$$) {
+    mark(undef);
+    my ($dbh, $xmlfile, $server_id, $node_id) = @_;
+    die "cant divine dataset" unless ($xmlfile =~ /(\d+)\.(\w+)\.xml$/);
+    my $file_time = $1;
+    my $dataset = $2;
+    print STDERR "dataset is $dataset\n" if ($opts{d});
+
+    my $sth = $dbh->prepare("SELECT 1 " . from_dummy($dbh) .
+	" WHERE EXISTS (SELECT 1 " .
+	"FROM loaded_files WHERE time = ? AND " .
+	"dataset = ? AND " .
+	"server_id = ? AND node_id = ?)");
+    $sth->execute($file_time, $dataset, $server_id, $node_id);
+    if ($sth->fetchrow_array) {
+	print STDERR "skipping duplicate $xmlfile\n";
+	return 1; # do nothing, successfully
+    }
+
+	my $XS = XML::Simple->new(searchpath => '.', forcearray => 1);
+	my $XML = $XS->XMLin($xmlfile);
+
+	# this is the old way -- one dataset per file
+	#
+	if ($dataset ne 'dscdata') {
+		return extract_dataset($dbh, $XML, $dataset, $server_id, $node_id);
+	}
+
+	# this is the new way of grouping all datasets
+	# together into a single file
+	#
+	while (my ($k,$v) = each %{$XML->{array}}) {
+		print STDERR Dumper($v) if $opts{d};
+		extract_dataset($dbh, $v, $k, $server_id, $node_id) or die "dataset $k extraction failed";
+	}
+
+	# Remember that we've processed this file.
+	$sth = $dbh->prepare("INSERT INTO loaded_files " .
+		"(time, dataset, server_id, node_id) VALUES (?, ?, ?, ?)");
+	$sth->execute($file_time, $dataset, $server_id, $node_id);
+
+	return 1;
 }
 
 #
@@ -487,4 +513,23 @@ sub trim_accum2d {
 		delete $data->{$k1} unless (keys %{$data->{$k1}});
 	}
 	$ndel;
+}
+
+sub Mkdir {
+	my $dir = shift;
+	my $mode = shift;
+	return if -d $dir;
+	mkdir($dir, $mode) or die ("$dir: $!");
+}
+
+my $mark_start;
+sub mark {
+	return unless $opts{p};
+	my $msg = shift;
+	unless ($msg) {
+		$mark_start = Time::HiRes::gettimeofday;
+		return;
+	}
+	printf STDERR "MARK %7.2f :: $msg\n",
+		Time::HiRes::gettimeofday - $mark_start;
 }

@@ -32,7 +32,6 @@ my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
 my $dbg = 0;
 my $perfdbg = 0;
-my $mark_start;
 my $DBCACHE;
 my $N = 0;
 
@@ -130,16 +129,16 @@ sub pid_basename {
 }
 
 sub read_db {
-        my $O = shift;
-        my $yymmdd = shift;
-        my $dataset = shift;
-        my $output = shift;
-        my $db = $DBCACHE->{$yymmdd}->{$dataset}->{$output};
-        return $db if $db;
-        my %foo = ();
-        exit(254) if (&{$O->{data_reader}}(\%foo, "$yymmdd/$output.dat") < 0);
-        print STDERR "read $yymmdd/$dataset/$output.dat\n";
-        return $DBCACHE->{$yymmdd}->{$dataset}->{$output} = \%foo;
+	my $O = shift;
+	my $yymmdd = shift;
+	my $dataset = shift;
+	my $output = shift;
+	my $db = $DBCACHE->{$yymmdd}->{$dataset}->{$output};
+	return $db if $db;
+	my %foo = ();
+	exit(254) if (&{$O->{data_reader}}(\%foo, "$yymmdd/$output.dat") < 0);
+	print STDERR "read $yymmdd/$dataset/$output.dat\n";
+	return $DBCACHE->{$yymmdd}->{$dataset}->{$output} = \%foo;
 }
 
 sub extract($$) {
@@ -162,8 +161,8 @@ sub extract($$) {
 		return 1; # do nothing, successfully
 	}
 
-        my $XS = XML::Simple->new(searchpath => '.', forcearray => 1);
-        my $XML = $XS->XMLin($xmlfile);
+	my $XS = XML::Simple->new(searchpath => '.', forcearray => 1);
+	my $XML = $XS->XMLin($xmlfile);
 
 	# this is the old way -- one dataset per file
 	#
@@ -483,13 +482,14 @@ sub Mkdir {
 	mkdir($dir, $mode) or die ("$dir: $!");
 }
 
+my $mark_start;
 sub mark {
-        return unless $perfdbg;
-        my $msg = shift;
-        unless ($msg) {
-                $mark_start = Time::HiRes::gettimeofday;
-                return;
-        }
-        printf STDERR "MARK %7.2f :: $msg\n",
-                Time::HiRes::gettimeofday - $mark_start;
+	return unless $perfdbg;
+	my $msg = shift;
+	unless ($msg) {
+		$mark_start = Time::HiRes::gettimeofday;
+		return;
+	}
+	printf STDERR "MARK %7.2f :: $msg\n",
+		Time::HiRes::gettimeofday - $mark_start;
 }

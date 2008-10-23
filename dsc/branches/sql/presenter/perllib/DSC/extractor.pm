@@ -190,10 +190,8 @@ sub read_flat_data4 {
 ##############################################################################
 
 sub grok_1d_xml {
-	my $fname = shift || die "grok_1d_xml() expected fname";
+	my $XML = shift || die "grok_1d_xml() expected XML obj";
 	my $L2 = shift || die "grok_1d_xml() expected L2";
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
 	my %result;
 	my $aref = $XML->{data}[0]->{All};
 	foreach my $k1ref (@$aref) {
@@ -206,11 +204,9 @@ sub grok_1d_xml {
 }
 
 sub grok_2d_xml {
-	my $fname = shift || die;
+	my $XML = shift || die "grok_2d_xml() expected XML obj";
 	my $L1 = shift || die;
 	my $L2 = shift || die;
-	my $XS = new XML::Simple(searchpath => '.', forcearray => 1);
-	my $XML = $XS->XMLin($fname);
 	my %result;
 	my $aref = $XML->{data}[0]->{$L1};
 	foreach my $k1ref (@$aref) {
