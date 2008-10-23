@@ -13,7 +13,7 @@ use Time::HiRes; # XXX
 use Getopt::Std;
 
 my %opts;
-getopts('dp', \%opts);
+getopts('dDp', \%opts);
 my $DSCDIR = "/usr/local/dsc";
 my $DATADIR = "$DSCDIR/data";
 
@@ -146,7 +146,7 @@ unless ($opts{d}) {
 	    # across devices and maybe doesn't strip leading
 	    # directory components from the target name?
 	    #
-	    system "mv $h errors || rm -f $h";
+	    system "mv $DIR/$h errors || rm -f $h";
 	    my ($V,$D,$F) = File::Spec->splitpath($h);
 	    if (open (ERR, ">errors/$F.err")) {
 		print ERR "extract died with '", $@, "'\n";
@@ -187,7 +187,7 @@ sub extract_dataset($$$$$) {
     my ($dbh, $XML, $dataset, $server_id, $node_id) = @_;
 
     my $EX = $DSC::extractor::config::DATASETS{$dataset};
-    print STDERR 'EX=', Dumper($EX) if ($opts{d});
+    print STDERR 'EX=', Dumper($EX) if ($opts{D});
     unless (defined($EX)) {
     	warn "no extractor for $dataset\n";
 	return 1;
@@ -207,7 +207,7 @@ sub extract_dataset($$$$$) {
     $start_time = $start_time - $start_time % 60;
     my $yymmdd = &yymmdd($start_time);
 
-    print STDERR 'grokked=', Dumper($grokked) if ($opts{d});
+    print STDERR 'grokked=', Dumper($grokked) if ($opts{D});
 
     foreach my $output (keys %{$EX->{outputs}}) {
 	print STDERR "output=$output\n" if ($opts{d});
@@ -223,7 +223,7 @@ sub extract_dataset($$$$$) {
 	} else {
 		$grok_copy = $grokked;
 	}
-	print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($opts{d});
+	print STDERR 'POST MUNGE grok_copy=', Dumper($grok_copy) if ($opts{D});
 	mark("munged $output");
 
 	my $tabname = "dsc_$output";
@@ -286,7 +286,7 @@ sub extract_dataset($$$$$) {
 	#
 	mark("merge starting");
 	&{$O->{data_merger}}($start_time, \%db, $grok_copy);
-	print STDERR 'POST MERGE db=', Dumper(\%db) if ($opts{d});
+	print STDERR 'POST MERGE db=', Dumper(\%db) if ($opts{D});
 	mark("merged $output");
 
 	# trim
@@ -350,7 +350,7 @@ sub extract_xml($$$$) {
 	# together into a single file
 	#
 	while (my ($k,$v) = each %{$XML->{array}}) {
-		print STDERR Dumper($v) if $opts{d};
+		print STDERR Dumper($v) if $opts{D};
 		extract_dataset($dbh, $v, $k, $server_id, $node_id) or die "dataset $k extraction failed";
 	}
 
