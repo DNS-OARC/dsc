@@ -146,7 +146,7 @@ sub extract_dataset {
 	my $EX = $DSC::extractor::config::DATASETS{$dataset};
 	print STDERR 'EX=', Dumper($EX) if ($dbg);
 	unless (defined($EX)) {
-		warn "no extractor for $dataset\n" unless defined($EX);
+		warn "no extractor for $dataset\n";
 		return 1;
 	}
 
