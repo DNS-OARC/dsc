@@ -127,7 +127,7 @@ sub Ploticus_create_datafile_keyless {
 	#
 	foreach my $fromkey (sort {$a <=> $b} keys %$hashref) {
 		# note $fromkey is a time_t.
-		next if ($fromkey < $cutoff);
+		# next if ($fromkey < $cutoff);	# SQL query already did cutoff?
 		next if ($fromkey > $end);	# if clock skew
 		next if ($fromkey > $end);	# if clock skew
 		my $tokey = $fromkey - ($fromkey % $time_bin_size);
