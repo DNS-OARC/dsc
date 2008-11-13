@@ -154,7 +154,6 @@ sub run {
 
 	debug(3, 'CFG=' . Dumper($CFG)) if ($dbg_lvl >= 3);
 	debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
-	}
 
 	# common defaults
 	$ARGS{server} ||= [()];
