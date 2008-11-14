@@ -69,8 +69,6 @@ sub refile_and_grok_node($$$) {
     my $node_id = 0;
     my $pidf_is_mine = 0;
     my ($sth, @row);
-    my $dbh = get_dbh || die;
-    $dbh->{RaiseError} = 1;
 
     $PROG = "$PROG-$server-$node";
 
@@ -82,6 +80,9 @@ sub refile_and_grok_node($$$) {
 	close PIDF;
     }
 
+    my $dbh = get_dbh || die;
+    $dbh->{RaiseError} = 1;
+
     END {
 	if ($pidf_is_mine) { unlink $PIDF; }
     }
@@ -91,10 +92,10 @@ sub refile_and_grok_node($$$) {
     print PIDF "$$\n";
     close PIDF;
 
-unless ($opts{d}) {
+    unless ($opts{d}) {
     open(STDOUT, ">$PROG.stdout") || die "$PROG: writing $PROG.stdout: $!\n";
     open(STDERR, ">$PROG.stderr") || die "$PROG: writing $PROG.stderr: $!\n";
-}
+    }
 
     print strftime("%a %b %e %T %Z %Y", (gmtime)[0..5]), "\n";
 
@@ -180,6 +181,8 @@ unless ($opts{d}) {
 	        "/usr/bin/uniq \${PROG}.stderr | head -20; } " .
 		"| /usr/bin/Mail -s \"Cron <\${USER}@`hostname -s`> \$SUBJECT\" \$USER");
     }
+    $dbh->disconnect;
+    $dbh = undef;
 }
 
 
