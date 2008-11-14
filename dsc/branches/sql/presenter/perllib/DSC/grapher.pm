@@ -416,7 +416,10 @@ sub load_data {
 	for my $sn (@{$ARGS{node}}) {
 	    my ($server, $node) = split('/', $sn);
 	    debug(3, "server=$server, node=$node");
-	    push @$node_ids, @{$CFG->{nodemap}{$servers{$server}->{nodes}->{$node}}};
+	    print STDERR "server=$server, node=$node\n";
+	    foreach my $real_node ( @{$CFG->{nodemap}->{$server}->{$node}} ) {
+	        push @$node_ids, $servers{$server}->{nodes}->{$real_node};
+	    }
 	    $serverset{$server} = 1;
 	}
 
