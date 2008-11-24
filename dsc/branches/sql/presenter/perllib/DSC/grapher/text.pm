@@ -177,51 +177,51 @@ use warnings;
   },
 
   direction_vs_ipproto => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   direction_vs_ipproto_sent => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   query_attrs => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   idn_qname => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   rd_bit => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   do_bit => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   edns_version => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   qtype_vs_qnamelen => {
-    description => 'XX enter description here',
+    description => '',
   },
 
  rcode_vs_replylen => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   client_addr_vs_rcode_accum => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   ipv6_rsn_abusers_accum => {
-    description => 'XX enter description here',
+    description => '',
   },
 
   chaos_types_and_names => {
-    description => 'XX enter description here',
+    description => '',
   },
 
 );
