@@ -414,6 +414,34 @@ my $port_range_keys = [ qw(
     },
   },
 
+  second_ld_vs_rcode => {
+    ndim	=> 2,
+    type1	=> 'Rcode',
+    type2	=> 'SecondLD',
+    outputs	=> {
+      second_ld_vs_rcode_accum => {
+	data_munger => \&main::swap_dimensions,
+	data_reader => \&DSC::extractor::read_data3,
+	data_merger => \&main::merge_accum2d,
+	data_writer => \&DSC::extractor::write_data3,
+      },
+    },
+  },
+
+  third_ld_vs_rcode => {
+    ndim	=> 2,
+    type1	=> 'Rcode',
+    type2	=> 'ThirdLD',
+    outputs	=> {
+      third_ld_vs_rcode_accum => {
+	data_munger => \&main::swap_dimensions,
+	data_reader => \&DSC::extractor::read_data3,
+	data_merger => \&main::merge_accum2d,
+	data_writer => \&DSC::extractor::write_data3,
+      },
+    },
+  },
+
 );
 
 sub read_config {

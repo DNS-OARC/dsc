@@ -23,7 +23,7 @@ fi
 echo $$ >$PIDF
 trap "rm -f $PIDF" EXIT
 
-perl -e 'sleep((rand 10) + 5)'
+tty >/dev/null || perl -e 'sleep((rand 10) + 5)'
 
 cd $PREFIX/run/$NODE/upload/$DEST
 
