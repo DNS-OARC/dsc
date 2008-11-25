@@ -187,6 +187,8 @@ static indexer_t indexers[] = {
     { "qclass",               qclass_indexer,               qclass_iterator,               qclass_reset },
     { "qnamelen",             qnamelen_indexer,             qnamelen_iterator,             qnamelen_reset },
     { "qname",                qname_indexer,                qname_iterator,                qname_reset },
+    { "second_ld",            second_ld_indexer,            second_ld_iterator,            second_ld_reset },
+    { "third_ld",             third_ld_indexer,             third_ld_iterator,             third_ld_reset },
     { "msglen",               msglen_indexer,               msglen_iterator,               msglen_reset },
     { "qtype",                qtype_indexer,                qtype_iterator,                qtype_reset },
     { "rcode",                rcode_indexer,                rcode_iterator,                rcode_reset },

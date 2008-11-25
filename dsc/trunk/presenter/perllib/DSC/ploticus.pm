@@ -420,6 +420,7 @@ sub ploticus_begin {
 		"-stdin",
 		(map { "$_ $ploticus_args{$_}" } keys %ploticus_args),
 		"-$ploticus_type",
+		"-pagesize 12,12",
 		"-o $ploticus_output");
 	print STDERR "$cmd\n" if ($main::ploticus_debug);
 	open(PLOTICUS, "|$cmd") or die "$cmd";

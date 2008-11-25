@@ -821,6 +821,32 @@ my $std_accum_yaxes = {
     map_legend	=> 0,
   },
 
+  second_ld_vs_rcode_accum => {
+    dataset => 'second_ld_vs_rcode',
+    plot_type => 'accum2d',
+    yaxes	=> $std_accum_yaxes,
+    keys	=> [ qw(0 1 2 3 4 5) ],
+    names	=> [ qw(NOERROR FORMERR SERVFAIL NXDOMAIN NOTIMPL REFUSED) ],
+    colors	=> [ qw(brightgreen red purple blue orange magenta ) ],
+    data_reader => \&DSC::extractor::read_data3,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    plottitle	=> 'Rcodes and Addrs',
+    map_legend	=> 1,
+  },
+
+  third_ld_vs_rcode_accum => {
+    dataset => 'third_ld_vs_rcode',
+    plot_type => 'accum2d',
+    yaxes	=> $std_accum_yaxes,
+    keys	=> [ qw(0 1 2 3 4 5) ],
+    names	=> [ qw(NOERROR FORMERR SERVFAIL NXDOMAIN NOTIMPL REFUSED) ],
+    colors	=> [ qw(brightgreen red purple blue orange magenta ) ],
+    data_reader => \&DSC::extractor::read_data3,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    plottitle	=> 'Rcodes and Addrs',
+    map_legend	=> 1,
+  },
+
 );
 
 my %FPDNSCACHE;
