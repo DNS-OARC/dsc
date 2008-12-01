@@ -202,6 +202,7 @@ sub Ploticus_bars {
 		my $field = $i+2;
 		P("#proc bars");
 		P('outline: no');
+		P('hidezerobars: yes');
 		P("lenfield: $field");
 		PO($ropts, 'horizontalbars');
 		PO($ropts, 'locfield', '1');
