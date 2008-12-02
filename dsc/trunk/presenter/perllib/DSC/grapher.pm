@@ -1325,7 +1325,7 @@ sub navbar_servers_nodes {
 	my $snippet = '';
 	$snippet .= "<ul>\n";
 	my @items;
-	foreach my $server ( keys %{$CFG->{servers}} ) {
+	foreach my $server ( @{$CFG->{serverlist}} ) {
 		#print STDERR "server=$server\n";
 		$snippet .= "<li>" . navbar_item('server',$server,$server);
 		next if $CFG->{'hide_nodes'};

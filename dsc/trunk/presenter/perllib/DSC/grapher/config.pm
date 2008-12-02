@@ -30,6 +30,7 @@ sub read_config {
 		my $directive = shift @x;
 		if ($directive eq 'server') {
 			my $servername = shift @x;
+			push (@{$CONFIG{serverlist}}, $servername);
 			foreach my $t (@x) {
 				my $fn = $t;	# fake name
 				my @rn = ($t);	# real name
