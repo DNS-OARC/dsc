@@ -276,6 +276,7 @@ sub Ploticus_xaxis {
 	} elsif ($window >= 3*24*3600) {
 		P("stubs: inc 1 day");
 		P("stubformat: Mmmdd");
+		P("stubround: day");
 		P("label: Date");
 	} elsif ($window > 8*3600) {
 		if (defined($ropts->{-mini})) {
@@ -284,6 +285,7 @@ sub Ploticus_xaxis {
 		P("stubs: inc 2 hours");
 		}
 		P("autodays: yes");
+		P("stubround: hour");
 		P("stubformat: hh:mm");
 		P("label: Time, $TZ");
 	} elsif ($window > 2*3600) {
