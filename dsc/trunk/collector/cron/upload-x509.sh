@@ -15,6 +15,12 @@ CURL="curl --silent"
 CLTAUTH="--cert $PREFIX/certs/$DEST/$NODE.pem"
 SRVAUTH="--cacert $PREFIX/certs/$DEST/cacert.pem"
 
+if test -f /usr/bin/md5sum ; then
+        MD5="/usr/bin/md5sum"
+else
+        MD5="md5 -r"
+fi
+
 PIDF="/tmp/$PROG-$NODE-$DEST.pid"
 if test -f $PIDF; then
 	PID=`cat $PIDF`
@@ -40,7 +46,7 @@ cd $YYYYMMDD
 
 k=`ls -r | grep xml$ | head -500` || true
 if test -n "$k" ; then
-    md5 -r $k > MD5s
+    $MD5 $k > MD5s
     TF=`mktemp /tmp/put.XXXXXXXXXXXXX`
     tar czf $TF MD5s $k
     mv $TF $TF.tar
