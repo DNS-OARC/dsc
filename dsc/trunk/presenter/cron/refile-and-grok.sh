@@ -19,6 +19,7 @@ for SERVER in * ; do
 	for NODE in * ; do
 		test -L $NODE && continue;
 		test -d $NODE || continue;
+		test -d $NODE/incoming || continue;
 		cd $NODE
 		echo "$SERVER/$NODE:"
 		$EXECDIR/dsc-xml-extractor.pl >dsc-xml-extractor.out 2>&1 # &
