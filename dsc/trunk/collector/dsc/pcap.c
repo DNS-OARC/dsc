@@ -975,7 +975,15 @@ Pcap_init(const char *device, int promisc)
     if (readfile_state) {
 	i->pcap = pcap_open_offline(device, errbuf);
     } else {
-	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 50, errbuf);
+	/*
+	 * NOTE: the to_ms argument here used to be 50, which seems to make
+	 * good sense, but actually causes problems when taking packets from
+	 * multiple interfaces (and one of those interfaces is very quiet).
+	 * Even though we select() on the pcap FDs, we ignore what it tells
+	 * us and always try to read from all interfaces, so the timeout
+	 * here is important.
+	 */
+	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1, errbuf);
     }
     if (NULL == i->pcap) {
 	syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
@@ -1080,7 +1088,7 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	    for (i = 0; i < n_interfaces; i++) {
 		struct _interface *I = &interfaces[i];
 		if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
-		    pcap_dispatch(I->pcap, 50, handle_pcap, (u_char *) I);
+		    pcap_dispatch(I->pcap, -1, handle_pcap, (u_char *) I);
 		    /* XXX should check for errors here */
 		}
 	    }
