@@ -35,7 +35,7 @@ do_status() {
 	if test ! -n "$PID" ; then
 		echo "dsc-$instance is not running"
 		false
-	elif kill -0 $PID; then
+	elif kill -0 $PID 2>/dev/null ; then
 		echo "dsc-$instance is running as PID $PID"
 	else
 		echo "dsc-$instance is not running"
@@ -46,7 +46,7 @@ do_status() {
 do_start() {
 	instance=$1
 	if test -n "$PID" ; then
-		if kill -0 $PID; then
+		if kill -0 $PID 2>/dev/null ; then
 			echo "dsc-$instance is already running as PID $PID"
 			true
 			return
@@ -62,7 +62,6 @@ do_start() {
 }
 
 do_stop() {
-
 	if test -n "$PID" ; then
 		echo "Stopping dsc-$instance"
 		kill -INT $PID
