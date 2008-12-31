@@ -164,6 +164,7 @@ dump_reports(void)
 	fprintf(stderr, "writing to %s\n", tname);
     fprintf(fp, "<dscdata>\n");
     /* amalloc_report(); */
+    pcap_report(fp);
     dns_message_report(fp);
     ip_message_report(fp);
     fprintf(fp, "</dscdata>\n");
