@@ -7,12 +7,14 @@
 
 #include <functional>
 #include <algorithm>
+#include <iomanip>
 
 
 using namespace Hapy;
 
-RuleId grTests, grTest, grBody, grCases, grCase, grRules, grRule, grName,
-	grComment,
+RuleId grTests, grTest, grBody, grPreamble, grCode, grGrammar,
+	grCases, grCase, grCaseBody, grCasePreeImage,
+	grRules, grRule, grName, grComment,
 	grToken, grBareToken, grQuotedToken, grEscapedChar, grAnyQuote;
 
 // used to format C++ output
@@ -67,14 +69,29 @@ CppPfx cppc(int levelDelta) {
 	return CppPfx(levelDelta, true);
 }
 
+static const string OptShareParsersYes = "--share-parsers";
+static const string OptShareParsersNo = "--encapsulate-parsers";
+static bool OptShareParsers = false;
+
+static const string OptParseAtOnceYes = "--parse-at-once";
+static const string OptParseAtOnceNo = "--parse-incrementally";
+static bool OptParseAtOnce = true;
+
+static const string OptHelpYes = "--help";
+
 
 static
 Rule grammar() {
 	Rule rTests("Tests", &grTests);
 	Rule rTest("Test", &grTest);
 	Rule rBody("Body", &grBody);
+	Rule rPreamble("Preamble", &grPreamble);
+	Rule rCode("Code", &grCode);
+	Rule rGrammar("Grammar", &grGrammar);
 	Rule rCases("Cases", &grCases);
 	Rule rCase("Case", &grCase);
+	Rule rCaseBody("CaseBody", &grCaseBody);
+	Rule rCasePreeImage("CasePreeImage", &grCasePreeImage);
 	Rule rRules("Rules", &grRules);
 	Rule rRule("Rule", &grRule);
 	Rule rComment("Comment", &grComment);
@@ -89,13 +106,23 @@ Rule grammar() {
 
 	rTests = *rTest;
 	rTest = "test" >> rName >> "{" >> rBody >> "}" ;
-	rBody = string_r("grammar") >> "=" >> "{" >> rRules >> "}" >> rCases;
+	rBody = !rPreamble >> rGrammar >> rCases;
+	rPreamble = string_r("preamble") >> "=" >> "{{" >> rCode >> "}}";
+	rGrammar = string_r("grammar") >> "=" >> "{" >> rRules >> "}";
 	rCases = *rCase;
-	rCase = rName >> quoted_r(anychar_r, "{", "}");
+	rCase = rName >> rCaseBody >> !rCasePreeImage;
+	rCaseBody = quoted_r(anychar_r, "{", "}");
+	rCasePreeImage = string_r("pree") >> "=" >> quoted_r(anychar_r, "{", "}");
+
 	rRules = *rRule;
 	rRule = 
+		"Rule" >> rName >> "=" >> +rToken >> ";" |
 		rName >> "=" >> +rToken >> ";" |
 		rName >> "." >> +rToken >> ";";
+
+	rCode =
+		*(anychar_r - "}}");
+
 	rComment =
 		quoted_r(anychar_r, "//", eol_r) |
 		quoted_r(anychar_r, "/*", "*/");
@@ -113,8 +140,10 @@ Rule grammar() {
 
 	// trimming rules
 	rTests.trim(*(space_r | rComment));
+	rCaseBody.verbatim(true);
 	rToken.verbatim(true);
 	rName.verbatim(true);
+	rComment.verbatim(true);
 
 	// parse tree shaping rules
 	rToken.leaf(true);
@@ -131,8 +160,8 @@ Rule grammar() {
 
 static
 void dumpRuleDecl(const Pree &rule) {
-	// skip non-assignments to avoid repetitions of rules
-	if (rule[0][1].image() != "=")
+	// skip rules that do not need declaration and non-rule code
+	if (rule[0][0].rid() != grName || rule[0][1].image() != "=")
 		return;
 
 	const string name = rule[0][0].image();
@@ -141,34 +170,53 @@ void dumpRuleDecl(const Pree &rule) {
 }
 
 static
+void dumpParserDecl() {
+	cppb() << "Parser parser;" << cppc <<
+		"parser.grammar(rGrammar);" << cppc << cppe;
+}
+
+static
 void dumpCase(const Pree &c) {
 	const string &kind = c[0].image();
-	const string &i = c[1][1].image();
-	const string input = i; // i.size() > 2 ? i.substr(1,i.size()-2) : "";
+	const string input = c[1][1].image();
+	const string *expectedPree = (c[2].count() > 0) ?
+		new string(c[2].find(grCasePreeImage)[2][1].image()) : 0;
 
 	cppb() << "{ // test case" << cppe;
 	cppb(+1) << "++caseCount;" << cppc <<
 		cppe;
 
-	cppb() << "const string input = \"" << input << "\";" << cppe;
-	cppb() << "const bool accept = " << 
-		(kind == "accept" ? "true" : "false") << ";" << cppe;
+	if (!OptShareParsers)
+		dumpParserDecl();
 
-	cppb() << "Parser parser;" << cppc <<
-		"parser.grammar(rGrammar);" << cppc <<
-		"if (parser.parse(input) == accept) {" << cppc(+1) <<
-			"++passCount;" << cppc <<
-			"clog << \"\\t+ passed: " << kind << "ed '\" << " <<
-				"input << \"'\" << endl;" << cppc(-1) <<
-		"} else {" << cppc(+1) <<
-			"clog << \"\\t- failed to " << kind << " '\" << " <<
-				"input << \"' \" << " << cppc(+1) <<
-				"parser.result().location() << endl;" << cppc(-2) <<
-		"}" << cppc <<
-		cppe;
+	cppb() << "TestCase tc;" << cppe;
+	cppb() << "tc.parser = &parser;" << cppe;
+	cppb() << "tc.input = \"" << input << "\";" << cppe;
+	cppb() << "tc.expectedAction = \"" << kind << "\";" << cppe;
+	if (expectedPree)
+		cppb() << "tc.expectedPree = new string(\"" << *expectedPree << "\");" << cppe;
+
+	cppb() << cppe;
+
+	cppb() << "if (tc.test())" << cppc(+1) <<
+		"++passCount;" << cppc(-1);
 
 	cppb(-1) << "}" << cppc <<
 		cppe;
+}
+
+static
+void interpPreambles(const Pree &test) {
+	const Pree &body = test.find(grBody);
+	if (body[0].count() > 0) {
+		const string id = test[1].image();
+		const Pree &code = body[0].find(grPreamble).find(grCode);
+
+		cppb() << "// from test clause " << id << cppe;
+		cppb() << code.image() << cppe;
+
+		cppb() << cppe;
+	}
 }
 
 static
@@ -179,9 +227,12 @@ void interpTest(const Pree &test) {
 	cppb(+1) << "clog << \"test clause: " << id << " {\" << endl;" << cppc <<
 		cppe;
 
-	const Pree &rules = test.find(grBody).find(grRules);
+	const Pree &rules = test.find(grBody).find(grGrammar).find(grRules);
 	for_each(rules.begin(), rules.end(), std::ptr_fun(&dumpRuleDecl));
 	cppb() << rules.image() << cppe;
+
+	if (OptShareParsers)
+		dumpParserDecl();
 
 	const Pree &cases = test.find(grBody).find(grCases);
 	for_each(cases.begin(), cases.end(), std::ptr_fun(&dumpCase));
@@ -196,14 +247,13 @@ void interpTest(const Pree &test) {
 static
 void interpret(const Pree &n) {
 	cppb() << "/* autogenerated by Hapy TestMaker */" << cppc <<
-		"#include \"Hapy/Parser.h\"" << cppc <<
-		"#include \"Hapy/Rules.h\"" << cppc <<
-		"#include \"Hapy/Assert.h\"" << cppc <<
-		"#include \"Hapy/IoStream.h\"" << cppc <<
+		"#include \"TestCase.h\"" << cppc <<
 		"" << cppc <<
-		"using namespace Hapy;" << cppc <<
-		"" << cppc <<
-		"int main() {" << cppc(+1) <<
+		cppe;
+
+	for_some(n, grTest, std::ptr_fun(&interpPreambles));
+
+	cppb() << "int main() {" << cppc(+1) <<
 			"int caseCount = 0;" << cppc <<
 			"int passCount = 0;" << cppc <<
 		cppe;
@@ -219,7 +269,48 @@ void interpret(const Pree &n) {
 		"}" << cppe;
 }
 
-int main() {
+static
+void usage(ostream &os) {
+	const int w = 20;
+	os << "options:" << endl <<
+		std::setw(w) << OptShareParsersYes <<
+			"\t: use one parser for all cases in a clause" << endl <<
+		std::setw(w) << OptShareParsersNo <<
+			"\t: use one parser for each case in a clause" << endl <<
+		std::setw(w) << OptParseAtOnceYes <<
+			"\t: feed all input at once" << endl <<
+		std::setw(w) << OptParseAtOnceNo <<
+			"\t: feed all input one octete at a time" << endl <<
+		std::setw(w) << OptHelpYes <<
+			"\t: this list of options" << endl <<
+		endl;
+}
+
+static
+void configure(int argc, char *argv[]) {
+	for (int i = 1; i < argc; ++i) {
+		const string option = argv[i];
+		if (option == OptShareParsersYes)
+			OptShareParsers = true;
+		else
+		if (option == OptShareParsersNo)
+			OptShareParsers = false;
+		else
+		if (option == OptParseAtOnceYes)
+			OptParseAtOnce = true;
+		else
+		if (option == OptParseAtOnceNo)
+			OptParseAtOnce = false;
+		else {
+			usage(option == OptHelpYes ? cout : cerr);
+			std::exit(option == OptHelpYes ? 0 : 255);
+		}
+	}
+}
+
+int main(int argc, char *argv[]) {
+	configure(argc, argv);
+
 	string content;
 	char c;
 	while (cin.get(c))

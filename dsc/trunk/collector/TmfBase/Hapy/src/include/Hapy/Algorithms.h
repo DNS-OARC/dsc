@@ -3,7 +3,7 @@
 #ifndef HAPY_ALGORITHMS__H
 #define HAPY_ALGORITHMS__H
 
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 #include <Hapy/Algorithm.h>
 #include <Hapy/RulePtr.h>
 #include <climits>
@@ -21,7 +21,10 @@ class EmptyAlg: public Algorithm {
 
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
 };
@@ -41,9 +44,15 @@ class SeqAlg: public Algorithm {
 
 		virtual bool isA(const string &s) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual void collectRules(CRules &rules);
+
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
+		virtual void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 	protected:
 		StatusCode advance(Buffer &buf, Pree &pree) const;
@@ -68,9 +77,15 @@ class OrAlg: public Algorithm {
 
 		virtual bool isA(const string &s) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual void collectRules(CRules &rules);
+
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
+		virtual void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 	protected:
 		StatusCode advance(Buffer &buf, Pree &pree) const;
@@ -92,9 +107,15 @@ class DiffAlg: public Algorithm {
 		virtual StatusCode resume(Buffer &buf, Pree &pree) const;
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual void collectRules(CRules &rules);
+
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
+		virtual void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 	protected:
 		StatusCode checkAndAdvance(Buffer &buf, Pree &pree, StatusCode res) const;
@@ -114,9 +135,15 @@ class ReptionAlg: public Algorithm {
 		virtual StatusCode resume(Buffer &buf, Pree &pree) const;
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual void collectRules(CRules &rules);
+
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
+		virtual void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 	protected:
 		StatusCode checkAndTry(Buffer &buf, Pree &pree, StatusCode res) const;
@@ -139,9 +166,15 @@ class ProxyAlg: public Algorithm {
 		virtual StatusCode resume(Buffer &buf, Pree &pree) const;
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual void collectRules(CRules &rules);
+
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
+		virtual void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 	protected:
 		StatusCode check(Buffer &buf, Pree &pree, StatusCode res) const;
@@ -161,7 +194,10 @@ class StringAlg: public Algorithm {
 		virtual StatusCode resume(Buffer &buf, Pree &pree) const;
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
 
@@ -179,7 +215,10 @@ class CharSetAlg: public Algorithm {
 		virtual StatusCode resume(Buffer &buf, Pree &pree) const;
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
 
@@ -194,6 +233,8 @@ class CharSetAlg: public Algorithm {
 class AnyCharAlg: public CharSetAlg {
 	public:
 		AnyCharAlg();
+
+		virtual bool calcPartialFirst(First &first, Pree &pree); // optimization
 
 	protected:
 		virtual bool matchingChar(char c) const;
@@ -263,7 +304,10 @@ class EndAlg: public Algorithm {
 		virtual StatusCode resume(Buffer &buf, Pree &pree) const;
 		virtual bool terminal(string *name = 0) const;
 
-		virtual bool compile(const RulePtr &itrimmer);
+		virtual bool compile(const RuleCompFlags &flags);
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		virtual bool calcPartialFirst(First &first, Pree &pree);
+		virtual void calcFullFirst();
 
 		virtual ostream &print(ostream &os) const;
 };

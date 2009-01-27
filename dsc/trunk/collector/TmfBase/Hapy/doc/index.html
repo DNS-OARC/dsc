@@ -1,0 +1,86 @@
+<sisy:page class="L1"
+        title="Hapy" 
+        headline="Hapy Parser Generator">
+
+<p>Hapy is a runtime parser generator library.  The Hapy library generates
+parsers from BNF-like language grammars.  Parsing scripting languages and
+communication protocol messages are typical use cases.</p>
+
+<h2>Hapy features and goals</h2>
+
+<p>Hapy goals and distinguishable features are:</p>
+
+<ul>
+
+ 	<li>clean grammar specification interface,</li>
+
+	<li>runtime parser generation,</li>
+
+	<li>guaranteed parser correctness,</li>
+
+	<li>optional parser efficiency,</li>
+
+	<li>widest grammar coverage,</li>
+
+	<li>data-push input interface,</li>
+
+	<li>support for parsing protocol message streams</li>
+
+	<li>scalability with grammar size,</li>
+
+	<li>sane compilation times, and</li>
+
+	<li>portability.</li>
+
+</ul>
+
+<h2>Hapy technicalities</h2>
+
+<p>The library generates <a
+href="http://en.wikipedia.org/wiki/Parser">parsers</a> for <a
+href="http://en2.wikipedia.org/wiki/Context-free_grammar">context-free
+grammars</a>. A grammar is specified directly in C++, using a simple <a
+href="http://en2.wikipedia.org/wiki/Extended_Backus-Naur_form">EBNF</a>-like
+<a href="syntax.html">interface</a> (see also <a
+href="examples.html">examples</a>).  Generated parsers are C++ objects that
+build parsing trees from input strings.</p>
+
+<p>Hapy parsers are top-down parsers that use leftmost derivation of pushed
+input strings.  Hapy parsers support full backtracking, with optional
+optimization in the form of user-specified commit points. Generated parsers
+automatically handle left recursion in grammars so that you do not have to
+eliminate it manually.</p>
+
+<p>Parsing can be done iteratively, with the parsing tree extending with every
+new portion of the input. Hapy parsers can be configured to detect protocol
+message boundaries and invalid message prefixes in environments where
+"complete" input is not immediately available.</p>
+
+<p>The Hapy library is written in straight C++ without non-standard
+dependencies.</p>
+
+
+<h2>Hapy place in the parsing world</h2>
+
+<p>Many parser generators exist. Most generators use off-line mode:  their
+output is a piece of source code that must be compiled into the program during
+built time.  The examples of such parsers are <a
+href="http://en2.wikipedia.org/wiki/Yacc">Yacc</a> and <a
+href="http://foldoc.doc.ic.ac.uk/foldoc/foldoc.cgi?query=llgen">LLGen</a>. A
+few generators allow the programmer to generate parsers runtime, during the
+program execution.  Runtime generation has a lot of advantages. It's primary
+disadvantage is the runtime parser generation overhead, but such overhead is
+negligible for most applications. <a
+href="http://spirit.sourceforge.net/">Spirit</a>, is a good example of a
+runtime parser generator library.</p>
+
+<p>The Hapy library would not exist if <a
+href="http://spirit.sourceforge.net/">Spirit</a> would generate correct
+parsers by default, had data-push parsing interface, could recognize valid
+message prefixes, and would not take unreasonable amount of compilation time
+and/or bleeding-edge C++ compilers. While the last flaw is likely to disappear
+according to Moore's law, key Spirit design choices would keep it
+inappropriate for parsing communication protocol messages, one of the primary
+use cases for the Hapy library.</p>
+
+</sisy:page>

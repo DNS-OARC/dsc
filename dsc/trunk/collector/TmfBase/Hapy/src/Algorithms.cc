@@ -5,6 +5,7 @@
 #include <Hapy/Parser.h>
 #include <Hapy/Algorithms.h>
 #include <Hapy/RuleBase.h>
+#include <Hapy/Debugger.h>
 #include <Hapy/IoStream.h>
 
 #include <functional>
@@ -41,8 +42,20 @@ bool Hapy::EmptyAlg::terminal(string *name) const {
 	return true;
 }
 
-bool Hapy::EmptyAlg::compile(const RulePtr &r) {
+bool Hapy::EmptyAlg::compile(const RuleCompFlags &) {
 	return true;
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::EmptyAlg::calcMinSize(SizeCalcPass &) {
+	return 0;
+}
+
+bool Hapy::EmptyAlg::calcPartialFirst(First &first, Pree &) {
+	first.includeEmptySequence(true);
+	return true;
+}
+
+void Hapy::EmptyAlg::calcFullFirst() {
 }
 
 Hapy::ostream &Hapy::EmptyAlg::print(ostream &os) const {
@@ -103,6 +116,13 @@ Hapy::Algorithm::StatusCode Hapy::SeqAlg::resume(Buffer &buf, Pree &pree) const 
 Hapy::Algorithm::StatusCode Hapy::SeqAlg::advance(Buffer &buf, Pree &pree) const {
 	while (pree.rawCount() < theAlgs.size()) {
 		const Store::size_type idx = pree.rawCount();
+
+		// XXX: slow
+		// compute min size required for future nodes on the right
+		pree.minSize = 0;
+		for (Store::size_type i = idx+1; i < theAlgs.size(); ++i)
+			pree.minSize += theAlgs[i]->minSize();
+
 		switch (theAlgs[idx]->firstMatch(buf, pree.newChild()).sc()) {
 			case Result::scMatch:
 				break; // switch, not loop
@@ -145,6 +165,12 @@ void Hapy::SeqAlg::killCurrent(Buffer &buf, Pree &pree) const {
 	Assert(pree.rawCount() <= theAlgs.size());
 	Assert(pree.rawCount() > 0);
 	pree.popChild();
+
+	// adjust min size for nodes on the right from now-current node
+	// by adding the killed alg size
+	const SizeCalcLocal::size_type killedSize =
+		theAlgs[pree.rawCount()]->minSize();
+	pree.minSize += killedSize;
 }
 
 bool Hapy::SeqAlg::isA(const string &s) const {
@@ -155,12 +181,59 @@ bool Hapy::SeqAlg::terminal(string *) const {
 	return theAlgs.size() == 0;
 }
 
-bool Hapy::SeqAlg::compile(const RulePtr &r) {
+bool Hapy::SeqAlg::compile(const RuleCompFlags &cflags) {
+	RuleCompFlags flags = cflags;
 	for (Store::iterator i = theAlgs.begin(); i != theAlgs.end(); ++i) {
-		if (!compileSubRule(*i, r))
+		const bool lastKid = (i+1 == theAlgs.end());
+		flags.trimRight = lastKid ? cflags.trimRight : true ;
+		if (!compileSubRule(*i, flags))
 			return false;
+		flags.trimLeft = false; // current right side is next left side
 	}
 	return true;
+}
+
+void Hapy::SeqAlg::collectRules(CRules &rules) {
+	for (Store::iterator i = theAlgs.begin(); i != theAlgs.end(); ++i)
+		(*i)->collectRules(rules);
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::SeqAlg::calcMinSize(SizeCalcPass &pass) {
+	SizeCalcLocal::size_type sum = 0;
+	for (Store::iterator i = theAlgs.begin(); i != theAlgs.end(); ++i) {
+		const SizeCalcLocal::size_type s = (*i)->calcMinSize(pass);
+		// quit early because min size depends on all components
+		if (s == SizeCalcLocal::nsize)
+			return SizeCalcLocal::nsize;
+		sum += s;
+	}
+	return sum;
+}
+
+bool Hapy::SeqAlg::calcPartialFirst(First &first, Pree &pree) {
+	Assert(pree.rawCount() == 0);
+
+	bool allEmpty = true;
+	First accum;
+	while (pree.rawCount() < theAlgs.size()) {
+		const Store::size_type idx = pree.rawCount();
+		First f;
+		if (!theAlgs[idx]->calcPartialFirst(f, pree.newChild()))
+			return false;
+		if (allEmpty) {
+			accum += f;
+			allEmpty = f.hasEmpty();
+		}
+	}
+
+	first = accum;
+	first.includeEmptySequence(allEmpty);
+	return true;
+}
+
+void Hapy::SeqAlg::calcFullFirst() {
+	for (Store::const_iterator i = theAlgs.begin(); i != theAlgs.end(); ++i)
+		(*i)->calcFullFirst();
 }
 
 Hapy::ostream &Hapy::SeqAlg::print(ostream &os) const {
@@ -170,6 +243,11 @@ Hapy::ostream &Hapy::SeqAlg::print(ostream &os) const {
 		PrintSubRule(os, *i);
 	}
 	return os;
+}
+
+void Hapy::SeqAlg::deepPrint(ostream &os, DeepPrinted &printed) const {
+	for (Store::const_iterator i = theAlgs.begin(); i != theAlgs.end(); ++i)
+		(*i)->deepPrint(os, printed);
 }
 
 
@@ -192,10 +270,6 @@ Hapy::Algorithm::StatusCode Hapy::OrAlg::firstMatch(Buffer &buf, Pree &pree) con
 Hapy::Algorithm::StatusCode Hapy::OrAlg::advance(Buffer &buf, Pree &pree) const {
 	Assert(pree.rawCount() == 0);
 	Assert(0 <= pree.idata && pree.idata <= theAlgs.size());
-
-	// find untried alternative to avoid left recursion
-	while (pree.idata < theAlgs.size() && pree.leftRecursion())
-		++pree.idata;
 
 	if (pree.idata < theAlgs.size()) {
 		switch (theAlgs[pree.idata]->firstMatch(buf, pree.newChild()).sc()) {
@@ -276,12 +350,57 @@ bool Hapy::OrAlg::terminal(string *) const {
 	return theAlgs.size() == 0;
 }
 
-bool Hapy::OrAlg::compile(const RulePtr &r) {
+bool Hapy::OrAlg::compile(const RuleCompFlags &flags) {
+	// propagates all flags down, as-is
 	for (Store::iterator i = theAlgs.begin(); i != theAlgs.end(); ++i) {
-		if (!compileSubRule(*i, r))
+		if (!compileSubRule(*i, flags))
 			return false;
 	}
 	return true;
+}
+
+void Hapy::OrAlg::collectRules(CRules &rules) {
+	for (Store::iterator i = theAlgs.begin(); i != theAlgs.end(); ++i)
+		(*i)->collectRules(rules);
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::OrAlg::calcMinSize(SizeCalcPass &pass) {
+	int count = 0;
+	SizeCalcLocal::size_type min = SizeCalcLocal::nsize;
+	for (Store::iterator i = theAlgs.begin(); i != theAlgs.end(); ++i) {
+		const SizeCalcLocal::size_type s = (*i)->calcMinSize(pass);
+		if (s != SizeCalcLocal::nsize) {
+			if (!count++ || s < min)
+				min = s;
+		}
+	}
+
+	// recursive subrules cannot make size smaller than the smallest 
+	// non-recursive rule because including something does not decrease 
+	// rule size (*r is treated as a non-recursive rule with zero minSize)
+	return min;
+}
+
+bool Hapy::OrAlg::calcPartialFirst(First &first, Pree &pree) {
+	Assert(0 <= pree.idata && pree.idata <= theAlgs.size());
+	bool oneFound = false;
+	for (; pree.idata < theAlgs.size(); ++pree.idata) {
+		First f;
+		if (pree.rawCount())
+			pree.popChild();
+		if (theAlgs[pree.idata]->calcPartialFirst(f, pree.newChild())) {
+			first += f;
+			oneFound = true;
+		} else {
+			pree.popChild();
+		}
+	}
+	return oneFound;
+}
+
+void Hapy::OrAlg::calcFullFirst() {
+	for (Store::const_iterator i = theAlgs.begin(); i != theAlgs.end(); ++i)
+		(*i)->calcFullFirst();
 }
 
 Hapy::ostream &Hapy::OrAlg::print(ostream &os) const {
@@ -292,6 +411,12 @@ Hapy::ostream &Hapy::OrAlg::print(ostream &os) const {
 	}
 	return os;
 }
+
+void Hapy::OrAlg::deepPrint(ostream &os, DeepPrinted &printed) const {
+	for (Store::const_iterator i = theAlgs.begin(); i != theAlgs.end(); ++i)
+		(*i)->deepPrint(os, printed);
+}
+
 
 // r = a - b
 Hapy::DiffAlg::DiffAlg(const RulePtr &aMatch, const RulePtr &anExcept): theMatch(aMatch),
@@ -342,8 +467,37 @@ bool Hapy::DiffAlg::terminal(string *) const {
 	return false;
 }
 
-bool Hapy::DiffAlg::compile(const RulePtr &r) {
-	return compileSubRule(theExcept, r) && compileSubRule(theMatch, r);
+bool Hapy::DiffAlg::compile(const RuleCompFlags &flags) {
+	return compileSubRule(theExcept, flags) && 
+		compileSubRule(theMatch, flags);
+}
+
+void Hapy::DiffAlg::collectRules(CRules &rules) {
+	theExcept->collectRules(rules);
+	theMatch->collectRules(rules);
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::DiffAlg::calcMinSize(SizeCalcPass &pass) {
+	// exception size is currently unused
+	// TODO: does zero exception size mean that no matches are possible?
+	//theExcept->calcMinSize(pass);
+
+	return theMatch->calcMinSize(pass);
+}
+
+bool Hapy::DiffAlg::calcPartialFirst(First &first, Pree &pree) {
+	// theExcept affects first set, but we cannot calculate that effect;
+	// assume the worst case, which is OK as long as we never subtract
+	// firsts elsewhere
+	if (theMatch->calcPartialFirst(first, pree.newChild()))
+		return true;
+	pree.popChild();
+	return false;
+}
+
+void Hapy::DiffAlg::calcFullFirst() {
+	theExcept->calcFullFirst();
+	theMatch->calcFullFirst();
 }
 
 Hapy::ostream &Hapy::DiffAlg::print(ostream &os) const {
@@ -351,6 +505,11 @@ Hapy::ostream &Hapy::DiffAlg::print(ostream &os) const {
 	os << " - ";
 	PrintSubRule(os, theExcept);
 	return os;
+}
+
+void Hapy::DiffAlg::deepPrint(ostream &os, DeepPrinted &printed) const {
+	theMatch->deepPrint(os, printed);
+	theExcept->deepPrint(os, printed);
 }
 
 
@@ -409,11 +568,18 @@ Hapy::Algorithm::StatusCode Hapy::ReptionAlg::checkAndTry(Buffer &buf, Pree &pre
 Hapy::Algorithm::StatusCode Hapy::ReptionAlg::tryMore(Buffer &buf, Pree &pree) const {
 	Algorithm::StatusCode res = Result::scMatch;
 	while (pree.rawCount() < theMax && res == Result::scMatch) {
+
+		// compute min size required for future nodes on the right
+		pree.minSize = pree.rawCount() < theMin ?
+			(theMin - pree.rawCount() - 1)*theAlg->minSize() : 0;
+
 		res = theAlg->firstMatch(buf, pree.newChild());
 
 		// avoid endless repetition when an empty sequence matches input
 		if (res == Result::scMatch && theMax == INT_MAX &&
-			pree.rawCount() > theMin && pree.emptyLoop()) {
+			pree.rawCount() > theMin && pree.emptyHorizontalLoop()) {
+			if (Debugger::On(Debugger::dbgUser))
+				RuleBase::DebugReject(theAlg, "infinite empty repetition");
 			theAlg->cancel(buf, pree.backChild());
 			res = Result::scMiss;
 		}
@@ -430,8 +596,58 @@ bool Hapy::ReptionAlg::terminal(string *) const {
 	return theMax == 0;
 }
 
-bool Hapy::ReptionAlg::compile(const RulePtr &r) {
-	return compileSubRule(theAlg, r);
+bool Hapy::ReptionAlg::compile(const RuleCompFlags &cflags) {
+	RuleCompFlags flags(cflags);
+	// trimming both left and right of all repeated rules is an overkill
+	// but we cannot be more precise (like SeqAlg is) because we must compile
+	// trim before parsing starts; we need to add a theTrimmer subalg here!
+	if (theMax > 1)
+		flags.trimLeft = flags.trimRight = true; 
+	return compileSubRule(theAlg, flags);
+}
+
+void Hapy::ReptionAlg::collectRules(CRules &rules) {
+	theAlg->collectRules(rules);
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::ReptionAlg::calcMinSize(SizeCalcPass &pass) {
+	if (!theMin)
+		return 0;
+
+	const SizeCalcLocal::size_type s = theAlg->calcMinSize(pass);
+	if (s == SizeCalcLocal::nsize)
+		return SizeCalcLocal::nsize;
+
+	Assert(s <= SizeCalcLocal::nsize / theMin);
+	return theMin * s;
+}
+
+bool Hapy::ReptionAlg::calcPartialFirst(First &first, Pree &pree) {
+	if (theMax < theMin)
+		return false;
+
+	if (theMax == 0) {
+		first.includeEmptySequence(true);
+		return true;
+	}
+
+	const bool emptyOnly =
+		!theAlg->calcPartialFirst(first, pree.newChild()) ||
+		(theMax == INT_MAX && first.hasEmpty()); // no endless repetition w/ e
+	if (emptyOnly)
+		pree.popChild();
+
+	if (theMin <= 0)
+		first.includeEmptySequence(true);
+
+	if (emptyOnly)
+		return theMin <= 0;
+	else
+		return true;
+}
+
+void Hapy::ReptionAlg::calcFullFirst() {
+	theAlg->calcFullFirst();
 }
 
 Hapy::ostream &Hapy::ReptionAlg::print(ostream &os) const {
@@ -443,11 +659,18 @@ Hapy::ostream &Hapy::ReptionAlg::print(ostream &os) const {
 			os << "+";
 		else
 			os << "{" << theMin << ",}";
+	} else
+	if (theMin == 0 && theMax == 1) {
+		os << '!';
 	} else {
 		os << "{" << theMin << "," << theMax << "}";
 	}
 	PrintSubRule(os, theAlg);
 	return os;
+}
+
+void Hapy::ReptionAlg::deepPrint(ostream &os, DeepPrinted &printed) const {
+	theAlg->deepPrint(os, printed);
 }
 
 
@@ -498,13 +721,34 @@ bool Hapy::ProxyAlg::terminal(string *) const {
 	return false;
 }
 
-bool Hapy::ProxyAlg::compile(const RulePtr &r) {
-	return compileSubRule(theAlg, r);
+bool Hapy::ProxyAlg::compile(const RuleCompFlags &flags) {
+	return compileSubRule(theAlg, flags);
 }
+
+void Hapy::ProxyAlg::collectRules(CRules &rules) {
+	theAlg->collectRules(rules);
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::ProxyAlg::calcMinSize(SizeCalcPass &pass) {
+	return theAlg->calcMinSize(pass);
+}
+
+bool Hapy::ProxyAlg::calcPartialFirst(First &first, Pree &pree) {
+	return theAlg->calcPartialFirst(first, pree);
+}
+
+void Hapy::ProxyAlg::calcFullFirst() {
+	return theAlg->calcFullFirst();
+}
+
 
 Hapy::ostream &Hapy::ProxyAlg::print(ostream &os) const {
 	PrintSubRule(os << "=", theAlg);
 	return os;
+}
+
+void Hapy::ProxyAlg::deepPrint(ostream &os, DeepPrinted &printed) const {
+	theAlg->deepPrint(os, printed);
 }
 
 
@@ -516,25 +760,18 @@ Hapy::Algorithm::StatusCode Hapy::StringAlg::firstMatch(Buffer &buf, Pree &pree)
 	return resume(buf, pree);
 }
 
-Hapy::Algorithm::StatusCode Hapy::StringAlg::nextMatch(Buffer &buf, Pree &pree) const {
+Hapy::Algorithm::StatusCode Hapy::StringAlg::nextMatch(Buffer &buf, Pree &) const {
 	buf.backtrack(theToken.size());
 	return Result::scMiss;
 }
 
-Hapy::Algorithm::StatusCode Hapy::StringAlg::resume(Buffer &buf, Pree &pree) const {
-	const string::size_type contentSize = buf.contentSize();
-	if (contentSize < theToken.size()) {
-		if (buf.sawEnd())
-			return Result::scMiss;
-		return (contentSize > 0 && !buf.startsWith(theToken)) ?
-			Result::scMiss : Result::scMore; // need_more_input
+Hapy::Algorithm::StatusCode Hapy::StringAlg::resume(Buffer &buf, Pree &) const {
+	bool needMore = false;
+	if (buf.startsWith(theToken, needMore)) {
+		buf.advance(theToken.size());
+		return Result::scMatch;
 	}
-	if (!buf.startsWith(theToken)) {
-		return Result::scMiss;
-	}
-	buf.advance(theToken.size());
-	Should(pree.rawCount() == 0);
-	return Result::scMatch;
+	return needMore ? Result::scMore : Result::scMiss;
 }
 
 bool Hapy::StringAlg::terminal(string *name) const {
@@ -543,9 +780,25 @@ bool Hapy::StringAlg::terminal(string *name) const {
 	return true;
 }
 
-bool Hapy::StringAlg::compile(const RulePtr &r) {
+bool Hapy::StringAlg::compile(const RuleCompFlags &) {
 	return true;
 }
+
+Hapy::SizeCalcLocal::size_type Hapy::StringAlg::calcMinSize(SizeCalcPass &) {
+	return theToken.size();
+}
+
+bool Hapy::StringAlg::calcPartialFirst(First &first, Pree &) {
+	if (theToken.size() > 0)
+		first.include(theToken[0]);
+	else
+		first.includeEmptySequence(true);
+	return true;
+}
+
+void Hapy::StringAlg::calcFullFirst() {
+}
+
 
 Hapy::ostream &Hapy::StringAlg::print(ostream &os) const {
 	os << '"' << theToken << '"';
@@ -560,12 +813,12 @@ Hapy::Algorithm::StatusCode Hapy::CharSetAlg::firstMatch(Buffer &buf, Pree &pree
 	return resume(buf, pree);
 }
 
-Hapy::Algorithm::StatusCode Hapy::CharSetAlg::nextMatch(Buffer &buf, Pree &pree) const {
+Hapy::Algorithm::StatusCode Hapy::CharSetAlg::nextMatch(Buffer &buf, Pree &) const {
 	buf.backtrack(1);
 	return Result::scMiss;
 }
 
-Hapy::Algorithm::StatusCode Hapy::CharSetAlg::resume(Buffer &buf, Pree &pree) const {
+Hapy::Algorithm::StatusCode Hapy::CharSetAlg::resume(Buffer &buf, Pree &) const {
 	if (buf.contentSize() <= 0) {
 		return buf.sawEnd() ? Result::scMiss : Result::scMore;
 	}
@@ -585,9 +838,27 @@ bool Hapy::CharSetAlg::terminal(string *name) const {
 	return true;
 }
 
-bool Hapy::CharSetAlg::compile(const RulePtr &r) {
+bool Hapy::CharSetAlg::compile(const RuleCompFlags &) {
 	return true;
 }
+
+Hapy::SizeCalcLocal::size_type Hapy::CharSetAlg::calcMinSize(SizeCalcPass &) {
+	return 1;
+}
+
+bool Hapy::CharSetAlg::calcPartialFirst(First &first, Pree &) {
+	first.includeEmptySequence(false);
+	for (int i = 0; i <= 255; ++i) {
+		const char c = (char)i;
+		if (matchingChar(c))
+			first.include(c);
+	}
+	return true;
+}
+
+void Hapy::CharSetAlg::calcFullFirst() {
+}
+
 
 Hapy::ostream &Hapy::CharSetAlg::print(ostream &os) const {
 	return os << theSetName;
@@ -599,6 +870,12 @@ Hapy::AnyCharAlg::AnyCharAlg(): CharSetAlg("anychar") {
 }
 
 bool Hapy::AnyCharAlg::matchingChar(char) const {
+	return true;
+}
+
+bool Hapy::AnyCharAlg::calcPartialFirst(First &first, Pree &) {
+	first.includeEmptySequence(false);
+	first.includeAny();
 	return true;
 }
 
@@ -665,7 +942,7 @@ Hapy::Algorithm::StatusCode Hapy::EndAlg::nextMatch(Buffer &, Pree &) const {
 	return Result::scMiss;
 }
 
-Hapy::Algorithm::StatusCode Hapy::EndAlg::resume(Buffer &buf, Pree &pree) const {
+Hapy::Algorithm::StatusCode Hapy::EndAlg::resume(Buffer &buf, Pree &) const {
 	if (!buf.empty())
 		return Result::scMiss;
 	if (!buf.sawEnd())
@@ -680,8 +957,20 @@ bool Hapy::EndAlg::terminal(string *name) const {
 	return true;
 }
 
-bool Hapy::EndAlg::compile(const RulePtr &r) {
+bool Hapy::EndAlg::compile(const RuleCompFlags &) {
 	return true;
+}
+
+Hapy::SizeCalcLocal::size_type Hapy::EndAlg::calcMinSize(SizeCalcPass &) {
+	return 0;
+}
+
+bool Hapy::EndAlg::calcPartialFirst(First &first, Pree &) {
+	first.includeEmptySequence(true);
+	return true;
+}
+
+void Hapy::EndAlg::calcFullFirst() {
 }
 
 Hapy::ostream &Hapy::EndAlg::print(ostream &os) const {

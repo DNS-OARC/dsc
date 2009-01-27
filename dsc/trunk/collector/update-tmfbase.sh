@@ -4,8 +4,6 @@ set -e
 rm -rfv tmp
 mkdir tmp
 cd tmp
-svn export svn+ssh://cvs.measurement-factory.com/usr/local/svn/TmfBase/xstd/trunk
-mv trunk xstd
 svn export svn+ssh://cvs.measurement-factory.com/usr/local/svn/hapy/trunk
 mv trunk Hapy
 cd ..

@@ -4,45 +4,29 @@
 #define HAPY_ACTION__H
 
 
-#include <Hapy/Result.h>
+#include <Hapy/ActionBase.h>
+#include <Hapy/PtrAction.h>
 
 namespace Hapy {
 
-class Buffer;
-class Pree;
-
-// parsing action interface:
-// a rule can be augmented with an action to be performed when the
-// rule matches; the action can confirm a match (default), cancel it,
-// or return an error but cannot ask for more input (only rules can)
+// a wrapper around ActionBase (the true Action) to allow for implicit
+// type conversion from function-looking actions to Action
 class Action {
 	public:
-		typedef Result::StatusCode StatusCode;
-
-		class Params {
-			public:
-				inline Params(Buffer &aBuf, Pree &aPree, StatusCode &aResult);
-
-			public:
-				Buffer &buf;
-				Pree &pree;
-				StatusCode &result;
-		};
+		typedef ActionBase::Params Params;
 
 	public:
-		virtual ~Action() {}
+		Action(): base(0) {} // no action by default
 
-		// "const" because action is an algorithm; it does not change
-		void operator ()(Params &params) const { act(params); }
+		template <class Function>
+		Action(Function f): base(new PtrAction<Function>(f)) {}
 
-		// specificactions override this method
-		virtual void act(Params &params) const = 0;
+		operator void*() const { return base ? (void*)-1 : 0; }
+		void clear() { base = 0; }
+
+	public:
+		const ActionBase *base; // action is an algorithm that does not change
 };
-
-inline
-Action::Params::Params(Buffer &aBuf, Pree &aPree, StatusCode &aResult):
-	buf(aBuf), pree(aPree), result(aResult) {
-}
 
 } // namespace
 

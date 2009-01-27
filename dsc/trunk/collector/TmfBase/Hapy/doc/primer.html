@@ -1,0 +1,360 @@
+<sisy:page class="docs"
+        title="Hapy Primer">
+
+<div class="primer">
+
+<p>This page contains instructions on getting started with the Hapy library.
+The information contained and referenced on this page should be sufficient for
+experienced programmers to build a Hapy parser and interpret its output. This
+is not an in-depth tutorial.</p>
+
+<h2>Table of Contents</h2>
+
+<ul style="margin-left: 2em; list-style: none;">
+	<li><a href="#sect-big">The big picture</a></li>
+	<li><a href="#sect-grammar">Specifying a grammar</a></li>
+	<li><ul style="list-style: none;">
+		<li><a href="#sect-grammar-bnf">BNF conversion</a></li>
+		<li><a href="#sect-grammar-space">Whitespace handling rules</a></li>
+		<li><a href="#sect-grammar-speed">Optimizing parsing speed</a></li>
+	</ul></li>
+	<li><a href="#sect-parser">Parsing</a></li>
+	<li><a href="#sect-results">Results interpretation</a></li>
+</ul>
+
+<a name="sect-big"></a><h2>The big picture</h2>
+
+<div class="sect">
+
+<p>We are going to build a Hapy parser for a simple grammar and use it to
+interpret program input. The complete corresponding C++ code is available as
+<a href="calc.cc">doc/calc.cc</a> in your Hapy source code distribution.</p>
+
+<p>Hapy parsing usually involves these major steps:</p>
+
+<ol>
+
+	<li>locating an existing grammar or writing one from scratch (often in
+	a BNF-like form),</li>
+
+	<li><a href="#sect-grammar">specifying</a> a grammar for the parser
+	generator,</li>
+
+	<li><a href="#sect-parser">parsing</a> input with a generated parser,
+	and</li>
+
+	<li><a href="#sect-results">interpreting</a> parsing results,
+	including errors.</li>
+
+</ol> 
+
+<p>The first step is out of Hapy scope (let's assume that you have a
+ready-to-use grammar or can write one from scratch). Hapy is meant to make the
+second and third steps a snap. As for the last step (interpretation), Hapy
+parsers produce parsing trees that are easy to search, traverse, or extract
+values from, leaving interpretation logic to the programmer.</p>
+
+<p>The sections below explain these steps in more detail.</p>
+
+</div>
+
+<a name="sect-grammar"></a><h2>Specifying a grammar</h2>
+
+<div class="sect">
+
+	<a name="sect-grammar-bnf"></a><h3>BNF conversion</h3>
+
+	<p>Let's assume you have the following BNF-like grammar, involving
+	recursion and multiple rules for a single non-terminal:</p>
+
+	<pre class="codesample">
+
+		expression = number | '(' expression ')' .
+		expression = expression '+' expression .
+		number     = DIGIT DIGIT* .
+	</pre>
+
+	<p>Convert the grammar to C++ code. First, for each <em>unique</em>
+	non-terminal (the symbol on the left hand side of each rule), define a
+	Hapy rule variable:</p>
+
+	<pre class="codesample">
+
+		Rule rExpression;
+		Rule rNumber;
+	</pre>
+
+	<p>The Rule class constructor automatically assigns a unique
+	identifier to each rule. That ID is often essential for interpreting
+	parsing trees. It can be extracted using Rule's id() method. The order
+	of Rule construction is not important.</p>
+
+	<p>Now, convert BNF rules to C++ rules using BNF-to-Hapy conversion table
+	provided <a href="syntax.html">elsewhere</a>. Merge multiple BNF rules
+	with the same left-hand-side non-terminal (if any) using C++ "bitwise or"
+	operator:</p>
+
+	<pre class="codesample">
+
+		rExpression = rNumber | '(' >> rExpression >> ')' |
+			      rExpression >> '+' >> rExpression;
+		rNumber = digit_r >> *digit_r;
+	</pre>
+	
+	<p>You are done converting your BNF to Hapy rules. Note how C++ "right
+	shift" operator is used to concatenate rule components. Also note that
+	each Hapy Rule object got exactly one assignment operator, defining the
+	corresponding parsing rule. The BNF-to-Hapy conversion merged multiple
+	"expression" definitions in BNF into one C++ assignment. The order of
+	assignments is not important.</p>
+
+	<p>Let's add a tiny bit of realism to our example. The rExpression grammar
+	specifies a single valid expression. In reality, a valid input probably
+	can have one or more expressions:</p>
+
+	<pre class="codesample">
+
+		Rule rGrammar;
+		rGrammar = +(rExpression >> ';');
+	</pre>
+
+	<p>The above addition specifies that a valid input must contain at least
+	one expression and expressions are delimited using semicolons.</p>
+
+	<a name="sect-grammar-space"></a><h3>Whitespace handling rules</h3>
+
+	<p>Some grammars have explicit built-in rules to handle whitespace,
+	comments, and such. If your grammar is like that, you can skip this
+	section.</p>
+
+	<p>Most grammars, however, have a prose statement saying that every
+	grammar token or terminal can be surrounded by any amount of whitespace.
+	While you can always express such a statement using explicit grammar
+	rules, the resulting noise makes the grammar unreadable. A better approach
+	is to tell Hapy to trim whitespace automagically:</p>
+
+	<pre class="codesample">
+
+		rGrammar.trim(*space_r);
+		rNumber.verbatim(true);
+	</pre>
+
+	<p>The R.trim() method specifies the default "whitespace trimming" rule
+	for rule R and all rules R uses. By default, trimming rule propagates all
+	the way down to grammar terminals (e.g., string constants or character
+	class rules like digit_r), surrounding each terminal by a copy of the
+	specified trimming rule. However, rules marked as verbatim do not
+	propagate trimming to their subrules. We marked rNumber as a verbatim rule
+	because numbers should not have spaces inside them (e.g., "1 2 + 3 4" is
+	not a valid expression in our grammar).</p>
+
+	<p>The "whitespace" rule can be anything, of course. We used *space_r as a
+	typical example. Note that specifying just space_r would require a single
+	whitespace character as a terminal separator, making expressions like
+	"(3)" or "1 + 2" invalid. Sometimes, that is exactly what you want!</p>
+
+	<p>Rules like rNumber are really terminals from high-level grammar and
+	interpretation points of view: they do not have internal whitespaces, and
+	you are unlikely to be interested in their character-level
+	decomposition. It is a good idea to mark such nodes as "leaf" nodes:</p>
+
+	<pre class="codesample">
+
+		rNumber.leaf(true);
+	</pre>
+
+
+	<a name="sect-grammar-speed"></a><h3>Optimizing parsing speed</h3>
+
+	<p>The last, and often optional, step is to optimize your grammar for
+	parsing speed and memory usage by inserting "commit points". By
+	default, a Hapy parser always tries all alternatives specified by the
+	grammar. In most cases, that is exactly what you want from the
+	correctness point of view. However, it may take a long time for the
+	parser to try all alternatives in complicated rules, especially when
+	dealing with invalid input.</p>
+
+	<p>If you mark a rule as a commit point, the rule will never
+	backtrack.  That is, once the committed rule finds the first match,
+	the rule will optimize the corresponding part of the parsing tree and
+	will not try to find other matches, even if all other rules fail
+	because of that.</p>
+
+	<pre class="codesample">
+
+		rGrammar.committed(true);
+		rNumber.committed(true);
+	</pre>
+
+	<p>Committing the top rule (rGrammar) gives Hapy parser a chance to
+	optimize the entire parsing tree once parsing is completed. However,
+	it prevents you from finding other alternatives with <a
+	href="parser.html">Parser</a>::nextMatch() if your grammar is
+	ambiguous.</p>
+
+	<p>Use this optimization with care! If you add too many commit points, you
+	may disable backtracking where it is essential. As a rule of thumb, it is
+	usually safe to commit a rule without subrule repetition or or-ed
+	subrules. It is often safe to commit a rule terminated by a relatively
+	unique expression (once that expression is parsed, it is unlikely that a
+	different alternative would match). For example, if we had isolated the
+	(rExpression >> ";") rule into an explicit Rule object, we could commit
+	that rule.</p>
+
+	<p>N.B. It is also possible to use commit points to remove grammar
+	ambiguities.</p>
+	
+</div>
+
+
+<a name="sect-parser"></a><h2>Parsing</h2>
+
+<div class="sect">
+
+	<p>With the previous step behind us, we are ready to generate a parser and
+	parse input using our grammar:
+
+	<pre class="codesample">
+
+		Parser parser;
+		parser.grammar(rGrammar);
+		if (!parser.parse(content)) {
+			cerr &lt;&lt; parser.result().location() &lt;&lt; ": syntax error" &lt;&lt; endl;
+			exit(2);
+		}
+		//parser.result().pree.print(cout &lt;&lt; "success; parsing tree:" &lt;&lt; endl);
+
+		interpret(parser.result().pree);
+	</pre>
+
+	<p>The above code fragment assumes that the input has been assigned to a
+	string called "content". The Parser::parse() method returns false if there
+	is not match or if there were errors interpreting the grammar itself. The
+	current error reporting code is ugly and related interface will be improved
+	in future Hapy releases. The existing approach is OK to start with.</p>
+
+	<p>The commented out C++ line at the end of the code fragment prints
+	the parsing tree. It's handy for debugging. The last line calls
+	the interpreter code described below.</p>
+
+	<p>At this point, we have a working parser and can detect valid input.
+	If your job is to build a document validator, you are done. Otherwise,
+	the next section illustrates parsing tree interpretation
+	techniques.</p>
+
+</div>
+
+<a name="sect-results"></a><h2>Results interpretation</h2>
+
+<div class="sect">
+
+	<p>A Hapy parser produces a parsing tree (called "pree" in Hapy code).
+	Interpretation involves traversing that tree and/or searching for
+	particular nodes on that tree.  Tree node interface is documented <a
+	href="pree.html">elsewhere</a>.</p>
+
+	<p>Let's see how we can compute and print the value of every input
+	expression using the parsing tree. Let's start with traversing the tree to
+	find and print top-level expressions (those delimited by semicolons). We
+	will implement expression value computation later.</p>
+
+	<pre class="codesample">
+
+		// extract top-level expressions (magical version)
+		void interpret(const Pree &amp;result) {
+			for_some(result, rExpression.id(), ptr_fun(&amp;intrpTop));
+		}
+
+		// interpret and report a single top-level expression
+		void intrpTop(const Pree &amp;top) {
+			const int value = intrpExpr(expr);
+			cout &lt;&lt; expr.image() &lt;&lt; " = " &lt;&lt; value &lt;&lt; endl;
+		}
+	</pre>
+
+	<p>If the interpret() code looks to cryptic, read on: The for_some()
+	function does the left-to-right depth-first traversal of the parsing tree
+	and calls the specified function for each node that was produced by a rule
+	with the specified ID. Note that for_some() does not go deeper if a match
+	is found.  Thus, only top-level expressions will match.</p>
+
+	<p>The intrpTop() function extracts the expression, evaluates it using
+	yet unspecified intrpExpr() function, and prints expression image and
+	interpreted value.</p>
+
+	<p>We could have avoided the for_some() magic in interpret() by manually
+	locating and iterating top-level expressions: We know that a plus rule in
+	rGrammar, +(rExpression >> ";"), yields a single parsing tree node, with
+	one child for every subrule match.  Children are accumulated in an STL
+	container, with the usual begin() and end() iterators. The interpretToo()
+	function below iterates through those children using STL's standard
+	for_each() call. It calls the same intrpTop() for every child.</p>
+
+	<pre class="codesample">
+
+		// extract top-level expressions (less magical version)
+		void interpretToo(const Pree &amp;result) {
+			// rGrammar = +(rExpression >> ";");
+			const Pree &amp;topExs = result[0];
+			for_each(topExs.begin(), topExs.end(), ptr_fun(&amp;intrpTop));
+		}
+	</pre>
+
+	<p>Interpreting an expression is relatively straight forward.
+	The recursive intrpExpr() function does the job by distinguishing
+	three possible cases:</p>
+
+	<pre class="codesample">
+
+		// calculate expression value
+		int intrpExpr(const Pree &amp;expr) {
+			// rExpression = rNumber | parens | sum
+			const Pree &amp;alt = expr[0];
+			if (alt.rid() == rNumber.id()) // rNumber
+				return intrpNumber(alt);
+			else
+			if (alt[0].image() == "(") // parens
+				return intrpExpr(alt[1]);
+			else // sum
+				return intrpExpr(alt[0]) + intrpExpr(alt[2]);
+		}
+	</pre>
+
+	<p>Interpreting the number node is trivial provided you do not need
+	to check for overflows and such:</p>
+
+	<pre class="codesample">
+
+		// extract top-level expressions (less magical version)
+		int intrpNumber(const Pree &amp;num) {
+			return atoi(num.image().c_str());
+		}
+	</pre>
+
+	<p>This is it. We are now ready to calculate a few expressions.  The
+	source code of the example can be found in the <a
+	href="calc.cc">doc/calc.cc</a> file in the Hapy distribution.
+	It is built automatically (but not installed) when you build Hapy.</p>
+
+	<pre class="codesample">
+
+		% echo '1;' | doc/calc
+		  1 = 1
+		% echo '1+1;' | doc/calc
+		  1+1 = 2
+		% echo '1+(1);' | doc/calc
+		  1+(1) = 2
+		% echo '1+1;2+3;' | doc/calc
+		  1+1 = 2
+		  2+3 = 5
+		% echo '1+;' | doc/calc
+		  parsing failure after 2 bytes, near ;
+	</pre>
+
+</div>
+
+</div>
+
+
+</sisy:page>
+

@@ -1,0 +1,160 @@
+<sisy:page class="docs"
+        title="Hapy Examples">
+
+<p>Below are a few examples for the Hapy grammar specification interface. A
+quick-start <a href="primer.html">instructions</a> and a BNF-to-Hapy
+conversion <a href="syntax.html">table</a> are available elsewhere.</p>
+
+<div class="ex">
+
+	<div class="heading">
+
+		<span class="tag">Example</span>: A simple value grammar -- value is a
+		number, string, or name.
+
+	</div>
+
+	<div class="main">
+
+		<p class="tag">EBNF</p>
+
+		<pre class="main-body">value     = number | qw_string | name;
+number    = DIGIT DIGIT*;
+qw_string = '"' (CHARACTER - '"')* '"';
+name      = ALPHA (ALPHA | DIGIT | '_')*;</pre>
+
+	</div>
+
+	<div class="main">
+
+		<p class="tag">Hapy</p>
+
+		<pre class="main-body">value      = number | qw_string | name;
+number     = digit_r >> *digit_r;
+qw_string  = quoted_r(anychar_r);
+name       = alpha_r >> *(alpha_r | digit_r | '_');</pre>
+
+	</div>
+
+	<!-- <p class="source">[<a href="./">Hapy source</a>]</p> -->
+
+	<div class="trailer">
+
+		<p><span class="tag">Comments</span>: Hapy expressions
+		approximate EBNF syntax rather well while remaining compliant
+		and portable C++ statements.  The most obvious difference is
+		the use of the shift operator (">>") to concatenate grammar
+		symbols. The repetition symbol ("*" a.k.a. <a
+		href="http://en2.wikipedia.org/wiki/Kleene_star">Kleene
+		star</a>) is placed in front of the expression rather
+		than at the back.</p>
+	
+		<p>The Hapy quoted string rule uses <a
+		href="builtins.html">quoted_r</a> function to
+		improve readability but that function internal implementation
+		matches the EBNF definition.</p>
+
+	</div>
+
+</div>
+
+<p>Here is an example illustrating both why one would want a backtracking
+parser (to handle arithmetic and other not-immediately-deterministic
+expressions), and how Hapy makes building such a parser simple by
+automatically handling unbounded left recursion so typical in simple
+expression grammars.</p>
+
+<div class="ex">
+
+	<div class="heading">
+		<span class="tag">Example</span>: Recursive expressions.
+	</div>
+
+	<div class="main">
+
+		<p class="tag">EBNF</p>
+
+		<pre class="main-body">expression = expression '+' expression |
+             '(' expression ')' |
+             value;</pre>
+
+	</div>
+
+	<div class="main">
+
+		<p class="tag">Hapy</p>
+
+		<pre class="main-body">expression = expression >> '+' >> expression |
+             '(' >> expression >> ')' |
+             value;</pre>
+
+	</div>
+
+	<div class="trailer">
+
+		<p><span class="tag">Comments</span>: The importance of this example
+		is that the programmar is not required to eliminate left recursion
+		from EBNF. While such manual elimination is simple in this example,
+		real-world cases may require a lot of energy. Many generated parsers
+		would simply enter an infinite loop, crash or dump core, and not even
+		warn the programmar that left recursion exists.</p>
+	
+		<p>Hapy parsers handle left recursion by detecting
+		absence of parsing progress and looking for other matching
+		rules instead.</p>
+
+	</div>
+
+</div>
+
+<p>The Needle In Haystack example below detects the presence of a well-formed
+content in the noise of surrounding opaque data, illustrating the power of
+full backtracking support. This example may seem rather artificial, but is
+actually "based on a true story"!</p>
+
+<div class="ex">
+
+	<div class="heading">
+		<span class="tag">Example</span>: Needle In Haystack.
+	</div>
+
+	<div class="main">
+
+		<p class="tag">EBNF</p>
+
+		<pre class="main-body">grammar = CHARACTER* needle.
+needle = ALPHA '=' DIGIT.</pre>
+
+	</div>
+
+	<div class="main">
+
+		<p class="tag">Hapy</p>
+
+		<pre class="main-body">rGrammar = *anychar_r >> rNeedle;
+rNeedle = alpha_r >> '=' >> digit_r;</pre>
+
+	</div>
+
+	<div class="trailer">
+
+		<p><span class="tag">Comments</span>: The above grammar is guaranteed
+		to find a "needle", although it may take some time to do that for
+		<em>large</em> inputs. If the input can be very large and speed is of
+		importance, it is usually possible to speed Hapy parsers up by
+		providing various optimization hints.  Such optimizations can usually
+		be postponed until the core grammar and the interpreter are well
+		tested.</p>
+	
+		<p>The kleene star (*anychar_r) rule is greedy. It will consume all
+		input before backtracking in hope to find a matching "needle".</p>
+
+	</div>
+
+</div>
+
+<p>Looking for a complete example? The <a href="primer.html">Primer</a>
+document discusses how to build a complete expression calculator (<a
+href="calc.cc">doc/calc.cc</a>), including the parsing tree interpreter.</p>
+
+</sisy:page>

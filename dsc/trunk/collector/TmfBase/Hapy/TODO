@@ -1,0 +1,25 @@
+- add LookaheadTableDepth() to disable FIRST-based optimization
+- document that parser.result().pree.image() excludes outermost trim
+- use DebugReject() to notify of rejection due to mustReachEnd
+- use bitmask instead of a set for First
+- add Optimize(false) interface to disable all performance optimizations
+  that can be disabled; should there be separate speed/greed knobs?
+- empty implicit trim nodes are not removed because(?) _trimming rules 
+  (their parents) do not have commit flag set
+- document that trimming rules are commited by default
+- move src/example.cc elsewhere
+
+postponed:
+- checking for left recursion is expensive;
+  do that for recursive rules only; identify those at compile time;
+  on the other hand, the check is only expensive for rules that expand
+  deeply and w/o progress; is that common?
+- do not try *deeply* implicit rules which FIRST does not match current
+  *non-empty* input; maybe later -- this requires successfully skipping
+  rules (rather than rejecting them) and we have no means to do that
+- use DebugReject() to notify of rejection due to mustReachEnd
+- use bitmask instead of a set for First
+- add Optimize(false) interface to disable all performance optimizations
+  that can be disabled; should there be separate speed/greed knobs?
+- add lookahead_r(rule) for zero-width lookahead; or should it be named
+  zero_width_r() -- is there lookbehind? check perlre

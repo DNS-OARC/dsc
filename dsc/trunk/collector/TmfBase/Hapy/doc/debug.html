@@ -1,0 +1,322 @@
+<sisy:page class="docs"
+        title="Hapy Debugging" >
+
+<p>This page documents Hapy runtime debugging facilities.</p>
+
+<h2>Table of Contents</h2>
+
+<ul style="margin-left: 2em; list-style: none;">
+	<li><a href="#sect-intro">Introduction</a></li>
+	<li><a href="#sect-enable">Enabling Debugging</a></li>
+	<li><a href="#sect-annotate">Annotating Rules</a></li>
+	<li><a href="#sect-interp">Interpreting Output</a>
+		<ul style="margin-left: 2em; list-style: none;">
+		<li><a href="#sect-interp-comp">Rule Compilation Trace</a></li>
+		<li><a href="#sect-interp-parse">Parsing Trace</a></li>
+		<li><a href="#sect-interp-pree">Parsing Tree Dump</a></li>
+		</ul></li>
+	<li><a href="#sect-context">Context-sensitive Debugging</a></li>
+</ul>
+
+<a name="sect-intro"></a><h2>Introduction</h2>
+<div class="sect">
+	
+	<p>Debugging is necessary when the parser results do not match user
+	expectations. The parser may fail to accept valid input, fail to
+	reject invalid input, or fail to produce an expected parsing tree. The
+	mismatch between user expectations and parser behavior could be due to
+	user misunderstanding of Hapy functionality or a Hapy implementation
+	bug.</p>
+
+	<p>The following three kinds of information are provided for debugging
+	parsing problems:</p>
+
+	<ul>
+
+		<li><p>A rule compilation <a
+		href="#sect-interp-comp">trace</a> that reflects conversion of
+		the user-specified grammar into a set of ready-to-fire parsing
+		rules. The most visible effect of rule compilation is addition
+		of trimming rules, which is triggered by the user requesting
+		implicit trimming via the <span
+		class="codesample">Rule::trim()</span> call. Another visible
+		effect is duplication of rules, one copy for each use in the
+		grammar. The latter is needed because rules inherit certain
+		attributes from their context, and the same rule can be used
+		in different contexts within the same grammar (e.g., a
+		trimming and a verbatim contexts.</p></li>
+
+		<li><p>Parsing <a href="#sect-interp-parse">trace</a> shows
+		which rules are executed, what their execution result is, and
+		how the input buffer changes as rules match or
+		backtrack.</p></li>
+
+		<li><p>Parsing tree <a href="#sect-interp-pree">dump</a>
+		shows the structure of the parsing tree.</p></li>
+
+	</ul>
+
+</div>
+
+<a name="sect-enable"></a><h2>Enabling</h2>
+
+<div class="sect">
+
+<p>By default, Hapy debugging is not enabled. Debugging mode can be turned on
+from within the program or by using an environmental variable. When
+debugging is on, a rule compilation <a href="#sect-interp-comp">trace</a> and
+a parsing <a href="#sect-interp-parse">trace</a> are produced if
+applicable.</p>
+
+<p>To enable Hapy debugging from the program, call <span
+class="codesample">Hapy::Debug(true)</span>, which is a static method of the
+<span class="codesample">Rule</span> class.  To disable debugging, call <span
+class="codesample">Hapy::Debug(false)</span>.  Using this approach, debugging
+can be turned on or off many times, at any time.</p>
+
+<p>It is also possible to enable debugging using the <span
+class="codesample">HAPY_DEBUG</span> environment variable: Set <span
+class="codesample">HAPY_DEBUG</span> to <span class="codesample">USER</span>
+to enable debugging and to <span class="codesample">NONE</span> to disable it.
+Other modes may be added in the future.</p>
+
+<p>Explicit debugging instructions in the program (if any) overwrite
+environmental settings. If you do not want your program to react on the <span
+class="codesample">HAPY_DEBUG</span> environment variable setting, call <span
+class="codesample">Hapy::Debug(false)</span> before using Hapy objects.</p>
+
+<p>All debugging info is dumped to <span
+class="codesample">std::clog</span>.</p>
+
+<p>To <a href="#sect-interp-pree">dump</a> a parsing tree, call the <span
+class="codesample">Pree::print(ostream &amp;)</span> method of the tree. Parsing
+tree nodes can be dumped many times, at any time.</p>
+
+
+</div>
+
+<a name="sect-annotate"></a><h2>Annotating Rules</h2>
+
+<div class="sect">
+
+	<p>Internally, Hapy parser assigns rules unique identifiers.  While
+	those identifiers can be used to grok rule compilation and
+	application traces, it is often much easier for humans to refer to
+	rules using user-provided names. To name a parsing rule, use the <span
+	class="codesample">Rule(const string &amp;name, RuleId *)</span>
+	constructor. For example,</p>
+
+	<pre class="codesample">
+	using namespace Hapy;
+
+	Rule rGrammar("grammar", 0);
+	Rule rExpression("expression", 0);
+	...
+	rGrammar = *(rExpression >> ';');
+	...
+	</pre>
+
+	<p>As the above example illustrates, you can set the second parameter
+	to null if you are not interested in knowing the rule identifier
+	(which is dynamically assigned to the rule at construction time).  You
+	can always retrieve that identifier later, using the <span
+	class="codesample">Hapy::id()</span> method.</p>
+
+</div>
+
+<a name="sect-interp"></a><h2>Interpreting Output</h2>
+
+<div class="sect">
+
+	<p>This section explains how to grok debugging output produced
+	by Hapy rules and parsing tree nodes.</p>
+
+
+	<a name="sect-interp-comp"></a><h3>Rule Compilation Trace</h3>
+
+	<div class="sect">
+
+	<p>When the <span class="codesample">Parser::parse()</span> method or
+	equivalent is called the first time, each rule in the supplied grammar
+	is "compiled" to accommodate various user settings (e.g., trimming) and
+	to optimize future parsing. If debugging is <a
+	href="#sect-enable">enabled</a>, then each compiled rule is printed on
+	the standard error stream (<span
+	class="codesample">std::clog</span>).</p>
+
+	<p>For example, here is the rule compilation trace produced by the
+	calculator grammar (see <a href="calc.cc"><span
+	class="filename">docs/calc.cc</span></a>):</p>
+
+	<pre class="codesample">
+compiled rule:  _white#r-105 = white
+compiled rule:  r-123 = *_white#r-105
+compiled rule:  _digit#r-103 = digit
+compiled rule:  _digit#r-103 = digit
+compiled rule:  r-121 = *_digit#r-103
+compiled rule:  r102 = _digit#r-103 >> r-121
+...
+compiled rule:  _;_trimmer#r108 = r-123 >> _;#r-109 >> r-123
+compiled rule:  r-110 = r101 >> _;_trimmer#r108
+compiled rule:  r103 = +r-110
+	</pre>
+
+	<p>The <span class="codesample">rDDD</span> and <span
+	class="codesample">r-DDD</span> labels after the '#' sign are rule
+	identifiers that Hapy assigned to the rule (e.g., <span
+	class="codesample">r-105</span>. Negative IDs correspond to
+	intermediate rules. Positive IDs correspond to rules explicitly
+	declared by the user.</p>
+
+	<p>The labels in front of the '#' sign are rule names automatically
+	assigned by Hapy to some simple built-in rules. Most rules will not
+	have these by default because Hapy cannot guess an appropriate name.
+	To improve the readability of the trace, you should <a
+	href="#sect-annotate">name</a> rules. For example, if calculator rules
+	are named to match their variable names, the compilation trace
+	reveals these user-defined rules (among the same of intermediate rules
+	with negative IDs):</p>
+
+	<pre class="codesample">
+compiled rule:  number#r102 = _digit#r-103 >> r-121
+compiled rule:  number_trimmer#r104 = r-123 >> number#r102 >> r-123
+compiled rule:  expression#r101 = number_trimmer#r104 | r-118 | r-114
+compiled rule:  expression#r101 = number_trimmer#r104 | r-118 | r-114
+compiled rule:  expression#r101 = number_trimmer#r104 | r-118 | r-114
+compiled rule:  expression#r101 = number_trimmer#r104 | r-118 | r-114
+compiled rule:  grammar#r103 = +r-110
+	</pre>
+
+	<p>This is still not perfect and even not pretty, of course.
+	Improvement suggestions are welcome.</p>
+
+	<p>Some rules (e.g., <span class="codesample">expression#r101</span>
+	above) are repeated because they are cloned during the compilation
+	process and each clone is compiled. Cloning is necessary when the same
+	rule can be reached by different paths from the start rule of the
+	grammar <em>and</em> those paths have different user-preferences such
+	as trimming. At the time of writing, Hapy does not try to minimize the
+	number of clones.</p>
+
+	<p>The compilation trace is often essential for understanding the <a
+	href="#sect-interp-parse">parsing trace</a> because it maps rule IDs
+	to rule definitions and because it shows auto-generated trimming
+	rules.</p>
+
+	</div>
+
+	<a name="sect-interp-parse"></a><h3>Parsing Trace</h3>
+
+	<div class="sect">
+
+	<p>The parsing trace shows parsing progress. Each time a rule is tried
+	it is printed with a "try" label and the indentation level is
+	increased.  Each time the rule returns, the indentation level is
+	decreased and the rule execution result is printed with a "match",
+	"miss", "error", or "more" label.</p>
+
+	<p>Buffer contents or its prefix is printed after the "buf:" label,
+	with the total buffer content length printed after the "clen:" label.
+	The buffer is rendered so that it always appears on one line, with
+	non-printable characters escaped using C++ character escaping
+	conventions.</p>
+
+	<pre class="codesample">
+1/1-  try: grammar#r103::firstMatch buf: 1+1;\n clen:5
+2/2-    try: r-110::firstMatch buf: 1+1;\n clen:5
+3/3-      try: expression#r101::firstMatch buf: 1+1;\n clen:5
+4/4-        try: number_trimmer#r104::firstMatch buf: 1+1;\n clen:5
+5/5-          try: r-123::firstMatch buf: 1+1;\n clen:5
+6/6-            try: _white#r-105::firstMatch buf: 1+1;\n clen:5
+6/6-            miss: _white#r-105 buf: 1+1;\n clen:5
+5/5-          match: r-123 buf: 1+1;\n clen:5
+7/5-          try: number#r102::firstMatch buf: 1+1;\n clen:5
+...
+7/5-          match: number#r102 buf: +1;\n clen:4
+11/5-          try: r-123::firstMatch buf: +1;\n clen:4
+12/6-            try: _white#r-105::firstMatch buf: +1;\n clen:4
+12/6-            miss: _white#r-105 buf: +1;\n clen:4
+11/5-          match: r-123 buf: +1;\n clen:4
+4/4-        match: number_trimmer#r104 buf: +1;\n clen:4
+3/3-      match: expression#r101 buf: +1;\n clen:4
+...
+1/1-  match: grammar#r103 buf:  clen:0
+	</pre>
+
+	<p>The first trace column contains two numbers separated by a slash:
+	the rule invocation identifier and the nesting level. The rule
+	invocation identifier increases with every "try" statement. Searching
+	for the same invocation identifier links the "try" statement with the
+	corresponding rule execution result. For example, to find how the
+	first <span class="codesample">expression</span> rule matched, one
+	could search for a "^3/" pattern.
+
+	<p>Searching for a given nesting level allows to skip details at lower
+	levels.</p>
+
+	</div>
+
+	<a name="sect-interp-pree"></a><h3>Parsing Tree Dump</h3>
+
+	<div class="sect">
+
+	<p>For each parsing tree node, Hapy dumps the corresponding rule
+	identifier (see the "Parsing trace" <a
+	href="#sect-interp-parse">Section</a> for details). For non-leaf
+	nodes, the number of kids or subtrees is printed in parathesis.  The
+	line ends with the node image prefix (escaped as discussed in the
+	"Parsing trace" <a href="#sect-interp-parse">Section</a>). Kids, if
+	any, are dumped on the next line(s) with increased indentation.</p>
+
+	<p>Here is a complete parsing tree produced by the <a
+	href="calc.cc"><span class="filename">docs/calc.cc</span></a> grammar
+	and <span class="codesample">"1+1;"</span> input.</p>
+
+	<pre class="codesample">
+grammar#r103(1): 1+1;\n
+  r-110(2): 1+1;\n
+    expression#r101(1): 1+1
+      r-114(3): 1+1
+        expression#r101(1): 1
+          number#r102: 1
+        _+#r-112: +
+        expression#r101(1): 1
+          number#r102: 1
+    _;#r-109: ;
+	</pre>
+
+	<p>Parsing tree nodes produced by implicit trimming rules are not
+	shown and are not visible when traversing the parsing tree with
+	user-level interfaces.</p>
+
+	</div>
+</div>
+
+<a name="sect-context"></a><h2>Context-sensitive Debugging</h2>
+
+<div class="sect">
+
+	<p>Using Actions, it is simple to enable and/or disable debugging
+	depending on what rules are being tried. For example, the following
+	code enables debugging when a particular rule has matched:</p>
+
+	<pre class="codesample">
+	using namespace Hapy;
+
+	static
+	void TurnDebuggingOn(Action::Params *) {
+		Debug(true);
+	}
+	...
+
+	Rule particular;
+	particular = ...;
+	particular.ptr_action(&amp;TurnDebuggingOn);
+	</pre>
+
+	<p>Please see the <a href="actions.html">Actions</a> page for a
+	discussion and more examples.</p>
+
+</div>
+
+</sisy:page>

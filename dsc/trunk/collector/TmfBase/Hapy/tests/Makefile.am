@@ -1,16 +1,20 @@
 ## Process this file with automake to produce Makefile.in
 
 TESTS = \
-	tests
+	tests-sp \
+	tests-ep
 
 check_PROGRAMS = \
 	TestMaker \
-	tests \
+	tests-sp \
+	tests-ep \
+	\
 	SpeedTest \
 	xmlgen
 
 TestMaker_SOURCES = \
-	TestMaker.cc
+	TestMaker.cc \
+	TestCase.h
 
 xmlgen_SOURCES = \
 	xmlgen.c
@@ -22,17 +26,26 @@ EXTRA_DIST = \
 	tests.cfg \
 	SpeedTest.sh
 	
-nodist_tests_SOURCES = \
-	tests.cc
+nodist_tests_sp_SOURCES = \
+	tests-sp.cc
+
+nodist_tests_ep_SOURCES = \
+	tests-ep.cc
 
 MOSTLYCLEANFILES = \
-	tests.cc
+	tests-sp.cc \
+	tests-ep.cc
 
-tests.cc: TestMaker $(srcdir)/tests.cfg
-	./TestMaker < $(srcdir)/tests.cfg > ./tests.cc
+tests-sp.cc: TestMaker TestCase.h $(srcdir)/tests.cfg
+	./TestMaker --share-parsers < $(srcdir)/tests.cfg > ./tests-sp.cc
+
+tests-ep.cc: TestMaker TestCase.h $(srcdir)/tests.cfg
+	./TestMaker --encapsulate-parsers < $(srcdir)/tests.cfg > ./tests-ep.cc
 
 LDADD = \
 	-L$(top_builddir)/src -lHapy
 
-INCLUDES = -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
+AM_CPPFLAGS = \
+	-I$(top_srcdir)/src/include -I$(top_builddir)/src/include \
+	-I$(top_srcdir)/tests
 

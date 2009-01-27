@@ -22,7 +22,6 @@ int main() {
 	rCode.trim(*space_r);
 	rToken.verbatim(true);
 	rToken.leaf(true);
-	rToken.action(0);
 
 	string content;
 	char c;

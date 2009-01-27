@@ -4,7 +4,7 @@
 #define HAPY_BUFFER__H
 
 #include <Hapy/Rules.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 #include <Hapy/IosFwd.h>
 #include <vector>
 
@@ -18,13 +18,14 @@ class Buffer {
 		Buffer();
 		Buffer(const string &aData);
 
+		void reset();
 		void moveOn();
 
 		bool empty() const { return pos() >= theData.size(); }
 		size_type contentSize() const { return theData.size() - pos(); }
 		string content(const size_type off = 0) const;
 		char peek(const size_type off = 0) const { return theData[pos() + off]; }
-		bool startsWith(const string &s, const size_type off = 0) const;
+		bool startsWith(const string &s, bool &needMore) const;
 		bool sawEnd() const { return didSeeEnd; }
 
 		void append(const string &aData);
@@ -33,8 +34,6 @@ class Buffer {
 		void advance(size_type delta);
 		void backtrack(size_type delta);
 		void backtrackTo(size_type pos);
-
-		void reset();
 
 		string allContent() const { return theData; }
 		string parsedContent() const { return theData.substr(0, pos()); }

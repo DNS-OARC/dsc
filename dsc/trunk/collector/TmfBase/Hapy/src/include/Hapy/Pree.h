@@ -3,11 +3,11 @@
 #ifndef HAPY_PREE__H
 #define HAPY_PREE__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 #include <Hapy/Area.h>
 #include <Hapy/RuleId.h>
 #include <Hapy/PreeKids.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 #include <Hapy/IosFwd.h>
 
 namespace Hapy {
@@ -15,10 +15,9 @@ namespace Hapy {
 // a node of a parse result tree
 class Pree {
 	public:
-		typedef PreeKids Kids;
-		typedef Kids::size_type size_type;
-		typedef DerefIterator<Kids::iterator> iterator;
-		typedef DerefIterator<Kids::const_iterator> const_iterator;
+		typedef unsigned int size_type;
+		typedef PreeKidsIterator<Pree> iterator;
+		typedef PreeKidsIterator<const Pree> const_iterator;
 
 	public:
 		Pree();
@@ -41,16 +40,24 @@ class Pree {
 		void rawRid(const RuleId &aRid);
 		size_type rawCount() const;
 		size_type rawDeepCount() const;
+		const Pree &top() const;
 		const Pree &backChild() const;
 		const Pree &rawChild(size_type idx) const;
 		Pree &backChild();
 		Pree &newChild();
-		void popChild();
-		bool leftRecursion() const;
-		bool emptyLoop() const;
+		void popChild();  // extracts and destroys the last child
+		void rawPopChild(Pree *kid); // extracts specified child
+		void pushChild(Pree *kid); // adds the last child
+		Pree *popSubTree(); // extracts this->down and shapes it as a tree
+
+		bool emptyHorizontalLoop() const;
+		bool emptyVerticalLoop() const;
+		size_type expectedMinSize() const;
 		void commit();
 		const string &rawImage() const;
 		void rawImage(const string &anImage);
+		const_iterator rawBegin() const;
+		const_iterator rawEnd() const;
 
 		std::ostream &print(std::ostream &os) const;
 		std::ostream &print(std::ostream &os, const string &pfx) const;
@@ -59,30 +66,42 @@ class Pree {
 		// maybe slow; not optimized yet!
 		Pree &operator =(const Pree &p);
 
+	protected:
+		inline static void InsertAfter(Pree *p1, Pree *p2);
+		inline static void HalfConnect(Pree *p1, Pree *p2);
+
 	public:
 		Area match;
-		size_type idata;         // used by parsing rules to keep state
-		Pree *parent;            // temporary value to kill infinite recursion
-		Pree *nextFarmed;        // temporary value for farmed nodes
+
+		Pree *up;        // parent or null
+		Pree *down;      // kids or null
+		Pree *left;      // previous sibling or self
+		Pree *right;     // next sibling or self
+		size_type kidCount; // number of children
+
+		size_type idata;   // used by parsing rules to keep state
+		size_type minSize; // used by parsing rules to keep state
 
 		bool implicit;
 		bool leaf;
 
 	protected:
+		bool deeplyImplicit() const;
 		void clearKids();
 		void kidlessAssign(const Pree &p);
 		void copyKids(const Pree &source);
 		void aboutToModify() {}
 		const Pree &coreNode() const;
-		const Pree *findSameUp(const Pree &n) const;
+
 		bool sameState(const Pree &n) const;
+		bool sameSegment(const Pree *them, bool &exhausted) const;
 
 	private:
-		RuleId theRid;
-		Kids theKids;
+		RuleId theRid;  
 };
 
 template <class Function>
+inline
 void for_some(const Pree &n, const RuleId &rid, Function f) {
 	for (Pree::const_iterator i = n.begin(); i < n.end(); ++i) {
 		if (i->rid() == rid)
@@ -92,7 +111,19 @@ void for_some(const Pree &n, const RuleId &rid, Function f) {
 	}
 }
 
+inline
+const Pree *find_first(const Pree &n, const RuleId &rid) {
+	for (Pree::const_iterator i = n.begin(); i < n.end(); ++i) {
+		if (i->rid() == rid)
+			return &(*i);
+		if (const Pree *p = find_first(*i, rid))
+			return p;
+	}
+	return 0;
+}
+
 template <class Function>
+inline
 const Pree *find_if(const Pree &n, Function f) {
 	for (Pree::const_iterator i = n.begin(); i < n.end(); ++i) {
 		if ((f)(*i))
@@ -102,6 +133,21 @@ const Pree *find_if(const Pree &n, Function f) {
 	}
 	return 0;
 }
+
+inline
+void Pree::HalfConnect(Pree *p1, Pree *p2) {
+	p1->right = p2; // ignores p1->left
+	p2->left = p1;  // ignores p2->right
+}
+
+inline
+void Pree::InsertAfter(Pree *p1, Pree *p2) {
+	Pree *p4 = p1->right;
+	Pree *p3 = p2->left;
+	HalfConnect(p1, p2);
+	HalfConnect(p3, p4);
+}
+
 
 } // namespace
 

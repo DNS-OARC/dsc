@@ -260,7 +260,6 @@ ParseConfig(const char *fn)
 		rMatchVlan |
 		rQnameFilter
 	) >> end_r;
-	rConfig.Debug(false);
 
 	// trimming - do not allow whitespace INSIDE these objects
 	rConfig.trim(*(space_r | rComment));

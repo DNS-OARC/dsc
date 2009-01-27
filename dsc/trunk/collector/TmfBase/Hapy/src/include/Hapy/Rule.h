@@ -3,11 +3,10 @@
 #ifndef HAPY_RULE__H
 #define HAPY_RULE__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 #include <Hapy/Result.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 #include <Hapy/IosFwd.h>
-#include <Hapy/FunAction.h>
 #include <Hapy/RulePtr.h>
 
 namespace Hapy {
@@ -15,14 +14,12 @@ namespace Hapy {
 class Buffer;
 class Pree;
 
+class Action;
 class Algorithm;
 
 // user-level grammar rule interface
 // supports user-level semantics of rule creation, assignment, and manipulation
 class Rule {
-	public:
-		static void Debug(bool doIt);
-
 	public:
 		Rule();
 		Rule(const RulePtr &aBase);
@@ -33,14 +30,16 @@ class Rule {
 		Rule(char c); // converts to char_r
 		~Rule();
 
+		bool known() const;
 		const RuleId &id() const;
 
 		void committed(bool be);
 		void trim(const Rule &skipper);
 		void verbatim(bool be);
 		void leaf(bool be);
-		void action(const Action *a);
-		void ptr_action(ActionPtr p);
+
+		void action(const Action &a);            // modifies this rule
+		Rule operator [](const Action &a) const; // produces a new rule
 
 		ostream &print(ostream &os) const;
 
@@ -54,6 +53,9 @@ class Rule {
 
 	private:
 		Rule(int); // to prevent "Rule r = 5;" from using Rule(char)
+
+		void init(const RuleId &rid);
+		void assign(RuleBase *b);
 
 	protected:
 		RulePtr theBase;

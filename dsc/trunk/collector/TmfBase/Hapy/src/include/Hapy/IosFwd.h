@@ -3,7 +3,7 @@
 #ifndef HAPY_IOS_FWD__H
 #define HAPY_IOS_FWD__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 #include <iosfwd>
 
 namespace Hapy {

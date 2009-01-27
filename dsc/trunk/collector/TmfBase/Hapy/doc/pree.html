@@ -1,0 +1,131 @@
+<sisy:page class="docs"
+        title="Hapy Parsing Tree API" >
+
+	<p>Hapy parsers produce parsing trees as output. To interpret
+	successfully parsed content, your code needs to interpret the parsing
+	tree.</p>
+
+	<p>A node of a Hapy parsing trees is a C++ object of the Pree class
+	(Pree stands for Parsing tREE). Pree class is declared in
+	&lt;Hapy/Pree.h&gt;.  A node stores a rule identifier corresponding to
+	the parsing rule that produced the node. A node provides access to its
+	"image", a substring of the input that the identified parsing rule
+	matched. Finally, node children (sub-trees) can be accessed
+	individually by their position or rule id as well as iterated
+	sequentially using STL-standard begin/end methods.</p>
+
+	<p>Trimmed input on the "left" and on the "right" of the matched input
+	is not included in the node image and is not included in node
+	children.  There is a "raw" node interface to access trimmed input and
+	kids, but you are unlikely to need that.</p>
+
+	<table class="builtin" border="1" cellpadding="3" cellspacing="0">
+
+		<tr class="heading">
+			<th>Pree class member</th>
+			<th>Semantics</th>
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile">RuleId <span class="concept">rid</span>()</td>
+
+			<td class="semantics">identifier of the parsing rule that created
+			the node; <span class="codesample">RuleId</span> objects can be
+			stored and compared for equality with, for example, the result of
+			a <span class="codesample">Rule::id()</span> call.
+			
+			</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">string <span
+			class="concept">image</span>()</td>
+
+			<td class="semantics">substring matched by the parsing rule that
+			created the node</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile">int <span class="concept">count</span>()</td>
+
+			<td class="semantics">number of children (subtrees); leaf nodes
+			would always have zero kids count</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">const_iterator <span class="concept">begin</span>()</td>
+
+			<td class="semantics">left-most child position, for left-to-right
+			tree traversal</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile">const_iterator <span class="concept">end</span>()</td>
+
+			<td class="semantics">right-most child position plus one, for
+			left-to-right tree traversal</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">const Pree &<span class="concept">operator []</span>(int idx)</td>
+
+			<td class="semantics">child node at a given position</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile">const Pree &<span class="concept">find</span>(int rid)</td>
+
+			<td class="semantics">first child node produced by a rule with a
+			given identifier; this method does not search any nodes other than
+			the immediate children</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">ostream &<span class="concept">print</span>(ostream &)</td>
+
+			<td class="semantics">dumps node structure for debugging purposes;
+			node rule identifier, number of kids, and raw image are printed,
+			followed by indented children</td>
+
+		</tr>
+
+<!--
+		<tr class="even">
+
+			<td class="profile"><span class="concept"></span>()</td>
+
+			<td class="semantics"></td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept"></span>()</td>
+
+			<td class="semantics"></td>
+
+		</tr>
+-->
+
+	</table>
+
+	<p>The parsing tree interface is likely to evolve with time. For
+	example, adding rule-specific node data may be needed.</p>
+
+</sisy:page>
+

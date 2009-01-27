@@ -1,21 +1,24 @@
 /* Hapy is a public domain software. See Hapy README file for the details. */
 
 #include <Hapy/Assert.h>
-#include <Hapy/Pree.h>
+#include <Hapy/PreeFarm.h>
 #include <Hapy/IoStream.h>
+#include <Hapy/Pree.h>
 
 #include <functional>
 #include <algorithm>
 
 
-Hapy::Pree::Pree():	idata(0), parent(0), nextFarmed(0),
-	implicit(false), leaf(false) {
-	// clear();
+Hapy::Pree::Pree():	up(0), down(0), left(0), right(0), kidCount(0),
+	idata(0), minSize(0), implicit(false), leaf(false) {
+	left = right = this;
 }
 
 // parent and nextFramed are not copied
-Hapy::Pree::Pree(const Pree &p): idata(p.idata), parent(0), nextFarmed(0),
+Hapy::Pree::Pree(const Pree &p): up(0), down(0), left(0), right(0), kidCount(0),
+	idata(p.idata), minSize(p.minSize), 
 	implicit(p.implicit), leaf(p.leaf), theRid(p.theRid) {
+	left = right = this;
 	copyKids(p);
 }
 
@@ -25,11 +28,18 @@ Hapy::Pree::~Pree() {
 
 void Hapy::Pree::clear() {
 	match.clear();
+
+	up = 0;
+	clearKids();
+	// these should already be correct; we are just trying to be robust here
+	left = right = this;
+	down = 0;
+	kidCount = 0;
+
 	idata = 0;
-	parent = nextFarmed = 0;
+	minSize = 0;
 	implicit = leaf = false;
 	theRid.clear();
-	clearKids();
 }
 
 Hapy::Pree &Hapy::Pree::operator =(const Pree &p) {
@@ -42,47 +52,58 @@ Hapy::Pree &Hapy::Pree::operator =(const Pree &p) {
 }
 
 void Hapy::Pree::clearKids() {
-	for (Kids::iterator i = theKids.begin(); i != theKids.end(); ++i)
-		PreeFarm::Put(*i);
-	theKids.clear();
+	// we can only put well-formed trees and down may not be well-formed
+	if (down) 
+		PreeFarm::Put(popSubTree());
 }
 
 void Hapy::Pree::copyKids(const Pree &p) {
-	for (Kids::const_iterator i = p.theKids.begin(); i != p.theKids.end(); ++i)
-		newChild() = *(*i);
+	Assert(!down);
+	for (const_iterator i = p.rawBegin(); i != p.rawEnd(); ++i)
+		newChild() = *i;
 }
 
 const Hapy::Pree &Hapy::Pree::coreNode() const {
 	if (implicit) {
 		Should(!leaf);
-		Assert(theKids.size() > 0);
-		if (!theKids[0]->implicit)
-			return *theKids[0];
-		Assert(theKids.size() > 1);
-		if (!theKids[1]->implicit)
-			return *theKids[1]; 
-		Assert(false);
+		const_iterator i = rawBegin();
+		Assert(i != rawEnd());
+		if (!i->implicit)
+			return *i;
+		++i;
+		Assert(i != rawEnd());
+		return i->coreNode();
 	}
 	return *this;
+}
+
+bool Hapy::Pree::deeplyImplicit() const {
+	if (!implicit)
+		return false;
+	for (const_iterator i = rawBegin(); i != rawEnd(); ++i) {
+		if (!i->deeplyImplicit())
+			return false;
+	}
+	return true;
 }
 
 const Hapy::RuleId &Hapy::Pree::rid() const {
 	return coreNode().theRid;
 }
 
-Hapy::Pree::Kids::size_type Hapy::Pree::count() const {
+Hapy::Pree::size_type Hapy::Pree::count() const {
 	const Pree &c = coreNode();
 	return (leaf || c.leaf) ? 0 : c.rawCount();
 }
 
 Hapy::Pree::const_iterator Hapy::Pree::begin() const {
 	const Pree &c = coreNode();
-	return (leaf || c.leaf) ? c.end() : const_iterator(c.theKids.begin());
+	return (leaf || c.leaf) ? c.rawEnd() : c.rawBegin();
 }
 
 Hapy::Pree::const_iterator Hapy::Pree::end() const {
-	Kids::const_iterator e = coreNode().theKids.end();
-	return const_iterator(e);
+	const Pree &c = coreNode();
+	return c.rawEnd();
 }
 
 const Hapy::Pree &Hapy::Pree::operator [](size_type idx) const {
@@ -117,81 +138,169 @@ void Hapy::Pree::rawRid(const RuleId &aRid) {
 	theRid = aRid;
 }
 
-Hapy::Pree::Kids::size_type Hapy::Pree::rawCount() const {
-	return theKids.size();
+Hapy::Pree::size_type Hapy::Pree::rawCount() const {
+	return kidCount;
 }
 
-Hapy::Pree::Kids::size_type Hapy::Pree::rawDeepCount() const {
-	Hapy::Pree::Kids::size_type count = rawCount();
-	for (Kids::const_iterator i = theKids.begin(); i != theKids.end(); ++i)
-		count += (*i)->rawDeepCount();
+Hapy::Pree::size_type Hapy::Pree::rawDeepCount() const {
+	Hapy::Pree::size_type count = rawCount();
+	for (const_iterator i = rawBegin(); i != rawEnd(); ++i)
+		count += i->rawDeepCount();
 	return count;	
 }
 
+Hapy::Pree::const_iterator Hapy::Pree::rawBegin() const {
+	return const_iterator(down, 0);
+}
+
+Hapy::Pree::const_iterator Hapy::Pree::rawEnd() const {
+	return const_iterator(down, kidCount);
+}
+
 const Hapy::Pree &Hapy::Pree::rawChild(size_type idx) const {
-	Assert(0 <= idx && idx < rawCount());
-	return *theKids[idx];
+	// should we cache the last lookup, trading space for speed?
+	Assert(down);
+	Assert(0 <= idx && idx < kidCount);
+	const Pree *res = down;
+	if (idx <= kidCount/2) {
+		for (; idx > 0; --idx)
+			res = res->right;
+	} else {
+		for (idx = kidCount - idx; idx > 0; --idx)
+			res = res->left;
+	}
+	Assert(res);
+	return *res;
+}
+
+const Hapy::Pree &Hapy::Pree::top() const {
+	return up ? up->top() : *this;
 }
 
 const Hapy::Pree &Hapy::Pree::backChild() const {
-	Assert(rawCount());
-	return *theKids.back();
+	Assert(down);
+	return *down->left;
 }
 
 Hapy::Pree &Hapy::Pree::backChild() {
-	Assert(rawCount());
-	aboutToModify();
-	return *theKids.back();
+	Assert(down);
+	return *down->left;
 }
 
 Hapy::Pree &Hapy::Pree::newChild() {
-	aboutToModify();
-	theKids.push_back(PreeFarm::Get());
-	Pree &n = *theKids.back();
-	n.parent = this;
-	return n;
+	Pree *p = PreeFarm::Get();
+	pushChild(p);
+	return *p;
 }
 
 void Hapy::Pree::popChild() {
-	Assert(rawCount());
-	aboutToModify();
-	PreeFarm::Put(theKids.back());
-	theKids.pop_back();
+	Pree *kid = down->left;
+	rawPopChild(kid);
+	PreeFarm::Put(kid);
 }
 
-bool Hapy::Pree::leftRecursion() const {
-	return rawRid().known() && parent && parent->findSameUp(*this) != 0;
+void Hapy::Pree::rawPopChild(Pree *kid) {
+	Assert(kid && kid != this && kid->up == this);
+	Assert(down);
+	Assert(kidCount > 0);
+	if (--kidCount <= 0) {
+		Should(down == kid);
+		down = 0;
+	} else {
+		if (down == kid)
+			down = kid->right;
+		InsertAfter(kid->left, kid->right);
+		kid->left = kid->right = kid;
+	}
 }
 
-bool Hapy::Pree::emptyLoop() const {
+// extracts this->down and shapes it as a tree
+Hapy::Pree *Hapy::Pree::popSubTree() {
+	Assert(down);
+
+	// reshape kids list into a tree if we have more than one kid
+	Pree *top = down;
+	if (top->left != top) { // not a well-formed tree
+		Should(kidCount > 1);
+		Pree *kids = down->left;
+		HalfConnect(down->left, down->right); // closed kids loop
+		top->left = top->right = top; // made an isolated top
+		// note that kids "ups" are wrong now, but Farm does not care
+		if (top->down) {
+			top->kidCount += (kidCount - 1);
+			InsertAfter(top->down->left, kids);
+		} else {
+			top->kidCount = (kidCount - 1);
+			top->down = kids;
+		}
+	}
+
+	down = 0;
+	kidCount = 0;
+
+	return top;
+}
+
+void Hapy::Pree::pushChild(Pree *p) {
+	Assert(p->left == p); // or we would be pushing more than one kid
+	if (down)
+		InsertAfter(down->left, p);
+	else
+		down = p;
+	p->up = this;
+	++kidCount;
+}
+
+bool Hapy::Pree::emptyHorizontalLoop() const {
 	if (rawCount() <= 1)
 		return false;
 	const Pree &last = backChild();
-	typedef Kids::const_reverse_iterator CRI;
-	for (CRI i = ++theKids.rbegin(); i != theKids.rend(); ++i) {
-		if ((*i)->match.start() < last.match.start()) // progress made
+	// emulate reverse_iterator
+	for (const Pree *i = down->left->left; i; i = i->left) {
+		if (i->match.start() < last.match.start()) // progress made
 			return false;
-		if ((*i)->sameState(last))
+		if (i->sameState(last))
+			return true;
+		if (i == down)
+			break;
+	}
+	return false;
+}
+
+bool Hapy::Pree::emptyVerticalLoop() const {
+	for (const Pree *i = up; i; i = i->up) {
+		if (i->minSize > 0) // accumulated debt (a form of progress)
+			return false;
+		if (i->match.start() < this->match.start()) // parsed something
+			return false;
+		if (i->rawRid() == rawRid()) // same rule, no progress
 			return true;
 	}
 	return false;
 }
 
-const Hapy::Pree *Hapy::Pree::findSameUp(const Pree &n) const {
-	Assert(parent != this);
-	Should(&n != this);
-	if (rawCount() == 1 && sameState(n))
-		return this;
-	else
-	if (parent)
-		return parent->findSameUp(n);
-	else
-		return 0;
+Hapy::Pree::size_type Hapy::Pree::expectedMinSize() const {
+	return minSize + (up ? up->expectedMinSize() : 0);
 }
 
 bool Hapy::Pree::sameState(const Pree &n) const {
 	return n.rawRid() == rawRid() &&
 		n.match.start() == match.start() && n.idata == idata;
+}
+
+bool Hapy::Pree::sameSegment(const Pree *them, bool &exhausted) const {
+	exhausted = false;
+	const Pree *us = up;
+	while (us && them) {
+		if (!us->sameState(*them))
+			return false; // found different path component
+		if (us->sameState(*this))
+			return true; // both reached the end of the segment
+		us = us->up;
+		them = them->up;
+	}
+	exhausted = true;
+	return false; // one segment is shorter or both too short
 }
 
 // optimization: remove empty trimming and unwanted kids
@@ -203,38 +312,40 @@ void Hapy::Pree::commit() {
 	}
 
 	// commit kids and remove empty implicit kids
-	// cannot use an iterator because we want to erase stuff in the middle
-	// unfortunately, vector storage is inefficient for this operation
-	for (Kids::size_type i = 0; i < theKids.size();) {
-		Pree *kid = theKids[i];
-		if (kid->implicit && kid->match.size() == 0) {
-			theKids.erase(theKids.begin() + i);
+	for (Pree *kid = down, *next = 0; kid; kid = next) {
+		next = kid->right;
+		if (next == down)
+			next = 0;
+		if (kid->match.size() == 0 && kid->deeplyImplicit()) {
+			rawPopChild(kid);
 			PreeFarm::Put(kid);
 		} else {
 			kid->commit(); // assume that commit does not change match.size
-			++i;
 		}
 	}
 
 	// if an implicit node has only core kid left, replace it with the kid
-	if (implicit && theKids.size() == 1) {
-		Pree *c = theKids[0];
+	while (implicit && rawCount() == 1) {
+		Pree *c = down;
+		Assert(!(c->down == 0 && c->kidCount > 0));
 		// be careful to move (not to copy) c and not destroy c's kids
-		Should(!c->implicit);
 		Should(match == c->match);
 		kidlessAssign(*c);
-		theKids = c->theKids; // raw
-		c->theKids.clear(); // raw
-		// note: c kids' parent points to c but we do not care for now
+		kidCount = c->kidCount;
+		c->kidCount = 0;
+		down = c->down; // raw
+		c->down = 0; // raw
+		// XXX: c kids' "up" points to c, is that bad? should caller s/this/c/?
 		PreeFarm::Put(c);
 	}
 }
 
 // assign everything but leave kids alone
 void Hapy::Pree::kidlessAssign(const Pree &p) {
-	// parent and nextFramed are not assigned
+	// up, down, and kidCount
 	match = p.match;
 	idata = p.idata;
+	minSize = p.minSize;
 	implicit = p.implicit;
 	leaf = p.leaf;
 	theRid = p.theRid;
@@ -250,7 +361,7 @@ Hapy::ostream &Hapy::Pree::print(ostream &os) const {
 }
 
 Hapy::ostream &Hapy::Pree::print(ostream &os, const string &pfx) const {
-	Kids::size_type c = count();
+	size_type c = count();
 	os << pfx << rid();
 	if (c > 0)
 		os << '(' << c << ')';
@@ -264,7 +375,10 @@ Hapy::ostream &Hapy::Pree::print(ostream &os, const string &pfx) const {
 }
 
 Hapy::ostream &Hapy::Pree::rawPrint(ostream &os, const string &pfx) const {
-	os << pfx << rawRid() << " (" << rawCount() << "): '" << match << "'";
+	os << pfx << rawRid() << " (" << rawCount() << "): '" << match << "'" <<
+		" at " << match.start();
+	if (minSize > 0)
+		os << " msize: " << minSize;
 	if (implicit)
 		os << " implicit";
 	if (leaf)
@@ -272,8 +386,8 @@ Hapy::ostream &Hapy::Pree::rawPrint(ostream &os, const string &pfx) const {
 	os << endl;
 	if (rawCount()) {
 		const string p = pfx + "  ";
-		for (Kids::const_iterator i = theKids.begin(); i != theKids.end(); ++i)
-			(*i)->rawPrint(os, p);
+		for (const_iterator i = rawBegin(); i != rawEnd(); ++i)
+			i->rawPrint(os, p);
 	}
 	return os;
 }

@@ -1,0 +1,85 @@
+--- xmlgen-orig.c	Sun Aug 11 02:30:22 2002
++++ xmlgen.c	Fri Jan  9 14:53:16 2004
+@@ -407,6 +407,7 @@
+ int stackatt=0;
+ int split=0;
+ int splitcnt=0;
++int timing=0;
+ int (*xmlprintf)(FILE *stream, const char *format, ...)=fprintf;
+ void OpenOutput()
+ {
+@@ -604,6 +605,16 @@
+     if ((od->att[0].name[0]) && !(od->elm[0].id!=0)) return;
+     xmlprintf(xmlout,"</%s>\n",od->name);
+ }
++
++/* never returns */
++void Finish()
++{
++    fclose(xmlout);
++    if (timing)
++        fprintf(stderr,"Elapsed time: %.3f sec\n",timediff()/1E6);
++    exit(0);
++}
++
+ void SplitDoc()
+ {
+     int i;
+@@ -613,6 +624,8 @@
+             indent_level-=indent_inc;
+             ClosingTag(stack[i]);
+         }
++    if (split && xmlout==stdout)
++	Finish();
+     OpenOutput();
+     for (i=0; i<oldstackdepth; i++)
+         {
+@@ -658,7 +671,7 @@
+             }
+     indent_level-=indent_inc;
+     ClosingTag(od);
+-    if (split && (od->type&0x20 || (od->type&0x40 && splitcnt++>split)))
++    if (split && (od->type&0x20 || (od->type&0x40 && splitcnt++>=split)))
+         splitnow=1;
+     od->flag--;
+     ((void) 0);
+@@ -741,7 +754,7 @@
+ }
+ int main(int argc, char **argv)
+ {
+-    int opt,stop=0,timing=0,dumpdtd=0;
++    int opt,stop=0,dumpdtd=0;
+     extern char *pmoptarg;
+     int document_type=1;
+     ObjDesc *root;
+@@ -795,7 +808,7 @@
+     if (dumpdtd)
+         {
+             printdtd();
+-            goto wrapup;
++            Finish();
+         }
+     AlignObjs();
+     root=objs+1;
+@@ -808,11 +821,7 @@
+     if (InitHook) InitHook();
+     Preamble(document_type);
+     GenSubtree(root);
+-  wrapup:
+-    fclose(xmlout);
+-    if (timing)
+-        fprintf(stderr,"Elapsed time: %.3f sec\n",timediff()/1E6);
+-    return 0;
++    Finish();
+ }
+ char *pmoptarg;
+ int pmoptind;
+@@ -7263,7 +7272,7 @@
+             break;
+         case PHONE:
+         {
+-            int contry=ignuin(1,99);
++            int country=ignuin(1,99);
+             int area=ignuin(10,999);
+             int number=ignuin(123456,98765432);
+             xmlprintf(xmlout,"+%d (%d) %d",country,area,number);

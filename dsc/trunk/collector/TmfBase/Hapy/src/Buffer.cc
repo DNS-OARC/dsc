@@ -7,13 +7,21 @@
 #include <Hapy/PrettyPrint.h>
 
 
-// keep in sync with moveOn
+// keep in sync with moveOn and reset
 Hapy::Buffer::Buffer(): thePos(0), theMaxProgress(0), didSeeEnd(false) {
 }
 
-// keep in sync with moveOn
+// keep in sync with moveOn and reset
 Hapy::Buffer::Buffer(const string &aData): theData(aData),
 	thePos(0), theMaxProgress(0), didSeeEnd(false) {
+}
+
+// keep in sync with ctors
+void Hapy::Buffer::reset() {
+	theData = string();
+	thePos = 0;
+	theMaxProgress = 0;
+	didSeeEnd = false;
 }
 
 // keep in sync with ctors
@@ -28,8 +36,16 @@ Hapy::string Hapy::Buffer::content(const size_type off) const {
 	return theData.size() ? theData.substr(pos() + off) : theData;
 }
 
-bool Hapy::Buffer::startsWith(const string &s, const size_type off) const {
-	return string_compare(theData, pos() + off, s.size(), s) == 0;
+bool Hapy::Buffer::startsWith(const string &pfx, bool &needMore) const {
+	const size_type csize = contentSize();
+	if (csize < pfx.size()) {
+		needMore = !sawEnd() &&
+			(csize <= 0 || string_compare(theData, pos(), csize, pfx) == 0);
+		return false;
+	} else {
+		needMore = false;
+		return string_compare(theData, pos(), pfx.size(), pfx) == 0;
+	}
 }
 
 void Hapy::Buffer::append(const string &moreData) {

@@ -4,21 +4,27 @@
 #define HAPY_ALGORITHM__H
 
 #include <Hapy/Result.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 #include <Hapy/IosFwd.h>
+#include <Hapy/SizeCalc.h>
+#include <Hapy/DeepPrint.h>
 #include <Hapy/RulePtr.h>
+#include <list>
 
 namespace Hapy {
 
 class Buffer;
 class Pree;
+class RuleCompFlags;
+class First;
 
-// rule algorithm interface to build parsing tree while advancing input
-// a parent of all rule implementations
+// parsing algorithm interface
+// builds parsing tree while advancing input
 class Algorithm {
 	public:
 		typedef Result::StatusCode StatusCode;
 		typedef string::size_type size_type;
+		typedef std::list<RulePtr> CRules;
 
 	public:
 		virtual ~Algorithm() {}
@@ -38,12 +44,20 @@ class Algorithm {
 		// algorithm has no subrules
 		virtual bool terminal(string *name = 0) const = 0;
 
-		virtual bool compile(const RulePtr &itrimmer) = 0;
+		virtual bool compile(const RuleCompFlags &flags) = 0;
+		virtual void collectRules(CRules &rules);
+
+		virtual SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass) = 0;
+
+		// FIRST calculation logic
+		virtual void calcFullFirst() = 0;
+		virtual bool calcPartialFirst(First &first, Pree &pree) = 0;
 
 		virtual ostream &print(ostream &os) const;
+		virtual void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 	protected:
-		bool compileSubRule(RulePtr &r, const RulePtr &trimmer);
+		bool compileSubRule(RulePtr &r, const RuleCompFlags &flags);
 };
 
 } // namespace

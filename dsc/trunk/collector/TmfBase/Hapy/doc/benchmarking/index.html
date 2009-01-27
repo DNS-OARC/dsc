@@ -1,0 +1,410 @@
+<sisy:page class="L1"
+        title="Hapy Benchmarking">
+
+<p style="padding: 1em; background-color: #DBE6DE; color: black; border: thin
+solid; "><em style="color: red; font-size: large;">Warning</em>: This page
+contains preliminary results that are likely to change as development teams
+review and polish their parsers and common methodology. The current intent of
+this page is <em>not</em> to provide reliable results but to facilitate
+production of future high quality results. For example, performance of parsers
+is likely to improve significantly and new parsers may be added to the set.
+Any help in that direction is more than welcome!</p>
+
+<p>This page discusses compares Hapy performance with performance of other
+parsers.</p>
+
+<h2>Table of Contents</h2>
+
+<ul style="margin-left: 2em; list-style: none;">
+	<li><a href="#sect-scope">Scope</a></li>
+	<li><a href="#sect-results">Results</a></li>
+	<li><a href="#sect-tests">Tests</a></li>
+	<li><a href="#sect-method">Methodology</a></li>
+	<li><a href="#sect-fair">Fairness</a></li>
+	<li><a href="#sect-contrib">Contributions</a></li>
+</ul>
+
+<a name="sect-scope"></a><h2>Scope</h2>
+
+<div class="sect">
+
+<p>Our goal is to measure and document parser performance. Performance is a
+factor when selecting a parser and when planning how to use it. There are many
+other important factors (e.g., programming language, parser interface,
+licensing, and support) that are outside of this page scope. The following
+performance metrics are measured:</p>
+
+<ul>
+
+	<li><p><span class="concept">Parsing performance</span>: How much time and
+	RAM it takes to parse given input. This metric is important for users of
+	an application that contains the parser. Parsing speed often affects
+	overall product throughput, feasibility of frequent runtime
+	reconfigurations, or the size and complexity of supported configuration
+	files.</p></li>
+
+	<li><p><span class="concept">Compilation performance</span>: How much time
+	and RAM it takes to compile the code that will parse input. Also, what is
+	the size of a stripped executable. Compilation speed is important for
+	developers. During active development phase, developers change grammar and
+	parser configuration a lot and, hence, have to recompile a lot. Executable
+	size is especially important for those working with/in embedded or small
+	footprint environments. These metrics are unrelated to parsing
+	speed.</p></li>
+
+	<li><p><span class="concept">Scale</span>: how do primary metrics
+	above change with input or grammar size?</p></li>
+
+</ul>
+
+<p>All of the above metrics may depend on the test environment. For example,
+operating system, compiler version, and parser configuration often have
+drastic affects on some measurements. When <a
+href="#sect-contrib">possible</a>, we provide results for different
+environments.</p>
+
+</div>
+
+<a name="sect-results"></a><h2>Results</h2>
+
+<div class="sect">
+
+<p>The results in this section are based on the <a
+href="#sect-tests">tests</a> and <a href="#sect-method">methodology</a>
+documented later in this document. The results are given separately for each
+<a href="#sect-tests">test</a>.  You may want to pay more attention to test(s)
+and environments that are relevant to your use cases.</p>
+
+<p>In tables, compilation memory usage is given based on Unix <span
+class="programname">time</span> tool output. Executable size is measured after
+stripping the binary from debugging symbols. Parsing speed and greed figures
+are averages over all corresponding tests (same parser, same environment,
+various input sizes).  Parsing speed is the total input size divided by the
+total parsing time (higher speed is better).  Parsing greed corresponds to the
+coefficient between memory required to parse input and input size (lower greed
+is better). Both derivative measurements do not depend much on input size,
+which makes them good invariants for summaries.</p>
+
+	<a name="sect-results-sxml"></a><h3>Simple XML</h3>
+
+	<div class="sect">
+
+	<p>The graphs below compare Hapy and Spirit parser performance
+	when generating a parsing tree for simple XML input of increasing
+	size.</p>
+
+	<p><img src="SimpleXmlPp.png" border="0"></p>
+
+	<p>And here is a summary table with compile-time measurements and average
+	parsing performance. Complete results are available <a
+	href="results.html">elsewhere</a>.</p>
+
+	<table class="results" border="1" cellpadding="3" cellspacing="0">
+		
+		<tr class="heading">
+			<th rowspan="2">Parser</th>
+			<th rowspan="2">Environment</th>
+			<th colspan="3">Compiling</th>
+			<th colspan="2">Parsing</th>
+		</tr>
+
+			<tr class="heading">
+				<th>time<br>(sec)</th>
+				<th>RAM<br>(MB)</th>
+				<th>exe<br>(KB)</th>
+
+				<th>speed<br>(KB/sec)</th>
+				<th>greed<br>(RAM/input)</th>
+			</tr>
+
+		<tr class="even">
+
+			<th rowspan="1">Hapy<br>0.0.3</th>
+
+			<td rowspan="1"><a href="environments.html#env-BSD1">BSD1</a></td>
+
+			<td rowspan="1" class="number">2</td>
+			<td rowspan="1" class="number">10</td>
+			<td rowspan="1" class="number">70</td>
+
+			<td class="number">268</td>
+			<td class="number">18</td>
+		</tr>
+
+		<tr class="odd">
+
+			<th rowspan="1">Spirit<br>1.6.1</th>
+
+			<td rowspan="1"><a href="environments.html#env-BSD1">BSD1</a></td>
+
+			<td rowspan="1" class="number">32</td>
+			<td rowspan="1" class="number">121</td>
+			<td rowspan="1" class="number">348</td>
+
+			<td class="number">50</td>
+			<td class="number">100</td>
+	</tr>
+
+	</table>
+
+	</div>
+
+</div>
+
+
+<a name="sect-tests"></a><h2>Tests</h2>
+
+<div class="sect">
+
+	<p>This section describes the tests used to benchmark parsers. For each
+	test, we define a grammar, valid input generation method, and
+	interpretation task. Parser correctness can be checked using invalid
+	input. Parsers that accept (instead of rejecting with a syntax error)
+	input that does not match the grammar are disqualified.</p>
+
+	<a name="sect-tests-sxml"></a><h3>Simple XML</h3>
+
+	<div class="sect">
+
+	<p>The Simple XML test requires that the parser creates a parsing tree for
+	an XML input based on a drastically simplified XML grammar.  The parser
+	must accept any valid input and must reject any invalid input. This is not
+	a "validating" parser test. Input validity is defined by the grammar.</p>
+
+	<pre class="codesample">
+	grammar = node*;
+	node = pi | element | text;
+	element = openElement node* closeElement | closedElement;
+
+	pi = "&lt;?" name (CHARACTER - "?&gt;")* "?&gt;";
+
+	openElement = "&lt;" name attr* "&gt;";
+	closeElement = "&lt;/" name "&gt;";
+	closedElement = "&lt;" name attr* "/&gt;";
+
+	text = (CHARACTER - '&lt;')+;
+
+	attr = name '=' value;
+	name = ALPHA (ALPHA | DIGIT | '_' | ':')*;
+	value = '"' (CHARACTER - '"')* '"';
+
+	- Grammar terminals can be separated by any amount of whitespace.
+	- Grammar terminals are "text", "name", "value", and all literals.
+	</pre>
+
+	<p>The grammar for this test only recognizes three kinds of XML nodes:
+	text, element, and a processor instruction. Element attributes and nested
+	elements are recognized. Entities, comments, and CDATA sections are not
+	recognized. Many (most?) XML documents or messages produced by machines
+	are limited to XML features recognized by this grammar. The complexity
+	of the grammar is comparable to simple configuration languages and
+	protocol messages.</p>
+
+	<p>The input for this test is generated by the <span
+	class="programname">tests/xmlgen</span> tool. The original generator
+	has been developed by the <a
+	href="http://www.xml-benchmark.org/">XMark</a> project. We have
+	slightly <a href="xmlgen.diff">modified</a> the original tool to fix a
+	bug and to generate output of a given size (these changes were sent
+	back to xmlgen authors).</p>
+
+	</div>
+
+	<a name="sect-tests-fxml"></a><h3>Full XML</h3>
+
+	<div class="sect">
+
+	<p>The Full XML test requires that the parser creates a parsing tree for
+	an XML input based on a full XML grammar.  The parser must accept any
+	valid input and must reject any invalid input. This is not a "validating"
+	parser test. Input validity is defined by the grammar.</p>
+
+	<p>The grammar for this test is based on the <a
+	href="http://www.jelks.nu/XML/xmlebnf.txt">XML EBNF</a> extracted from the
+	<a href="http://www.w3.org">W3C</a> XML 1.0 specification. All XML
+	constructs must be correctly recognized. Many (most?) XML documents
+	produced by humans use a nearly full set of XML "features". The complexity
+	of the grammar is comparable to scripting languages and protocol messages
+	of moderate-to-high complexity.</p>
+
+	<p>We are looking for sources of input data for this test. Suggestions are
+	welcome.</p>
+
+	</div>
+
+	<a name="sect-tests-ip"></a><h3>IP Packets</h3>
+
+	<div class="sect">
+
+	<p>The IP Packets test requires that the parser/interpreter looks at each
+	IP packet within a stream of IPv4 and IPv6 packets. The number of packets
+	matching some simple criteria (e.g., invalid checksum) must be returned as
+	a result of the test.</p>
+
+	<p>We are working on the details of this test. Suggestions are
+	welcome.</p>
+
+	</div>
+
+</div>
+
+<a name="sect-method"></a><h2>Methodology</h2>
+
+<div class="sect">
+
+	<p>This section outlines our testing methodology. The overall intent
+	behind our rules is to produce performance results meaningful to an
+	average user that is either making a choice among several parsers or is
+	doing capacity planning for a given parser. That average user is expected
+	to write their own parser for an unknown but similar grammar and use
+	case. Consequently, benchmark-specials of any kind and guru-level
+	optimizations or tricks are not allowed.</p>
+
+	<ul>
+
+		<li><p>No benchmark-special compilation options are used to built
+		executables. All tests executables are built with default parameters
+		for the parser package. When there is no clear default, compiler
+		options optimizing for speed are preferred to options reducing
+		executable size.</p></li>
+
+		<li><p>The resources to install the parser package itself are not
+		measured. Compilation resources are measured only for building the
+		parser executable from its source file(s). We assume that most users
+		do not modify the library or package often and, hence, would not care
+		how much time it would take to build.</p></li>
+
+		<li><p>Parsing speed is measured after the whole input is prefetched
+		into RAM to avoid dependency on I/O code implementation. We are
+		interested in pure parsing speed (i.e., the speed it takes to generate
+		parsing tree assuming all input is instantly available).</p></li>
+
+		<li><p>Parsing memory usage is measured <em>after</em> the input is
+		prefetched and <em>before</em> the parser is built (for runtime
+		generated parsers). It may make sense to report memory usage before
+		prefetching the input, but this initial memory footprint will not
+		depend on the size of the input and would probably be negligible
+		compared to the amount of memory it takes to produce a complete
+		parsing tree. The RAM to store original (prefetched) input is not
+		measured.</p></li>
+
+		<li><p>The grammar and parsing tree properties must follow typical
+		parser usage style and documentation advice oriented to a
+		novice-to-midlevel user. No benchmark-special or guru-level
+		optimizations and tricks are allowed. We want to report performance
+		that an average user should expect if they implement a similar grammar
+		from scratch.</p></li>
+
+		<li><p>Parsers that accept some invalid input or reject some valid
+		input (for any reason other than resource exhaustion) are
+		disqualified. Input validity is determined by published EBNF grammar
+		and not parser implementation of that grammar. We are interested in
+		performance of correct parsers only.</p></li>
+
+	</ul>
+
+	<p>For tests using xmlgen XML generator, please use the <span
+	class="programname">tests/xmlgen</span> tool that comes with Hapy.  XML
+	input must be generated with scale factor of 1 (which is also the default)
+	and variable "slice" sizes. For example,</p>
+
+	<pre class="codesample">
+        ./xmlgen -f 1 -s    1 | ./parser &gt;&gt; test.log
+        ./xmlgen -f 1 -s    2 | ./parser &gt;&gt; test.log
+        ./xmlgen -f 1 -s    4 | ./parser &gt;&gt; test.log
+        ...
+        ./xmlgen -f 1 -s 1024 | ./parser &gt;&gt; test.log
+        ./xmlgen -f 1 -s 2048 | ./parser &gt;&gt; test.log
+        ./xmlgen -f 1 -s 4096 | ./parser &gt;&gt; test.log
+        ./xmlgen -f 1 -s 8192 | ./parser &gt;&gt; test.log
+	</pre>	
+
+	<p>If you want to submit your own results, please look at <span
+	class="filename">tests/SpeedTest.sh</span> script for the test harness we
+	use and modify it to suit your needs (in most cases only OS portability
+	modifications may be necessary).</p>
+
+	<p>If you want to write and test your own parser, please look at <span
+	class="filename">tests/SpeedTest.cc</span> and <span
+	class="filename">tests/SpiritSpeedTest.cc</span> for examples that can be
+	used as templates. Those examples include code to produce statistics that
+	is used to populate tables and graphs provided here.</p>
+
+	<p>When in doubt, please ask before investing a lot of effort into
+	something that may end up incompatible with existing rules or results.</p>
+
+</div>
+
+<a name="sect-fair"></a><h2>Fairness</h2>
+
+<div class="sect">
+
+	<p>Ideally, all tests should have been performed by an independent
+	unbiased 3rd party, with all parser development teams providing
+	methodology and rules input. While we wait for such a 3rd party to appear,
+	we want to provide our users with meaningful performance results and
+	comparisons, which implies obtaining and publishing results for parsers
+	other than Hapy.  We try to ensure basic fairness despite the obvious
+	conflict of interests:</p>
+
+	<ul>
+
+		<li><p>All tests are designed to mimic typical real-world scenarios
+		and to avoid corner cases that would give unfair advantage to
+		Hapy.</p></li>
+
+		<li><p>All tests use the same methodology, rules, and harness. No
+		benchmark-special tuning or configuration is allowed.</p></li>
+
+		<li><p>The test methodology, rules, and results are publicly available
+		for review, and feedback is solicited from other parser development
+		teams.</p></li>
+
+		<li><p>Submissions and comments from other parser development teams or
+		users are <a href="#sect-contrib">welcome</a>.</p></li>
+
+	</ul>
+
+	<p>If you have suggestions on how to improve quality and fairness 
+	of these tests, please let us know.</p>
+
+</div>
+
+
+<a name="sect-contrib"></a><h2>Contributions</h2>
+
+<div class="sect">
+
+	<p>Besides general feedback, we do solicit test result submissions from
+	users and other parser development teams. When running tests, please
+	follow out testing methodology closely so that results are comparable.
+	When submitting results, please disclose all necessary details,
+	including:</p>
+
+	<ol>
+
+		<li>submitter contact information</li>
+
+		<li>submitter affiliation with any of the parser development
+		teams</li>
+
+		<li>test log</li>
+
+		<li>Number of CPUs and CPU speed</li>
+
+		<li>Available RAM (MBytes)</li>
+
+		<li>Anything else that is not included in test logs and that may have
+		affected the results or may affect results reproduceability</li>
+
+	</ol>
+
+	<p>Submittors are responsible for accuracy and quality of the results they
+	submit. Accepted submissions are acknowledged in and become a part of the
+	Hapy documentation.</p>
+
+</div>
+
+
+</sisy:page>
+

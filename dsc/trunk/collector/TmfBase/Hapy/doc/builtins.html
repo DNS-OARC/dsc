@@ -1,0 +1,167 @@
+<sisy:page class="docs"
+        title="Hapy Built-in Rules" >
+
+	<p>Hapy built-in rules provide convenience and safety for common use
+	cases. All these rules are objects and functions declared in
+	Hapy/Rules.cc. Text matching is case sensitive. Hapy rule expression
+	syntax is documented <a href="syntax.html">elsewhere</a>.</p>
+
+	<p>Besides rule semantics, the table below provides a semantically
+	equivalent expression using non-terminals or other rules. The actual
+	Hapy implementation of a built-in rule usually differs from its
+	semantic equivalent.</p>
+
+	<table class="builtin" border="1" cellpadding="3" cellspacing="0">
+
+		<tr class="heading">
+			<th>Built-in rule</th>
+			<th>Semantics</th>
+			<th>Semantically equivalent expression</th>
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile"><span class="concept">anychar_r</span></td>
+
+			<td class="semantics">matches any single character (byte,
+			octet)</td>
+
+			<td class="impl">"\000" | "\001" | ... | "\377"</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">char_set_r</span>(const string &set)</td>
+
+			<td class="semantics">matches any single character in the user-specified set</td>
+
+			<td class="impl">set[0] | set[1] | ... | set[N]</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">char_range_r</span>(char first, char last)</td>
+
+			<td class="semantics">matches any single character in the user-specified inclusive range</td>
+
+			<td class="impl">first | (char)(first+1) | ... | last</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile"><span class="concept">alpha_r</span></td>
+
+			<td class="semantics">matches any alphabetic character
+			(see isalpha(3) man page)</td>
+
+			<td class="impl">"A" | "B" | ... "z"</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">digit_r</span></td>
+
+			<td class="semantics">matches any decimal digit (see isdigit(3)
+			man page)</td>
+
+			<td class="impl">"0" | "1" | ... "9"</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile"><span class="concept">alnum_r</span></td>
+
+			<td class="semantics">matches any alphabetic character and any
+			decimal digit (see isalnum(3) man page)</td>
+
+			<td class="impl">alpha_r | digit_r</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">space_r</span></td>
+
+			<td class="semantics">matches any whitespace character, including
+			tabulation and line termination characters (see isspace(3) man
+			page).</td>
+
+			<td class="impl">" " | "\t" | "\r" | "\n" | ...</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile"><span class="concept">eol_r</span></td>
+
+			<td class="semantics">matches the end of the line; currently that
+			means a "\n" character; is there a better way?</td>
+
+			<td class="impl">"\n"</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">char_r</span>(char c)</td>
+
+			<td class="semantics">matches a given character</td>
+
+			<td class="impl">"&lt;c>"</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile"><span class="concept">string_r</span>(const string &amp;s)</td>
+
+			<td class="semantics">matches a given sequence of characters
+			(string)</td>
+
+			<td class="impl">"&lt;s>"</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">quoted_r</span>(const Rule &amp;element, const Rule &amp;open, const Rule &amp;close)</td>
+
+			<td class="semantics">matches zero or more elements enclosed in
+			opening and closing "quotes"; the opening and closing rules do not
+			have to match; this is handy for comments, strings, CDATA, and
+			other "enclosed" elements.</td>
+
+			<td class="impl">open >> *(element-close) >> close</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile"><span class="concept">empty_r</span></td>
+
+			<td class="semantics">an always successful zero-size match;
+			matches any input without advancing the input position</td>
+
+			<td class="impl">&nbsp;</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept">end_r</span></td>
+
+			<td class="semantics">matches the end of input; a zero-size
+			match</td>
+
+			<td class="impl">&nbsp;</td>
+
+		</tr>
+
+	</table>
+
+</sisy:page>

@@ -3,7 +3,7 @@
 #ifndef HAPY_RESULT__H
 #define HAPY_RESULT__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 #include <Hapy/Pree.h>
 
 namespace Hapy {

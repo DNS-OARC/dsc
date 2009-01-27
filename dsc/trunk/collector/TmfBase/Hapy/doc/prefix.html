@@ -1,0 +1,304 @@
+<sisy:page class="docs"
+        title="Hapy Prefix Parsing" >
+
+<p>This page documents a part of the Hapy parser API that is useful for
+handling a stream of communication protocol messages, interactive user
+interfaces, or similar input where things to be parsed do not have
+known-a-priory boundaries and/or are surrounded by opaque data such as message
+payload.</p>
+
+<h2>Table of Contents</h2>
+
+<ul style="margin-left: 2em; list-style: none;">
+	<li><a href="#sect-challenge">The Challenge</a></li>
+	<li><a href="#sect-calci">Interactive Calculator Example</a></li>
+	<li><ul style="list-style: none;">
+		<li><a href="#sect-calci-grammar">Grammar</a></li>
+		<li><a href="#sect-calci-loop">Processing Loop</a></li>
+		<li><a href="#sect-calci-session">Sample Session</a></li>
+	</ul></li>
+	<li><a href="#sect-vs-simple">Simple Versus Prefix Parsing</a></li>
+</ul>
+
+<a name="sect-challenge"></a><h2>The Challenge</h2>
+
+<div class="sect">
+
+<p>When parsing communication protocol messages or handling an interactive
+user interface, message boundaries are often unknown and several messages
+(commands, etc.) may be present in the already available input. These
+conditions require the programmar to distinguish among the following three
+cases:</p>
+
+<ol>
+
+	<li><p><span class="concept">Input starts with a complete message
+	possibly followed by something else.</span> The message needs to be
+	interpreted, freeing buffers for more input. This is a common
+	situation when message headers are followed by message body; the body
+	is treated as opaque data or has syntax different from the headers. It
+	is often large and/or has header-dependent length.</p></li>
+
+	<li><p><span class="concept">Input starts with a valid message prefix
+	and contains nothing else.</span> If input buffers are full, terminate
+	processing with a "message too big to handle" error. Otherwise, keep
+	buffering (i.e., wait for more input) in hope to get a complete
+	message. This is a common case when input data trickles in over a
+	slow network link or from a typing human.</p></li>
+
+	<li><p><span class="concept">Input contains something other than the
+	above.</span> Terminate processing with a "invalid message syntax"
+	error. This is a common situation when communicating with humans and
+	broken or malicious agents.</p></li>
+
+</ol>
+
+<p>The usual parser interface that yields a yes/no answer for a given input is
+useless in all three cases: it can only work if the input contains a single
+complete message and nothing else. A parser that can distinguish the first
+case only will be more susceptible to even trivial denial of service attacks
+(intentional or not) since it would have to rely on timeouts to detect invalid
+input.</p>
+
+<p>A Hapy parser can distinguish all three cases. It does not assume that the
+end of currently available input is the end of the thing being parsed, and it
+uses a three-way logic (miss/match/need-more-data). These and other features
+allow Hapy parsers to detect valid message prefixes, including complete valid
+messages, and distinguish them from garbage.</p>
+
+</div>
+
+<a name="sect-calci"></a><h2>Interactive Calculator Example</h2>
+
+<div class="sect">
+
+<p>Since providing a simple but realistic and testable example for parsing
+protocol messages is difficult, we settle on an interactive calculator example
+(<a href="calci.cc">doc/calci.cc</a>). For a non-interactive version of a very
+similar calculator (<a href="calc.cc">doc/calc.cc</a>), refer to the <a
+href="primer.html">Primer</a>. If you are new to Hapy, you should read the <a
+href="primer.html">Primer</a> first.</p>
+
+<p>Our interactive calculator parses and interprets arithmetic expressions as
+they are being entered by the user. The calculator reads standard input
+stream, one character at a time, updates parser state, and prints expression
+values when input contains a complete expression. Invalid input is also
+detected as soon as possible. Invalid input terminates the program.</p>
+
+<a name="sect-calci-grammar"></a><h3>Grammar</h3>
+
+<div class="sect">
+
+	<p>The grammar for dynamic interactive parsing is the same as its
+	static version except for two little but important differences.
+	First, we concentrate on a single expression in a possibly infinite
+	stream of expressions instead of expecting to parse a terminated
+	sequence of expressions. Thus, our top-most start rule is
+	a single rExpression:</p>
+
+	<pre class="codesample">
+	// was: rGrammar = +(rExpression >> ';');
+	rGrammar = rExpression >> ';';
+	...
+
+	</pre>
+
+	<p>Second, we do not want to wait for the next expression to interpret
+	the previous one. This implies that our grammar must not trim
+	whitespace after the semicolon, or we would have to wait for that
+	whitespace to terminate (with the start of the next expression or with
+	the final end of input). Thus, instead of specifying the trim
+	rule starting with rGrammar, we trim starting with rExpression
+	only.</p>
+
+	<pre class="codesample">
+	// was: rGrammar.trim(*space_r);
+	rExpression.trim(*space_r);
+	...
+	</pre>
+
+	<p>The above trimming rule takes care of whitespace <em>between</em>
+	expressions via the left-side trim of rExpression.  However, note that
+	the rule does not trim any whitespace that <em>follows</em> the very
+	last semicolon.  Thus, the grammar does not allow any trailing
+	garbage.  The grammar or parsing loop could be slightly modified to
+	accommodate for the latter case if needed.</p>
+
+	<p>The rest of the grammar is the same for <a
+	href="calc.cc">doc/calc.cc</a> and <a href="calci.cc">doc/calci.cc</a>.</p>
+
+</div>
+
+<a name="sect-calci-loop"></a><h3>Processing Loop</h3>
+
+<div class="sect">
+
+	<p>The static calculator was able to build the parsing tree and
+	initiate interpretation in a just a few statements:</p>
+
+	<pre class="codesample">
+	// abridged static code only; see below for calci code
+	if (parser.parse(input)) 
+		interpret(parser.result().pree);
+	</pre>
+
+
+	<p>The interactive calculator has to use prefix parsing interface. We
+	no longer can separate parsing and interpretation stages in time. By
+	the very nature of the problem, they become interleaved. The
+	if-statement in the above static code is replaced by a loop:</p>
+
+	<pre class="codesample">
+	do {
+		parser.moveOn();
+		if (parser.begin()) {
+			while (parser.step())
+				getData(parser);
+		}
+		parser.end();
+	} while (interpret(parser.result()));
+	</pre>
+
+	<p>The code inside the loop starts by reseting the parser before each
+	new expression is parsed. We could simply create a new parser instead,
+	but that would mean "compiling" and optimizing the same grammar on
+	every loop iteration. The moveOn() method allows to perform expensive
+	initialization of the parser just once, during the very first call to
+	the begin() method.</p>
+
+	<p>The inner while-loop attempts to get more input data while more
+	data is needed after parsing available input. The step() method always
+	attempts to continue parsing available input and is guaranteed to
+	return true if and only if more data is needed to parse the input. The
+	latter implies that once the final end of input is reached and
+	signaled to the parser, the step() method returns false regardless of
+	the input and parsing success. Thus, the loop terminates once we found
+	the first valid or corrupted message. The getData() function is
+	discussed below.</p>
+
+	<p>The getData() function attempts to read more user input,
+	one character at a time. If the final end is reached, the
+	parser is notified and no more attempts to read input are
+	made.</p>
+
+	<pre class="codesample">
+	// supply parser with more input
+	void getData(Parser &amp;parser) {
+		if (!parser.sawDataEnd()) {
+			char c;
+			if (cin.get(c))
+				parser.pushData(string(1, c));
+			else
+				parser.sawDataEnd(true);
+		}
+	}
+	</pre>
+
+	<p>The do-loop ends each iteration with a cleanup call to the end()
+	method, followed by the call to the interpret() function. The latter
+	returns true if the parser successfully parsed a complete expression.
+	Otherwise, it complaints of a syntax error (unless the input was
+	empty) and returns false.</p>
+	
+	<pre class="codesample">
+	bool interpret(const Result &amp;result) {
+		if (result.statusCode == Result::scMatch) {
+			intrpTop(result.pree);
+			return true;
+		}
+
+		// if empty input did not parse, that is OK; just stop
+		if (result.input.size() > 0)
+			cerr &lt;&lt; result.location() &lt;&lt; ": syntax error" &lt;&lt; endl;
+		return false;
+	}
+	</pre>
+
+	<p>The rest of the iterative calculator code is identical to the
+	static calculator discussed in <a href="primer.html">Primer</a>.</p>
+
+</div>
+
+<a name="sect-calci-session"></a><h3>Sample Session</h3>
+
+<div class="sect">
+
+	<p>Here is a sample interactive session with calci. Note how
+	whitespace after semicolon is printed as a part of the 
+	<em>next</em> expression.</p>
+
+	<pre class="codesample">
+	1;
+	1 = 1
+	2;
+
+	2 = 2
+	1+1;
+
+	1+1 = 2
+	1+
+	3+
+	4+0
+	;
+
+	1+
+	3+
+	4+0
+	 = 8
+
+
+	1+1;
+
+
+	1+1 = 2
+	</pre>
+
+	<p>Terminating our interactive session requires typing the end-of-file
+	character (Control-D on many systems) immediately after an expression,
+	to avoid trailing whitespace. We will use the echo command instead. In
+	the following examples, the "-n" parameter is used to avoid the
+	default new line at the end of the echo output.</p>
+	
+	<pre class="codesample">
+	% echo "1+1;" | ./calc   # note calc, not calci
+	1+1 = 2
+	% echo "1+1;" | ./calci
+	1+1 = 2
+	near the end of input: syntax error
+	% echo -n "1+1;" | ./calci
+	1+1 = 2
+	% echo -n "1+1;1+2+(3);" | ./calci
+	1+1 = 2
+	1+2+(3) = 6
+	</pre>
+</div>
+
+</div>
+
+<a name="sect-vs-simple"></a><h2>Simple Versus Prefix Parsing</h2>
+
+<div class="sect">
+
+<p>Prefix parsing is a more general interface compared to the simple parsing
+interface discussed in <a href="primer.html">Primer</a>. The simple parse()
+method can and is implemented using the prefix parsing interface. A slightly
+abridged version of the parse() method implementation is shown below.</p>
+
+	<pre class="codesample">
+	bool Hapy::Parser::parse(const string &content) {
+		pushData(content);
+		sawDataEnd(true);
+		begin();
+		end();
+		return result().statusCode == Result::scMatch;
+	}
+	</pre>
+
+<p>Since parse() calls sawDataEnd(true) first, the begin() method is
+guaranteed to return false.  Thus, there is no reason to call step() before
+calling end(). The actual parse() method also ensures that the end of
+the input has been reached for successful matches.</p>
+
+</div>
+
+</sisy:page>

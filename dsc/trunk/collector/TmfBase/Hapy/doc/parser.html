@@ -1,0 +1,176 @@
+<sisy:page class="docs"
+        title="Hapy Parser API" >
+
+<p>Hapy parser is a C++ object capable of producing a <a
+href="pree.html">parsing tree</a> (a Pree object) based on the given grammar
+and input data. This page documents public methods of the Parser class. Please
+see <a href="primer.html">Primer</a> and <a href="prefix.html">Prefix
+Parsing</a> documents (in that order) for typical Parser API usage.</p>
+
+	<table class="API" border="1" cellpadding="3" cellspacing="0">
+
+		<tr class="heading">
+			<th>Parser class member</th>
+			<th>Semantics</th>
+		</tr>
+
+
+		<tr class="even">
+
+			<td class="profile">void <span class="concept">grammar</span>(const Rule &amp;start)</td>
+
+			<td class="semantics">Specifies the grammar for the parser to use.
+			The start rule is remembered but the grammar is not checked or
+			optimized until the begin() method is called.</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">bool <span class="concept">parse</span>(const string &amp;content)</td>
+
+			<td class="semantics">Parsers supplied string and returns true iff
+			the entire string has matched the grammar. The parsing tree is
+			stored in result().pree.  The method assumes that the supplied
+			content corresponds to the entire available input data. That is,
+			it calls sawDataEnd(true) internally.</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile">const Result &amp;<span class="concept">result</span>()</td>
+
+			<td class="semantics">Returns result structure containing the
+			result status code and parsing tree. The structure is set only
+			when the method end() or parse() is called.</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">bool <span class="concept">nextMatch</span>()</td>
+
+			<td class="semantics">Returns true iff the same input can be
+			parsed differently using the same grammar, implying grammar
+			ambiguities. Note that ambiguity detection is implemented via
+			standard Hapy backtracking mechanism and can be at least as
+			"expensive" (e.g., slow and memory consuming) as finding the first
+			match. The method updates result structure just like the parse()
+			method does. This method must not be called unless a match was
+			found during the last parse(), begin-step-end, or nextMatch()
+			call.</td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td class="profile">bool <span class="concept">begin</span>()</td>
+
+			<td class="semantics">Checks and optimizes the grammar if that has
+			not been done before. Returns false if the grammar is invalid.
+			Parses already available data (which could be empty at the time).
+			Returns true iff more data is expected and needed to declare
+			(distinguish) a miss, match, or an error outcome. This method
+			must be called before step() or end().</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">bool <span class="concept">step</span>()</td>
+
+			<td class="semantics">Resumes parsing, presumably after more
+			information has been made available after the call to begin().
+			Returns true iff more data is expected and needed to declare
+			(distinguish) a miss, match, or an error outcome. This method must
+			be called after successful begin() or step() calls and before
+			end(). Thus, it may be called multiple times.</td>
+
+		</tr>
+		<tr class="even">
+
+			<td class="profile">bool <span class="concept">end</span>()</td>
+
+			<td class="semantics">Terminates parsing algorithm and determines
+			the final result if that has not happened earlier. Always returns
+			false (because more data is not expected after the call to end()).
+			This method must be called after all begin() and step()
+			calls.</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">void <span class="concept">moveOn</span>()</td>
+
+			<td class="semantics">Adjusts internal parser state so that
+			begin-step-end sequence can be repeated again, for the remaining
+			(unparsed) portion of the data, without recompiling the grammar
+			and without re-supplying end-of-data information.  This method
+			must be called before repeated calls to begin() and may be called
+			before the very first call to begin().</td>
+
+		</tr>
+		<tr class="even">
+
+			<td class="profile">void <span class="concept">pushData</span>(const string &amp;newData)</td>
+
+			<td class="semantics">Adds data to the parser buffer. This method
+			may be called at any time.</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">bool <span class="concept">hasData</span>()</td>
+
+			<td class="semantics">Returns true iff the parser's buffer
+			contains unparsed data.</td>
+
+		</tr>
+		<tr class="even">
+
+			<td class="profile">bool <span class="concept">sawDataEnd</span>()</td>
+
+			<td class="semantics">Returns true iff sawDataEnd(true) has
+			already been called.</td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile">void <span class="concept">sawDataEnd</span>(bool did)</td>
+
+			<td class="semantics">With a true argument, instructs the parser
+			to assume that no more data is coming. The methods begin() and
+			step() are guaranteed to return false after a sawDataEnd(true)
+			call has been made.</td>
+
+		</tr>
+
+<!--
+		<tr class="even">
+
+			<td class="profile"><span class="concept"></span>()</td>
+
+			<td class="semantics"></td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td class="profile"><span class="concept"></span>()</td>
+
+			<td class="semantics"></td>
+
+		</tr>
+-->
+
+	</table>
+
+	<p>The parsing tree interface is likely to evolve with time. For
+	example, adding rule-specific node data may be needed.</p>
+
+</sisy:page>
+

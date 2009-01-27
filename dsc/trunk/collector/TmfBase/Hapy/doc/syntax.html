@@ -1,0 +1,152 @@
+<sisy:page class="docs"
+        title="Hapy Rule Syntax" >
+
+	<p>Hapy rules are valid C++ expressions that use Hapy objects. The
+	result of an expression is usually assigned to an existing Rule object
+	so that it can be references in this and other expressions (see <a
+	href="primer.html">Primer</a> for more information on that).</p>
+	
+	<p>The table below shows how general parsing or grammar concepts can
+	be expressed using Hapy rules. For each concept, a Hapy C++
+	expression, a typical EBNF equivalent, and a parsing tree node
+	structure are provided. For each node, the ASCII drawing shows a rule
+	identifier and immediate node children (if any). Tree node interface
+	is documented <a href="pree.html">elsewhere</a>.</p>
+
+	<table class="syntax" border="1" cellpadding="3" cellspacing="0">
+
+		<tr class="heading">
+			<th width="33%">Concept</th>
+			<th>Hapy</th>
+			<th>BNF</th>
+			<th>Pree node with kids</th>
+		</tr>
+
+		<tr class="even">
+
+			<td><span class="concept">equivalence</span>: R is A</td>
+
+			<td>R = A;</td>
+
+			<td>R = A.</td>
+
+			<td class="pree" align="center"><pre>R
+|
+A</pre></td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td><span class="concept">concatenation</span>: A is followed by B
+			is followed by C is followed by ... Z</td>
+
+			<td>R = A >> B >> C >> ... Z;</td>
+
+			<td>R = A B C ... Z.</td>
+
+			<td  class="pree" align="center"><pre>     R     
+     |     
++-+-+-...-+
+| | |     |
+A B C     Z</pre></td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td><span class="concept">alternation</span>: A or B or C or ...
+			Z</td>
+
+			<td>R = A | B | C | ... Z;</td>
+
+			<td>R = A.<br>R = B | C | ... Z.</td>
+
+			<td  class="pree" align="center"><pre>R      R     R         R
+|  OR  |  OR |  OR ... |
+A      B     C         Z</pre></td>
+
+		</tr>
+
+
+		<tr class="odd">
+
+			<td><span class="concept">negation</span>: A but not B and not C
+			and not ... Z</td>
+
+			<td>R = A - B - C - ... Z;</td>
+
+			<td>R = A - B - C - ... Z.</td>
+
+			<td  class="pree" align="center"><pre>R
+|
+A</pre></td>
+
+		</tr>
+
+			
+		<tr class="even">
+
+			<td><span class="concept">kleene star</span>: zero or more As</td>
+
+			<td>R = *A;</td>
+
+			<td>R = A*.</td>
+
+			<td  class="pree" align="center"><pre>     R           R
+     |           |
++-+-+-...-+  OR  -
+| | |     |       
+A A A     A       </pre></td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td><span class="concept">repetition</span>: one or more As</td>
+
+			<td>R = +A;</td>
+
+			<td>R = A+.</td>
+
+			<td  class="pree" align="center"><pre>     R      
+     |     
++-+-+-...-+
+| | |     |
+A A A     A</pre></td>
+
+		</tr>
+
+		<tr class="even">
+
+			<td><span class="concept">option</span>: A or nothing</td>
+
+			<td>R = !A;</td>
+
+			<td>R = [A].</td>
+
+			<td  class="pree" align="center"><pre>R      R
+|  OR  |
+A      -</pre></td>
+
+		</tr>
+
+		<tr class="odd">
+
+			<td><span class="concept">terminal</span>: a literal constant</td>
+
+			<td>R = "string"; or<br>
+			    R = 'char'</td>
+
+			<td>R = "string". or<br>
+			    R = 'char'.</td>
+
+			<td  class="pree" align="center"><pre>R
+|
+-</pre></td>
+
+		</tr>
+
+	</table>
+	
+</sisy:page>

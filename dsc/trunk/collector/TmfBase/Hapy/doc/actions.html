@@ -1,0 +1,293 @@
+<sisy:page class="docs"
+        title="Hapy Actions" >
+
+<p>This page documents Hapy Actions API. Actions augment the grammar with
+semantic checks and on-the-fly interpretation code.</p>
+
+<h2>Table of Contents</h2>
+
+<ul style="margin-left: 2em; list-style: none;">
+	<li><a href="#sect-intro">Introduction</a>
+	<li><a href="#sect-attach">Attaching Action to a Rule</a>
+	<li><a href="#sect-fun">Stand-alone Function Action</a></li>
+	<li><a href="#sect-method">Class Method Action</a></li>
+	<li><a href="#sect-preemptive">Preemptive Action</a></li>
+</ul>
+
+<a name="sect-intro"></a><h2>Introduction</h2>
+
+<div class="sect">
+
+<p>Action is a piece of code that can be attached to a grammar rule. The Hapy
+parser executes the attached Action right after the rule matches.  Note that a
+single rule may match many times during the parsing process and a local match
+may be rejected by further rule matching and backtracking. The action is
+executed <em>every</em> time the corresponding rule matches.</p>
+
+<p>An action is passed the parsing subtree formed by the match, the result
+status code, and other housekeeping information. An action may:</p>
+
+<ul> 
+
+	<li><p>Use the parsing tree in read-only mode. The action may update
+	some external (to parser and parsing tree) objects, depending on what
+	was matched.</p></li>
+
+	<li><p>Reject the match by changing the result code to <span
+	class="codesample">Result::scMiss</span>. This will force the parser
+	to look for alternative matches. If no alternative matches can be
+	found, then the rule will fail to match, triggering the usual
+	backtracking mechanisms. For "committed" rules, the action is executed
+	<em>before</em> the result is committed so rule can backtrack if the
+	attached action rejects the match.</p></li>
+
+	<li><p>Generate a fatal parsing error by changing the result code to
+	<span class="codesample">Result::scError</span>. The error propagates
+	upwards the parsing stack, causing the parser to fail. Generating
+	errors is useful when the action detects a non-recoverable semantics
+	error that makes further parsing useless.</p></li>
+
+	<li><p>Modify the parsing tree and other internal parsing state.
+	While technically possible, doing so requires good knowledge of
+	internal Hapy mechanisms and is usually not the right thing to
+	do.</p></li>
+
+</ul>
+
+<p>Under the Hapy hood, an Action is a wrapper around ActionBase, a simple C++
+class with a function operator that takes a pointer to <span
+class="codesample">Action::Params</span> as a parameter (see <span
+class="filename">Action.h</span>). The operator calls a pure virtual <span
+class="codesample">act()</span> method. Defining your own actions by
+overriding the <span class="codesample">act()</span> method is efficient but
+awkward.  The sections below describe two alternative ways to define actions.
+Examples source code is also available in Hapy distribution as <a
+href="actions.cc"><span class="filename">docs/actions.cc</span></a>.</p>
+
+</div>
+
+<a name="sect-attach"></a><h2>Attaching Action to a Rule</h2>
+
+<div class="sect">
+
+	<p>This section explains how to attach an existing action to a grammar
+	rule. For information on how to create an action, see sections <a
+	href="#sect-fun">below</a>.</p>
+
+	<p>To enable an action, you must attach it to one of the parsing
+	rules. There are two ways to do that. First, an action can be attached
+	using a subscript operator[] of the <span
+	class="codesample">Rule</span> class:</p>
+	
+	<pre class="codesample">
+	Rule instruction, name, expression, ...;
+	instruction = name[&amp;grokName] >> expression[&amp;grokExpression] >> ';';
+	name = ...
+	expression = ...
+	</pre>
+
+	<p>This method keeps semantic actions and syntax rules together, for a
+	compact grammar declaration. The subscript operator[] method
+	<strong>does not modify its rule</strong>. Thus, the first method can
+	be applied to predefined constant rules such as <span
+	class="codesample">empty_r</span> and to temporary rules:</p>
+
+	<pre class="codesample">
+	call = empty_r[&prepCall] >> (name >> parameters)[&grokCall];
+	</pre>
+
+	<p>The alternative is to use an <span class="codesample">action</span>
+	method of the <span class="codesample">Rule</span> class:</p>
+
+	<pre class="codesample">
+	Rule instruction, name, expression, ...;
+	instruction = name >> expression >> ';';
+	name = ...
+	expression = ...
+
+	name.action(&amp;grokName);
+	expression.action(&amp;grokExpression);
+	</pre>
+
+	<p>This second method allows to isolate semantic actions and syntax
+	rules, for a clean, readable grammar. Naturally, the <span
+	class="codesample">action</span> method <strong>modifies its
+	rule</strong>. Thus, the second method makes it easy to attach the
+	same action to all occurrences of the rule in the grammar:</p>
+
+	<pre class="codesample">
+	instruction = name >> expression >> ';';
+	call = name >> parameters;
+	...
+	name.action(&grokName); // will be called for each name above
+	</pre>
+
+	<p>The best method to use depends on your grammar, actions, and
+	taste. Both methods can be used inside the same grammar.</p>
+
+</div>
+
+<a name="sect-fun"></a><h2>Stand-alone Function Action</h2>
+
+<div class="sect">
+
+	<p>Simple actions can be defined as stand-alone C++ functions. An
+	action function takes a pointer to <span
+	class="codesample">Action::Params</span> as a parameter and returns
+	nothing. The following is an example of an action that turns on
+	debugging every time a particular rule matches the input.</p>
+
+	<pre class="codesample">
+	#include &lt;Hapy/Actions.h&gt; /* required header if you do actions */
+	...
+	using namespace Hapy;
+
+	static
+	void TurnDebuggingOn(Action::Params *) {
+		Rule::Debug(true);
+	}
+	...
+
+	Rule particular;
+	particular = ...;
+	particular.action(&amp;TurnDebuggingOn);
+	</pre>
+
+	<p>To pass additional parameters to your action or change its profile, use
+	standard STL (e.g., <span class="codesample">bind2nd</span>) or similar
+	custom wrappers. For example, lets add a simple "reason" parameter to the
+	above <span class="codesample">TurnDebuggingOn()</span> function and call
+	the resulting function <span
+	class="codesample">ExplainDebuggingOn()</span></p>
+
+	<pre class="codesample">
+	#include &lt;Hapy/Actions.h&gt;
+	#include &lt;functional&gt;     /* to get access to bind() */
+	...
+
+	static
+	void ExplainDebuggingOn(Action::Params *, const char *reason) {
+		clog << "turning debugging on because " << reason << endl;
+		Rule::Debug(true);
+	}
+	...
+
+	Rule r1, r2;
+	...
+	r1.action(bind2nd(ptr_fun(&amp;ExplainDebuggingOn), "rule r1 matched!"));
+	r2.action(bind2nd(ptr_fun(&amp;ExplainDebuggingOn), "coredump is near"));
+	</pre>
+
+	<p>Here is a more realistic example. The following piece of code adds
+	a <span class="codesample">Pree</span> tree (corresponding to the
+	matched portion of the input) to an STL list. The pointer to the list
+	is supplied as an additional action parameter:</p>
+
+	<pre class="codesample">
+	#include &lt;Hapy/Actions.h&gt;
+	#include &lt;list&gt;
+	...
+
+	typedef std::list&lt;Pree&gt; Matches;
+
+	static
+	void AddMatch(Action::Params *p, Matches *matches) {
+		matches-&gt;push_back(p-&gt;pree);
+	}
+	...
+
+	Matches matches;
+	Rule particular;
+	particular = ...;
+	particular.action(bind2nd(ptr_fun(&amp;AddMatch), &matches));
+	</pre>
+
+</div>
+
+<a name="sect-method"></a><h2>Class Method Action</h2>
+
+<div class="sect">
+
+	<p>Non-trivial actions are usually implemented as class methods.  A
+	class method can be converted to an Action using the <span
+	class="codesample">mem_action()</span> function. The function is
+	declared in <span class="filename">Hapy/MemAction.h</span> header file
+	(which is included by <span class="filename">Hapy/Actions.h</span>).</p>
+
+	<p>The following is an example of a class implementing two actions
+	common to configuration file interpretation.  The <span
+	class="codesample">Interpreter::handleAssignment()</span> method
+	records a value of a user-defined variable.  The <span
+	class="codesample">Interpreter::handleOption()</span> method processes
+	the configuration option. Each method is associated with the
+	corresponding grammar rule via the <span
+	class="codesample">Rule::action()</span> call.</p>
+
+	<pre class="codesample">
+	#include &lt;Hapy/FunAction.h&gt;
+	using namespace Hapy;
+
+	class Interpreter {
+		public:
+			void handleAssignment(Action::Params *params);
+			void handleOption(Action::Params *params);
+			...
+	};
+	...
+
+	Interpreter interpreter;
+	Rule grammar, statement, assignment, option, ...;
+	...
+	grammar = *(statement &gt;&gt; ";");
+	statement = assignment | option;
+	assignment = name &gt;&gt; "=" &gt;&gt; value;
+	option = name &gt;&gt; *value;
+	...
+	assignment.action(mem_action(&amp;interpreter, &amp;Interpreter::handleAssignment));
+	option.action(mem_action(&amp;interpreter, &amp;Interpreter::handleOption));
+	</pre>
+
+	<p>The <span class="codesample">mem_action()</span> function creates
+	an Action object that keeps the pointer to the Interpreter object and
+	the pointer to one of the Interpreter's methods. The action method is
+	called every time the corresponding rule matches.</p>
+
+	<!-- <p><span class="codesample">Rule</span> class has an <span
+	class="codesample">action()</span> method capable of accepting pointers to
+	simple stand-alone functions without <span
+	class="codesample">ptr_fun()</span> wrapping. Adding a similar
+	two-parameter method to accept member actions would require compiler
+	support for template-based methods, and some C++ compilers worth
+	supporting probably do not support template-based methods.</p> -->
+
+</div>
+
+<a name="sect-preemptive"></a><h2>Preemptive Action</h2>
+
+<div class="sect">
+
+	<p>Hapy actions are always executed after the rule matches.
+	Sometimes, it may be useful to execute an action before
+	the rule is tried. This is possible by attaching the
+	action to a zero-width matching rule:</p>
+
+	<pre class="codesample">
+	Rule realCore;  // the actual rule we are interested in
+	realCore = ...;
+
+	Rule core; // use "core" instead of the "realCore" rule
+	core = empty_r[&amp;PreemptiveAction] &gt;&gt; realCore; 
+	</pre>
+
+	<p>When the <span class="codesample">core</span> rule is used instead of
+	the <span class="codesample">realCore</span> rule, the <span
+	class="codesample">PreemptiveAction()</span> action is executed
+	<em>before</em> the <span class="codesample">realCore</span> rule is
+	matched.</p>
+
+	<p>If the above tricks end up being used a lot, we can add a <span
+	class="codesample">Rule::pre_action()</span> method.</p>
+
+</div>
+
+</sisy:page>
