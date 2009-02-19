@@ -108,12 +108,12 @@ disk_is_full(void)
     struct statvfs s;
     if (statvfs(".", &s) < 0)
 	return 0;	/* assume not */
-    avail_bytes = s.f_frsize*s.f_bavail;
+    avail_bytes = (uint64_t) s.f_frsize * (uint64_t) s.f_bavail;
 #else
     struct statfs s;
     if (statfs(".", &s) < 0)
 	 return 0;	/* assume not */
-    avail_bytes = s.f_bsize*s.f_bavail;
+    avail_bytes = (uint64_t) s.f_bsize * (uint64_t) s.f_bavail;
 #endif
     if (avail_bytes < minfree_bytes)
 	return 1;
