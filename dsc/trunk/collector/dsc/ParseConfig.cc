@@ -31,30 +31,6 @@ extern "C" void ParseConfig(const char *);
 
 using namespace Hapy;
 
-enum {
-	ctBareToken = 1,
-	ctQuotedToken,
-	ctToken,
-	ctDecimalNumber,
-	ctComment,
-	ctIPv4Address = 11,
-	ctIPv6Address,
-	ctHostOrNet,
-	ctInterface = 21,
-	ctRunDir,
-	ctPidFile,
-	ctLocalAddr,
-	ctPacketFilterProg,
-	ctDataset,
-	ctDatasetOpt,
-	ctBVTBO,		// bpf_vlan_tag_byte_order
-	ctMatchVlan,
-	ctQnameFilter,
-	ctMinfreeBytes,
-	ctConfig = 40,
-	ctMax
-} configToken;
-
 Rule rBareToken;
 Rule rQuotedToken;
 Rule rToken;
