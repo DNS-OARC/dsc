@@ -3,75 +3,74 @@
 #ifndef HAPY_PREE_KIDS__H
 #define HAPY_PREE_KIDS__H
 
-#include <Hapy/config.h>
-#include <list>
-#include <vector>
+#include <Hapy/Top.h>
+#include <Hapy/Iterator.h>
 
 namespace Hapy {
 
 class Pree;
-typedef std::vector<Pree*> PreeKids;
 
-// user-level iterator to hide internal pointer-based pree node representation
-template <class Iterator>
-class DerefIterator {
+// user-level iterator to iterate through Pree or const Pree kids
+template <class Base>
+class PreeKidsIterator: public std_bidirectional_iterator<Base, unsigned int> {
 	public:
-		typedef typename std::iterator_traits<Iterator>::iterator_category iterator_category;
-		typedef Pree &value_type;
-		typedef typename std::iterator_traits<Iterator>::difference_type difference_type;
-		typedef Pree *pointer;
-		typedef Pree &reference;
-
-		typedef Iterator iterator_type;
-		typedef DerefIterator<Iterator> Self;
+		typedef typename std::iterator_traits<PreeKidsIterator>::iterator_category iterator_category;
+		typedef typename std::iterator_traits<PreeKidsIterator>::difference_type difference_type;
+		typedef typename std::iterator_traits<PreeKidsIterator>::value_type value_type;
+		typedef typename std::iterator_traits<PreeKidsIterator>::pointer pointer;
+		typedef typename std::iterator_traits<PreeKidsIterator>::reference reference;
 
 	public:
-		DerefIterator() {}
-		explicit DerefIterator(iterator_type x) : current(x) {}
+		PreeKidsIterator(): current(0), idx(0) {}
+		explicit PreeKidsIterator(Pree *start, difference_type offset):
+			current(start), idx(offset) {}
 
-		DerefIterator(const Self& x) : current(x.current) {}
-			
-		iterator_type base() const { return current; }
 		reference operator*() const {
-			return *(*current);
+			return *current;
 		}
 
 		pointer operator->() const { return &(operator*()); }
 
-		Self& operator++() {
-			++current;
+		PreeKidsIterator& operator++() {
+			current = current->right;
+			++idx;
 			return *this;
 		}
-		Self operator++(int) {
-			Self tmp = *this;
+		PreeKidsIterator operator++(int) {
+			PreeKidsIterator tmp = *this;
 			++(*this);
 			return tmp;
 		}
-		Self& operator--() {
-			--current;
+		PreeKidsIterator& operator--() {
+			current = current->left;
+			--idx;
 			return *this;
 		}
-		Self operator--(int) {
-			Self tmp = *this;
+		PreeKidsIterator operator--(int) {
+			PreeKidsIterator tmp = *this;
 			--(*this);
 			return tmp;
 		}
 
-		Self operator+(difference_type n) const {
-			return Self(current + n);
+		PreeKidsIterator operator+(difference_type n) const {
+			PreeKidsIterator tmp = *this;
+			return tmp += n;
 		}
 
-		Self& operator+=(difference_type n) {
-			current += n;
+		PreeKidsIterator& operator+=(difference_type n) {
+			while (n-- > 0)
+				++(*this);
 			return *this;
 		}
 
-		Self operator-(difference_type n) const {
-			return Self(current - n);
+		PreeKidsIterator operator-(difference_type n) const {
+			PreeKidsIterator tmp = *this;
+			return tmp -= n;
 		}
 
-		Self& operator-=(difference_type n) {
-			current -= n;
+		PreeKidsIterator& operator-=(difference_type n) {
+			while (n-- > 0)
+				--(*this);
 			return *this;
 		}
 
@@ -79,63 +78,45 @@ class DerefIterator {
 			return *(*this + n);
 		}
 
-	protected:
-		Iterator current;
+	public:
+		pointer current;
+		difference_type idx;
 }; 
- 
-template <class Iterator>
+
+template <class Base>
 inline
-bool operator==(const DerefIterator<Iterator>& x, 
-	const DerefIterator<Iterator>& y) {
-	return x.base() == y.base();
+bool operator==(const PreeKidsIterator<Base>& x, 
+	const PreeKidsIterator<Base>& y) {
+	return x.idx == y.idx;
 }
 
-template <class Iterator>
+template <class Base>
 inline
-bool operator!=(const DerefIterator<Iterator>& x, 
-	const DerefIterator<Iterator>& y) {
-	return !(x.base() == y.base());
+bool operator!=(const PreeKidsIterator<Base>& x, 
+	const PreeKidsIterator<Base>& y) {
+	return !(x == y);
 }
 
-template <class Iterator>
+template <class Base>
 inline
-bool operator<(const DerefIterator<Iterator>& x, 
-	const DerefIterator<Iterator>& y) {
-	return x.base() < y.base();
+bool operator<(const PreeKidsIterator<Base>& x, 
+	const PreeKidsIterator<Base>& y) {
+	return x.idx < y.idx;
 }
 
-template <class Iterator>
+template <class Base>
 inline
-typename DerefIterator<Iterator>::difference_type operator-(const DerefIterator<Iterator>& x, 
-	const DerefIterator<Iterator>& y) {
-	return x.base() - y.base();
+typename PreeKidsIterator<Base>::difference_type operator-(const PreeKidsIterator<Base>& x,
+	const PreeKidsIterator<Base>& y) {
+	return x.idx - y.idx;
 }
 
-template <class Iterator>
+template <class Base>
 inline
-DerefIterator<Iterator> operator+(typename DerefIterator<Iterator>::difference_type n,
-	const DerefIterator<Iterator>& x) {
-	return DerefIterator<Iterator>(x.base() + n);
+PreeKidsIterator<Base> operator+(typename PreeKidsIterator<Base>::difference_type n,
+	const PreeKidsIterator<Base>& x) {
+	return x + n;
 }
-
-
-// a farm for parsing tree nodes
-class PreeFarm {
-	public:
-		static Pree *Get();
-		static void Put(Pree *p);
-		static void Clear();
-
-	public:
-		typedef int Level;
-		static Level TheInLevel;
-		static Level TheOutLevel;
-
-	private:
-		typedef Pree* Store;
-		static Store TheStore;
-};
-
 
 } // namespace
 

@@ -3,8 +3,7 @@
 #ifndef HAPY_ASSERT__H
 #define HAPY_ASSERT__H
 
-#include <Hapy/config.h>
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 
 // our version of assert(3), mostly for portability purposes
 #ifndef Assert
@@ -18,12 +17,12 @@
 
 // logs current error to cerr and exits if cond fails
 #ifndef Must
-#define Must(cond) ((cond) ? (void)0 : (Hapy::Complain(__FILE__, __LINE__), Hapy::Exit()))
+#define Must(cond) ((cond) || Hapy::Complain(__FILE__, __LINE__) || Hapy::Exit())
 #endif
 
 // logs current error to cerr if cond fails
 #ifndef Should
-#define Should(cond) ((cond) ? true : (Hapy::Complain(__FILE__, __LINE__), false))
+#define Should(cond) ((cond) || Hapy::Complain(__FILE__, __LINE__))
 #endif
 
 
@@ -37,14 +36,14 @@
 namespace Hapy {
 
 // logs current err to cerr
-extern void Complain(const char *fname, int lineno);
+extern bool Complain(const char *fname, int lineno);
 
 // aborts program execution and generates coredump
 extern void Abort(const char *fname, int lineno, const char *cond);
 
 // aborts program execution without coredump
-extern void Exit(const char *fname, int lineno, const char *cond);
-extern void Exit();
+extern bool Exit(const char *fname, int lineno, const char *cond);
+extern bool Exit();
 
 } // namespace
 

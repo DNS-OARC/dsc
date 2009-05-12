@@ -6,6 +6,7 @@
 #include <Hapy/Pree.h>
 #include <Hapy/Rules.h>
 #include <Hapy/Buffer.h>
+#include <Hapy/RuleCompFlags.h>
 
 namespace Hapy {
 
@@ -44,6 +45,7 @@ class Parser {
 
 	private:
 		RulePtr theStartRule;
+		RuleCompFlags theCflags;
 
 		Buffer theBuffer;
 		Result theResult;

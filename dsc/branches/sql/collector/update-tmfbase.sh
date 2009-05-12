@@ -4,7 +4,7 @@ set -e
 rm -rfv tmp
 mkdir tmp
 cd tmp
-cvs -d :ext:sparky:/usr/local/CVS export -N -kv -r HEAD TmfBase/Hapy
-cvs -d :ext:sparky:/usr/local/CVS export -N -kv -r HEAD TmfBase/xstd
+svn export svn+ssh://cvs.measurement-factory.com/usr/local/svn/hapy/trunk
+mv trunk Hapy
 cd ..
-rsync -av tmp/TmfBase .
+rsync -av tmp/ TmfBase/

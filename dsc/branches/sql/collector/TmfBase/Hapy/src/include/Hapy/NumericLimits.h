@@ -3,17 +3,18 @@
 #ifndef HAPY_NUMERIC_LIMITS__H
 #define HAPY_NUMERIC_LIMITS__H
 
+#include <Hapy/Top.h>
 
-#ifdef HAVE_LIMITS
+#ifdef HAPY_HAVE_LIMITS
 #	include <limits>
-#elif HAVE_CLIMITS
+#elif HAPY_HAVE_CLIMITS
 #	include <climits>
-#elif HAVE_LIMITS_H
+#elif HAPY_HAVE_LIMITS_H
 #	include <limits.h>
 #endif
 
 
-#ifndef HAVE_NUMERIC_LIMITS
+#ifndef HAPY_HAVE_NUMERIC_LIMITS
 namespace std {
 #	ifndef ULONG_MAX
 #		define LONG_MIN INT_MIN

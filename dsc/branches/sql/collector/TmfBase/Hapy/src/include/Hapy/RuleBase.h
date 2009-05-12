@@ -3,19 +3,24 @@
 #ifndef HAPY_RULE_BASE__H
 #define HAPY_RULE_BASE__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 #include <Hapy/Result.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 #include <Hapy/IosFwd.h>
 #include <Hapy/RuleId.h>
+#include <Hapy/RuleCompFlags.h>
+#include <Hapy/First.h>
+#include <Hapy/SizeCalc.h>
+#include <Hapy/Action.h>
+#include <Hapy/DeepPrint.h>
 #include <Hapy/RulePtr.h>
+#include <list>
 
 namespace Hapy {
 
 class Buffer;
 class Pree;
 class Algorithm;
-class Action;
 class Rule;
 
 // grammar rule implementation: parsing alg + ID + flags and logic
@@ -23,8 +28,11 @@ class Rule;
 class RuleBase {
 	public:
 		typedef Result::StatusCode StatusCode;
-		typedef enum { dbdNone, dbdUser, dbdAll } DebugDetail;
-		static DebugDetail TheDebugDetail; // debugging detail level
+		typedef RuleCompFlags CFlags;		
+		typedef std::list<RulePtr> CRules;
+
+		// announce parsing rule rejection due to the given reason
+		static void DebugReject(const RuleBase *rule, const char *reason);
 
 	public:
 		RuleBase();
@@ -33,7 +41,18 @@ class RuleBase {
 
 		const RuleId &id() const { return theId; }
 
-		bool compile(RulePtr itrimmer);
+		bool build(const CFlags &flags); // called by parser
+		bool compile(const CFlags &flags); // called by algorithms
+		bool compiling() const { return isCompiling; }
+
+		void collectRules(CRules &rules);
+		int subrules() const;
+
+		SizeCalcLocal::size_type calcMinSize(SizeCalcPass &pass);
+		SizeCalcLocal::size_type minSize() const;
+
+		void calcFullFirst();
+		bool calcPartialFirst(First &first, Pree &pree);
 
 		void committed(bool be);
 
@@ -42,7 +61,7 @@ class RuleBase {
 		void trim(const RulePtr &aTrimmer);
 		void verbatim(bool be);
 		void leaf(bool be);
-		void action(const Action *anAction);
+		void action(const Action &anAction);
 
 		StatusCode firstMatch(Buffer &buf, Pree &pree) const;
 		StatusCode nextMatch(Buffer &buf, Pree &pree) const;
@@ -50,37 +69,47 @@ class RuleBase {
 		void cancel(Buffer &buf, Pree &pree) const;
 
 		ostream &print(ostream &os) const;
+		void deepPrint(ostream &os, DeepPrinted &printed) const;
 
 		bool hasAlg() const { return theAlg != 0; }
 		const Algorithm &alg() const;
 		void alg(Algorithm *anAlg);
 		void updateAlg(const RuleBase &src);
-		void reachEnd(bool doIt);
+
+		void implicit(bool be);
 
 		bool temporary() const;
 
 	protected:
-		static bool Debug(DebugDetail codeLevel);
+		bool shouldTrim(CFlags &flags) const;
+		bool compileTrim(const CFlags &flags);
 
-		void implicitTrim(const RulePtr &trimmer);
-		bool shouldTrim() const;
-		bool compileTrim();
+		bool calcMinSize(CRules &rules);
+
+		bool mayMatch(Buffer &buf) const;
 
 		typedef StatusCode (Algorithm::*AlgMethod)(Buffer &buf, Pree &pree) const;
 		StatusCode call(Buffer &buf, Pree &pree, AlgMethod m, const char *mLabel) const;
 		StatusCode applyAction(Buffer &buf, Pree &pree) const;
 		
-		ostream &debugPfx(int callId) const;
+		static ostream &DebugPfx(int callId);
 		void debugBuffer(const Buffer &buf) const;
 		void debugTry(const Buffer &buf, const Pree &pree, const char *mLabel, int callId) const;
 		void debugResult(const Buffer &buf, const Pree &pree, const char *mLabel, int callId, StatusCode result) const;
 
 	protected:
 		Algorithm *theAlg;
-		const Action *theAction;
+		Action theAction;
 		RuleId theId;
 
 		RulePtr theTrimmer;
+
+		First theFirst;
+		enum { emsUnknown, emsComputing, emsYes, emsNo } theEmptyMatchState;
+		enum { fssUnknown, fssComputing, fssKnown, fssError } theFirstSetState;
+
+		SizeCalcLocal theSizeCalc;
+		int theSubrules; // number of subrules
 
 		enum { cmDefault, cmDont, cmCommit } theCommitMode;
 		enum { tmDefault, tmVerbatim, tmImplicit, tmExplicit } theTrimMode;

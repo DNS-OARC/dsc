@@ -3,8 +3,8 @@
 #ifndef HAPY_AREA__H
 #define HAPY_AREA__H
 
-#include <Hapy/config.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/Top.h>
+#include <Hapy/String.h>
 #include <Hapy/IosFwd.h>
 
 namespace Hapy {
@@ -30,6 +30,7 @@ class Area {
 		const char *imageData() const;
 		size_type imageSize() const;
 		bool operator ==(const Area &a) const;
+		bool operator !=(const Area &a) const;
 
 		void start(size_type pos) {
 			theStart = pos;

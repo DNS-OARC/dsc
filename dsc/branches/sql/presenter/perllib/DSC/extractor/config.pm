@@ -442,6 +442,20 @@ my $port_range_keys = [ qw(
     },
   },
 
+  pcap_stats => {
+    ndim	=> 2,
+    type1	=> 'ifname',
+    type2	=> 'pcap_stat',
+    outputs	=> {
+      pcap_stats => {
+	data_munger => \&main::swap_dimensions,
+	data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
 );
 
 sub read_config {

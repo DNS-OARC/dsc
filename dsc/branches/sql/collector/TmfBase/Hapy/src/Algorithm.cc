@@ -15,9 +15,20 @@ Hapy::ostream &Hapy::Algorithm::print(ostream &os) const {
 	return os;
 }
 
-bool Hapy::Algorithm::compileSubRule(RulePtr &r, const RulePtr &trimmer) {
+void Hapy::Algorithm::collectRules(CRules &) {
+	// assume no subrules by default
+}
+
+void Hapy::Algorithm::deepPrint(ostream &, DeepPrinted &) const {
+	// assume no subrules by default
+}
+
+bool Hapy::Algorithm::compileSubRule(RulePtr &r, const RuleCompFlags &flags) {
+	if (r->compiling()) // may happen for recursive rules
+		return true;
+
 	// fork in case other users have different preferences
 	RulePtr old = r;
 	r = RulePtr(new RuleBase(*old)); // leaking old pointers?
-	return r->compile(trimmer);
+	return r->compile(flags);
 }

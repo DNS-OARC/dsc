@@ -1383,20 +1383,21 @@ sub navbar_arrow_item {
 sub sublist_item { '&rsaquo;&nbsp;'; }
 
 sub navbar_servers_nodes {
-    my $buf = '';
-    $buf .= "<ul>\n";
+    my $snippet = '';
+    $snippet .= "<ul>\n";
     my @items;
-    foreach my $server ( keys %{$CFG->{servers}} ) {
+    foreach my $server ( keys @{$CFG->{serverlist}} ) {
 	#print STDERR "server=$server\n";
-	$buf .= "<li><div>" . navbar_checkbox('server',$server,$server) . "</div>\n";
-	$buf .= "<ul>\n";
+	$snippet .= "<li><div>" . navbar_checkbox('server',$server,$server) . "</div>\n";
+	next if $CFG->{'hide_nodes'};
+	$snippet .= "<ul>\n";
 	foreach my $node (@{$CFG->{servers}{$server}}) {
-	    $buf .= html_markup('li', undef, navbar_checkbox('node',"$server/$node",$node)) . "\n";
+	    $snippet .= html_markup('li', undef, navbar_checkbox('node',"$server/$node",$node)) . "\n";
 	}
-	$buf .= "</ul></li>\n";
+	$snippet .= "</ul></li>\n";
     }
-    $buf .= "</ul>\n";
-    $buf;
+    $snippet .= "</ul>\n";
+    $snippet;
 }
 
 sub navbar_plot_option($) {

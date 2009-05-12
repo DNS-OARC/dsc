@@ -4,7 +4,7 @@ dnl
 dnl  Configuration input file for Hapy
 dnl
 
-AC_INIT(Hapy, 0.0.4,, Hapy)
+AC_INIT(Hapy, 0.0.8,, Hapy)
 AC_CONFIG_SRCDIR([src/Pree.cc])
 AC_CONFIG_AUX_DIR(cfgaux)
 
@@ -14,17 +14,17 @@ PRESET_CXXFLAGS="$CXXFLAGS"
 PRESET_LDFLAGS="$LDFLAGS"
 
 AM_INIT_AUTOMAKE([no-define nostdinc])
-AC_CONFIG_HEADERS(src/include/Hapy/config.h)
+AM_MAINTAINER_MODE
+AC_CONFIG_HEADERS(src/include/Hapy/ac-config.h)
+AX_PREFIX_CONFIG_H(src/include/Hapy/config.h)
+
 AC_PREFIX_DEFAULT(/usr/local)
 
-AM_MAINTAINER_MODE
-
+AC_PROG_CXX
 AC_LANG([C++])
 
 dnl user can overwrite this default with --enable-shared
 AC_DISABLE_SHARED
-dnl do not configure for Fortran
-AC_LIBTOOL_TAGS([CXX])
 AC_PROG_LIBTOOL
 
 dnl check if alleged C++ compiler understands C++
@@ -131,6 +131,7 @@ AC_CHECK_LIB(nsl, main)
 
 dnl checks for header files
 AC_CHECK_HEADERS(\
+	iterator \
 	limits \
 	climits \
 	limits.h \
@@ -171,6 +172,29 @@ AC_CACHE_CHECK(for std::numeric_limits,
 if test "x$ac_cv_have_numeric_limits" = xyes; then
         AC_DEFINE(HAVE_NUMERIC_LIMITS, 1,
 		[Define to 1 if you have std::numeric_limits template])
+fi
+
+AC_CACHE_CHECK(for std::iterator, ac_cv_have_std_iterator_type, [
+	AC_TRY_COMPILE([
+		#ifdef HAVE_ITERATOR
+		#	include <iterator>
+		#endif
+		template <typename V, typename D>
+		struct std_bidirectional_iterator:
+			public std::iterator<std::bidirectional_iterator_tag, V, D> {
+		};
+	],[
+		typedef std_bidirectional_iterator<int*,int> MyIterator;
+		return 0;
+	],[
+		ac_cv_have_std_iterator_type="yes";
+	],[
+		ac_cv_have_std_iterator_type="no";
+	])
+])
+if test "x$ac_cv_have_std_iterator_type" = xyes; then
+        AC_DEFINE(HAVE_STD_ITERATOR_TYPE, 1,
+		[Define to 1 if you have std::iterator template])
 fi
 
 AC_CONFIG_FILES([\

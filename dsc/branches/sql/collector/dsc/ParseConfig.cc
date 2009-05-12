@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 
 #include <iostream>
 #include <fstream>
@@ -28,30 +30,6 @@ extern "C" int add_qname_filter(const char *name, const char *re);
 extern "C" void ParseConfig(const char *);
 
 using namespace Hapy;
-
-enum {
-	ctBareToken = 1,
-	ctQuotedToken,
-	ctToken,
-	ctDecimalNumber,
-	ctComment,
-	ctIPv4Address = 11,
-	ctIPv6Address,
-	ctHostOrNet,
-	ctInterface = 21,
-	ctRunDir,
-	ctPidFile,
-	ctLocalAddr,
-	ctPacketFilterProg,
-	ctDataset,
-	ctDatasetOpt,
-	ctBVTBO,		// bpf_vlan_tag_byte_order
-	ctMatchVlan,
-	ctQnameFilter,
-	ctMinfreeBytes,
-	ctConfig = 40,
-	ctMax
-} configToken;
 
 Rule rBareToken;
 Rule rQuotedToken;
@@ -260,7 +238,6 @@ ParseConfig(const char *fn)
 		rMatchVlan |
 		rQnameFilter
 	) >> end_r;
-	rConfig.Debug(false);
 
 	// trimming - do not allow whitespace INSIDE these objects
 	rConfig.trim(*(space_r | rComment));

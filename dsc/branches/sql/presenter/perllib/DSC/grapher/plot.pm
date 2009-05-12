@@ -29,6 +29,12 @@ xrgb(FFB500) xrgb(FFC700) xrgb(FFD800) xrgb(FFE700) xrgb(FFF800) xrgb(EBFF00) xr
 xrgb(77FF00) xrgb(33FF00) xrgb(14E000) xrgb(00C41B) xrgb(00B560) xrgb(00A682) xrgb(008F9E) xrgb(006EB0)
 xrgb(004FBF) xrgb(0330C9) xrgb(141EB8) xrgb(230FA8) xrgb(340099) xrgb(3D0099) xrgb(4D0099) xrgb(660099)
 )];
+my $twenty_colors = [qw(
+xrgb(ff0000) xrgb(ff9900) xrgb(ffff00) xrgb(00cc00) xrgb(0033cc) xrgb(660099)
+xrgb(ff3300) xrgb(ffb200) xrgb(ccff00) xrgb(00b366) xrgb(1919b3) xrgb(990099)
+xrgb(ff6600) xrgb(ffcc00) xrgb(99ff00) xrgb(009999) xrgb(330099) xrgb(cc0099)
+xrgb(ff8000) xrgb(ffe500) xrgb(33ff00) xrgb(0066b3) xrgb(400099) xrgb(e60066)
+)];
 my $port_range_keys = [ qw(
 0-2047 2048-4095 4096-6143 6144-8191 8192-10239 10240-12287 12288-14335 14336-16383
 16384-18431 18432-20479 20480-22527 22528-24575 24576-26623 26624-28671 28672-30719 30720-32767
@@ -130,9 +136,10 @@ my $std_accum_yaxes = {
     datafile	=> 'qtype',
     keys	=> [ qw(a b c d e f g h i j k l m n o) ],
     names	=> [ qw(a b c d e f g h i j k l m n o) ],
-    colors	=> [ qw (red orange yellow brightgreen brightblue
-		     purple magenta redorange yellow2 green darkblue
-		     yelloworange powderblue claret lavender ) ],
+#    colors	=> [ qw (red orange yellow brightgreen brightblue
+#		     purple magenta redorange yellow2 green darkblue
+#		     yelloworange powderblue claret lavender ) ],
+    colors => $twenty_colors,
     dbkeys      => [ 'start_time', 'server_id' ],
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
@@ -802,6 +809,32 @@ my $std_accum_yaxes = {
     plottitle	=> 'Rcodes and Addrs',
     map_legend	=> 1,
   },
+
+  pcap_stats => {
+    dataset => 'pcap_stats',
+    plot_type => 'trace',
+    keys       => [qw(filter_received pkts_captured kernel_dropped)],
+    names      => [qw(recv capt drop)],
+    colors     => [qw(red brightgreen purple )],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    yaxes      => {
+	rate => {
+	    label => 'Packet Rate (p/s)',
+	    divideflag => 1,
+	    default => 1,
+	},
+	percent => {
+	    label => 'Percent of Packets',
+	    divideflag => 0,
+	    default => 0,
+	},
+    },
+    plottitle   => 'pcap statistics',
+    map_legend => 1,
+    munge_func  => \&DSC::grapher::munge_sum_2d_to_1d,
+  },
+
 
 );
 

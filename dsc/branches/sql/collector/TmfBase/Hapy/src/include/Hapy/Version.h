@@ -3,7 +3,7 @@
 #ifndef HAPY_VERSION__H
 #define HAPY_VERSION__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 
 namespace Hapy {
 
@@ -16,7 +16,7 @@ inline Version version() {
 	const Component format = 0U;
 	const Component major = 0U;
 	const Component minor = 0U;
-	const Component plevel = 4U;
+	const Component plevel = 6U;
 	const Component special = 0U;
 
 	return

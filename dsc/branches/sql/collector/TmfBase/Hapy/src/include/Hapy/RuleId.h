@@ -4,7 +4,7 @@
 #define HAPY_RULE_ID__H
 
 #include <Hapy/IosFwd.h>
-#include <Hapy/HapyString.h>
+#include <Hapy/String.h>
 
 namespace Hapy {
 
@@ -20,6 +20,7 @@ class RuleId {
 
 		const string &name() const { return theName; }
 		void name(const string &aName) const { theName = aName; }
+		void autoName(const string &hint) const;
 
 		bool known() const { return theId != 0; }
 		bool temporary() const { return theId < 0; }

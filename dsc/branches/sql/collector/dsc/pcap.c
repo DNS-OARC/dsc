@@ -91,9 +91,12 @@
 #endif
 
 struct _interface {
+	char *device;
 	pcap_t *pcap;
 	int fd;
 	void (*handle_datalink) (const u_char *, int, transport_message *);
+	struct pcap_stat ps0, ps1;
+	unsigned int pkts_captured;
 };
 
 #define MAX_N_INTERFACES 10
@@ -965,6 +968,7 @@ Pcap_init(const char *device, int promisc)
     assert(interfaces);
     assert(n_interfaces < MAX_N_INTERFACES);
     i = &interfaces[n_interfaces];
+    i->device = strdup(device);
 
     port53 = 53;
     last_ts.tv_sec = last_ts.tv_usec = 0;
@@ -975,7 +979,15 @@ Pcap_init(const char *device, int promisc)
     if (readfile_state) {
 	i->pcap = pcap_open_offline(device, errbuf);
     } else {
-	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 50, errbuf);
+	/*
+	 * NOTE: the to_ms argument here used to be 50, which seems to make
+	 * good sense, but actually causes problems when taking packets from
+	 * multiple interfaces (and one of those interfaces is very quiet).
+	 * Even though we select() on the pcap FDs, we ignore what it tells
+	 * us and always try to read from all interfaces, so the timeout
+	 * here is important.
+	 */
+	i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1, errbuf);
     }
     if (NULL == i->pcap) {
 	syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
@@ -1046,6 +1058,8 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 
     dns_message_callback = dns_callback;
     ip_message_callback = ip_callback;
+    for (i = 0; i < n_interfaces; i++)
+	interfaces[i].pkts_captured = 0;
     if (n_pcap_offline > 0) {
 	result = 0;
 	if (finish_ts.tv_sec > 0)
@@ -1055,6 +1069,7 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 		(u_char *) &interfaces[0]);
 	    if (result <= 0) /* error or EOF */
 		break;
+	    interfaces[0].pkts_captured += result;
 	    if (start_ts.tv_sec == 0) {
 		start_ts = last_ts;
 		finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
@@ -1080,10 +1095,19 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	    for (i = 0; i < n_interfaces; i++) {
 		struct _interface *I = &interfaces[i];
 		if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
-		    pcap_dispatch(I->pcap, 50, handle_pcap, (u_char *) I);
-		    /* XXX should check for errors here */
+		    int x = pcap_dispatch(I->pcap, -1, handle_pcap, (u_char *) I);
+		    if (x > 0)
+			I->pkts_captured += x;
 		}
 	    }
+	}
+	/*
+	 * get pcap stats
+	 */
+	for (i = 0; i < n_interfaces; i++) {
+	    struct _interface *I = &interfaces[i];
+	    I->ps0 = I->ps1;
+	    pcap_stats(I->pcap, &I->ps1);
 	}
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
@@ -1117,4 +1141,76 @@ pcap_set_match_vlan(int vlan)
 {
     assert(n_vlan_ids < MAX_VLAN_IDS);
     vlan_ids[n_vlan_ids++] = vlan;
+}
+
+/* ========== PCAP_STAT INDEXER ========== */
+
+#include "md_array.h"
+
+int pcap_ifname_iterator(char **);
+int pcap_stat_iterator(char **);
+extern md_array_printer xml_printer;
+
+static indexer_t indexers[] = {
+    { "ifname",    NULL, pcap_ifname_iterator, NULL },
+    { "pcap_stat", NULL, pcap_stat_iterator, NULL },
+    { NULL, NULL, NULL, NULL },
+};
+
+int
+pcap_ifname_iterator(char **label)
+{
+    static int next_iter = 0;
+    if (NULL == label) {
+        next_iter = 0;
+        return n_interfaces;
+    }
+    if (next_iter >= 0 && next_iter < n_interfaces) {
+    	*label = interfaces[next_iter].device;
+	return next_iter++;
+    }
+    return -1;
+}
+
+int
+pcap_stat_iterator(char **label)
+{
+    static int next_iter = 0;
+    if (NULL == label) {
+        next_iter = 0;
+        return 3;
+    }
+    if (0 == next_iter)
+        *label = "pkts_captured";
+    else if (1 == next_iter)
+        *label = "filter_received";
+    else if (2 == next_iter)
+        *label = "kernel_dropped";
+    else
+        return -1;
+    return next_iter++;
+}
+
+void
+pcap_report(FILE *fp)
+{
+    int i;
+    md_array *theArray = acalloc(1, sizeof(*theArray));
+    theArray->name = "pcap_stats";
+    theArray->d1.indexer = &indexers[0];
+    theArray->d1.type = "ifname";
+    theArray->d1.alloc_sz = n_interfaces;
+    theArray->d2.indexer = &indexers[1];
+    theArray->d2.type = "pcap_stat";
+    theArray->d2.alloc_sz = 3;
+    theArray->array = acalloc(n_interfaces, sizeof(*theArray->array));
+    for (i=0; i < n_interfaces; i++) {
+	struct _interface *I = &interfaces[i];
+	theArray->array[i].alloc_sz = 3;
+	theArray->array[i].array = acalloc(3, sizeof(int));
+	theArray->array[i].array[0] = I->pkts_captured;
+	theArray->array[i].array[1] = I->ps1.ps_recv - I->ps0.ps_recv;
+	theArray->array[i].array[2] = I->ps1.ps_drop - I->ps0.ps_drop;
+    }
+    md_array_print(theArray, &xml_printer, fp);
 }

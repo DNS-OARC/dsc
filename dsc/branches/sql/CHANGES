@@ -1,3 +1,67 @@
+2009-01-26 Duane Wessels
+
+    Upgraded to more recent version of Hapy parsing library.
+
+2008-12-31 Duane Wessels
+
+    In the collector, changed the value of pcap_open_live() because
+    we always try to read from all interfaces after select() returns.
+    If we have multiple interfaces and one of them is quiet, and
+    the timeout is too large, we'll drop packets on the other
+    interface while waiting for the first to time out.
+
+    Also added a pseudo-dataset that reports on pcap packets captured
+    and dropped.
+    
+
+2008-12-02 Duane Wessels
+
+    Grapher now preserves the order of the server list given in
+    dsc-grapher.cfg.
+
+2008-11-22 Duane Wessels
+
+    Added some collector indexers and datasets for 2nd and 3rd level
+    domains.
+
+2008-10-02 Duane Wessels
+
+    Made the 'no extractor for $dataset' error message non-fatal.
+    Now, the unknown dataset will just be skipped and the remaining
+    ones will be processed.
+
+2008-09-30 Duane Wessels
+
+    In the presenter, account for the possibility that the collector's
+    clock is not in sync.
+
+2008-09-18 Elmar Knipp
+
+    Found bug in upload script where a $PROG.out prevents removal
+    of a $YYYYMMDD directory.
+
+2008-09-16 Duane Wessels
+
+    New presenter feature: Node Merging.  Now the DSC grapher can
+    automatically "merge" multiple nodes so that they appear as
+    one.  For example instead of this dsc-grapher.cfg line:
+
+        server S N1a N1b
+
+    you can merge nodes "a" and "b" with this line:
+
+	server S N1=N1a,N1b
+
+    This feature is also useful for just renaming a node if you
+    want it to be displayed as a different name than the directory
+    where its files are.
+
+2008-09-15 Duane Wessels
+
+    On the collector, changed the sample config and upload scripts
+    to use /usr/local/dsc/run as the default run_dir (was formerly
+    /usr/local/dsc/var/run/).
+
 2008-08-21 Duane Wessels
 
     Added an EDNS bufsiz indexer so we can collect buffer sizes

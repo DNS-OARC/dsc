@@ -11,3 +11,6 @@ EXTRA_DIST = \
 	NEWS \
 	bootstrap.sh
 
+DISTCLEANFILES = \
+	_configs.sed
+

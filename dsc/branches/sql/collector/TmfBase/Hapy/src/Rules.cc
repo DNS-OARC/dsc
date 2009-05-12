@@ -14,7 +14,8 @@ Rule AlgToRule(Algorithm *alg) {
 	p->id(RuleId::Temporary());
 	string name;
 	if (alg->terminal(&name) && name.size() > 0)
-		p->id().name('_' + name.substr(0, 10));
+		p->id().autoName(name);
+
 	p->alg(alg);
 	return Rule(p);
 }

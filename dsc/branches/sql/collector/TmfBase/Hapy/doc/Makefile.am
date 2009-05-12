@@ -17,9 +17,9 @@ actions_SOURCES = \
 LDADD = \
 	-L$(top_builddir)/src -lHapy
 
-INCLUDES = -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
+AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
 
 site:
 	SiteStylist config.ss . /tmp/hapy
-	install -C -p calc.cc calci.cc /tmp/hapy
+	install -C -p calc.cc calci.cc actions.cc /tmp/hapy
 	install -C -p benchmarking/xmlgen.diff /tmp/hapy/benchmarking/

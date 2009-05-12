@@ -2,6 +2,7 @@
 
 #include <Hapy/Parser.h>
 #include <Hapy/Rules.h>
+#include <Hapy/PreeFarm.h>
 #include <Hapy/Assert.h>
 #include <Hapy/IoStream.h>
 
@@ -30,7 +31,7 @@ Rule grammar() {
 	Rule rValue("value", 0);
 
 	rGrammar = *rNode;
-	rNode = rPi | rElement | rText;
+	rNode = rElement | rText | rPi;
 	rElement = rOpenElement >> *rNode >> rCloseElement | rClosedElement;
 
 	rPi = "<?" >> rName >> *(anychar_r - "?>") >> "?>";
@@ -133,7 +134,6 @@ void configureStream(ostream &os, int prec) {
 }
 
 int main() {
-	Rule::Debug(false);
 	configureStream(cout, 3);
 
 	clog << "reading ... ";
@@ -172,9 +172,9 @@ int main() {
 		"memory: " << (cpParser.ru_maxrss/1024.) << " MB" << endl;
 
 	cout << "prees:  " << pree.rawDeepCount() << " (" <<
-			PreeFarm::TheInLevel << " in + " <<
-			PreeFarm::TheOutLevel << " out)" <<
+			PreeFarm::TheNewCount << " allocated during " <<
+			PreeFarm::TheGetCount << " gets and " <<
+			PreeFarm::ThePutCount << " puts)" <<
 		endl;
-
 	return 0;
 }

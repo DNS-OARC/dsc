@@ -3,7 +3,7 @@
 #ifndef HAPY_RULE_PTR__H
 #define HAPY_RULE_PTR__H
 
-#include <Hapy/config.h>
+#include <Hapy/Top.h>
 
 namespace Hapy {
 

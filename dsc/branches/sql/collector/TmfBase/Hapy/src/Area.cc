@@ -32,6 +32,10 @@ bool Hapy::Area::operator ==(const Area &a) const {
 	return theStart == a.theStart && size() == a.size();
 }
 
+bool Hapy::Area::operator !=(const Area &a) const {
+	return !(*this == a);
+}
+
 const Hapy::string &Hapy::Area::image() const {
 	if (theState != asFrozen) {
 		theImage = theImage.substr(start(), size()); // expensive

@@ -5,11 +5,13 @@
 #include <Hapy/IoStream.h>
 
 #include <cstring>
+#include <cstdlib>
 #include <errno.h>
 
 
-void Hapy::Complain(const char *fname, int lineno) {
+bool Hapy::Complain(const char *fname, int lineno) {
 	cerr << fname << ':' << lineno << ": " << strerror(errno) << endl;
+	return false;
 }
 
 
@@ -19,15 +21,17 @@ void Hapy::Abort(const char *fname, int lineno, const char *cond) {
 	::abort();
 }
 
-void Hapy::Exit(const char *fname, int lineno, const char *cond) {
+bool Hapy::Exit(const char *fname, int lineno, const char *cond) {
 	cerr << fname << ':' << lineno << ": assertion failed: '" 
 		<< (cond ? cond : "?") << "'" << endl;
 	::exit(-2);
+	return false;
 }
 
-void Hapy::Exit() {
+bool Hapy::Exit() {
 	if (errno)
 		::exit(errno);
 	else
 		::exit(-2);
+	return false;
 }

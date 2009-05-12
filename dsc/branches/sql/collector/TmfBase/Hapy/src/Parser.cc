@@ -5,6 +5,7 @@
 #include <Hapy/RuleBase.h>
 #include <Hapy/Rule.h>
 #include <Hapy/Rules.h>
+#include <Hapy/Debugger.h>
 #include <Hapy/Parser.h>
 
 #include <functional>
@@ -12,7 +13,7 @@
 
 
 // keep in sync with moveOn()
-Hapy::Parser::Parser(): isCompiled(false) {
+Hapy::Parser::Parser(): theStartRule(0), isCompiled(false) {
 }
 
 void Hapy::Parser::grammar(const Rule &aStart) {
@@ -24,9 +25,24 @@ const Hapy::Result &Hapy::Parser::result() const {
 }
 
 bool Hapy::Parser::parse(const string &content) {
+	// allow repeated parse() calls; keep in sync with ctors
+	if (theResult.statusCode != Result::scNone) {
+		theBuffer.reset();
+		theResult = Result();
+		// compilation-related members are preserved as is
+	}
+
 	pushData(content);
 	sawDataEnd(true);
-	theStartRule->reachEnd(true);
+
+	if (!isCompiled) {
+		theCflags.reachEnd = true;
+		if (!compile()) {
+			theResult.statusCode = Result::scError;
+			return last();
+		}
+	}
+
 	begin();
 	end();
 	return theResult.statusCode == Result::scMatch;
@@ -102,7 +118,8 @@ void Hapy::Parser::sawDataEnd(bool did) {
 void Hapy::Parser::moveOn() {
 	theBuffer.moveOn();
 	theResult = Result();
-	// theGrammar and isCompiled are preserved as is
+	// compilation-related members (e.g., theCflags, theStartRule, isCompiled)
+	// are preserved as is
 }
 
 bool Hapy::Parser::last() {
@@ -126,6 +143,13 @@ bool Hapy::Parser::last() {
 }
 
 bool Hapy::Parser::compile() {
-	isCompiled = true;
-	return Should(theStartRule->compile(0));
+	Debugger::Configure();
+
+	if (Should(theStartRule) &&
+		Should(theStartRule->build(theCflags))) {
+		isCompiled = true;
+		return true;
+	}
+
+	return false;
 }

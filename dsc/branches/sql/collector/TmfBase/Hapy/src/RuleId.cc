@@ -18,6 +18,15 @@ Hapy::RuleId Hapy::RuleId::Temporary() {
 	return RuleId(--TheTmp);
 }
 
+void Hapy::RuleId::autoName(const string &hint) const {
+	if (name().empty() && !hint.empty()) {
+		string n = hint;
+		if (n[0] != '_' || n.size() == 1)
+			n = "_" + n;
+		name(n.substr(0, 10));
+	}
+}
+
 Hapy::ostream &Hapy::RuleId::print(ostream &os) const {
 	if (theName.size())
 		os << theName << '#';
