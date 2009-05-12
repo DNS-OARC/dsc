@@ -420,10 +420,11 @@ my $port_range_keys = [ qw(
     type2	=> 'SecondLD',
     outputs	=> {
       second_ld_vs_rcode_accum => {
+	dbkeys      => [ 'key1', 'key2' ],
 	data_munger => \&main::swap_dimensions,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
-	data_writer => \&DSC::extractor::write_data3,
+	data_writer => \&DSC::db::write_data3,
       },
     },
   },
@@ -434,10 +435,11 @@ my $port_range_keys = [ qw(
     type2	=> 'ThirdLD',
     outputs	=> {
       third_ld_vs_rcode_accum => {
+	dbkeys      => [ 'key1', 'key2' ],
 	data_munger => \&main::swap_dimensions,
 	data_reader => \&DSC::extractor::read_data3,
 	data_merger => \&main::merge_accum2d,
-	data_writer => \&DSC::extractor::write_data3,
+	data_writer => \&DSC::db::write_data3,
       },
     },
   },
@@ -451,7 +453,7 @@ my $port_range_keys = [ qw(
 	data_munger => \&main::swap_dimensions,
 	data_reader => \&DSC::extractor::read_data4,
 	data_merger => \&main::merge_trace,
-	data_writer => \&DSC::extractor::write_data4,
+	data_writer => \&DSC::db::write_data4,
       },
     },
   },
