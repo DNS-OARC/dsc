@@ -320,20 +320,68 @@ dns_message_clear_arrays(void)
 	md_array_clear(a->theArray);
 }
 
+/*
+ * QnameToNld
+ *
+ * qname is a 0-terminated string containing a DNS name
+ * nld is the domain level to find
+ *
+ * return value is a pointer into the qname string.
+ *
+ * Handles the following cases:
+ *    qname is empty ("")
+ *    qname ends with one or more dots
+ *    qname begins with one or more dots
+ *    multiple consequtive dots in qname
+ *
+ * TESTS
+ *	assert(0 == strcmp(QnameToNld("a.b.c.d", 1), "d"));
+ *	assert(0 == strcmp(QnameToNld("a.b.c.d", 2), "c.d"));
+ *	assert(0 == strcmp(QnameToNld("a.b.c.d.", 2), "c.d."));
+ *	assert(0 == strcmp(QnameToNld("a.b.c.d....", 2), "c.d...."));
+ *	assert(0 == strcmp(QnameToNld("c.d", 5), "c.d"));
+ *	assert(0 == strcmp(QnameToNld(".c.d", 5), "c.d"));
+ *	assert(0 == strcmp(QnameToNld(".......c.d", 5), "c.d"));
+ *	assert(0 == strcmp(QnameToNld("", 1), ""));
+ *	assert(0 == strcmp(QnameToNld(".", 1), "."));
+ *	assert(0 == strcmp(QnameToNld("a.b..c..d", 2), "c..d"));
+ *	assert(0 == strcmp(QnameToNld("a.b................c..d", 3), "b................c..d"));
+ */
+const char *
+dns_message_QnameToNld(const char *qname, int nld)
+{
+    const char *e = qname + strlen(qname) - 1;
+    const char *t;
+    int dotcount = 0;
+    int state = 0;	/* 0 = not in dots, 1 = in dots */
+    while (*e == '.' && e > qname)
+	e--;
+    t = e;
+    if (0 == strcmp(t, ".arpa"))
+        dotcount--;
+    while (t > qname && dotcount < nld) {
+        t--;
+        if ('.' == *t) {
+	    if (0 == state)
+		dotcount++;
+	    state = 1;
+	} else {
+	    state = 0;
+	}
+    }
+    while (*t == '.' && t < e)
+        t++;
+    return t;
+}
+
 const char *
 dns_message_tld(dns_message * m)
 {
-    if (NULL == m->tld) {
-	m->tld = m->qname + strlen(m->qname) - 2;
-	while (m->tld >= m->qname && (*m->tld != '.'))
-	    m->tld--;
-	if (*m->tld == '.')
-	    m->tld++;
-	if (m->tld < m->qname)
-	    m->tld = m->qname;
-    }
+    if (NULL == m->tld)
+	m->tld = dns_message_QnameToNld(m->qname, 1);
     return m->tld;
 }
+
 
 void
 dns_message_init(void)

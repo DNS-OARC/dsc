@@ -46,6 +46,7 @@ typedef void (DMC) (dns_message *);
 
 void dns_message_report(FILE *);
 int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, dataset_opt);
+const char * dns_message_QnameToNld(const char *, int);
 const char * dns_message_tld(dns_message * m);
 void dns_message_init(void);
 void dns_message_clear_arrays(void);
