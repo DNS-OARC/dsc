@@ -330,8 +330,8 @@ dns_message_clear_arrays(void)
  *
  * Handles the following cases:
  *    qname is empty ("")
- *    qname ends with on or more dots
- *    qname begins with on or more dots
+ *    qname ends with one or more dots
+ *    qname begins with one or more dots
  *    multiple consequtive dots in qname
  *
  * TESTS
