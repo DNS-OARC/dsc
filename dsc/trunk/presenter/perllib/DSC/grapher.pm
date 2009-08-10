@@ -252,10 +252,6 @@ sub make_image {
 		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
 		hist2d_data_to_tmpfile($data, $datafile) and
 		hist2d_plot($datafile, $ARGS{binsize}, $cache_name);
-	} elsif ($PLOT->{plot_type} eq 'srcport') {
-		# for plotting client source ports
-		srcport_data_to_tmpfile($data, $datafile) and
-		srcport_plot($datafile, $ARGS{binsize}, $cache_name);
 	} else {
 		error("Unknown plot type: $PLOT->{plot_type}");
 	}
@@ -488,25 +484,6 @@ sub hist2d_data_to_tmpfile {
 	my $stop = time;
 	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
 	#system "cat $tf 1>&2";
-	$nl;
-}
-
-sub srcport_data_to_tmpfile {
-	my $data = shift;
-	my $tf = shift;
-	my $start = time;
-	delete $data->{$SKIPPED_KEY};
-	delete $data->{$SKIPPED_SUM_KEY};
-	
-	my $nl = 0;
-	foreach my $k1 (sort {$data->{$b} <=> $data->{$a}} keys %$data) {
-		print $tf "$nl $data->{$k1}\n";
-		$nl++;
-	}
-	close($tf);
-	my $stop = time;
-	debug(1, "writing $nl lines to tmpfile took %d seconds", $stop-$start);
-	#system "head $tf 1>&2";
 	$nl;
 }
 
@@ -813,74 +790,6 @@ sub hist2d_plot {
 	Ploticus_yaxis($yaxis_opts);
 	Ploticus_bars($bars_opts);
 	Ploticus_legend() unless ($ARGS{mini});
-	ploticus_end();
-
-	rename("$pngfile.new", $pngfile);
-	rename("$mapfile.new", $mapfile) if defined($mapfile);
-	my $stop = time;
-	debug(1, "ploticus took %d seconds", $stop-$start);
-}
-
-sub srcport_plot {
-	my $tf = shift;
-	my $binsize = shift;	# ignored
-	my $cache_name = shift;
-	my $pngfile = cache_image_path($cache_name);
-	my $ntypes = @plotnames;
-	my $start = time;
-	my $mapfile = undef;
-
-	ploticus_init("png", "$pngfile.new");
-	ploticus_arg("-maxrows", "50000");
-	if ($PLOT->{map_legend}) {
-		$mapfile = cache_mapfile_path($cache_name);
-		ploticus_arg("-csmap", "");
-		ploticus_arg("-mapfile", "$mapfile.new");
-	}
-	ploticus_begin();
-	Ploticus_getdata($tf->filename());
-	my $areadef_opts = {
-		-title => $PLOT->{plottitle} . "\n" . time_descr(),
-		-rectangle => '1 1 6 4',
-		-yfields => join(',', 2..($ntypes+1)),
-		-xscaletype => 'log+1',
-	};
-	my $yaxis_opts = {
-		-label => $PLOT->{yaxes}{$ARGS{yaxis}}{label},
-		-grid => 'yes',
-	};
-	my $xaxis_opts = {
-		-label => $PLOT->{xaxislabel},
-	};
-	my $lines_opts = {
-		-labelsarrayref => \@plotnames,
-		-colorsarrayref => \@plotcolors,
-		-indexesarrayref => [0..$ntypes-1],
-	};
-	my $legend_opts = {
-		-reverseorder => 'no',
-	};
-
-	if ($ARGS{mini}) {
-		$areadef_opts->{-title} = $PLOT->{plottitle};
-		$areadef_opts->{-rectangle} = '1 1 3 4';
-		delete($xaxis_opts->{-label});
-	}
-
-	if (defined($mapfile)) {
-		my %copy = %ARGS;
-		delete $copy{key};
-		my $uri = urlpath(%copy);
-		$uri .= '&key=@KEY@';
-		debug(1, "click URI = $uri");
-		$lines_opts->{-legend_clickmapurl_tmpl} = $uri;
-	}
-
-	Ploticus_areadef($areadef_opts);
-	Ploticus_xaxis($xaxis_opts);
-	Ploticus_yaxis($yaxis_opts);
-	Ploticus_lines($lines_opts);
-	#Ploticus_legend() unless ($ARGS{mini});
 	ploticus_end();
 
 	rename("$pngfile.new", $pngfile);
