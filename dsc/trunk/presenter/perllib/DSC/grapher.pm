@@ -261,13 +261,14 @@ sub make_image {
 
 sub datafile_path {
 	my $plot = shift;
+	my $server = shift;
 	my $node = shift;
 	my $when = shift;
 	my $dataset = $PLOT->{dataset} || $plot;
 	my $datafile = $PLOT->{datafile} || $plot;
 	join('/',
 		$DATAROOT,
-		$ARGS{server},
+		$server,
 		$node,
 		yymmdd($when),
 		"$datafile.dat");
@@ -299,7 +300,7 @@ sub load_data {
 	  foreach my $real_node (@{$CFG->{nodemap}{$ARGS{server}}{$node}}) {
 	    for (my $t = $first; $t <= $last; $t += 86400) {
 		my %thash;
-		my $datafile = datafile_path($ARGS{plot}, $real_node, $t);
+		my $datafile = datafile_path($ARGS{plot}, $ARGS{server}, $real_node, $t);
 		debug(1, "reading $datafile");
 		#warn "$datafile: $!\n" unless (-f $datafile);
 		if ('bynode' eq $ARGS{plot}) {
