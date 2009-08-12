@@ -72,12 +72,12 @@ sub read_config {
 
 sub get_valid_domains {
 	my $server = shift;
-	print STDERR "get_valid_domains: server is $server\n";
+	#print STDERR "get_valid_domains: server is $server\n";
 	my $listname = $CONFIG{valid_domains}{$server};
-	print STDERR "get_valid_domains: listname is $listname\n";
+	#print STDERR "get_valid_domains: listname is $listname\n";
 	return (undef) unless defined ($listname);
 	return (undef) unless defined ($CONFIG{domain_list}{$listname});
-	print STDERR "get_valid_domains: $server valid domain list is $listname\n";
+	#print STDERR "get_valid_domains: $server valid domain list is $listname\n";
 	@{$CONFIG{domain_list}{$listname}};
 }
 
