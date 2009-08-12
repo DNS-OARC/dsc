@@ -4,6 +4,5 @@ use strict;
 use warnings;
 
 use DSC::grapher;
-
-DSC::grapher::prepare();
-DSC::grapher::run();
+my $grapher = DSC::grapher->new;
+$grapher->run();

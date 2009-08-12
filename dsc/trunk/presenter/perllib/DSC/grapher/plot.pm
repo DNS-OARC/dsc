@@ -232,8 +232,9 @@ my $std_accum_yaxes = {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     munge_func  => sub {
-	# XXX: 'shift' represents the old data hashref
-	DSC::grapher::munge_2d_to_1d(shift, [qw(localhost X.root-servers.net else)], [qw(1 28 38)])
+	my $self = shift;
+	my $data = shift;
+	$self->munge_2d_to_1d($data, [qw(localhost X.root-servers.net else)], [qw(1 28 38)])
     },
     plottitle	=> 'Queries for localhost and X.root-servers.net',
     map_legend	=> 1,
@@ -346,9 +347,10 @@ my $std_accum_yaxes = {
 
   qtype_vs_invalid_tld => {
     munge_func => sub {
+      my $self = shift;
       my $data = shift;
       foreach my $k1 (keys %$data) {
-	delete $data->{$k1} unless (DSC::grapher::invalid_tld_filter($k1));
+	delete $data->{$k1} unless ($self->invalid_tld_filter($k1));
       }
       $data;
     },
@@ -384,9 +386,10 @@ my $std_accum_yaxes = {
 
   qtype_vs_valid_tld => {
     munge_func => sub {
+      my $self = shift;
       my $data = shift;
       foreach my $k1 (keys %$data) {
-	delete $data->{$k1} unless (DSC::grapher::valid_tld_filter($k1));
+	delete $data->{$k1} unless ($self->valid_tld_filter($k1));
       }
       $data;
     },
@@ -422,9 +425,10 @@ my $std_accum_yaxes = {
 
   qtype_vs_numeric_tld => {
     munge_func => sub {
+      my $self = shift;
       my $data = shift;
       foreach my $k1 (keys %$data) {
-	delete $data->{$k1} unless (DSC::grapher::numeric_tld_filter($k1));
+	delete $data->{$k1} unless ($self->numeric_tld_filter($k1));
       }
       $data;
     },
@@ -482,8 +486,9 @@ my $std_accum_yaxes = {
     plottitle   => 'Received packets by IP protocol',
     map_legend	=> 1,
     munge_func  => sub {
-	# XXX: 'shift' represents the old data hashref
-	DSC::grapher::munge_2d_to_1d(shift, [qw(recv)], [qw(icmp tcp udp else)])
+	my $self = shift;
+	my $data = shift;
+	$self->munge_2d_to_1d($data, [qw(recv)], [qw(icmp tcp udp else)])
    }
   },
 
@@ -574,8 +579,9 @@ my $std_accum_yaxes = {
     plottitle   => 'Transmitted packets by IP protocol',
     map_legend	=> 1,
     munge_func  => sub {
-	# XXX: 'shift' represents the old data hashref
-	DSC::grapher::munge_2d_to_1d(shift, [qw(sent)], [qw(icmp tcp udp else)])
+	my $self = shift;
+	my $data = shift;
+	$self->munge_2d_to_1d($data, [qw(sent)], [qw(icmp tcp udp else)])
    }
   },
 
@@ -603,6 +609,7 @@ my $std_accum_yaxes = {
     plottitle   => 'IP packet direction',
     map_legend	=> 1,
     munge_func  => sub {
+        my $self = shift;
         my $data = shift;
         my %newdata;
         foreach my $t (keys %$data) {
@@ -760,8 +767,9 @@ my $std_accum_yaxes = {
     plottitle   => 'CHAOS Queries',
     map_legend	=> 1,
     munge_func  => sub {
-	# XXX: 'shift' represents the old data hashref
-	DSC::grapher::munge_2d_to_1d(shift, [qw(16)], [qw(version.bind hostname.bind else)])
+	my $self = shift;
+	my $data = shift;
+	$self->munge_2d_to_1d(shift, [qw(16)], [qw(version.bind hostname.bind else)])
    }
   },
 
@@ -799,7 +807,7 @@ my $std_accum_yaxes = {
     # ARGH, Ploticus only supports stacking of 40 fields, so
     # here we change the original 64 bins into 32 bins.
     munge_func  => sub {
-	use Data::Dumper;
+        my $self = shift;
         my $data = shift;
         my %newdata;
 	for (my $fbin = 0; $fbin < 64; $fbin++) {
