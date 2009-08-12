@@ -27,73 +27,92 @@ END { }
 # CONSTANTS
 my $dbg_lvl = 9;
 my $DATAROOT = '/usr/local/dsc/data';
-my $CacheImageTTL = 60; # 1 min
+my $DEFAULTCONFIG = '/usr/local/dsc/etc/dsc-grapher.cfg';
+my $CacheImageTTL = 60;		# 1 min
 my $expires_time = '+1m';
 my $sublist_item ='&rsaquo;&nbsp;';
+my @argnames = qw ( server node window binsize plot content mini end yaxis key );
 
 sub new {
 	my $class = shift;
 	my %config = @_;
 	my $self = {};
 	# initialize vars
-	$self->{ARGS} = undef;	# from CGI or command line
-	$self->{CFG} = undef;	# from dsc-cfg.pl
 	$self->{PLOT} = undef;	# = $DSC::grapher::plot::PLOTS{name}
 	$self->{TEXT} = undef;	# = $DSC::grapher::text::TEXTS{name}
 	$self->{ACCUM_TOP_N} = 40;
-	my $cgi = $config{cgi} ? $config{cgi} : new CGI();
-	$self->{cgi} = $cgi;
+	$self->{cgi} = undef;
 	$self->{now} = time;
 	$self->{plotkeys} = ();
 	$self->{plotcolors} = ();
 	$self->{plotnames} = ();
 	$self->{valid_domains} = ();
-	$self->{use_data_uri} = defined $cgi->param('x') ? 1 : 0;
+	#
+	# read config file early so we can set back the clock if necessary
+	#
+	my $cfgfile = $config{configfile} || $DEFAULTCONFIG;
+	$self->{CFG} = DSC::grapher::config::read_config($cfgfile);
+	$self->{now} -= $self->{CFG}->{embargo} if defined $self->{CFG}->{embargo};
+	#
+	# set up default args
+	#
+	$self->{ARGS}->{server} = 'none';
+	$self->{ARGS}->{node} = 'all';
+	$self->{ARGS}->{window} = 3600*4;
+	$self->{ARGS}->{binsize} = default_binsize($self->{ARGS}->{window});
+	$self->{ARGS}->{plot} = 'bynode';
+	$self->{ARGS}->{content} = 'png';
+	$self->{ARGS}->{mini} = 0;
+	$self->{ARGS}->{end} = $self->{now};
+	$self->{ARGS}->{yaxis} = undef;
+	$self->{ARGS}->{key} = undef;
+	#
+	#
+	#
 	bless($self, $class);
 	return $self;
 }
 
-sub cgi { shift->{cgi}; }
+sub cmdline {
+	my $self = shift;
+	my $args = shift;
+	foreach my $k (@argnames) {
+		next unless defined $args->{$k};
+		$self->{ARGS}->{$k} = $args->{$k};
+		if ('window' eq $k && !defined($args->{binsize})) {
+			$self->{ARGS}->{binsize} = default_binsize($args->{window});
+		}
+	}
+	$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
+}
+
+sub cgi {
+	my $self = shift;
+	if (@_) {
+		$self->{cgi} = shift;
+		$self->debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
+		$self->debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
+		my $untaint = CGI::Untaint->new($self->{cgi}->Vars);
+		$self->{ARGS}->{server} = $untaint->extract(-as_printable => 'server') if defined $self->{cgi}->param('server');
+		$self->{ARGS}->{node} = $untaint->extract(-as_printable => 'node') if defined $self->{cgi}->param('node');
+		$self->{ARGS}->{window} = $untaint->extract(-as_integer => 'window') if defined $self->{cgi}->param('window');
+		$self->{ARGS}->{binsize} = $untaint->extract(-as_integer => 'binsize') if defined $self->{cgi}->param('binsize');
+		$self->{ARGS}->{plot} = $untaint->extract(-as_printable => 'plot') if defined $self->{cgi}->param('plot');
+		$self->{ARGS}->{mini} = $untaint->extract(-as_integer => 'mini') if defined $self->{cgi}->param('mini');
+		$self->{ARGS}->{end} = $untaint->extract(-as_integer => 'end') if defined $self->{cgi}->param('end');
+		$self->{ARGS}->{yaxis} = $untaint->extract(-as_printable => 'yaxis') if defined $self->{cgi}->param('yaxis');
+		$self->{ARGS}->{key} = $untaint->extract(-as_printable => 'key') if defined $self->{cgi}->param('key');
+		$self->{ARGS}->{content} = $untaint->extract(-as_printable => 'content') || 'html';
+		$self->{use_data_uri} = defined $self->{cgi}->param('x') ? 1 : 0;
+		$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
+	}
+	return $self->{cgi};
+}
 
 sub run {
 	my $self = shift;
-	my $cfgfile = shift || '/usr/local/dsc/etc/dsc-grapher.cfg';
-	my $cmdline = shift;
-	# read config file early so we can set back the clock if necessary
-	#
-	$self->{CFG} = DSC::grapher::config::read_config($cfgfile);
-	$self->debug(3, 'CFG=' . Dumper($self->{CFG})) if ($dbg_lvl >= 3);
-	$self->{now} -= $self->{CFG}->{embargo} if defined $self->{CFG}->{embargo};
-
 	$self->debug(1, "===> starting at " . POSIX::strftime('%+', localtime($self->{now})));
-	if ($cmdline) {
-	$self->{ARGS}->{server} = $cmdline->{'server'}	|| 'none';
-	$self->{ARGS}->{node} = $cmdline->{'node'}	|| 'all';
-	$self->{ARGS}->{window} = $cmdline->{'window'}	|| 3600*4;
-	$self->{ARGS}->{binsize} = $cmdline->{'binsize'}	|| default_binsize($self->{ARGS}->{window});
-	$self->{ARGS}->{plot} = $cmdline->{'plot'}	|| 'bynode';
-	$self->{ARGS}->{content} = 			   'png';
-	$self->{ARGS}->{mini} = $cmdline->{'mini'}	|| 0;
-	$self->{ARGS}->{end} = $cmdline->{'end'}		|| $self->{now};
-	$self->{ARGS}->{yaxis} = $cmdline->{'yaxis'}	|| undef;
-	$self->{ARGS}->{key} = $cmdline->{'key'};		# sanity check below
-	} else {
-	$self->debug(2, "Client is = $ENV{REMOTE_ADDR}:$ENV{REMOTE_PORT}");
-	$self->debug(3, "ENV=" . Dumper(\%ENV)) if ($dbg_lvl >= 3);
-	my $untaint = CGI::Untaint->new($self->cgi->Vars);
-	$self->{ARGS}->{server} = $untaint->extract(-as_printable => 'server')	|| 'none';
-	$self->{ARGS}->{node} = $untaint->extract(-as_printable => 'node')	|| 'all';
-	$self->{ARGS}->{window} = $untaint->extract(-as_integer => 'window')	|| 3600*4;
-	$self->{ARGS}->{binsize} = $untaint->extract(-as_integer => 'binsize')	|| default_binsize($self->{ARGS}->{window});
-	$self->{ARGS}->{plot} = $untaint->extract(-as_printable => 'plot')	|| 'bynode';
-	$self->{ARGS}->{content} = $untaint->extract(-as_printable => 'content')	|| 'html';
-	$self->{ARGS}->{mini} = $untaint->extract(-as_integer => 'mini')		|| 0;
-	$self->{ARGS}->{end} = $untaint->extract(-as_integer => 'end')		|| $self->{now};
-	$self->{ARGS}->{yaxis} = $untaint->extract(-as_printable => 'yaxis');
-	$self->{ARGS}->{key} = $untaint->extract(-as_printable => 'key');		# sanity check below
-	}
-
-	$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
+	$self->debug(3, 'CFG=' . Dumper($self->{CFG})) if ($dbg_lvl >= 3);
 	$self->{TEXT} = $DSC::grapher::text::TEXTS{$self->{ARGS}->{plot}};
 	$self->error("Unknown plot type: $self->{ARGS}->{plot}") unless (defined ($self->{PLOT}));
 	$self->error("Unknown server: $self->{ARGS}->{server}") unless ('none' eq $self->{ARGS}->{server} || defined ($self->{CFG}->{servers}{$self->{ARGS}->{server}}));
@@ -106,7 +125,7 @@ sub run {
 	@{$self->{plotnames}} = @{$self->{PLOT}->{names}};
 	@{$self->{plotcolors}} = @{$self->{PLOT}->{colors}};
 
-	# Sanity checking on CGI args
+	# Sanity checking on args
 	#
 	if (!defined($self->{ARGS}->{yaxis})) {
 		$self->{ARGS}->{yaxis} = $self->find_default_yaxis_type();
@@ -943,7 +962,7 @@ sub valid_tld_filter {
 	my $self = shift;
 	my $tld = shift;
 	@{$self->{valid_domains}} = DSC::grapher::config::get_valid_domains($self->{ARGS}->{server})
-		unless @{$self->{valid_domains}};
+		unless $self->{valid_domains};
 	grep {$_ && $tld eq $_} @{$self->{valid_domains}};
 }
 
@@ -957,7 +976,7 @@ sub invalid_tld_filter {
 	my $self = shift;
 	my $tld = shift;
 	return 0 if ($self->valid_tld_filter($tld));
-	return 0 if (numeric_tld_filter($tld));
+	return 0 if ($self->numeric_tld_filter($tld));
 	return 1;
 }
 
@@ -1180,8 +1199,9 @@ sub merge_args {
 	%old;
 }
 
+# NOTE NOT a class method
+#
 sub default_binsize {
-	my $self = shift;
 	my $win = shift || (3600*4);
 	my $bin = $win / 240;
 	$bin = 60 if ($bin < 60);
