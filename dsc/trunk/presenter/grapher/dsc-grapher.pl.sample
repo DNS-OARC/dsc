@@ -2,7 +2,9 @@
 
 use strict;
 use warnings;
+use CGI;
 
 use DSC::grapher;
 my $grapher = DSC::grapher->new;
+$grapher->cgi(new CGI);
 $grapher->run();
