@@ -7,40 +7,13 @@ use File::NFSLock;
 
 use strict;
 
-BEGIN {
-	use Exporter   ();
-	use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-	$VERSION     = 1.00;
-	@ISA	 = qw(Exporter);
-	@EXPORT      = qw(
-		&yymmdd
-		&read_data
-		&write_data
-		&read_data2
-		&write_data2
-		&read_data3
-		&write_data3
-		&read_data4
-		&write_data4
-		&grok_1d_xml
-		&grok_2d_xml
-		&elsify_unwanted_keys
-		&replace_keys
-		$SKIPPED_KEY
-		$SKIPPED_SUM_KEY
-	);
-	%EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-	@EXPORT_OK   = qw();
-}
-use vars      @EXPORT;
-use vars      @EXPORT_OK;
+BEGIN { }
 
 END { }
 
 
-# globals
-$SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
-$SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
+$DSC::extractor::SKIPPED_KEY = "-:SKIPPED:-";	# must match dsc source code
+$DSC::extractor::SKIPPED_SUM_KEY = "-:SKIPPED_SUM:-";	# must match dsc source code
 
 #my $lockfile_template = '/tmp/%F.lck';
 #my $lockfile_template = '%f.lck';

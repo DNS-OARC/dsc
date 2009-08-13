@@ -83,7 +83,7 @@ sub cmdline {
 			$self->{ARGS}->{binsize} = default_binsize($args->{window});
 		}
 	}
-	$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
+	$self->process_args;
 }
 
 sub cgi {
@@ -104,15 +104,15 @@ sub cgi {
 		$self->{ARGS}->{key} = $untaint->extract(-as_printable => 'key') if defined $self->{cgi}->param('key');
 		$self->{ARGS}->{content} = $untaint->extract(-as_printable => 'content') || 'html';
 		$self->{use_data_uri} = defined $self->{cgi}->param('x') ? 1 : 0;
-		$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
+		$self->process_args;
 	}
 	return $self->{cgi};
 }
 
-sub run {
+sub process_args {
 	my $self = shift;
-	$self->debug(1, "===> starting at " . POSIX::strftime('%+', localtime($self->{now})));
 	$self->debug(3, 'CFG=' . Dumper($self->{CFG})) if ($dbg_lvl >= 3);
+	$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
 	$self->{TEXT} = $DSC::grapher::text::TEXTS{$self->{ARGS}->{plot}};
 	$self->error("Unknown plot type: $self->{ARGS}->{plot}") unless (defined ($self->{PLOT}));
 	$self->error("Unknown server: $self->{ARGS}->{server}") unless ('none' eq $self->{ARGS}->{server} || defined ($self->{CFG}->{servers}{$self->{ARGS}->{server}}));
@@ -152,8 +152,11 @@ sub run {
 	} else {
 		delete $self->{ARGS}->{key};
 	}
+}
 
-
+sub run {
+	my $self = shift;
+	$self->debug(1, "===> starting at " . POSIX::strftime('%+', localtime($self->{now})));
 	$self->debug(1, "ARGS=" . Dumper($self->{ARGS}));
 	my $cache_name = $self->cache_name($self->{ARGS}->{server},
 		$self->{ARGS}->{node},
@@ -229,35 +232,13 @@ sub make_image {
 	return if ($self->{PLOT}->{plot_type} eq 'none');
 	$self->debug(1, "Plotting $self->{ARGS}->{server} $self->{ARGS}->{node} $self->{ARGS}->{plot} $self->{ARGS}->{end} $self->{ARGS}->{window} $self->{ARGS}->{binsize}");
 	$start_t = time;
-	$data = $self->load_data();
-	$self->debug(5, 'data=' . Dumper($data)) if ($dbg_lvl >= 5);
-	if (defined($self->{PLOT}->{munge_func})) {
-		$self->debug(1, "munging");
-		$data = $self->{PLOT}->{munge_func}($self, $data);
-	}
-	if ($self->{ARGS}->{yaxis} eq 'percent') {
-		$self->debug(1, "converting to percentage");
-		$data = $self->convert_to_percentage($data, $self->{PLOT}->{plot_type});
-	}
-	$self->debug(5, 'data=' . Dumper($data)) if ($dbg_lvl >= 5);
-	$datafile = $self->plotdata_tmp($self->{ARGS}->{plot});
-	if ($self->{PLOT}->{plot_type} eq 'trace') {
-		$self->trace_data_to_tmpfile($data, $datafile) and
-		$self->trace_plot($datafile, $self->{ARGS}->{binsize}, $cache_name);
-	} elsif ($self->{PLOT}->{plot_type} eq 'accum1d') {
-		$self->accum1d_data_to_tmpfile($data, $datafile) and
-		$self->accum1d_plot($datafile, $self->{ARGS}->{binsize}, $cache_name);
-	} elsif ($self->{PLOT}->{plot_type} eq 'accum2d') {
-		$self->accum2d_data_to_tmpfile($data, $datafile) and
-		$self->accum2d_plot($datafile, $self->{ARGS}->{binsize}, $cache_name);
-	} elsif ($self->{PLOT}->{plot_type} eq 'hist2d') {
-		# like for qtype_vs_qnamelen
-		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
-		$self->hist2d_data_to_tmpfile($data, $datafile) and
-		$self->hist2d_plot($datafile, $self->{ARGS}->{binsize}, $cache_name);
-	} else {
-		$self->error("Unknown plot type: $self->{PLOT}->{plot_type}");
-	}
+	$data = $self->load_data;
+	$self->debug(5, 'loaded data: ' . Dumper($data)) if ($dbg_lvl >= 5);
+	$data = $self->munge_data($data);
+	$self->debug(5, 'munged data: ' . Dumper($data)) if ($dbg_lvl >= 5);
+	$datafile = plotdata_tmp($self->{ARGS}->{plot});
+	$self->write_data($datafile, $data) and
+	$self->plot_data($datafile, $cache_name);
 	$stop_t = time;
 	$self->debugf(1, "graph took %d seconds", $stop_t-$start_t);
 }
@@ -331,6 +312,59 @@ sub load_data {
 		$stop_t-$start_t,
 		$nl);
 	\%hash;
+}
+
+sub munge_data {
+	my $self = shift;
+	my $data = shift;
+	if (defined($self->{PLOT}->{munge_func})) {
+		$self->debug(1, "munging");
+		$data = $self->{PLOT}->{munge_func}($self, $data);
+	}
+	if ($self->{ARGS}->{yaxis} && $self->{ARGS}->{yaxis} eq 'percent') {
+		$self->debug(1, "converting to percentage");
+		$data = $self->convert_to_percentage($data, $self->{PLOT}->{plot_type});
+	}
+	$data;
+}
+
+sub write_data {
+	my $self = shift;
+	my $datafh = shift;	# a file handle
+	my $data = shift;
+	if ($self->{PLOT}->{plot_type} eq 'trace') {
+		return $self->trace_data_to_tmpfile($data, $datafh);
+	} elsif ($self->{PLOT}->{plot_type} eq 'accum1d') {
+		return $self->accum1d_data_to_tmpfile($data, $datafh);
+	} elsif ($self->{PLOT}->{plot_type} eq 'accum2d') {
+		return $self->accum2d_data_to_tmpfile($data, $datafh);
+	} elsif ($self->{PLOT}->{plot_type} eq 'hist2d') {
+		# like for qtype_vs_qnamelen
+		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
+		return $self->hist2d_data_to_tmpfile($data, $datafh);
+	} else {
+		$self->error("Unknown plot type: $self->{PLOT}->{plot_type}");
+	}
+	return 0;
+}
+
+sub plot_data {
+	my $self = shift;
+	my $datafname = shift;
+	my $cachefname = shift;
+	if ($self->{PLOT}->{plot_type} eq 'trace') {
+		$self->trace_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
+	} elsif ($self->{PLOT}->{plot_type} eq 'accum1d') {
+		$self->accum1d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
+	} elsif ($self->{PLOT}->{plot_type} eq 'accum2d') {
+		$self->accum2d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
+	} elsif ($self->{PLOT}->{plot_type} eq 'hist2d') {
+		# like for qtype_vs_qnamelen
+		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
+		$self->hist2d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
+	} else {
+		$self->error("Unknown plot type: $self->{PLOT}->{plot_type}");
+	}
 }
 
 sub trace_data_to_tmpfile {
@@ -821,8 +855,12 @@ sub hist2d_plot {
 sub error {
 	my $self = shift;
 	my $msg = shift;
-	print $self->cgi->header(-type=>'text/html',-expires=>$expires_time);
-	print "<h2>$0 ERROR</h2><p>$msg\n";
+	if ($self->cgi) {
+		print $self->cgi->header(-type=>'text/html',-expires=>$expires_time);
+		print "<h2>$0 ERROR</h2><p>$msg\n";
+	} else {
+		print STDERR "ERROR: $msg\n";
+	}
 	exit(1);
 }
 
@@ -983,25 +1021,23 @@ sub invalid_tld_filter {
 sub debug {
 	my $self = shift;
 	my $l = shift;
-	if ($dbg_lvl >= $l) {
-		open(X, ">>/tmp/xx");
-		print X "[$$] ";
-		print X @_;
-		print X "\n";
-		close(X);
-	}
+	return unless $dbg_lvl >= $l;
+	return unless open(X, ">>/tmp/xx");
+	print X "[$$] ";
+	print X @_;
+	print X "\n";
+	close(X);
 }
 
 sub debugf {
 	my $self = shift;
 	my $l = shift;
-	if ($dbg_lvl >= $l) {
-		open(X, ">>/tmp/xx");
-		print X "[$$] ";
-		printf X @_;
-		print X "\n";
-		close(X);
-	}
+	return unless ($dbg_lvl >= $l);
+	return unless open(X, ">>/tmp/xx");
+	print X "[$$] ";
+	printf X @_;
+	print X "\n";
+	close(X);
 }
 
 #### MUNGERS ##############
@@ -1118,6 +1154,7 @@ sub data_summer_2d {
 # NOTE this is very similar to data_summer_1d
 #
 sub bynode_summer {
+	my $self = shift;
 	my $from = shift;
 	my $to = shift;
 	my $newkey = shift;
