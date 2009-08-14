@@ -8,7 +8,6 @@ use strict;
 
 use Cwd;
 use DSC::extractor;
-use DSC::extractor qw($SKIPPED_KEY $SKIPPED_SUM_KEY);
 use DSC::extractor::config;
 use Data::Dumper;
 use Proc::PID::File;
@@ -86,7 +85,7 @@ sub get_donefn {
 	die unless ($fn =~ m@(\d+).([^\.]+).xml@);
 	my $when = $1;
 	my $type = $2;
-	my $yymmdd = &yymmdd($when - 60);
+	my $yymmdd = DSC::extractor::yymmdd($when - 60);
 	Mkdir ("$yymmdd", 0755); # where the .dat files go!
 	Mkdir ("done", 0775);
 	Mkdir ("done/$yymmdd", 0755);
@@ -153,15 +152,15 @@ sub extract_dataset {
 	my $start_time;
 	my $grokked;
 	if ($EX->{ndim} == 1) {
-		($start_time, $grokked) = grok_1d_xml($XML, $EX->{type1});
+		($start_time, $grokked) = DSC::extractor::grok_1d_xml($XML, $EX->{type1});
 	} elsif ($EX->{ndim} == 2) {
-		($start_time, $grokked) = grok_2d_xml($XML, $EX->{type1}, $EX->{type2});
+		($start_time, $grokked) = DSC::extractor::grok_2d_xml($XML, $EX->{type1}, $EX->{type2});
 	} else {
 		die "unsupported ndim $EX->{ndim}\n";
 	}
 	# round start time down to start of the minute
 	$start_time = int($start_time / 60) * 60;
-	my $yymmdd = &yymmdd($start_time);
+	my $yymmdd = DSC::extractor::yymmdd($start_time);
 
 	print STDERR 'grokked=', Dumper($grokked) if ($dbg);
 
@@ -218,12 +217,12 @@ sub munge_elsify {
 	if ($O->{keys}) {
 		# A 1D dataset
 		print STDERR "elsifiying 1D dataset\n" if ($dbg);
-		elsify_unwanted_keys($copy, $O->{keys});
+		DSC::extractor::elsify_unwanted_keys($copy, $O->{keys});
 	} elsif ($O->{keys2}) {
 		# A 2D dataset
 		print STDERR "elsifiying 2D dataset\n" if ($dbg);
 		foreach my $k1 (keys %$copy) {
-			&elsify_unwanted_keys(\%{$copy->{$k1}}, $O->{keys2});
+			DSC::extractor::elsify_unwanted_keys(\%{$copy->{$k1}}, $O->{keys2});
 		}
 	} else {
 		die "not sure what to do";
@@ -242,7 +241,7 @@ sub accum2d_to_trace {
 	foreach my $k1 (keys %{$input}) {
 		$trace->{$k1} = 0;
 		foreach my $k2 (keys %{$input->{$k1}}) {
-			next if ($k2 eq $SKIPPED_KEY);
+			next if ($k2 eq $DSC::extractor::SKIPPED_KEY);
 			$trace->{$k1} += $input->{$k1}{$k2};
 		}
 	}
@@ -258,9 +257,9 @@ sub accum1d_to_count {
 	my $O = shift;		# extractor->output structure
 	my $count = 0;
 	foreach my $k1 (keys %{$input}) {
-		if ($k1 eq $SKIPPED_SUM_KEY) {
+		if ($k1 eq $DSC::extractor::SKIPPED_SUM_KEY) {
 			next;
-		} elsif ($k1 eq $SKIPPED_KEY) {
+		} elsif ($k1 eq $DSC::extractor::SKIPPED_KEY) {
 			$count += $input->{$k1};
 		} else {
 			$count += 1;
@@ -280,9 +279,9 @@ sub accum2d_to_count {
 	foreach my $k1 (keys %{$input}) {
 		$count->{$k1} = 0;
 		foreach my $k2 (keys %{$input->{$k1}}) {
-			if ($k2 eq $SKIPPED_SUM_KEY) {
+			if ($k2 eq $DSC::extractor::SKIPPED_SUM_KEY) {
 				next;
-			} elsif ($k2 eq $SKIPPED_KEY) {
+			} elsif ($k2 eq $DSC::extractor::SKIPPED_KEY) {
 				$count->{$k1} += $input->{$k1}{$k2};
 			} else {
 				$count->{$k1} += 1;
@@ -347,8 +346,8 @@ sub trim_accum2d {
 		foreach my $k1 (sort {($data->{$b}{$k2} || 0) <=> ($data->{$a}{$k2} || 0)} keys %$data) {
 			next unless defined($data->{$k1}{$k2});
 			next unless (++$n > 1000);
-			$data->{$SKIPPED_KEY}{$k2}++;
-			$data->{$SKIPPED_SUM_KEY}{$k2} += $data->{$k1}{$k2};
+			$data->{$DSC::extractor::SKIPPED_KEY}{$k2}++;
+			$data->{$DSC::extractor::SKIPPED_SUM_KEY}{$k2} += $data->{$k1}{$k2};
 			delete $data->{$k1}{$k2};
 			$ndel++;
 		}
