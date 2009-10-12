@@ -1022,22 +1022,20 @@ sub debug {
 	my $self = shift;
 	my $l = shift;
 	return unless $dbg_lvl >= $l;
-	return unless open(X, ">>/tmp/xx");
-	print X "[$$] ";
-	print X @_;
-	print X "\n";
-	close(X);
+	return unless defined $self->{CFG}->{debug_fh};
+	$self->{CFG}->{debug_fh}->print("[$$] ");
+	$self->{CFG}->{debug_fh}->print(@_);
+	$self->{CFG}->{debug_fh}->print("\n");
 }
 
 sub debugf {
 	my $self = shift;
 	my $l = shift;
 	return unless ($dbg_lvl >= $l);
-	return unless open(X, ">>/tmp/xx");
-	print X "[$$] ";
-	printf X @_;
-	print X "\n";
-	close(X);
+	return unless defined $self->{CFG}->{debug_fh};
+	$self->{CFG}->{debug_fh}->print("[$$] ");
+	$self->{CFG}->{debug_fh}->printf(@_);
+	$self->{CFG}->{debug_fh}->print("\n");
 }
 
 #### MUNGERS ##############

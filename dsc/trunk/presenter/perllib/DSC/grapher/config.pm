@@ -64,6 +64,9 @@ sub read_config {
 			die "domain list-name $listname does not exist"
 				unless defined($CONFIG{domain_list}{$listname});
 			$CONFIG{valid_domains}{$server} = $listname;
+		} elsif ($directive eq 'debug_file') {
+			my $fn = shift @x;
+			$CONFIG{debug_fh} = new IO::File("> $fn");
 		}
 	}
 	close(F);
