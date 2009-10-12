@@ -1,3 +1,35 @@
+2009-10-12 Duane Wessels
+
+    The presenter debugging is now configurable via dsc-grapher.cfg.
+
+2009-08-14 Duane Wessels
+
+    In the presenter, there have been some significant changes to
+    the perl modules so that they can be used in command line
+    (ie non-CGI) utilities, both for creating graphs and for
+    reading data.  Most of these changes are purely internal.
+    However, you may need to update your dsc-grapher.pl CGI
+    program to be like presenter/grapher/dsc-grapher.pl.sample
+    in the source distribution.
+
+2009-04-15 Duane Wessels
+
+    In the presenter's refile-and-grok.sh script, note that in
+    some environtments it is useful to skip NODEs that don't
+    have an incoming directory because they might have been
+    "grokked" elsewhere and then rsync'd to you.
+
+2009-02-27 Duane Wessels
+
+    In the collector it is now necessary to include <stdlib.h>
+    and <stdio.h>.   Not sure why it wasn't necessary before.
+    Perhaps due to 2009-01-26 Hapy library upgrade.
+
+2009-02-19 Duane Wessels
+
+    In the collector, fixed some 64-bit free disk space calculations
+    with casting.
+
 2009-01-26 Duane Wessels
 
     Upgraded to more recent version of Hapy parsing library.
