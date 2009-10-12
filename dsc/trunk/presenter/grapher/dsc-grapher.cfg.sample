@@ -6,6 +6,8 @@ embargo 0
 #anonymize_ip
 #no_http_header
 #hide_nodes
+#debug_level 0
+#debug_file /path/name
 
 #
 # To update domain_list all_tlds:

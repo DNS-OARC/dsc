@@ -67,6 +67,8 @@ sub read_config {
 		} elsif ($directive eq 'debug_file') {
 			my $fn = shift @x;
 			$CONFIG{debug_fh} = new IO::File("> $fn");
+		} elsif ($directive eq 'debug_level') {
+			$CONFIG{debug_level} = shift @x;
 		}
 	}
 	close(F);

@@ -25,7 +25,7 @@ BEGIN { }
 END { }
 
 # CONSTANTS
-my $dbg_lvl = 9;
+my $dbg_lvl = 0;
 my $DATAROOT = '/usr/local/dsc/data';
 my $DEFAULTCONFIG = '/usr/local/dsc/etc/dsc-grapher.cfg';
 my $CacheImageTTL = 60;		# 1 min
@@ -53,6 +53,7 @@ sub new {
 	my $cfgfile = $config{configfile} || $DEFAULTCONFIG;
 	$self->{CFG} = DSC::grapher::config::read_config($cfgfile);
 	$self->{now} -= $self->{CFG}->{embargo} if defined $self->{CFG}->{embargo};
+	$dbg_lvl = $self->{CFG}->{debug_level} if defined $self->{CFG}->{debug_level};
 	#
 	# set up default args
 	#
