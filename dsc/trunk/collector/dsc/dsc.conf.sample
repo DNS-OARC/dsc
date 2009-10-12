@@ -12,7 +12,7 @@ local_address ::1;
 #
 #	dsc passes this directory to chdir() after starting.
 #
-run_dir "/usr/local/dsc/run";
+run_dir "/usr/local/dsc/run/NODENAME";
 
 # minfree_bytes
 #
