@@ -1,7 +1,8 @@
 PROG=dsc
 HAPY=../TmfBase/Hapy
-CFLAGS=-g -Wall -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
+CFLAGS=-g -Wall 
 CPPFLAGS = ${CFLAGS}
+MYCPPFLAGS = -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
@@ -76,6 +77,7 @@ tar:
 
 
 ParseConfig.o: ParseConfig.cc $(LIBHAPY)
+	$(CXX) -c -o $@ ${MYCPPFLAGS} ParseConfig.cc
 
 $(LIBHAPY): $(HAPY)/Makefile
 	@echo $@ is out of date
