@@ -241,7 +241,6 @@ my $std_accum_yaxes = {
   },
 
   client_subnet_accum => {
-    dataset => 'client_subnet',
     plot_type => 'accum1d',
     keys	=> [ qw(?? IA LA AP RI AR) ],
     names	=> [ qw(Unknown IANA LACNIC APNIC RIPE ARIN) ],
@@ -279,7 +278,6 @@ my $std_accum_yaxes = {
 #  },
 
   client_subnet2_accum => {
-    dataset => 'client_subnet2',
     plot_type => 'accum2d',
     yaxes	=> $std_accum_yaxes,
     keys	=> $client_subnet2_keys,
@@ -293,7 +291,6 @@ my $std_accum_yaxes = {
   },
 
   client_subnet2_trace => {
-    dataset	=> 'client_subnet2',
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
     keys	=> $client_subnet2_keys,
@@ -306,7 +303,6 @@ my $std_accum_yaxes = {
   },
 
   client_subnet2_count => {
-    dataset	=> 'client_subnet2',
     plot_type	=> 'trace',
     keys	=> $client_subnet2_keys,
     names	=> $client_subnet2_names,
