@@ -25,7 +25,7 @@ BEGIN { }
 END { }
 
 # CONSTANTS
-my $dbg_lvl = 0;
+my $dbg_lvl = 0;	# also set debug_file in dsc-grapher.cfg
 my $DATAROOT = '/usr/local/dsc/data';
 my $DEFAULTCONFIG = '/usr/local/dsc/etc/dsc-grapher.cfg';
 my $CacheImageTTL = 60;		# 1 min
