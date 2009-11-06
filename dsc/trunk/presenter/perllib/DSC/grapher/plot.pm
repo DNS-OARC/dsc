@@ -723,7 +723,6 @@ my $std_accum_yaxes = {
  },
 
   client_addr_vs_rcode_accum => {
-    dataset => 'client_addr_vs_rcode',
     plot_type => 'accum2d',
     yaxes	=> $std_accum_yaxes,
     keys	=> [ qw(0 1 2 3 4 5) ],
@@ -737,7 +736,6 @@ my $std_accum_yaxes = {
   },
 
   ipv6_rsn_abusers_accum => {
-    dataset	=> 'ipv6_rsn_abusers',
     plot_type	=> 'accum1d',
     keys	=> [ qw(Other BIND8 BIND9 W2000 WINNT W2003 DJBDNS NoAns) ],
     names	=> [ qw(Other BIND8 BIND9 W2000 WINNT W2003 DJBDNS NoAns) ],
