@@ -21,6 +21,7 @@ svn export $ROOT/dsc/$BRANCH $DIR
 
 ${RM} $DIR/collector/update-tmfbase.sh
 ${RM} $DIR/mk-release.sh
+${RM} -rf $DIR/FreeBSD-port
 
 (cd $DIR/doc; make all clean-release)
 tar czvf ../$DIR.tar.gz $DIR
