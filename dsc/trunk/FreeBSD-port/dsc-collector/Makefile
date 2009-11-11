@@ -16,10 +16,10 @@ COMMENT=	Captures and analyzes DNS traffic
 BUILD_DEPENDS=       ${SITE_PERL}/Proc/PID/File.pm:${PORTSDIR}/devel/p5-Proc-PID-File
 
 
-GNU_CONFIGURE=	yes
-WRKSRC=		${WRKDIR}/${PORTNAME}-${PORTVERSION}/collector/dsc
+#GNU_CONFIGURE=	yes
+WRKSRC=		${WRKDIR}/${PORTNAME}-${PORTVERSION}/collector
 
-do-install:
-	${INSTALL_SCRIPT} ${WRKSRC}/dsc.sh ${PREFIX}/etc/rc.d/dsc
+post-install:
+	${INSTALL_SCRIPT} ${WRKSRC}/dsc/dsc.sh ${PREFIX}/etc/rc.d/dsc
 
 .include <bsd.port.mk>
