@@ -1,3 +1,8 @@
+2009-11-11 Duane Wessels
+
+    On the presenter some of the "accum" graphs stopped working
+    due to recent rewrites.  These should now be working again.
+
 2009-10-12 Duane Wessels
 
     The presenter debugging is now configurable via dsc-grapher.cfg.
