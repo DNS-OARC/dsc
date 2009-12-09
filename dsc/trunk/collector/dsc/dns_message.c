@@ -164,6 +164,17 @@ chaos_class_filter(const void *vp, const void *ctx)
 }
 
 static int
+priming_query_filter(const void *vp, const void *ctx)
+{
+    const dns_message *m = vp;
+    if (m->qtype != T_NS)
+	return 0;
+    if (0 != strcmp(m->qname, "."))
+	return 0;
+    return 1;
+}
+
+static int
 replies_only_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
@@ -401,4 +412,6 @@ dns_message_init(void)
 	md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
     fl = md_array_filter_list_append(fl,
 	md_array_create_filter("chaos-class", chaos_class_filter, 0));
+    fl = md_array_filter_list_append(fl,
+	md_array_create_filter("priming-query", priming_query_filter, 0));
 }
