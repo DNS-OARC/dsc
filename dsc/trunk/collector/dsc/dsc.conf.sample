@@ -91,6 +91,10 @@ dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 # dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
 
+# datasets for collecting data on priming queries at root nameservers
+# dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
+# dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
+
 # bpf_vlan_tag_byte_order
 #
 #	Set this to 'host' on FreeBSD-4 where the VLAN id that we
