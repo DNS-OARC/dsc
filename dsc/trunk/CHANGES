@@ -1,3 +1,8 @@
+2009-12-10 Duane Wessels
+
+    Added "priming_queries" and "priming_responses" datasets in
+    preparation for root zone signing.
+
 2009-11-11 Duane Wessels
 
     On the presenter some of the "accum" graphs stopped working
