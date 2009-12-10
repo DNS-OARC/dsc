@@ -450,6 +450,31 @@ my $port_range_keys = [ qw(
     },
   },
 
+  priming_queries => {
+    ndim	=> 2,
+    type1	=> 'Transport',
+    type2	=> 'EDNSBufSiz',
+    outputs	=> {
+      priming_queries => {
+	data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
+  priming_responses => {
+    ndim	=> 1,
+    type1	=> 'ReplyLen',
+    outputs	=> {
+      priming_responses => {
+	data_reader => \&DSC::extractor::read_data,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data,
+      },
+    },
+  },
+
 );
 
 1;

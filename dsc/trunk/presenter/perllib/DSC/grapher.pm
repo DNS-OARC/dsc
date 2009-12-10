@@ -16,6 +16,7 @@ use Digest::MD5;
 use Text::Template;
 use Hash::Merge;
 use Math::Calc::Units;
+use Switch;
 
 use strict;
 use warnings;
@@ -333,18 +334,22 @@ sub write_data {
 	my $self = shift;
 	my $datafh = shift;	# a file handle
 	my $data = shift;
-	if ($self->{PLOT}->{plot_type} eq 'trace') {
-		return $self->trace_data_to_tmpfile($data, $datafh);
-	} elsif ($self->{PLOT}->{plot_type} eq 'accum1d') {
-		return $self->accum1d_data_to_tmpfile($data, $datafh);
-	} elsif ($self->{PLOT}->{plot_type} eq 'accum2d') {
-		return $self->accum2d_data_to_tmpfile($data, $datafh);
-	} elsif ($self->{PLOT}->{plot_type} eq 'hist2d') {
-		# like for qtype_vs_qnamelen
-		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
-		return $self->hist2d_data_to_tmpfile($data, $datafh);
-	} else {
-		$self->error("Unknown plot type: $self->{PLOT}->{plot_type}");
+	switch ($self->{PLOT}->{plot_type}) {
+	case 'trace'
+	    { return $self->trace_data_to_tmpfile($data, $datafh); }
+	case 'trace_line'
+	    { return $self->trace_data_to_tmpfile($data, $datafh); }
+	case 'accum1d'
+	    { return $self->accum1d_data_to_tmpfile($data, $datafh); }
+	case 'accum2d' {
+	    # hist2d is for qtype_vs_qnamelen
+	    # assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
+	    return $self->accum2d_data_to_tmpfile($data, $datafh);
+	    }
+	case 'hist2d'
+	    { return $self->hist2d_data_to_tmpfile($data, $datafh); }
+	else
+	    { $self->error("Unknown plot type: $self->{PLOT}->{plot_type}");}
 	}
 	return 0;
 }
@@ -353,18 +358,22 @@ sub plot_data {
 	my $self = shift;
 	my $datafname = shift;
 	my $cachefname = shift;
-	if ($self->{PLOT}->{plot_type} eq 'trace') {
-		$self->trace_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
-	} elsif ($self->{PLOT}->{plot_type} eq 'accum1d') {
-		$self->accum1d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
-	} elsif ($self->{PLOT}->{plot_type} eq 'accum2d') {
-		$self->accum2d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
-	} elsif ($self->{PLOT}->{plot_type} eq 'hist2d') {
-		# like for qtype_vs_qnamelen
-		# assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
-		$self->hist2d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
-	} else {
-		$self->error("Unknown plot type: $self->{PLOT}->{plot_type}");
+	switch ($self->{PLOT}->{plot_type}) {
+	case 'trace'
+	    { $self->trace_plot($datafname, $self->{ARGS}->{binsize}, $cachefname); }
+	case 'trace_line'
+	    { $self->trace_line_plot($datafname, $self->{ARGS}->{binsize}, $cachefname); }
+	case 'accum1d'
+	    { $self->accum1d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname); }
+	case 'accum2d'
+	    { $self->accum2d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname); }
+	case 'hist2d' {
+	    # like for qtype_vs_qnamelen
+	    # assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
+	    $self->hist2d_plot($datafname, $self->{ARGS}->{binsize}, $cachefname);
+	    }
+	else
+	    { $self->error("Unknown plot type: $self->{PLOT}->{plot_type}"); }
 	}
 }
 
@@ -626,6 +635,73 @@ sub trace_plot {
 	Ploticus_legend() unless ($self->{ARGS}->{mini});
 	ploticus_end();
 
+	rename("$pngfile.new", $pngfile);
+	rename("$mapfile.new", $mapfile) if defined($mapfile);
+	my $stop_t = time;
+	$self->debugf(1, "ploticus took %d seconds", $stop_t-$start_t);
+}
+
+sub trace_line_plot {
+	my $self = shift;
+	my $tf = shift;
+	my $binsize = shift;
+	my $cache_name = shift;
+	my $pngfile = $self->cache_image_path($cache_name);
+	my $ntypes = int(@{$self->{plotnames}});
+	my $start_t = time;
+	my $mapfile = undef;
+	ploticus_init("png", "$pngfile.new");
+	if ($self->{PLOT}->{map_legend}) {
+		$mapfile = $self->cache_mapfile_path($cache_name);
+		ploticus_arg("-csmap", "");
+		ploticus_arg("-mapfile", "$mapfile.new");
+	}
+	ploticus_arg("-maxrows", "20000");
+	ploticus_begin();
+	Ploticus_getdata($tf->filename());
+	my $areadef_opts = {
+		-title => $self->{PLOT}->{plottitle} . "\n" . $self->time_descr(),
+		-rectangle => '1 1 6 4',
+		-xscaletype => 'datetime mm/dd/yy',
+		-ystackfields => join(',', 2..($ntypes+1)),
+		-end => $self->{ARGS}->{end},
+		-window => $self->{ARGS}->{window},
+	};
+	my $xaxis_opts = {
+		-window => $self->{ARGS}->{window},
+		-stubcull => '0.5',
+	};
+	my $yaxis_opts = {
+		-label => $self->{PLOT}->{yaxes}{$self->{ARGS}->{yaxis}}{label},
+		-grid => 'no',
+	};
+	my $lines_opts = {
+		-labelsarrayref => $self->{plotnames},
+		-colorsarrayref => $self->{plotcolors},
+		-indexesarrayref => [0..$ntypes-1],
+		-keysarrayref => $self->{plotkeys},
+		-barwidth => 4.5 / ($self->{ARGS}->{window} / $binsize),
+	};
+	if (defined($mapfile)) {
+		my %copy = %{$self->{ARGS}};
+		delete $copy{key};
+		my $uri = $self->urlpath(%copy);
+		$uri .= '&key=@KEY@';
+		$self->debug(1, "click URI = $uri");
+		$lines_opts->{-legend_clickmapurl_tmpl} = $uri;
+	}
+	if ($self->{ARGS}->{mini}) {
+		$areadef_opts->{-title} = $self->{PLOT}->{plottitle};
+		$areadef_opts->{-rectangle} = '1 1 4 2';
+		delete $yaxis_opts->{-label};
+		$xaxis_opts->{-mini} = 'yes';
+	}
+	Ploticus_areadef($areadef_opts);
+	Ploticus_xaxis($xaxis_opts);
+	Ploticus_yaxis($yaxis_opts);
+	Ploticus_lines($lines_opts);
+	Ploticus_legend() unless ($self->{ARGS}->{mini});
+	ploticus_end();
 	rename("$pngfile.new", $pngfile);
 	rename("$mapfile.new", $mapfile) if defined($mapfile);
 	my $stop_t = time;
@@ -1113,6 +1189,34 @@ sub munge_anonymize_ip {
 	\%newdata;
 }
 
+sub munge_min_max_mean {
+	# Input data is 1D and must have numeric keys
+	# Output is a hash with keys: min, max, mean
+	my $self = shift;
+	my $data = shift;
+	my %newdata;
+	my $j1;
+	my $j2;
+	my $N = 0;
+	foreach my $t (keys %$data) {
+		my $min = undef;
+		my $max = undef;
+		my $sum = 0;
+		my $cnt = 0;
+		foreach my $k1 (keys %{$data->{$t}}) {
+			$min = $k1 if (!defined($min) || ($k1 < $min));
+			$max = $k1 if (!defined($max) || ($k1 > $max));
+			$sum += ($k1 * $data->{$t}{$k1});
+			$cnt += $data->{$t}{$k1};
+		}
+		$cnt = 1 unless $cnt;
+		$newdata{$t}{min} = $min;
+		$newdata{$t}{max} = $min;
+		$newdata{$t}{mean} = $sum / $cnt;
+	}
+	\%newdata;
+}
+
 ##### DATA SUMMERS ###############
 #
 # are NOT class methods
@@ -1387,6 +1491,8 @@ sub navbar_plot {
 	push(@items, $self->navbar_item('plot','qtype_vs_qnamelen','Qname Length'));
 	push(@items, $self->navbar_item('plot','rcode_vs_replylen','Reply Lengths'));
 	push(@items, $self->navbar_item('plot','client_port_range','Source Ports'));
+	push(@items, $self->navbar_item('plot','priming_queries','Priming Queries'));
+	push(@items, $self->navbar_item('plot','priming_responses','Priming Responses'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 

@@ -881,6 +881,39 @@ my $std_accum_yaxes = {
     munge_func  => \&DSC::grapher::munge_sum_2d_to_1d,
   },
 
+  priming_queries => {
+    dataset => 'priming_queries',
+    plot_type => 'trace',
+    keys       => [qw(udp tcp)],
+    names      => [qw(UDP TCP)],
+    colors     => [qw( red brightgreen )],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    yaxes	=> $std_trace_yaxes,
+    plottitle   => 'Priming Queries',
+    map_legend => 1,
+    munge_func  => \&DSC::grapher::munge_sum_2d_to_1d,
+  },
+
+  priming_responses => {
+    dataset => 'priming_responses',
+    plot_type => 'trace_line',
+    keys       => [qw(min mean max)],
+    names      => [qw(Min Mean Max)],
+    colors     => [qw( red brightgreen purple )],
+    data_reader => \&DSC::extractor::read_data,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    yaxes      => {
+	rate => {
+	    label => 'Response Size',
+	    divideflag => 0,
+	    default => 1,
+	},
+    },
+    plottitle   => 'Priming Responses',
+    map_legend => 1,
+    munge_func  => \&DSC::grapher::munge_min_max_mean,
+  },
 
 );
 
