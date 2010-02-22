@@ -417,7 +417,7 @@ sub ploticus_arg {
 sub ploticus_begin {
 	die "wrong state" unless (1 == $ploticus_state);
 	#system "ls -ld /usr/local/bin/pl /usr/local/bin/ploticus 1>&2";
-	my $prog = (grep {-f $_} qw(/usr/local/bin/ploticus /usr/local/bin/pl))[0];
+	my $prog = (grep {-f $_} qw(/usr/local/bin/ploticus /usr/local/bin/pl /usr/bin/ploticus))[0];
 	my $cmd = join(" ",
 		$prog,
 		"-stdin",
