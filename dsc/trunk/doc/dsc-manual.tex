@@ -842,7 +842,7 @@ This script also takes three arguments:
 \end{MyVerbatim}
 
 Note that {\em DEST\/} is the name of the local ``upload'' directory
-and {em RSYNC-DEST\/} is an {\em rsync\/} destination (i.e., hostname and remote directory).
+and {\em RSYNC-DEST\/} is an {\em rsync\/} destination (i.e., hostname and remote directory).
 Here is how you might use it in a crontab:
 
 \begin{MyVerbatim}
@@ -854,7 +854,7 @@ Here is how you might use it in a crontab:
 
 Also note that \path|upload-rsync.sh| will actually store the remote
 XML files in \path|incoming/YYYY-MM-DD| subdirectories.  That is,
-if your {em RSYNC-DEST\/} is \path|host:/usr/local/dsc/data/Server/ns0|
+if your {\em RSYNC-DEST\/} is \path|host:/usr/local/dsc/data/Server/ns0|
 then files will actually be written to
 \path|/usr/local/dsc/data/Server/ns0/incoming/YYYY-MM-DD| on {\em host},
 where \path|YYYY-MM-DD| is replaced by the year, month, and date of the
