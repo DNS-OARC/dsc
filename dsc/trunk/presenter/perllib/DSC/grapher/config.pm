@@ -14,6 +14,8 @@ BEGIN {
 use vars      @EXPORT;
 use vars      @EXPORT_OK;
 
+use IO::File;	# for debugging
+
 END { }
 
 use strict;
