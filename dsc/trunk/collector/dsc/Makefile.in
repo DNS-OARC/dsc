@@ -1,8 +1,8 @@
 PROG=dsc
 HAPY=../TmfBase/Hapy
-CFLAGS=-g -Wall 
+CFLAGS=-g -Wall -DUSE_IPV6=1
 CPPFLAGS = ${CFLAGS}
-MYCPPFLAGS = -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
+MYCPPFLAGS = -g -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
