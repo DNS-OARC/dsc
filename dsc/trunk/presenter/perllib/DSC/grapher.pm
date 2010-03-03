@@ -584,7 +584,8 @@ sub trace_plot {
 		ploticus_arg("-csmap", "");
 		ploticus_arg("-mapfile", "$mapfile.new");
 	}
-	ploticus_arg("-maxrows", "20000");
+	ploticus_arg("-maxrows", "2000000");
+	ploticus_arg("-maxfields", "2000000");
 	ploticus_begin();
 	Ploticus_getdata($tf->filename());
 	#system "cat $tf 1>&2";
