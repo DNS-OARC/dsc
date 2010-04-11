@@ -831,7 +831,6 @@ my $std_accum_yaxes = {
   },
 
   second_ld_vs_rcode_accum => {
-    dataset => 'second_ld_vs_rcode',
     plot_type => 'accum2d',
     yaxes	=> $std_accum_yaxes,
     keys	=> [ qw(0 1 2 3 4 5) ],
@@ -844,7 +843,6 @@ my $std_accum_yaxes = {
   },
 
   third_ld_vs_rcode_accum => {
-    dataset => 'third_ld_vs_rcode',
     plot_type => 'accum2d',
     yaxes	=> $std_accum_yaxes,
     keys	=> [ qw(0 1 2 3 4 5) ],
