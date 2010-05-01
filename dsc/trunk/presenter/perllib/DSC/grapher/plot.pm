@@ -161,9 +161,9 @@ my $std_accum_yaxes = {
 
   dnssec_qtype => {
     dataset	=> 'qtype',
-    keys	=> [ qw(24 25 30 43 46 47 48) ],
-    names	=> [ qw(SIG KEY NXT DS RRSIG NSEC DNSKEY) ],
-    colors	=> [ qw(yellow2 orange magenta purple brightblue brightgreen red) ],
+    keys	=> [ qw(24 25 30 43 46 47 50 48) ],
+    names	=> [ qw(SIG KEY NXT DS RRSIG NSEC NSEC3 DNSKEY) ],
+    colors	=> [ qw(yellow2 orange magenta purple brightblue brightgreen darkblue red) ],
     data_reader => \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
     plot_type	=> 'trace',
