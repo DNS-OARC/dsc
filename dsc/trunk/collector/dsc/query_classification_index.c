@@ -4,7 +4,14 @@
 #include <string.h>
 #include <sys/types.h>
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
+
+/* OpenBSD does not have nameser_compat.h */
+#ifdef __OpenBSD__
+#define C_NONE          254
+#else
+#include <arpa/nameser_compat.h> 
+#endif
+
 #ifndef T_A6
 #define T_A6 38
 #endif

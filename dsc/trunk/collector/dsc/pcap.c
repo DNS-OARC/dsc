@@ -57,6 +57,13 @@
 #define ETHERTYPE_8021Q	0x8100
 #endif
 
+#ifdef __OpenBSD__
+#define assign_timeval(A,B) A.tv_sec=B.tv_sec; A.tv_usec=B.tv_usec
+#else
+#define assign_timeval(A,B) A=B
+#endif
+
+
 #if USE_IPV6
 /* We might need to define ETHERTYPE_IPV6 */
 #ifndef ETHERTYPE_IPV6
@@ -915,10 +922,10 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
     pkt = buf+1;
 #endif
 
-    last_ts = hdr->ts;
+    assign_timeval(last_ts, hdr->ts);
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
-    tm.ts = hdr->ts;
+    assign_timeval(tm.ts, hdr->ts);
     i->handle_datalink(pkt, hdr->caplen, &tm);
 #if 0
     if (debug_flag && --debug_count == 0)
