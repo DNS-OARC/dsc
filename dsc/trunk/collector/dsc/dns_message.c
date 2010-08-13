@@ -22,6 +22,9 @@
 #include "null_index.h"
 #include "qtype_index.h"
 #include "qclass_index.h"
+#if HAVE_LIBGEOIP
+#include "country_index.h"
+#endif
 #include "tld_index.h"
 #include "rcode_index.h"
 #include "client_ipv4_addr_index.h"
@@ -193,6 +196,9 @@ qname_filter(const void *vp, const void *ctx)
 static indexer_t indexers[] = {
     { "client",               cip_indexer,                  cip_iterator,                  cip_reset },
     { "cip4_addr",            cip_indexer,                  cip_iterator,                  cip_reset },     /* compatibility */
+#if HAVE_LIBGEOIP
+    { "country",                  country_indexer,                  country_iterator,                  country_reset },
+#endif
     { "client_subnet",        cip_net_indexer,              cip_net_iterator,              cip_net_reset },
     { "cip4_net",             cip_net_indexer,              cip_net_iterator,              cip_net_reset }, /* compatibility */
     { "null",                 null_indexer,                 null_iterator,                 NULL },

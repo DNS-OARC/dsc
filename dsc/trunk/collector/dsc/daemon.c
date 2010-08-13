@@ -48,6 +48,9 @@ int debug_flag = 0;
 int nodaemon_flag = 0;
 
 extern void cip_net_indexer_init(void);
+#if HAVE_LIBGEOIP
+extern void country_indexer_init(void);
+#endif
 extern void ParseConfig(const char *);
 extern uint64_t minfree_bytes;
 extern int n_pcap_offline;
@@ -220,6 +223,9 @@ main(int argc, char *argv[])
 	usage();
     dns_message_init();
     ParseConfig(argv[0]);
+#if HAVE_LIBGEOIP
+    country_indexer_init();
+#endif
     cip_net_indexer_init();
 
     if (!nodaemon_flag)

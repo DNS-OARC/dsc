@@ -3,9 +3,12 @@ HAPY=../TmfBase/Hapy
 CFLAGS=-g -Wall -DUSE_IPV6=1
 CPPFLAGS = ${CFLAGS}
 MYCPPFLAGS = -g -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
-LDFLAGS += -L/usr/local/lib
 TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
+
+LDFLAGS += @LDFLAGS@	# from configure
+CFLAGS += @CFLAGS@	# from configure
+LIBS += @LIBS@		# from configure
 
 OBJS=\
 	base64.o \
@@ -21,6 +24,7 @@ OBJS=\
 	qtype_index.o \
 	qclass_index.o \
 	tld_index.o \
+	country_index.o \
 	rcode_index.o \
 	qnamelen_index.o \
 	qname_index.o \
@@ -50,7 +54,7 @@ OBJS=\
 	inX_addr.o
 
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
-LIBS=@LIBS@ $(LIBHAPY)
+LIBS += $(LIBHAPY)
 
 all:  $(PROG)
 
