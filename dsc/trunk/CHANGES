@@ -1,3 +1,28 @@
+2010-08-13 Alexander Mayrhofer
+
+    Added "country_index" to the collector which is an index based
+    on country as returned by the GeoIP library.  configure attempts
+    to learn if you have GeoIP installed.
+
+2010-08-13 Peter Koch
+
+    Some minor fixes to the collector that allow it to read from
+    pcap files on disk, rather than live packets from an interface.
+
+2010-06-02 Henrik Kramsh?j
+
+    Improvements for OpenBSD compatibility
+
+2010-05-01 Duane Wessels
+
+    Added NSEC3 to DNSSEC query types
+
+2010-02-22 Duane Wessels
+
+     Collector bug fixed: USE_IPV6=1 was not passed to .c
+     files, which resulted in different-sized data structurs
+     and crashes on CentOS.
+
 2009-12-10 Duane Wessels
 
     Added "priming_queries" and "priming_responses" datasets in
