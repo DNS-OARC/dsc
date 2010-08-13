@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
 
 #include <sys/types.h>
 #include <regex.h>

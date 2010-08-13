@@ -50,6 +50,7 @@ int nodaemon_flag = 0;
 extern void cip_net_indexer_init(void);
 extern void ParseConfig(const char *);
 extern uint64_t minfree_bytes;
+extern int n_pcap_offline;
 
 void
 daemonize(void)
@@ -225,7 +226,7 @@ main(int argc, char *argv[])
     	daemonize();
     write_pid_file();
 
-    if (!debug_flag) {
+    if (!debug_flag && 0 == n_pcap_offline) {
         syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
         sleep(60 - (time(NULL) % 60));
     }

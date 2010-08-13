@@ -108,12 +108,12 @@ struct _interface {
 
 #define MAX_N_INTERFACES 10
 static int n_interfaces = 0;
-static int n_pcap_offline = 0;
 static struct _interface *interfaces = NULL;
 static fd_set pcap_fdset;
 static int max_pcap_fds = 0;
 static unsigned short port53;
 
+int n_pcap_offline = 0;		/* global so daemon.c can use it */
 char *bpf_program_str = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
@@ -963,7 +963,6 @@ Pcap_init(const char *device, int promisc)
 {
     struct stat sb;
     struct bpf_program fp;
-    int readfile_state = 0;
     char errbuf[PCAP_ERRBUF_SIZE];
     int x;
     struct _interface *i;
@@ -981,9 +980,7 @@ Pcap_init(const char *device, int promisc)
     last_ts.tv_sec = last_ts.tv_usec = 0;
     finish_ts.tv_sec = finish_ts.tv_usec = 0;
 
-    if (0 == stat(device, &sb))
-	readfile_state = 1;
-    if (readfile_state) {
+    if (0 == stat(device, &sb)) {
 	i->pcap = pcap_open_offline(device, errbuf);
     } else {
 	/*
@@ -1069,10 +1066,12 @@ Pcap_run(DMC * dns_callback, IPC * ip_callback)
 	interfaces[i].pkts_captured = 0;
     if (n_pcap_offline > 0) {
 	result = 0;
-	if (finish_ts.tv_sec > 0)
+	if (finish_ts.tv_sec > 0) {
+	    start_ts.tv_sec = finish_ts.tv_sec;
 	    finish_ts.tv_sec += INTERVAL;
+	}
 	do {
-	    result = pcap_dispatch(interfaces[0].pcap, -1, handle_pcap,
+	    result = pcap_dispatch(interfaces[0].pcap, 1, handle_pcap,
 		(u_char *) &interfaces[0]);
 	    if (result <= 0) /* error or EOF */
 		break;
