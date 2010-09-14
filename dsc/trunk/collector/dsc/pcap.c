@@ -997,6 +997,10 @@ Pcap_init(const char *device, int promisc)
 	syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
 	exit(1);
     }
+    if (pcap_setnonblock(i->pcap, 1, errbuf) < 0) {
+	syslog(LOG_ERR, "pcap_setnonblock(%s): %s", device, errbuf);
+	exit(1);
+    }
     memset(&fp, '\0', sizeof(fp));
     x = pcap_compile(i->pcap, &fp, bpf_program_str, 1, 0);
     if (x < 0) {
