@@ -341,13 +341,13 @@ sub write_data {
 	    { return $self->trace_data_to_tmpfile($data, $datafh); }
 	case 'accum1d'
 	    { return $self->accum1d_data_to_tmpfile($data, $datafh); }
-	case 'accum2d' {
+	case 'accum2d'
+	    { return $self->accum2d_data_to_tmpfile($data, $datafh); }
+	case 'hist2d' {
 	    # hist2d is for qtype_vs_qnamelen
 	    # assumes "bell-shaped" curve and cuts off x-axis at 5% and 95%
-	    return $self->accum2d_data_to_tmpfile($data, $datafh);
+	    return $self->hist2d_data_to_tmpfile($data, $datafh);
 	    }
-	case 'hist2d'
-	    { return $self->hist2d_data_to_tmpfile($data, $datafh); }
 	else
 	    { $self->error("Unknown plot type: $self->{PLOT}->{plot_type}");}
 	}
