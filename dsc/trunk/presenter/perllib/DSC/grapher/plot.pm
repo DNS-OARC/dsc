@@ -160,7 +160,6 @@ my $std_accum_yaxes = {
   },
 
   dnssec_qtype => {
-    dataset	=> 'qtype',
     keys	=> [ qw(24 25 30 43 46 47 50 48) ],
     names	=> [ qw(SIG KEY NXT DS RRSIG NSEC NSEC3 DNSKEY) ],
     colors	=> [ qw(yellow2 orange magenta purple brightblue brightgreen darkblue red) ],
