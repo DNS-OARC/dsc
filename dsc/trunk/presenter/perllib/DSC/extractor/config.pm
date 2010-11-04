@@ -58,7 +58,7 @@ my $port_range_keys = [ qw(
 	data_writer => \&DSC::extractor::write_data,
       },
       dnssec_qtype => {
-	keys	=> [ qw(24 25 30 43 46 47 48) ],
+	keys	=> [ qw(24 25 30 43 46 47 50 48) ],
 	data_munger => \&main::munge_elsify,
 	data_reader => \&DSC::extractor::read_data,
 	data_merger => \&main::merge_trace,
