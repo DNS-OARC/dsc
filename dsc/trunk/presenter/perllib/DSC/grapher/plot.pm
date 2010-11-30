@@ -761,7 +761,7 @@ my $std_accum_yaxes = {
     munge_func  => sub {
 	my $self = shift;
 	my $data = shift;
-	$self->munge_2d_to_1d(shift, [qw(16)], [qw(version.bind hostname.bind else)])
+	$self->munge_2d_to_1d($data, [qw(16)], [qw(version.bind hostname.bind else)])
    }
   },
 
