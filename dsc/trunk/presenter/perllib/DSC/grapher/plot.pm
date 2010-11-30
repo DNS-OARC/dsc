@@ -488,7 +488,6 @@ my $std_accum_yaxes = {
   },
 
   dns_ip_version => {
-    dataset     => 'dns_ip_version_vs_qtype',
     plot_type   => 'trace',
     keys	=> [qw(IPv4 IPv6 else)],
     names	=> [qw(IPv4 IPv6 Other)],
