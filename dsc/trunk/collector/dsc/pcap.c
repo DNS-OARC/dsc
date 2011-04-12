@@ -77,7 +77,7 @@
 #define PPP_CONTROL_VAL       0x03	/* The control byte value */
 #endif
 
-#ifdef __linux__
+#ifdef __GLIBC__
 #define uh_dport dest
 #define uh_sport source
 #define th_off doff
