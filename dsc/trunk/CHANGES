@@ -1,3 +1,18 @@
+2010-11-29 Duane Wessels
+
+    The dnssec_qtype and dns_ip_version plots were not working due
+    the presence of 'dataset' attributes in their definitions.  Also
+    fixed the chaos plot.
+
+2010-11-04 Duane Wessels
+
+    Added NSEC3 record type to the extractor.
+
+2010-09-14 Duane Wessels
+
+    A fix to put pcap interfaces into non-blocking mode, which is
+    important when reading from multiple interfaces.
+
 2010-08-13 Alexander Mayrhofer
 
     Added "country_index" to the collector which is an index based
