@@ -33,6 +33,7 @@ struct _dns_message {
     unsigned int malformed:1;
     unsigned int qr:1;
     unsigned int rd:1;		/* set if RECUSION DESIRED bit is set */
+    unsigned int aa:1;		/* set if AUTHORITATIVE ANSWER bit is set */
     struct {
 	unsigned int found:1;	/* set if we found an OPT RR */
 	unsigned int DO:1;	/* set if DNSSEC DO bit is set */

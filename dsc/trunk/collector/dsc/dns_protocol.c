@@ -165,12 +165,12 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm, DMC *dns_mess
 	m->client_ip_addr = m->tm->dst_ip_addr;
 
 #if 0
-    aa = (us >> 10) & 0x01;
     tc = (us >> 9) & 0x01;
     ra = (us >> 7) & 0x01;
 #endif
     m->opcode = (us >> 11) & 0x0F;
     m->rd = (us >> 8) & 0x01;
+    m->aa = (us >> 10) & 0x01;
     m->rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
