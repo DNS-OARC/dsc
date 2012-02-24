@@ -37,6 +37,7 @@ qr_aa_bits_iterator(char **label)
 	*label = "qr=1 aa=1";
 	break;
     default:
+	*label = "bug";
 	return -1;
     }
     return next_iter++;

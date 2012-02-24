@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <netdb.h>
 
-#include "ip_message.h"
+#include "dns_message.h"
 #include "md_array.h"
 
 static int largest = 0;
@@ -11,8 +11,9 @@ static int largest = 0;
 int
 ip_version_indexer(const void *vp)
 {
-    const ip_message *ip = vp;
-    int i = (int) ip->version;
+    const dns_message *m = vp;
+    const transport_message *tm = m->tm;
+    int i = (int) tm->ip_version;
     if (i > largest)
 	largest = i;
     return i;

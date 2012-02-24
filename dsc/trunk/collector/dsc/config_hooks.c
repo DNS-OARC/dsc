@@ -72,21 +72,14 @@ set_pid_file(const char *s)
 }
 
 int
-add_dataset(const char *name, const char *layer,
+add_dataset(const char *name, const char *layer_ignored,
     const char *firstname, const char *firstindexer,
     const char *secondname, const char *secondindexer,
     const char *filtername, dataset_opt opts)
 {
     syslog(LOG_INFO, "creating dataset %s", name);
-    if (0 == strcmp(layer, "dns")) {
 	return dns_message_add_array(name, firstname, firstindexer,
 	    secondname, secondindexer, filtername, opts);
-    }
-    if (0 == strcmp(layer, "ip")) {
-	return ip_message_add_array(name, firstname, firstindexer,
-	    secondname, secondindexer, filtername, opts);
-    }
-    syslog(LOG_ERR, "%s:%d: unknown message layer '%s'", __FILE__, __LINE__, layer);
     return 0;
 }
 

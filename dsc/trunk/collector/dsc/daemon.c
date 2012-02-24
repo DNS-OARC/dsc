@@ -34,7 +34,6 @@
 
 #include "xmalloc.h"
 #include "dns_message.h"
-#include "ip_message.h"
 #include "pcap.h"
 #if HAVE_LIBNCAP
 #include "ncap.h"
@@ -170,7 +169,6 @@ dump_reports(void)
     /* amalloc_report(); */
     pcap_report(fp);
     dns_message_report(fp);
-    ip_message_report(fp);
     fprintf(fp, "</dscdata>\n");
 
     /*
@@ -248,9 +246,9 @@ main(int argc, char *argv[])
 		1000 * (now.tv_sec - break_start.tv_sec));
 	}
 #if HAVE_LIBNCAP
-	result = Ncap_run(dns_message_handle, ip_message_handle);
+	result = Ncap_run(dns_message_handle);
 #else
-	result = Pcap_run(dns_message_handle, ip_message_handle);
+	result = Pcap_run(dns_message_handle);
 #endif
 	if (debug_flag)
 	    gettimeofday(&break_start, NULL);
@@ -262,7 +260,6 @@ main(int argc, char *argv[])
 	   resume processing packets. */
 	freeArena();
 	dns_message_clear_arrays();
-	ip_message_clear_arrays();
 
 	{
 	    /* Reap children. (Most recent probably has not exited yet, but

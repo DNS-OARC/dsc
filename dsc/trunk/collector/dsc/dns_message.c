@@ -44,6 +44,11 @@
 #include "transport_index.h"
 #include "dns_ip_version_index.h"
 #include "dns_source_port_index.h"
+
+#include "ip_direction_index.h"
+#include "ip_proto_index.h"
+#include "ip_version_index.h"
+
 #include "syslog_debug.h"
 
 extern md_array_printer xml_printer;
@@ -226,6 +231,10 @@ static indexer_t indexers[] = {
     { "dns_source_port",      dns_source_port_indexer,      dns_source_port_iterator,      dns_source_port_reset },
     { "dns_sport_range",      dns_sport_range_indexer,      dns_sport_range_iterator,      dns_sport_range_reset },
     { "qr_aa_bits",           qr_aa_bits_indexer,           qr_aa_bits_iterator,           NULL, },
+    /* these used to be "IP" indexers */
+    { "ip_direction",         ip_direction_indexer,         ip_direction_iterator,         NULL },
+    { "ip_proto",             ip_proto_indexer,             ip_proto_iterator,             ip_proto_reset },
+    { "ip_version",           ip_version_indexer,           ip_version_iterator,           ip_version_reset },
     { NULL,                   NULL,                         NULL,                          NULL }
 };
 

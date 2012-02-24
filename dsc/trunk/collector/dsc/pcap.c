@@ -41,7 +41,6 @@
 
 #include "xmalloc.h"
 #include "dns_message.h"
-#include "ip_message.h"
 #include "pcap.h"
 #include "byteorder.h"
 #include "syslog_debug.h"
@@ -124,7 +123,6 @@ extern int debug_flag;
 static int debug_count = 20;
 #endif
 static DMC *dns_message_callback;
-static IPC *ip_message_callback;
 static struct timeval last_ts;
 static struct timeval start_ts;
 static struct timeval finish_ts;
@@ -658,16 +656,10 @@ handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 {
     int offset = ip->ip_hl << 2;
     int iplen = nptohs(&ip->ip_len);
-    ip_message i;
 
     inXaddr_assign_v4(&tm->src_ip_addr, &ip->ip_src);
     inXaddr_assign_v4(&tm->dst_ip_addr, &ip->ip_dst);
-
-    i.version = 4;
-    i.src = tm->src_ip_addr;
-    i.dst = tm->dst_ip_addr;
-    i.proto = ip->ip_p;
-    ip_message_callback(&i);
+    tm->ip_version = 4;
 
     /* sigh, punt on IP fragments */
     if (nptohs(&ip->ip_off) & IP_OFFMASK)
@@ -685,7 +677,6 @@ handle_ipv4(const struct ip * ip, int len, transport_message *tm)
 static void
 handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
 {
-    ip_message i;
     int offset = sizeof(struct ip6_hdr);
     int nexthdr = ip6->ip6_nxt;
     uint16_t payload_len = nptohs(&ip6->ip6_plen);
@@ -731,13 +722,9 @@ handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
         payload_len -= ext_hdr_len;
     }                           /* while */
 
-    i.version = 6;
     inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
     inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
-    i.src = tm->src_ip_addr;
-    i.dst = tm->dst_ip_addr;
-    i.proto = nexthdr;
-    ip_message_callback(&i);
+    tm->ip_version = 6;
 
     /* Catch broken and empty packets */
     if ((offset + payload_len) > len)
@@ -1058,14 +1045,13 @@ Pcap_init(const char *device, int promisc)
 }
 
 int
-Pcap_run(DMC * dns_callback, IPC * ip_callback)
+Pcap_run(DMC * dns_callback)
 {
     int i;
     int result = 1;
 #   define INTERVAL 60
 
     dns_message_callback = dns_callback;
-    ip_message_callback = ip_callback;
     for (i = 0; i < n_interfaces; i++)
 	interfaces[i].pkts_captured = 0;
     if (n_pcap_offline > 0) {

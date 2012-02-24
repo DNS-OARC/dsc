@@ -25,7 +25,6 @@
 
 #include "xmalloc.h"
 #include "dns_message.h"
-#include "ip_message.h"
 #include "ncap.h"
 #include "byteorder.h"
 #include "syslog_debug.h"
@@ -39,7 +38,6 @@ extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm,
 extern int debug_flag;
 extern char *bpf_program_str;	/* from pcap.c */
 static DMC *dns_message_callback;
-static IPC *ip_message_callback;
 static struct timespec last_ts;
 static struct timespec start_ts;
 static struct timespec finish_ts;
@@ -52,23 +50,18 @@ static void
 handle_ncap(ncap_t nc, void *udata, ncap_msg_ct msg, const char *wtf)
 {
     transport_message tm;
-    ip_message i;
 
-    memset(&i, '\0', sizeof(i));
     memset(&tm, '\0', sizeof(tm));
     last_ts = msg->ts;
     if (ncap_ip4 == msg->np) {
-	i.version = 4;
-	inXaddr_assign_v4(&i.src, &msg->npu.ip4.src);
-        inXaddr_assign_v4(&i.src, &msg->npu.ip4.dst);
+        tm.ip_version = 4;
+	inXaddr_assign_v4(&tm.src_ip_addr, &msg->npu.ip4.src);
+        inXaddr_assign_v4(&tm.dst_ip_addr, &msg->npu.ip4.dst);
     } else if (ncap_ip6 == msg->np) {
-	i.version = 6;
-	inXaddr_assign_v6(&i.src, &msg->npu.ip6.src);
-        inXaddr_assign_v6(&i.src, &msg->npu.ip6.dst);
+	tm.ip_version = 6;
+	inXaddr_assign_v6(&tm.src_ip_addr, &msg->npu.ip6.src);
+        inXaddr_assign_v6(&tm.dst_ip_addr, &msg->npu.ip6.dst);
     }
-
-    tm.src_ip_addr = i.src;
-    tm.dst_ip_addr = i.dst;
 
     if (ncap_udp == msg->tp) {
 	tm.proto = i.proto = IPPROTO_UDP;
@@ -80,8 +73,6 @@ handle_ncap(ncap_t nc, void *udata, ncap_msg_ct msg, const char *wtf)
 	tm.dst_port = (u_short) nptohl(&msg->tpu.tcp.dport);
     }
 
-    if (i.version)
-	ip_message_callback(&i);
     if (i.proto)
 	handle_dns(msg->payload, msg->paylen, &tm, dns_message_callback);
 }
@@ -129,13 +120,12 @@ Ncap_init(const char *device, int promisc)
 }
 
 int
-Ncap_run(DMC * dns_callback, IPC * ip_callback)
+Ncap_run(DMC * dns_callback)
 {
     int result = 1;
 #   define INTERVAL 60
 
     dns_message_callback = dns_callback;
-    ip_message_callback = ip_callback;
     struct timeval tv;
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &start_ts);

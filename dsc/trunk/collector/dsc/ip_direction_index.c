@@ -14,7 +14,7 @@
 
 #include "xmalloc.h"
 #include "inX_addr.h"
-#include "ip_message.h"
+#include "dns_message.h"
 #include "md_array.h"
 
 #define LARGEST 2
@@ -39,10 +39,11 @@ ip_is_local(const inX_addr *a)
 int
 ip_direction_indexer(const void *vp)
 {
-    const ip_message *ip = vp;
-    if (ip_is_local(&ip->src))
+    const dns_message *m = vp;
+    const transport_message *tm = m->tm;
+    if (ip_is_local(&tm->src_ip_addr))
 	return 0;
-    if (ip_is_local(&ip->dst))
+    if (ip_is_local(&tm->dst_ip_addr))
 	return 1;
     return LARGEST;
 }
