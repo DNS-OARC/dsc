@@ -917,8 +917,8 @@ my $std_accum_yaxes = {
 
   reflector_attack => {
     plot_type => 'trace',
-    keys	=> [qw(recv:qr=0,aa=0 recv:qr=0,aa=1 recv:qr=1,aa=0 recv:qr=1,aa=1)],
-    names	=> [qw(QR=0,AA=0 QR=0,AA=1 QR=1,AA=0 QR=1,AA=1)],
+    keys	=> ['recv:cXI9MCxhYT0w', 'recv:cXI9MCxhYT0x', 'recv:cXI9MSxhYT0w', 'recv:cXI9MSxhYT0x'],
+    names	=> ['QR=0,AA=0', 'QR=0,AA=1', 'QR=1,AA=0', 'QR=1,AA=1'],
     colors	=> [qw(brightgreen purple red orange)],
     data_reader => \&DSC::extractor::read_data4,
     data_summer => \&DSC::grapher::data_summer_2d,
@@ -935,11 +935,11 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'Received packets by IP QR/AA bits',
-    map_legend	=> 1,
+    map_legend	=> 0,
     munge_func  => sub {
 	my $self = shift;
 	my $data = shift;
-	$self->munge_2d_to_1d($data, [qw(recv)], [qw(qr=0,aa=0 qr=0,aa=1 qr=1,aa=0 qr=1,aa=1)])
+	$self->munge_2d_to_1d($data, [qw(recv)], [qw(cXI9MCxhYT0w cXI9MCxhYT0x cXI9MSxhYT0w cXI9MSxhYT0x)])
    }
   },
 
