@@ -475,6 +475,19 @@ my $port_range_keys = [ qw(
     },
   },
 
+  reflector_attack => {
+    ndim	=> 2,
+    type1	=> 'Direction',
+    type2	=> 'AQRRBits',
+    outputs	=> {
+      reflector_attack => {
+	data_reader => \&DSC::extractor::read_data4,
+	data_merger => \&main::merge_trace,
+	data_writer => \&DSC::extractor::write_data4,
+      },
+    },
+  },
+
 );
 
 1;

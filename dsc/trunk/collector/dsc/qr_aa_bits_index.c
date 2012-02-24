@@ -25,16 +25,16 @@ qr_aa_bits_iterator(char **label)
     }
     switch (next_iter) {
     case 0:
-	*label = "qr=0 aa=0";
+	*label = "qr=0,aa=0";
 	break;
     case 1:
-	*label = "qr=1 aa=0";
+	*label = "qr=1,aa=0";
 	break;
     case 2:
-	*label = "qr=0 aa=1";
+	*label = "qr=0,aa=1";
 	break;
     case 3:
-	*label = "qr=1 aa=1";
+	*label = "qr=1,aa=1";
 	break;
     default:
 	*label = "bug";

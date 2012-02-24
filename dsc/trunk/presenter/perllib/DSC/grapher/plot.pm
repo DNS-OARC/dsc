@@ -911,6 +911,34 @@ my $std_accum_yaxes = {
     munge_func  => \&DSC::grapher::munge_min_max_mean,
   },
 
+  reflector_attack => {
+    plot_type => 'trace',
+    keys	=> [qw(recv:qr=0,aa=0 recv:qr=0,aa=1 recv:qr=1,aa=0 recv:qr=1,aa=1)],
+    names	=> [qw(QR=0,AA=0 QR=0,AA=1 QR=1,AA=0 QR=1,AA=1)],
+    colors	=> [qw(brightgreen purple red orange)],
+    data_reader => \&DSC::extractor::read_data4,
+    data_summer => \&DSC::grapher::data_summer_2d,
+    yaxes	=> {
+        rate => {
+            label => 'Packet Rate (p/s)',
+            divideflag => 1,
+            default => 1,
+        },
+        percent => {
+            label => 'Percent of Packets',
+            divideflag => 0,
+            default => 0,
+        },
+    },
+    plottitle   => 'Received packets by IP QR/AA bits',
+    map_legend	=> 1,
+    munge_func  => sub {
+	my $self = shift;
+	my $data = shift;
+	$self->munge_2d_to_1d($data, [qw(recv)], [qw(qr=0,aa=0 qr=0,aa=1 qr=1,aa=0 qr=1,aa=1)])
+   }
+  },
+
 );
 
 my %FPDNSCACHE;
