@@ -95,6 +95,16 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 # dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
 # dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
 
+# The "reflector_attack" dataset may be useful when DSC is monitoring
+# an authoritative name server.  This dataset counts the number of DNS
+# messages received with each combination of QR,AA bits.  Normally
+# the authoritative name server should *receive* only *queries*.  If
+# the name server is the target of a DNS reflection attack, it will
+# probably receive DNS *responses* which have the QR bit set.
+#
+#dataset reflector_attack dns Direction:ip_direction QRAABits:qr_aa_bits any;
+
+
 # bpf_vlan_tag_byte_order
 #
 #	Set this to 'host' on FreeBSD-4 where the VLAN id that we
