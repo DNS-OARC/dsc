@@ -934,7 +934,7 @@ my $std_accum_yaxes = {
             default => 0,
         },
     },
-    plottitle   => 'Received packets by IP QR/AA bits',
+    plottitle   => 'Breakdown of QR/AA bits in received DNS messages',
     map_legend	=> 0,
     munge_func  => sub {
 	my $self = shift;
