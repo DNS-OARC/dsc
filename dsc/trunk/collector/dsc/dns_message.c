@@ -39,6 +39,7 @@
 #include "edns_bufsiz_index.h"
 #include "do_bit_index.h"
 #include "rd_bit_index.h"
+#include "qr_aa_bits_index.h"
 #include "opcode_index.h"
 #include "transport_index.h"
 #include "dns_ip_version_index.h"
@@ -224,6 +225,7 @@ static indexer_t indexers[] = {
     { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },
     { "dns_source_port",      dns_source_port_indexer,      dns_source_port_iterator,      dns_source_port_reset },
     { "dns_sport_range",      dns_sport_range_indexer,      dns_sport_range_iterator,      dns_sport_range_reset },
+    { "qr_aa_bits",           qr_aa_bits_indexer,           qr_aa_bits_iterator,           NULL, },
     { NULL,                   NULL,                         NULL,                          NULL }
 };
 
