@@ -203,7 +203,7 @@ sub run {
 			);
 	} else {
 		$self->make_image($cache_name) unless (!$self->reason_to_not_plot && $self->check_image_cache($cache_name));
-		if (-f $self->cache_image_path($cache_name)) {
+		if (-f $self->cache_image_path($cache_name) && $self->cgi ) {
 			print $self->cgi->header(-type=>'image/png',-expires=>$expires_time)
 			    unless (defined($self->{CFG}->{'no_http_header'}));
 			$self->cat_image($cache_name);
