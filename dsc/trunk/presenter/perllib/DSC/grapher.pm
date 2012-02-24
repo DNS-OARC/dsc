@@ -1494,6 +1494,7 @@ sub navbar_plot {
 	push(@items, $self->navbar_item('plot','client_port_range','Source Ports'));
 	push(@items, $self->navbar_item('plot','priming_queries','Priming Queries'));
 	push(@items, $self->navbar_item('plot','priming_responses','Priming Responses'));
+	push(@items, $self->navbar_item('plot','reflector_attack','Reflector Attack'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 
