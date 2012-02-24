@@ -5,6 +5,8 @@ use warnings;
 use Getopt::Long;
 use DSC::grapher;
 
+our $ploticus_debug=1;
+
 my %args;
 my $result = GetOptions (\%args,
 			"server=s",
@@ -17,5 +19,6 @@ my $result = GetOptions (\%args,
 			"key=s",
 			);
 
-DSC::grapher::prepare();
-DSC::grapher::run(undef, \%args);
+my $grapher = DSC::grapher->new();
+$grapher->cmdline(\%args);
+$grapher->run();
