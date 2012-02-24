@@ -34,6 +34,10 @@ xrgb(ff0000) xrgb(ff9900) xrgb(ffff00) xrgb(00cc00) xrgb(0033cc) xrgb(660099)
 xrgb(ff3300) xrgb(ffb200) xrgb(ccff00) xrgb(00b366) xrgb(1919b3) xrgb(990099)
 xrgb(ff6600) xrgb(ffcc00) xrgb(99ff00) xrgb(009999) xrgb(330099) xrgb(cc0099)
 xrgb(ff8000) xrgb(ffe500) xrgb(33ff00) xrgb(0066b3) xrgb(400099) xrgb(e60066)
+xrgb(ff0000) xrgb(ff9900) xrgb(ffff00) xrgb(00cc00) xrgb(0033cc) xrgb(660099)
+xrgb(ff3300) xrgb(ffb200) xrgb(ccff00) xrgb(00b366) xrgb(1919b3) xrgb(990099)
+xrgb(ff6600) xrgb(ffcc00) xrgb(99ff00) xrgb(009999) xrgb(330099) xrgb(cc0099)
+xrgb(ff8000) xrgb(ffe500) xrgb(33ff00) xrgb(0066b3) xrgb(400099) xrgb(e60066)
 )];
 my $port_range_keys = [ qw(
 0-2047 2048-4095 4096-6143 6144-8191 8192-10239 10240-12287 12288-14335 14336-16383
