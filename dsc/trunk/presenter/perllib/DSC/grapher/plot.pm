@@ -915,7 +915,7 @@ my $std_accum_yaxes = {
     munge_func  => \&DSC::grapher::munge_min_max_mean,
   },
 
-  reflector_attack => {
+  qr_aa_bits => {
     plot_type => 'trace',
     keys	=> ['recv:cXI9MCxhYT0w', 'recv:cXI9MCxhYT0x', 'recv:cXI9MSxhYT0w', 'recv:cXI9MSxhYT0x'],
     names	=> ['QR=0,AA=0', 'QR=0,AA=1', 'QR=1,AA=0', 'QR=1,AA=1'],
@@ -935,7 +935,7 @@ my $std_accum_yaxes = {
         },
     },
     plottitle   => 'Breakdown of QR/AA bits in received DNS messages',
-    map_legend	=> 0,
+    map_legend	=> 1,
     munge_func  => sub {
 	my $self = shift;
 	my $data = shift;

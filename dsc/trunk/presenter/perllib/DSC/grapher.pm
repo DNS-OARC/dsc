@@ -1479,6 +1479,7 @@ sub navbar_plot {
 		push(@items, $sublist_item . $self->navbar_item('plot','idn_qname', 'IDN Qnames'));
 		push(@items, $sublist_item . $self->navbar_item('plot','rd_bit', 'RD bit'));
 		push(@items, $sublist_item . $self->navbar_item('plot','do_bit', 'DO bit'));
+		push(@items, $sublist_item . $self->navbar_item('plot','qr_aa_bits','QR and AA bits'));
 		push(@items, $sublist_item . $self->navbar_item('plot','edns_version', 'EDNS version'));
 		push(@items, $sublist_item . $self->navbar_item('plot','edns_bufsiz', 'EDNS buffer size'));
 	}
@@ -1494,7 +1495,6 @@ sub navbar_plot {
 	push(@items, $self->navbar_item('plot','client_port_range','Source Ports'));
 	push(@items, $self->navbar_item('plot','priming_queries','Priming Queries'));
 	push(@items, $self->navbar_item('plot','priming_responses','Priming Responses'));
-	push(@items, $self->navbar_item('plot','reflector_attack','Reflector Attack'));
 	"<ul>\n" . join('<li>', '', @items) . "</ul>\n";
 }
 
