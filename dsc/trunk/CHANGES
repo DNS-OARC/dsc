@@ -1,3 +1,9 @@
+2012-02-29 Duane Wessels
+
+    Added 'qr_aa_bits' dataset and graph.  It shows the distribution
+    of QR/AA values in received messages and may be helpful in
+    detecting reflector attacks targeting your name server.
+
 2010-11-29 Duane Wessels
 
     The dnssec_qtype and dns_ip_version plots were not working due
