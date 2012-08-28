@@ -39,6 +39,7 @@
 #include "edns_bufsiz_index.h"
 #include "do_bit_index.h"
 #include "rd_bit_index.h"
+#include "tc_bit_index.h"
 #include "qr_aa_bits_index.h"
 #include "opcode_index.h"
 #include "transport_index.h"
@@ -225,6 +226,7 @@ static indexer_t indexers[] = {
     { "do_bit",               do_bit_indexer,               do_bit_iterator,               NULL },
     { "d0_bit",               do_bit_indexer,               do_bit_iterator,               NULL },          /* compat for bug */
     { "rd_bit",               rd_bit_indexer,               rd_bit_iterator,               NULL },
+    { "tc_bit",               tc_bit_indexer,               tc_bit_iterator,               NULL },
     { "opcode",               opcode_indexer,               opcode_iterator,               opcode_reset },
     { "transport",            transport_indexer,            transport_iterator,            NULL },
     { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },

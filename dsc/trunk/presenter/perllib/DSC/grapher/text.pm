@@ -188,11 +188,19 @@ use warnings;
     description => '',
   },
 
+  reply_attrs => {
+    description => '',
+  },
+
   idn_qname => {
     description => '',
   },
 
   rd_bit => {
+    description => '',
+  },
+
+  tc_bit => {
     description => '',
   },
 

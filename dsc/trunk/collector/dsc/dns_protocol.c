@@ -171,6 +171,7 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm, DMC *dns_mess
     m->opcode = (us >> 11) & 0x0F;
     m->rd = (us >> 8) & 0x01;
     m->aa = (us >> 10) & 0x01;
+    m->tc = (us >> 9) & 0x01;
     m->rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);

@@ -122,6 +122,19 @@ my $port_range_keys = [ qw(
     },
   },
 
+  tc_bit => {
+    ndim	=> 1,
+    type1	=> 'TC',
+    outputs	=> {
+      tc_bit => {
+	keys	=> [ qw(set clr) ],
+	data_merger => \&main::merge_trace,
+	data_reader => \&DSC::extractor::read_data,
+	data_writer => \&DSC::extractor::write_data,
+      },
+    },
+  },
+
   idn_qname => {
     ndim	=> 1,
     type1	=> 'IDNQname',

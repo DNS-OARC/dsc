@@ -69,6 +69,7 @@ POSSIBILITY OF SUCH DAMAGE.
 \begin{itemize}
 \item Duane Wessels, Measurement Factory
 \item Ken Keys, Cooperative Association for Internet Data Analysis
+\item Sebastian Castro, New Zealand Registry Services
 \end{itemize}
 \end{abstract}
 
@@ -1016,6 +1017,7 @@ dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
 dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
 dataset do_bit dns All:null D0:do_bit queries-only;
 dataset rd_bit dns All:null RD:rd_bit queries-only;
+dataset tc_bit dns All:null TC:tc_bit replies-only;
 dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
 dataset ipv6_rsn_abusers dns All:null ClientAddr:client
         queries-only,aaaa-or-a6-only,root-servers-n et-only max-cells=50;
@@ -1354,8 +1356,9 @@ qname & Qname & Full query name \\
 qnamelen & QnameLen & Length of the query name \\
 qtype & Qtype & DNS query type \\
 query\_classification & Class & A classification for bogus queries \\
-rcode & Rcode & DNS reply code \\
+rcode & Rcode & DNS response code \\
 rd\_bit & RD & Check if Recursion Desired bit set \\
+tc\_bit & TC & Check if Truncated bit set \\
 tld & TLD & TLD of the query name \\
 transport & Transport & Transport protocol for the DNS message (UDP or TCP) \\
 dns\_ip\_version & IPVersion & IP version of the packet carrying the DNS message \\
@@ -1438,13 +1441,17 @@ for DNS messages, and here are their descriptions:
 	\item malformed: a malformed DNS message that could not be entirely parsed.
 	\end{itemize}
 \item[rcode]
-	The RCODE value in a DNS reply.  The most common response
+	The RCODE value in a DNS response.  The most common response
 	codes are 0 (NO ERROR) and 3 (NXDOMAIN). 
 \item[rd\_bit]
 	This indexer returns 1 if the RD (recursion desired) bit is
 	set in the query.  Usually only stub resolvers set the RD bit.
 	Usually authoritative servers do not offer recursion to their
 	clients.
+\item[tc\_bit]
+	This indexer returns 1 if the TC (truncated) bit is
+	set (in a response).  An authoritative server sets the TC bit
+	when the entire response won't fit into a UDP message.
 \item[tld]
 	the TLD of the first QNAME in a DNS message's question section.
 \item[transport]
@@ -1465,7 +1472,7 @@ the {\tt dataset\/} line:
 	Count only DNS query messages.  A query is a DNS message
 	where the QR bit is set to 0.
 \item[replies-only]
-	Count only DNS reply messages.  A query is a DNS message 
+	Count only DNS response messages.  A query is a DNS message 
         where the QR bit is set to 1.
 \item[popular-qtypes]
 	Count only DNS messages where the query type is one of:

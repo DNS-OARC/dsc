@@ -1,3 +1,9 @@
+2012-08-27 Sebastian Castro
+
+    Added 'tc_bit' indexer and dataset to track the frequency
+    of responses having the TC bit set.  Useful with DNSSEC
+    signed zones.
+
 2012-02-29 Duane Wessels
 
     Added 'qr_aa_bits' dataset and graph.  It shows the distribution

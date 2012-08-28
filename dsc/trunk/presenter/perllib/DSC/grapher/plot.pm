@@ -629,6 +629,14 @@ my $std_accum_yaxes = {
     colors	=> [ qw (red) ],
   },
 
+  reply_attrs => {
+    plot_type	=> 'none',
+    # not a real plot, but we get errors if these members aren't present
+    keys	=> [ qw(a) ],
+    names	=> [ qw(a) ],
+    colors	=> [ qw (red) ],
+  },
+
   idn_qname => {
     plot_type	=> 'trace',
     yaxes	=> $std_trace_yaxes,
@@ -649,6 +657,17 @@ my $std_accum_yaxes = {
     data_reader => \&DSC::extractor::read_data,
     data_summer => \&DSC::grapher::data_summer_1d,
     plottitle   => 'Queries With Recursion Desired bit set',
+  },
+
+  tc_bit => {
+    plot_type	=> 'trace',
+    yaxes	=> $std_trace_yaxes,
+    keys	=> [qw(set)],
+    names	=> [ 'Truncated Response' ],
+    colors	=> [qw(darkblue)],
+    data_reader => \&DSC::extractor::read_data,
+    data_summer => \&DSC::grapher::data_summer_1d,
+    plottitle   => 'Responses With Truncated bit set',
   },
 
   do_bit => {

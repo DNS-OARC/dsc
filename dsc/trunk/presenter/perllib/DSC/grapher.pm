@@ -218,7 +218,7 @@ sub reason_to_not_plot {
 	return 'Please select a plot' if ($self->{ARGS}->{plot} eq 'none');
 	#XXX
 	#$self->{PLOT} = $DSC::grapher::plot::PLOTS{$self->{ARGS}->{plot}};
-	return 'Please select a Query Attributes sub-item' if ($self->{PLOT}->{plot_type} eq 'none');
+	return 'Please select an Attributes sub-item' if ($self->{PLOT}->{plot_type} eq 'none');
 	undef;
 }
 
@@ -1482,6 +1482,10 @@ sub navbar_plot {
 		push(@items, $sublist_item . $self->navbar_item('plot','qr_aa_bits','QR and AA bits'));
 		push(@items, $sublist_item . $self->navbar_item('plot','edns_version', 'EDNS version'));
 		push(@items, $sublist_item . $self->navbar_item('plot','edns_bufsiz', 'EDNS buffer size'));
+	}
+	push(@items, $self->navbar_item('plot','reply_attrs','Reply Attributes'));
+	if ($pn =~ /reply_attrs|tc_bit/) {
+		push(@items, $sublist_item . $self->navbar_item('plot','tc_bit', 'TC bit'));
 	}
 	push(@items, $self->navbar_item('plot','chaos_types_and_names','CHAOS'));
 	push(@items, $self->navbar_item('plot','dns_ip_version','IP Version'));
