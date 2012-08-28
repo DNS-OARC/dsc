@@ -346,6 +346,8 @@ sub trim_accum2d {
 		foreach my $k1 (sort {($data->{$b}{$k2} || 0) <=> ($data->{$a}{$k2} || 0)} keys %$data) {
 			next unless defined($data->{$k1}{$k2});
 			next unless (++$n > 1000);
+			next if ($k1 eq $DSC::extractor::SKIPPED_KEY);		# dont delete this
+			next if ($k1 eq $DSC::extractor::SKIPPED_SUM_KEY);	# dont delete this
 			$data->{$DSC::extractor::SKIPPED_KEY}{$k2}++;
 			$data->{$DSC::extractor::SKIPPED_SUM_KEY}{$k2} += $data->{$k1}{$k2};
 			delete $data->{$k1}{$k2};
