@@ -1,3 +1,8 @@
+2013-03-19 Duane Wessels
+
+    Fixed a bug in TCP reassembly when the DNS length field was
+    split between two segments.
+
 2012-08-27 Sebastian Castro
 
     Added 'tc_bit' indexer and dataset to track the frequency
