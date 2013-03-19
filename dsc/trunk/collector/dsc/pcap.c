@@ -190,6 +190,7 @@ typedef struct tcpstate {
     long last_use;
     uint32_t seq_start; /* seq# of length field of next DNS msg */
     short msgbufs; /* number of msgbufs in use */
+    u_char dnslen_buf[2]; /* full dnslen field might not arrive in first segment */
     int8_t fin; /* have we seen a FIN? */
     tcp_msgbuf_t *msgbuf[MAX_TCP_MSGS];
     tcp_segbuf_t *segbuf[MAX_TCP_SEGS];
@@ -286,19 +287,22 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     if (len <= 0) /* there is no more payload */
 	return;
 
-    if (seq == tcpstate->seq_start) {
-	/* payload is 2-byte length field plus 0 or more bytes of DNS message */
-	if (len < sizeof(uint16_t)) {
-	    /* makes no sense */
-	    if (debug_flag > 1)
-		fprintf(stderr, "handle_tcp_segment: nonsense len in first segment\n");
-	    return;
-	}
-	dnslen = nptohs(segment);
+    if (seq - tcpstate->seq_start < 2) {
+	/* this segment contains all or part of the 2-byte DNS length field */
+	uint32_t o = seq - tcpstate->seq_start;
+	int l = (len > 1 && o == 0) ? 2 : 1;
+	if (debug_flag > 1)
+	    fprintf(stderr, "handle_tcp_segment(): copying %d bytes to dnslen_buf[%d]\n", l, o);
+	memcpy(&tcpstate->dnslen_buf[o], segment, l);
+	len -= l;
+	segment += l;
+	seq += l;
+    }
+
+    if (seq - tcpstate->seq_start >= 2) {
+	/* We have the dnslen stored now */
+	dnslen = nptohs(tcpstate->dnslen_buf);
 	tcpstate->seq_start += sizeof(uint16_t) + dnslen;
-	len -= sizeof(uint16_t);
-	segment += sizeof(uint16_t);
-	seq += sizeof(uint16_t);
 	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp_segment: first segment; dnslen = %d\n", dnslen);
 	if (len >= dnslen) {
