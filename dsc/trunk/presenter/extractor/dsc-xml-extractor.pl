@@ -13,6 +13,7 @@ use Data::Dumper;
 use Proc::PID::File;
 use POSIX qw(nice);
 use XML::Simple;
+use File::Copy;
 
 my $MAX_FILES = 1000;
 my $MAX_TIME = 270;
@@ -60,12 +61,7 @@ sub process_xml_dir {
 	unless (defined $x) {
 		warn "extract died with '", $@, "'\n";
 		Mkdir ("errors", 0755);
-		#
-		# perl's rename is a pain.  it doesn't work
-		# across devices and maybe doesn't strip leading
-		# directory components from the target name?
-		#
-		system "mv $fn errors || rm -f $fn";
+		File::Copy::move($fn, "errors") || unlink $fn;
 		my ($V,$D,$F) = File::Spec->splitpath($fn);
 		if (open (ERR, ">errors/$F.err")) {
 			print ERR "extract died with '", $@, "'\n";
