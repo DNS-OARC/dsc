@@ -61,7 +61,7 @@ sub process_xml_dir {
 	unless (defined $x) {
 		warn "extract died with '", $@, "'\n";
 		Mkdir ("errors", 0755);
-		File::Copy::move($fn, "errors") || unlink $fn;
+		File::Copy::mv($fn, "errors") || unlink $fn;
 		my ($V,$D,$F) = File::Spec->splitpath($fn);
 		if (open (ERR, ">errors/$F.err")) {
 			print ERR "extract died with '", $@, "'\n";
