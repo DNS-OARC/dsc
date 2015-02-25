@@ -1,3 +1,9 @@
+2015-02-25 Duane Wessels
+
+    User reported a concern with the way dsc-xml-extractor.pl called
+    the operating system 'mv' command.  It has been replaced with Perl's
+    File::Copy::mv().
+
 2013-03-19 Duane Wessels
 
     Fixed a bug in TCP reassembly when the DNS length field was
