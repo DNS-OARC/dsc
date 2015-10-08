@@ -187,7 +187,6 @@ int
 main(int argc, char *argv[])
 {
     int x;
-    extern DMC dns_message_handle;
     int result;
     struct timeval break_start = {0,0};
 
@@ -246,9 +245,9 @@ main(int argc, char *argv[])
 		1000 * (now.tv_sec - break_start.tv_sec));
 	}
 #if HAVE_LIBNCAP
-	result = Ncap_run(dns_message_handle);
+	result = Ncap_run();
 #else
-	result = Pcap_run(dns_message_handle);
+	result = Pcap_run();
 #endif
 	if (debug_flag)
 	    gettimeofday(&break_start, NULL);

@@ -138,7 +138,7 @@ grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message
 }
 
 void
-handle_dns(const u_char *buf, uint16_t len, transport_message *tm, DMC *dns_message_callback)
+handle_dns(const u_char *buf, uint16_t len, transport_message *tm)
 {
     unsigned short us;
     off_t offset;
@@ -227,5 +227,5 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm, DMC *dns_mess
 	arcount--;
     }
     assert(offset <= len);
-    dns_message_callback(m);
+    dns_message_handle(m);
 }

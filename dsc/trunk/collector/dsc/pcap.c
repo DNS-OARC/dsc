@@ -116,13 +116,11 @@ int n_pcap_offline = 0;		/* global so daemon.c can use it */
 char *bpf_program_str = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
-extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm,
-    DMC *dns_message_callback);
+extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm);
 extern int debug_flag;
 #if 0
 static int debug_count = 20;
 #endif
-static DMC *dns_message_callback;
 static struct timeval last_ts;
 static struct timeval start_ts;
 static struct timeval finish_ts;
@@ -139,7 +137,7 @@ handle_udp(const struct udphdr *udp, int len, transport_message *tm)
 
     if (port53 != tm->dst_port && port53 != tm->src_port)
 	return;
-    handle_dns((void *)(udp + 1), len - sizeof(*udp), tm, dns_message_callback);
+    handle_dns((void *)(udp + 1), len - sizeof(*udp), tm);
 }
 
 #define MAX_DNS_LENGTH 0xFFFF
@@ -308,7 +306,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	if (len >= dnslen) {
 	    /* this segment contains a complete message - avoid the reassembly
 	     * buffer and just handle the message immediately */
-	    handle_dns(segment, dnslen, tm, dns_message_callback);
+	    handle_dns(segment, dnslen, tm);
 	    /* handle the trailing part of the segment */
 	    if (len > dnslen) {
 		if (debug_flag > 1)
@@ -481,7 +479,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 
     if (tcpstate->msgbuf[m]->holes == 0) {
 	/* We now have a completely reassembled dns message */
-	handle_dns(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm, dns_message_callback);
+	handle_dns(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm);
 	xfree(tcpstate->msgbuf[m]);
 	tcpstate->msgbuf[m] = NULL;
 	tcpstate->msgbufs--;
@@ -1049,13 +1047,12 @@ Pcap_init(const char *device, int promisc)
 }
 
 int
-Pcap_run(DMC * dns_callback)
+Pcap_run(void)
 {
     int i;
     int result = 1;
 #   define INTERVAL 60
 
-    dns_message_callback = dns_callback;
     for (i = 0; i < n_interfaces; i++)
 	interfaces[i].pkts_captured = 0;
     if (n_pcap_offline > 0) {

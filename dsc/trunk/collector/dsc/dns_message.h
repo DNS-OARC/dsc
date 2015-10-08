@@ -45,8 +45,6 @@ struct _dns_message {
     /* ... */
 };
 
-typedef void (DMC) (dns_message *);
-
 void dns_message_report(FILE *);
 int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, dataset_opt);
 const char * dns_message_QnameToNld(const char *, int);
