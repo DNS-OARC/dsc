@@ -7,7 +7,6 @@
 
 #include "xmalloc.h"
 #include "dns_message.h"
-#include "ip_message.h"
 #include "syslog_debug.h"
 
 int promisc_flag;
