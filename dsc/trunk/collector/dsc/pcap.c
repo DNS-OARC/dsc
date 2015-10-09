@@ -653,11 +653,11 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 }
 
 static int
-pcap_ipv4_handler(const struct ip * ipv4, int len, void *udata)
+pcap_ipv4_handler(const struct ip * ip4, int len, void *udata)
 {
     transport_message *tm = udata;
-    inXaddr_assign_v4(&tm->src_ip_addr, &ipv4->ip_src);
-    inXaddr_assign_v4(&tm->dst_ip_addr, &ipv4->ip_dst);
+    inXaddr_assign_v4(&tm->src_ip_addr, &ip4->ip_src);
+    inXaddr_assign_v4(&tm->dst_ip_addr, &ip4->ip_dst);
     tm->ip_version = 4;
     return 0;
 }
