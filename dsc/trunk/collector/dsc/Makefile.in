@@ -13,11 +13,11 @@ LIBS += @LIBS@		# from configure
 OBJS=\
 	base64.o \
 	generic_counter.o \
+	pcap_layers.o \
 	pcap.o \
 	ncap.o \
 	dns_protocol.o \
 	dns_message.o \
-	ip_message.o \
 	daemon.o \
 	md_array.o \
 	null_index.o \
