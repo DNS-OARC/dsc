@@ -138,8 +138,9 @@ grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message
 }
 
 void
-handle_dns(const u_char *buf, uint16_t len, transport_message *tm)
+dns_protocol_handler(const u_char *buf, uint16_t len, void *udata)
 {
+    transport_message *tm = udata;
     unsigned short us;
     off_t offset;
     int qdcount;
@@ -147,32 +148,32 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm)
     int nscount;
     int arcount;
 
-    dns_message m[1];
+    dns_message m;
 
-    memset(m, 0, sizeof(m));
-    m->tm = tm;
-    m->msglen = len;
+    memset(&m, 0, sizeof(dns_message));
+    m.tm = tm;
+    m.msglen = len;
 
     if (len < DNS_MSG_HDR_SZ) {
-	m->malformed = 1;
+	m.malformed = 1;
 	return;
     }
     us = nptohs(buf + 2);
-    m->qr = (us >> 15) & 0x01;
-    if (0 == m->qr)		/* query */
-	m->client_ip_addr = m->tm->src_ip_addr;
+    m.qr = (us >> 15) & 0x01;
+    if (0 == m.qr)		/* query */
+	m.client_ip_addr = m.tm->src_ip_addr;
     else			/* reply */
-	m->client_ip_addr = m->tm->dst_ip_addr;
+	m.client_ip_addr = m.tm->dst_ip_addr;
 
 #if 0
     tc = (us >> 9) & 0x01;
     ra = (us >> 7) & 0x01;
 #endif
-    m->opcode = (us >> 11) & 0x0F;
-    m->rd = (us >> 8) & 0x01;
-    m->aa = (us >> 10) & 0x01;
-    m->tc = (us >> 9) & 0x01;
-    m->rcode = us & 0x0F;
+    m.opcode = (us >> 11) & 0x0F;
+    m.rd = (us >> 8) & 0x01;
+    m.aa = (us >> 10) & 0x01;
+    m.tc = (us >> 9) & 0x01;
+    m.rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
     ancount = nptohs(buf + 6);
@@ -186,9 +187,9 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm)
      */
     if (qdcount > 0 && offset < len) {
 	off_t new_offset;
-	new_offset = grok_question(buf, len, offset, m->qname, &m->qtype, &m->qclass);
+	new_offset = grok_question(buf, len, offset, m.qname, &m.qtype, &m.qclass);
 	if (0 == new_offset) {
-	    m->malformed = 1;
+	    m.malformed = 1;
 	    return;
 	}
 	offset = new_offset;
@@ -218,7 +219,7 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm)
 
     if (arcount > 0 && offset < len) {
 	off_t new_offset;
-	new_offset = grok_additional_for_opt_rr(buf, len, offset, m);
+	new_offset = grok_additional_for_opt_rr(buf, len, offset, &m);
 	if (0 == new_offset) {
 	    offset = len;
 	} else {
@@ -227,5 +228,5 @@ handle_dns(const u_char *buf, uint16_t len, transport_message *tm)
 	arcount--;
     }
     assert(offset <= len);
-    dns_message_handle(m);
+    dns_message_handle(&m);
 }

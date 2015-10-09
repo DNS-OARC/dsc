@@ -10,9 +10,7 @@
 #include <sys/stat.h>
 
 #include <netinet/in.h>
-#if USE_IPV6
 #include <netinet/ip6.h>
-#endif
 
 #include <pcap.h>
 #include <signal.h>
@@ -45,6 +43,7 @@
 #include "byteorder.h"
 #include "syslog_debug.h"
 #include "hashtbl.h"
+#include "pcap_layers.h"
 
 #define PCAP_SNAPLEN 65536
 #ifndef ETHER_HDR_LEN
@@ -63,17 +62,9 @@
 #endif
 
 
-#if USE_IPV6
 /* We might need to define ETHERTYPE_IPV6 */
 #ifndef ETHERTYPE_IPV6
 #define ETHERTYPE_IPV6 0x86dd
-#endif
-#endif
-
-#if USE_PPP
-#include <net/if_ppp.h>
-#define PPP_ADDRESS_VAL       0xff	/* The address byte value */
-#define PPP_CONTROL_VAL       0x03	/* The control byte value */
 #endif
 
 #ifdef __GLIBC__
@@ -100,7 +91,6 @@ struct _interface {
 	char *device;
 	pcap_t *pcap;
 	int fd;
-	void (*handle_datalink) (const u_char *, int, transport_message *);
 	struct pcap_stat ps0, ps1;
 	unsigned int pkts_captured;
 };
@@ -116,7 +106,7 @@ int n_pcap_offline = 0;		/* global so daemon.c can use it */
 char *bpf_program_str = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
-extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm);
+extern int dns_protocol_handler(const u_char *buf, int len, void *udata);
 extern int debug_flag;
 #if 0
 static int debug_count = 20;
@@ -129,15 +119,16 @@ static int n_vlan_ids = 0;
 static int vlan_ids[MAX_VLAN_IDS];
 static hashtbl *tcpHash;
 
-void
-handle_udp(const struct udphdr *udp, int len, transport_message *tm)
+static int
+pcap_udp_handler(const struct udphdr *udp, int len, void *udata)
 {
+    transport_message *tm = udata;
     tm->src_port = nptohs(&udp->uh_sport);
     tm->dst_port = nptohs(&udp->uh_dport);
-
+    tm->proto = IPPROTO_UDP;
     if (port53 != tm->dst_port && port53 != tm->src_port)
-	return;
-    handle_dns((void *)(udp + 1), len - sizeof(*udp), tm);
+	return 1;
+    return 0;
 }
 
 #define MAX_DNS_LENGTH 0xFFFF
@@ -272,7 +263,7 @@ tcp_cmpfunc(const void *a, const void *b)
  *
  */
 static void
-handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
+pcap_handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     transport_message *tm)
 {
     int i, m, s;
@@ -280,7 +271,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     int segoff, seglen;
 
     if (debug_flag > 1)
-	fprintf(stderr, "handle_tcp_segment(): seq=%u, len=%d\n", seq, len);
+	fprintf(stderr, "pcap_handle_tcp_segment(): seq=%u, len=%d\n", seq, len);
 
     if (len <= 0) /* there is no more payload */
 	return;
@@ -290,7 +281,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	uint32_t o = seq - tcpstate->seq_start;
 	int l = (len > 1 && o == 0) ? 2 : 1;
 	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp_segment(): copying %d bytes to dnslen_buf[%d]\n", l, o);
+	    fprintf(stderr, "pcap_handle_tcp_segment(): copying %d bytes to dnslen_buf[%d]\n", l, o);
 	memcpy(&tcpstate->dnslen_buf[o], segment, l);
 	len -= l;
 	segment += l;
@@ -302,16 +293,16 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	dnslen = nptohs(tcpstate->dnslen_buf);
 	tcpstate->seq_start += sizeof(uint16_t) + dnslen;
 	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp_segment: first segment; dnslen = %d\n", dnslen);
+	    fprintf(stderr, "pcap_handle_tcp_segment: first segment; dnslen = %d\n", dnslen);
 	if (len >= dnslen) {
 	    /* this segment contains a complete message - avoid the reassembly
 	     * buffer and just handle the message immediately */
-	    handle_dns(segment, dnslen, tm);
+	    dns_protocol_handler(segment, dnslen, tm);
 	    /* handle the trailing part of the segment */
 	    if (len > dnslen) {
 		if (debug_flag > 1)
-		    fprintf(stderr, "handle_tcp_segment: segment tail\n");
-		handle_tcp_segment(segment + dnslen, len - dnslen,
+		    fprintf(stderr, "pcap_handle_tcp_segment: segment tail\n");
+		pcap_handle_tcp_segment(segment + dnslen, len - dnslen,
 		    seq + dnslen, tcpstate, tm);
 	    }
 	    return;
@@ -320,7 +311,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	for (m = 0; tcpstate->msgbuf[m]; ) {
 	    if (++m == MAX_TCP_MSGS) {
 		if (debug_flag > 1)
-		    fprintf(stderr, "handle_tcp_segment: out of msgbufs\n");
+		    fprintf(stderr, "pcap_handle_tcp_segment: out of msgbufs\n");
 		return;
 	    }
 	}
@@ -336,7 +327,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	tcpstate->msgbuf[m]->hole[0].start = len;
 	tcpstate->msgbuf[m]->hole[0].len = dnslen - len;
 	if (debug_flag > 1) {
-	    fprintf(stderr, "handle_tcp_segment: new msgbuf %d: seq = %u, dnslen = %d, hole start = %d, hole len = %d\n",
+	    fprintf(stderr, "pcap_handle_tcp_segment: new msgbuf %d: seq = %u, dnslen = %d, hole start = %d, hole len = %d\n",
 		m,
 		tcpstate->msgbuf[m]->seq,
 		tcpstate->msgbuf[m]->dnslen,
@@ -355,7 +346,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    {
 		tcp_segbuf_t *segbuf = tcpstate->segbuf[s];
 		tcpstate->segbuf[s] = NULL;
-		handle_tcp_segment(segbuf->buf, segbuf->len, segbuf->seq,
+		pcap_handle_tcp_segment(segbuf->buf, segbuf->len, segbuf->seq,
 		    tcpstate, tm);
 		xfree(segbuf);
 	    }
@@ -368,17 +359,17 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	if (m >= MAX_TCP_MSGS) {
 	    /* seg does not match any msgbuf; just hold on to it. */
 	    if (debug_flag > 1)
-		fprintf(stderr, "handle_tcp_segment: seg does not match any msgbuf\n");
+		fprintf(stderr, "pcap_handle_tcp_segment: seg does not match any msgbuf\n");
 
 	    if (seq - tcpstate->seq_start > MAX_TCP_WINDOW_SIZE) {
 		if (debug_flag > 1)
-		    fprintf(stderr, "handle_tcp_segment: seg is outside window; discarding\n");
+		    fprintf(stderr, "pcap_handle_tcp_segment: seg is outside window; discarding\n");
 		return;
 	    }
 	    for (s = 0; ; s++) {
 		if (s >= MAX_TCP_SEGS) {
 		    if (debug_flag > 1)
-			fprintf(stderr, "handle_tcp_segment: out of segbufs\n");
+			fprintf(stderr, "pcap_handle_tcp_segment: out of segbufs\n");
 		    return;
 		}
 		if (tcpstate->segbuf[s])
@@ -388,7 +379,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 		tcpstate->segbuf[s]->len = len;
 		memcpy(tcpstate->segbuf[s]->buf, segment, len);
 		if (debug_flag > 1) {
-		    fprintf(stderr, "handle_tcp_segment: new segbuf %d: seq = %u, len = %d\n",
+		    fprintf(stderr, "pcap_handle_tcp_segment: new segbuf %d: seq = %u, len = %d\n",
 			s,
 			tcpstate->segbuf[s]->seq,
 			tcpstate->segbuf[s]->len);
@@ -401,14 +392,14 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	segoff = seq - tcpstate->msgbuf[m]->seq;
 	if (segoff >= 0 && segoff < tcpstate->msgbuf[m]->dnslen) {
 	    /* segment starts in this msgbuf */
-	    fprintf(stderr, "handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d\n",
+	    fprintf(stderr, "pcap_handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d\n",
 		m,
 		tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen);
 	    if (segoff + len > tcpstate->msgbuf[m]->dnslen) {
 		/* segment would overflow msgbuf */
 		seglen = tcpstate->msgbuf[m]->dnslen - segoff;
 		if (debug_flag > 1)
-		    fprintf(stderr, "handle_tcp_segment: using partial segment %d\n", seglen);
+		    fprintf(stderr, "pcap_handle_tcp_segment: using partial segment %d\n", seglen);
 	    } else {
 		seglen = len;
 	    }
@@ -430,7 +421,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    continue; /* segment is totally before hole */
 	/* The segment overlaps this hole.  Delete the hole. */
 	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp_segment: overlaping hole %d: %d %d\n", i, hole_start, hole_len);
+	    fprintf(stderr, "pcap_handle_tcp_segment: overlaping hole %d: %d %d\n", i, hole_start, hole_len);
 	tcpstate->msgbuf[m]->hole[i].len = 0;
 	tcpstate->msgbuf[m]->holes--;
 	if (segoff + seglen < hole_start + hole_len) {
@@ -440,7 +431,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    newhole->len = (hole_start + hole_len) - newhole->start;
 	    tcpstate->msgbuf[m]->holes++;
 	    if (debug_flag > 1)
-		fprintf(stderr, "handle_tcp_segment: new post-hole %d: %d %d\n", i, newhole->start, newhole->len);
+		fprintf(stderr, "pcap_handle_tcp_segment: new post-hole %d: %d %d\n", i, newhole->start, newhole->len);
 	}
 	if (segoff > hole_start) {
 	    /* create a new hole before the segment */
@@ -448,7 +439,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    for (j=0; ; j++) {
 		if (j == MAX_TCP_HOLES) {
 		    if (debug_flag > 1)
-			fprintf(stderr, "handle_tcp_segment: out of hole descriptors\n");
+			fprintf(stderr, "pcap_handle_tcp_segment: out of hole descriptors\n");
 		    return;
 		}
 		if (tcpstate->msgbuf[m]->hole[j].len == 0) {
@@ -460,7 +451,7 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 	    newhole->start = hole_start;
 	    newhole->len = segoff - hole_start;
 	    if (debug_flag > 1)
-		fprintf(stderr, "handle_tcp_segment: new pre-hole %d: %d %d\n", j, newhole->start, newhole->len);
+		fprintf(stderr, "pcap_handle_tcp_segment: new pre-hole %d: %d %d\n", j, newhole->start, newhole->len);
 	}
 	if (segoff >= hole_start &&
 	    (hole_len == 0 || segoff + seglen < hole_start + hole_len))
@@ -475,11 +466,11 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
     memcpy(&tcpstate->msgbuf[m]->buf[segoff], segment, seglen);
 
     if (debug_flag > 1)
-	fprintf(stderr, "handle_tcp_segment: holes remaining: %d\n", tcpstate->msgbuf[m]->holes);
+	fprintf(stderr, "pcap_handle_tcp_segment: holes remaining: %d\n", tcpstate->msgbuf[m]->holes);
 
     if (tcpstate->msgbuf[m]->holes == 0) {
 	/* We now have a completely reassembled dns message */
-	handle_dns(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm);
+	dns_protocol_handler(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm);
 	xfree(tcpstate->msgbuf[m]);
 	tcpstate->msgbuf[m] = NULL;
 	tcpstate->msgbufs--;
@@ -487,8 +478,8 @@ handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcpstate,
 
     if (seglen < len) {
 	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp_segment: segment tail\n");
-	handle_tcp_segment(segment + seglen, len - seglen, seq + seglen,
+	    fprintf(stderr, "pcap_handle_tcp_segment: segment tail\n");
+	pcap_handle_tcp_segment(segment + seglen, len - seglen, seq + seglen,
 	    tcpstate, tm);
     }
 }
@@ -526,9 +517,15 @@ tcpList_remove_older_than(long t)
 	fprintf(stderr, "discarded %d old tcpstates\n", n);
 }
 
-static void
-handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
+/*
+ * This function always returns 1 because we do our own assembly and
+ * we don't want pcap_layers to do any further processing of this
+ * packet.
+ */
+static int
+pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 {
+    transport_message *tm = udata;
     int offset = tcp->th_off << 2;
     uint32_t seq;
     tcpstate_t *tcpstate = NULL;
@@ -537,6 +534,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 
     tm->src_port = nptohs(&tcp->th_sport);
     tm->dst_port = nptohs(&tcp->th_dport);
+    tm->proto = IPPROTO_TCP;
 
     key.src_ip_addr = tm->src_ip_addr;
     key.dst_ip_addr = tm->dst_ip_addr;
@@ -557,13 +555,13 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	fprintf(stderr, "handle_tcp(): %s\n", label);
 
     if (port53 != key.dport && port53 != key.sport)
-	return;
+	return 1;
 
     if (NULL == tcpHash) {
         tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc, 0,
 	    NULL, tcpstate_free);
 	if (NULL == tcpHash)
-	    return;
+	    return 1;
     }
 
     seq = nptohl(&tcp->th_seq);
@@ -585,7 +583,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	 * (This commonly happens for the final ACK in response to a FIN.) */
 	if (debug_flag > 1)
 	    fprintf(stderr, "handle_tcp: no state\n");
-	return;
+	return 1;
     }
 
     if (tcpstate)
@@ -609,7 +607,7 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	    tcpList_remove(tcpstate);
 	    hash_remove(&key, tcpHash); /* this also frees tcpstate */
 	}
-	return;
+	return 1;
     }
 
     if (TCPFLAGSYN(tcp)) {
@@ -621,17 +619,17 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	} else {
 	    tcpstate = xcalloc(1, sizeof(*tcpstate));
 	    if (!tcpstate)
-		return;
+		return 1;
 	    tcpstate_reset(tcpstate, seq);
 	    tcpstate->key = key;
 	    if (0 != hash_add(&tcpstate->key, tcpstate, tcpHash)) {
 		tcpstate_free(tcpstate);
-		return;
+		return 1;
 	    }
 	}
     }
 
-    handle_tcp_segment((void*)tcp + offset, len, seq, tcpstate, tm);
+    pcap_handle_tcp_segment((void*)tcp + offset, len, seq, tcpstate, tm);
 
     if (TCPFLAGFIN(tcp) && !tcpstate->fin) {
 	/* End of tcp stream */
@@ -651,259 +649,49 @@ handle_tcp(const struct tcphdr *tcp, int len, transport_message *tm)
 	tcpstate->last_use = tm->ts.tv_sec;
 	tcpList_add_newest(tcpstate);
     }
+    return 1;
 }
 
-static void
-handle_ipv4(const struct ip * ip, int len, transport_message *tm)
+static int
+pcap_ipv4_handler(const struct ip * ipv4, int len, void *udata)
 {
-    int offset = ip->ip_hl << 2;
-    int iplen = nptohs(&ip->ip_len);
-
-    inXaddr_assign_v4(&tm->src_ip_addr, &ip->ip_src);
-    inXaddr_assign_v4(&tm->dst_ip_addr, &ip->ip_dst);
+    transport_message *tm = udata;
+    inXaddr_assign_v4(&tm->src_ip_addr, &ipv4->ip_src);
+    inXaddr_assign_v4(&tm->dst_ip_addr, &ipv4->ip_dst);
     tm->ip_version = 4;
-
-    /* sigh, punt on IP fragments */
-    if (nptohs(&ip->ip_off) & IP_OFFMASK)
-	return;
-
-    tm->proto = ip->ip_p;
-    if (IPPROTO_UDP == ip->ip_p) {
-	handle_udp((struct udphdr *) ((void *)ip + offset), iplen - offset, tm);
-    } else if (IPPROTO_TCP == ip->ip_p) {
-	handle_tcp((struct tcphdr *) ((void *)ip + offset), iplen - offset, tm);
-    }
+    return 0;
 }
 
-#if USE_IPV6
-static void
-handle_ipv6(const struct ip6_hdr * ip6, int len, transport_message *tm)
+static int
+pcap_ipv6_handler(const struct ip6_hdr * ip6, int len, void *udata)
 {
-    int offset = sizeof(struct ip6_hdr);
-    int nexthdr = ip6->ip6_nxt;
-    uint16_t payload_len = nptohs(&ip6->ip6_plen);
-
+    transport_message *tm = udata;
     if (debug_flag > 1)
 	fprintf(stderr, "handle_ipv6()\n");
-
-    /*
-     * Parse extension headers. This only handles the standard headers, as
-     * defined in RFC 2460, correctly. Fragments are discarded.
-     */
-    while ((IPPROTO_ROUTING == nexthdr) /* routing header */
-        ||(IPPROTO_HOPOPTS == nexthdr)  /* Hop-by-Hop options. */
-        ||(IPPROTO_FRAGMENT == nexthdr) /* fragmentation header. */
-        ||(IPPROTO_DSTOPTS == nexthdr)  /* destination options. */
-        ||(IPPROTO_DSTOPTS == nexthdr)  /* destination options. */
-        ||(IPPROTO_AH == nexthdr)       /* destination options. */
-        ||(IPPROTO_ESP == nexthdr)) {   /* encapsulating security payload. */
-        typedef struct {
-            uint8_t nexthdr;
-            uint8_t length;
-        } ext_hdr_t;
-        ext_hdr_t *ext_hdr;
-        uint16_t ext_hdr_len;
-
-        /* Catch broken packets */
-        if ((offset + sizeof(ext_hdr)) > len)
-            return;
-
-        /* Cannot handle fragments. */
-        if (IPPROTO_FRAGMENT == nexthdr)
-            return;
-
-        ext_hdr = (ext_hdr_t*)((char *)ip6 + offset);
-        nexthdr = ext_hdr->nexthdr;
-        ext_hdr_len = (8 * (ext_hdr->length + 1));
-
-        /* This header is longer than the packets payload.. WTF? */
-        if (ext_hdr_len > payload_len)
-            return;
-
-        offset += ext_hdr_len;
-        payload_len -= ext_hdr_len;
-    }                           /* while */
-
     inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
     inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
     tm->ip_version = 6;
-
-    /* Catch broken and empty packets */
-    if ((offset + payload_len) > len)
-	return;
-    if (payload_len == 0)
-	return;
-#if 0
-    /*
-     * PCAP_SNAPLEN is now 2^16 and payload_len is an unsiged 16
-     * bit int, so this will always be false
-     */
-    if (payload_len > PCAP_SNAPLEN)
-	return;
-#endif
-
-    tm->proto = nexthdr;
-    if (IPPROTO_UDP == nexthdr) {
-	handle_udp((struct udphdr *) ((char *) ip6 + offset), payload_len, tm);
-    } else if (IPPROTO_TCP == nexthdr) {
-	handle_tcp((struct tcphdr *) ((char *) ip6 + offset), payload_len, tm);
-    }
-}
-#endif /* USE_IPV6 */
-
-static void
-handle_ip(const struct ip * ip, int len, transport_message *tm)
-{
-    /* note: ip->ip_v does not work if header is not int-aligned */
-    switch((*(uint8_t*)ip) >> 4) {
-    case 4:
-        handle_ipv4(ip, len, tm);
-	break;
-#if USE_IPV6
-    case 6:
-        handle_ipv6((struct ip6_hdr *)ip, len, tm);
-	break;
-#endif
-    default:
-	break;
-    }
+    return 0;
 }
 
 static int
-is_ethertype_ip(unsigned short proto)
+pcap_match_vlan(unsigned short vlan, void *udata)
 {
-	if (ETHERTYPE_IP == proto)
-		return 1;
-#if USE_PPP
-	if (PPP_IP == proto)
-		return 1;
-#endif
-#if USE_IPV6 && defined(ETHERTYPE_IPV6)
-	if (ETHERTYPE_IPV6 == proto)
-		return 1;
-#endif
-	return 0;
-}
-
-static int
-is_family_inet(unsigned int family)
-{
-	if (AF_INET == family)
-		return 1;
-#if USE_IPV6
-	if (AF_INET6 == family)
-		return 1;
-#endif
-	return 0;
-}
-
-#if USE_PPP
-static void
-handle_ppp(const u_char * pkt, int len, transport_message *tm)
-{
-    char buf[PCAP_SNAPLEN];
-    unsigned short proto;
-    if (len < 2)
-	return NULL;
-    if (*pkt == PPP_ADDRESS_VAL && *(pkt + 1) == PPP_CONTROL_VAL) {
-	pkt += 2;		/* ACFC not used */
-	len -= 2;
-    }
-    if (len < 2)
-	return NULL;
-    if (*pkt % 2) {
-	proto = *pkt;		/* PFC is used */
-	pkt++;
-	len--;
-    } else {
-	proto = nptohs(pkt);
-	pkt += 2;
-	len -= 2;
-    }
-    if (is_ethertype_ip(proto))
-        handle_ip((struct ip *) pkt, len, tm);
-}
-
-#endif
-
-static void
-handle_null(const u_char * pkt, int len, transport_message *tm)
-{
-    unsigned int family;
-    memcpy(&family, pkt, sizeof(family));
-    if (is_family_inet(family))
-	handle_ip((struct ip *) (pkt + 4), len - 4, tm);
-}
-
-#ifdef DLT_LOOP
-static void
-handle_loop(const u_char * pkt, int len, transport_message *tm)
-{
-    unsigned int family;
-    memcpy(&family, pkt, sizeof(family));
-    if (is_family_inet(family))
-	handle_ip((struct ip *) (pkt + 4), len - 4, tm);
-}
-
-#endif
-
-#ifdef DLT_RAW
-static void
-handle_raw(const u_char * pkt, int len, transport_message *tm)
-{
-    handle_ip((struct ip *) pkt, len, tm);
-}
-
-#endif
-
-static int
-match_vlan(const u_char *pkt)
-{
-    unsigned short vlan;
     int i;
-    if (0 == n_vlan_ids)
-	return 1;
-    memcpy(&vlan, pkt, 2);
     if (vlan_tag_needs_byte_conversion)
-	vlan = ntohs(vlan) & 0xfff;
-    else
-	vlan = vlan & 0xfff;
+	vlan = ntohs(vlan);
     if (debug_flag > 1)
 	fprintf(stderr, "vlan is %d\n", vlan);
     for (i = 0; i < n_vlan_ids; i++)
 	if (vlan_ids[i] == vlan)
-	    return 1;
-    return 0;
+	    return 0;
+    return 1;
 }
 
 static void
-handle_ether(const u_char * pkt, int len, transport_message *tm)
-{
-    struct ether_header *e = (void *) pkt;
-    unsigned short etype = nptohs(&e->ether_type);
-    if (len < ETHER_HDR_LEN)
-	return;
-    pkt += ETHER_HDR_LEN;
-    len -= ETHER_HDR_LEN;
-    if (ETHERTYPE_8021Q == etype) {
-	if (!match_vlan(pkt))
-	    return;
-	etype = nptohs((unsigned short *) (pkt + 2));
-	pkt += 4;
-	len -= 4;
-    }
-    if (len < 0)
-	return;
-    if (is_ethertype_ip(etype)) {
-	handle_ip((struct ip *) pkt, len, tm);
-    }
-}
-
-static void
-handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
+pcap_handle_packet(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
 {
     transport_message tm;
-    struct _interface *i = (struct _interface *) udata;
 
 #if 0 /* enable this to test code with unaligned headers */
     char buf[PCAP_SNAPLEN+1];
@@ -914,12 +702,9 @@ handle_pcap(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
     assign_timeval(last_ts, hdr->ts);
     if (hdr->caplen < ETHER_HDR_LEN)
 	return;
+    memset(&tm, 0, sizeof(tm));
     assign_timeval(tm.ts, hdr->ts);
-    i->handle_datalink(pkt, hdr->caplen, &tm);
-#if 0
-    if (debug_flag && --debug_count == 0)
-	exit(0);
-#endif
+    handle_pcap((u_char *) &tm, hdr, pkt);
 }
 
 
@@ -1001,34 +786,6 @@ Pcap_init(const char *device, int promisc)
 	syslog(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(i->pcap));
 	exit(1);
     }
-    switch (pcap_datalink(i->pcap)) {
-    case DLT_EN10MB:
-	i->handle_datalink = handle_ether;
-	break;
-#if USE_PPP
-    case DLT_PPP:
-	i->handle_datalink = handle_ppp;
-	break;
-#endif
-#ifdef DLT_LOOP
-    case DLT_LOOP:
-	i->handle_datalink = handle_loop;
-	break;
-#endif
-#ifdef DLT_RAW
-    case DLT_RAW:
-	i->handle_datalink = handle_raw;
-	break;
-#endif
-    case DLT_NULL:
-	i->handle_datalink = handle_null;
-	break;
-    default:
-	syslog(LOG_ERR, "unsupported data link type %d",
-	    pcap_datalink(i->pcap));
-	exit(1);
-	break;
-    }
     if (pcap_file(i->pcap)) {
 	n_pcap_offline++;
     } else {
@@ -1038,6 +795,26 @@ Pcap_init(const char *device, int promisc)
 	FD_SET(i->fd, &pcap_fdset);
 	if (i->fd >= max_pcap_fds)
 	    max_pcap_fds = i->fd + 1;
+    }
+    if (0 == n_interfaces) {
+        /*
+         * Initialize pcap_layers library and specifiy IP fragment reassembly
+	 */
+        pcap_layers_init(pcap_datalink(i->pcap), 1);
+	if (n_vlan_ids)
+	    callback_vlan = pcap_match_vlan;
+	callback_ipv4 = pcap_ipv4_handler;
+	callback_ipv6 = pcap_ipv6_handler;
+	callback_udp = pcap_udp_handler;
+	callback_tcp = pcap_tcp_handler;
+	callback_l7 = dns_protocol_handler;
+    } else {
+	if (pcap_datalink(i->pcap) != pcap_datalink(interfaces[0].pcap)) {
+	    syslog(LOG_ERR, "%s", "All interfaces must have same datalink type");
+	    syslog(LOG_ERR, "First interface has datalink type %d", pcap_datalink(interfaces[0].pcap));
+	    syslog(LOG_ERR, "Interface '%s' has datalink type %d", device, pcap_datalink(i->pcap));
+	    exit(1);
+	}
     }
     n_interfaces++;
     if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_interfaces > n_pcap_offline)) {
@@ -1062,8 +839,7 @@ Pcap_run(void)
 	    finish_ts.tv_sec += INTERVAL;
 	}
 	do {
-	    result = pcap_dispatch(interfaces[0].pcap, 1, handle_pcap,
-		(u_char *) &interfaces[0]);
+	    result = pcap_dispatch(interfaces[0].pcap, 1, pcap_handle_packet, 0);
 	    if (result <= 0) /* error or EOF */
 		break;
 	    interfaces[0].pkts_captured += result;
@@ -1092,7 +868,7 @@ Pcap_run(void)
 	    for (i = 0; i < n_interfaces; i++) {
 		struct _interface *I = &interfaces[i];
 		if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
-		    int x = pcap_dispatch(I->pcap, -1, handle_pcap, (u_char *) I);
+		    int x = pcap_dispatch(I->pcap, -1, pcap_handle_packet, 0);
 		    if (x > 0)
 			I->pkts_captured += x;
 		}

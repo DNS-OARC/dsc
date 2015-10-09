@@ -3,15 +3,11 @@
 #define INX_ADDR_H
 
 typedef union {
-#if USE_IPV6
 	struct in6_addr in6;
-#endif
 	struct {
-#if USE_IPV6
 		struct in_addr pad0;
 		struct in_addr pad1;
 		struct in_addr pad2;
-#endif
 		struct in_addr in4;
 	} _;
 } inX_addr;
