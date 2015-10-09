@@ -180,6 +180,7 @@ typedef struct tcpstate {
     uint32_t seq_start; /* seq# of length field of next DNS msg */
     short msgbufs; /* number of msgbufs in use */
     u_char dnslen_buf[2]; /* full dnslen field might not arrive in first segment */
+    u_char dnslen_bytes_seen_mask;	/* bitmask, when == 3 we have full dnslen */
     int8_t fin; /* have we seen a FIN? */
     tcp_msgbuf_t *msgbuf[MAX_TCP_MSGS];
     tcp_segbuf_t *segbuf[MAX_TCP_SEGS];
@@ -283,12 +284,16 @@ pcap_handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcps
 	if (debug_flag > 1)
 	    fprintf(stderr, "pcap_handle_tcp_segment(): copying %d bytes to dnslen_buf[%d]\n", l, o);
 	memcpy(&tcpstate->dnslen_buf[o], segment, l);
+	if (l == 2)
+		tcpstate->dnslen_bytes_seen_mask = 3;
+	else
+		tcpstate->dnslen_bytes_seen_mask |= (1 << o);
 	len -= l;
 	segment += l;
 	seq += l;
     }
 
-    if (seq - tcpstate->seq_start >= 2) {
+    if (3 == tcpstate->dnslen_bytes_seen_mask) {
 	/* We have the dnslen stored now */
 	dnslen = nptohs(tcpstate->dnslen_buf);
 	tcpstate->seq_start += sizeof(uint16_t) + dnslen;
