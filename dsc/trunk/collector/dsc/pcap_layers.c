@@ -185,7 +185,7 @@ handle_ipv4_fragment(const struct ip *ip, int len, void *userdata)
     f = calloc(1, sizeof(*f));
     assert(f);
     f->offset = (ip_off & IP_OFFMASK) << 3;
-    f->len = ntohs(ip->ip_len);
+    f->len = ntohs(ip->ip_len) - (ip->ip_hl << 2);
     f->buf = malloc(f->len);
     f->more = (ip_off & IP_MF) ? 1 : 0;
     assert(f->buf);
@@ -325,8 +325,7 @@ handle_ipv6(const struct ip6_hdr *ip6, int len, void *userdata)
 	||(IPPROTO_HOPOPTS == nexthdr)	/* Hop-by-Hop options. */
 	||(IPPROTO_FRAGMENT == nexthdr)	/* fragmentation header. */
 	||(IPPROTO_DSTOPTS == nexthdr)	/* destination options. */
-	||(IPPROTO_DSTOPTS == nexthdr)	/* destination options. */
-	||(IPPROTO_AH == nexthdr)	/* destination options. */
+	||(IPPROTO_AH == nexthdr)	/* authentication header. */
 	||(IPPROTO_ESP == nexthdr)) {	/* encapsulating security payload. */
 	typedef struct {
 	    uint8_t nexthdr;
