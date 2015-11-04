@@ -634,7 +634,7 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 	}
     }
 
-    pcap_handle_tcp_segment((void*)tcp + offset, len, seq, tcpstate, tm);
+    pcap_handle_tcp_segment((uint8_t*)tcp + offset, len, seq, tcpstate, tm);
 
     if (TCPFLAGFIN(tcp) && !tcpstate->fin) {
 	/* End of tcp stream */
