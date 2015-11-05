@@ -27,8 +27,8 @@
 #endif
 #include "tld_index.h"
 #include "rcode_index.h"
-#include "client_ipv4_addr_index.h"
-#include "client_ipv4_net_index.h"
+#include "client_ip_addr_index.h"
+#include "client_ip_net_index.h"
 #include "qnamelen_index.h"
 #include "qname_index.h"
 #include "msglen_index.h"
