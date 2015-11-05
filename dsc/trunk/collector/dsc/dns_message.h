@@ -24,6 +24,7 @@ typedef struct _dns_message dns_message;
 struct _dns_message {
     transport_message *tm;
     inX_addr client_ip_addr;
+    inX_addr server_ip_addr;
     unsigned short qtype;
     unsigned short qclass;
     unsigned short msglen;

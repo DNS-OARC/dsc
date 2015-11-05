@@ -31,6 +31,7 @@ OBJS=\
 	msglen_index.o \
 	client_ip_addr_index.o \
 	client_ip_net_index.o \
+	server_ip_addr_index.o \
 	md_array_xml_printer.o \
 	ip_direction_index.o \
 	ip_proto_index.o \

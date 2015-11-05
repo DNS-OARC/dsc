@@ -29,6 +29,7 @@
 #include "rcode_index.h"
 #include "client_ip_addr_index.h"
 #include "client_ip_net_index.h"
+#include "server_ip_addr_index.h"
 #include "qnamelen_index.h"
 #include "qname_index.h"
 #include "msglen_index.h"
@@ -202,6 +203,7 @@ qname_filter(const void *vp, const void *ctx)
 
 static indexer_t indexers[] = {
     { "client",               cip_indexer,                  cip_iterator,                  cip_reset },
+    { "server",               sip_indexer,                  sip_iterator,                  sip_reset },
     { "cip4_addr",            cip_indexer,                  cip_iterator,                  cip_reset },     /* compatibility */
 #if HAVE_LIBGEOIP
     { "country",                  country_indexer,                  country_iterator,                  country_reset },

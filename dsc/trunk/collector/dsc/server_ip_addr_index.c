@@ -18,7 +18,7 @@ typedef struct {
 } ipaddrobj;
 
 int
-cip_indexer(const void *vp)
+sip_indexer(const void *vp)
 {
     const dns_message *m = vp;
     ipaddrobj *obj;
@@ -30,12 +30,12 @@ cip_indexer(const void *vp)
 	if (NULL == theHash)
 	    return -1;
     }
-    if ((obj = hash_find(&m->client_ip_addr, theHash)))
+    if ((obj = hash_find(&m->server_ip_addr, theHash)))
 	return obj->index;
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
-    obj->addr = m->client_ip_addr;
+    obj->addr = m->server_ip_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
 	afree(obj);
@@ -46,7 +46,7 @@ cip_indexer(const void *vp)
 }
 
 int
-cip_iterator(char **label)
+sip_iterator(char **label)
 {
     ipaddrobj *obj;
     static char label_buf[128];
@@ -64,24 +64,9 @@ cip_iterator(char **label)
 }
 
 void
-cip_reset()
+sip_reset()
 {
     theHash = NULL;
     next_idx = 0;
-}
-
-unsigned int
-ipaddr_hashfunc(const void *key)
-{
-	const inX_addr *a = key;
-	return inXaddr_hash(a);
-}
-
-int
-ipaddr_cmpfunc(const void *a, const void *b)
-{
-	const inX_addr *a1 = a;
-	const inX_addr *a2 = b;
-	return inXaddr_cmp(a1, a2);
 }
 
