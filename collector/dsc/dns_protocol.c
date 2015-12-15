@@ -160,10 +160,13 @@ dns_protocol_handler(const u_char *buf, uint16_t len, void *udata)
     }
     us = nptohs(buf + 2);
     m.qr = (us >> 15) & 0x01;
-    if (0 == m.qr)		/* query */
+    if (0 == m.qr) {		/* query */
 	m.client_ip_addr = m.tm->src_ip_addr;
-    else			/* reply */
+	m.server_ip_addr = m.tm->dst_ip_addr;
+    } else {			/* reply */
 	m.client_ip_addr = m.tm->dst_ip_addr;
+	m.server_ip_addr = m.tm->src_ip_addr;
+    }
 
 #if 0
     tc = (us >> 9) & 0x01;
