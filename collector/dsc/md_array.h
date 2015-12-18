@@ -1,7 +1,7 @@
 #ifndef __dsc_md_array_h
 #define __dsc_md_array_h
 
-
+#include "dataset_opt.h"
 
 typedef struct _md_array md_array;
 typedef struct _md_array_printer md_array_printer;
