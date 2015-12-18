@@ -1,4 +1,6 @@
-
+#ifndef MD_ARRAY_H
+#define MD_ARRAY_H
+#include "dataset_opt.h"
 
 typedef struct _md_array md_array;
 typedef struct _md_array_printer md_array_printer;
@@ -80,3 +82,5 @@ md_array *md_array_create(const char *name, filter_list *, const char *, indexer
 int md_array_print(md_array * a, md_array_printer * pr, FILE * fp);
 filter_list **md_array_filter_list_append(filter_list ** fl, FLTR * f);
 FLTR *md_array_create_filter(const char *name, filter_func *, const void *context);
+
+#endif
