@@ -52,6 +52,7 @@ const char * dns_message_QnameToNld(const char *, int);
 const char * dns_message_tld(dns_message * m);
 void dns_message_init(void);
 void dns_message_clear_arrays(void);
+void dns_message_handle(dns_message *);
 
 #ifndef T_OPT
 #define T_OPT 41	/* OPT pseudo-RR, RFC2761 */
