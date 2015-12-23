@@ -26,7 +26,10 @@ struct _foo {
 
 static struct _foo *local_addrs = NULL;
 
-static int
+#ifndef DROP_RECV_RESPONSE
+static
+#endif
+int
 ip_is_local(const inX_addr *a)
 {
     struct _foo *t;

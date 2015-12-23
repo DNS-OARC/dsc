@@ -101,12 +101,24 @@ dns_message_print(dns_message * m)
 	fprintf(stderr, "\n");
 }
 
+#if DROP_RECV_RESPOSNE
+extern int ip_is_local(const inX_addr *);
+#endif
+
 void
 dns_message_handle(dns_message * m)
 {
     md_array_list *a;
     if (debug_flag > 1)
 	dns_message_print(m);
+#if DROP_RECV_RESPOSNE
+    /* ignore RESPONSE sent to a LOCAL address */
+    if (0 != m->qr && ip_is_local(&m->tm->dst_ip_addr))
+	return;
+    /* ignore QUERY sent from a LOCAL address */
+    if (0 == m->qr && ip_is_local(&m->tm->src_ip_addr))
+	return;
+#endif
     for (a = Arrays; a; a = a->next)
 	md_array_count(a->theArray, m);
 }
