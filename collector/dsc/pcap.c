@@ -397,9 +397,10 @@ pcap_handle_tcp_segment(u_char *segment, int len, uint32_t seq, tcpstate_t *tcps
 	segoff = seq - tcpstate->msgbuf[m]->seq;
 	if (segoff >= 0 && segoff < tcpstate->msgbuf[m]->dnslen) {
 	    /* segment starts in this msgbuf */
-	    fprintf(stderr, "pcap_handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d\n",
-		m,
-		tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen);
+	    if (debug_flag > 1)
+		fprintf(stderr, "pcap_handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d\n",
+		    m,
+		    tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen);
 	    if (segoff + len > tcpstate->msgbuf[m]->dnslen) {
 		/* segment would overflow msgbuf */
 		seglen = tcpstate->msgbuf[m]->dnslen - segoff;
