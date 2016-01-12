@@ -144,8 +144,8 @@ dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
     unsigned short us;
     off_t offset;
     int qdcount;
-    int ancount;
-    int nscount;
+    /* int ancount; */
+    /* int nscount; */
     int arcount;
 
     dns_message m;
@@ -179,8 +179,8 @@ dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
     m.rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
-    ancount = nptohs(buf + 6);
-    nscount = nptohs(buf + 8);
+    /* ancount = nptohs(buf + 6); */
+    /* nscount = nptohs(buf + 8); */
     arcount = nptohs(buf + 10);
 
     offset = DNS_MSG_HDR_SZ;
