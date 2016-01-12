@@ -8,9 +8,10 @@
 #include "md_array.h"
 #include "hashtbl.h"
 
-typedef struct {
-	int next_idx;
-	hashtbl *hash;
+typedef struct
+{
+    int next_idx;
+    hashtbl *hash;
 } levelobj;
 
 static hashfunc name_hashfunc;
@@ -25,9 +26,10 @@ static levelobj Full = { 0, NULL };
 static levelobj Second = { 0, NULL };
 static levelobj Third = { 0, NULL };
 
-typedef struct {
-        char *name;
-        int index;
+typedef struct
+{
+    char *name;
+    int index;
 } nameobj;
 
 
@@ -103,17 +105,16 @@ third_ld_reset()
 /* ======================================================================== */
 
 static int
-name_indexer(const char *theName, levelobj *theLevel)
+name_indexer(const char *theName, levelobj * theLevel)
 {
     nameobj *obj;
     if (NULL == theLevel->hash) {
-        theLevel->hash = hash_create(MAX_ARRAY_SZ, name_hashfunc, name_cmpfunc,
-	    1, afree, afree);
+	theLevel->hash = hash_create(MAX_ARRAY_SZ, name_hashfunc, name_cmpfunc, 1, afree, afree);
 	if (NULL == theLevel->hash)
 	    return -1;
     }
     if ((obj = hash_find(theName, theLevel->hash)))
-        return obj->index;
+	return obj->index;
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
 	return -1;
@@ -133,7 +134,7 @@ name_indexer(const char *theName, levelobj *theLevel)
 }
 
 static int
-name_iterator(char **label, levelobj *theLevel)
+name_iterator(char **label, levelobj * theLevel)
 {
     nameobj *obj;
     static char label_buf[MAX_QNAME_SZ];
@@ -151,7 +152,7 @@ name_iterator(char **label, levelobj *theLevel)
 }
 
 static void
-name_reset(levelobj *theLevel)
+name_reset(levelobj * theLevel)
 {
     theLevel->hash = NULL;
     theLevel->next_idx = 0;
@@ -160,11 +161,11 @@ name_reset(levelobj *theLevel)
 static unsigned int
 name_hashfunc(const void *key)
 {
-        return hashendian(key, strlen(key), 0);
+    return hashendian(key, strlen(key), 0);
 }
 
 static int
 name_cmpfunc(const void *a, const void *b)
 {
-        return strcasecmp(a, b);
+    return strcasecmp(a, b);
 }

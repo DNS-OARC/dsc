@@ -17,7 +17,7 @@ edns_bufsiz_indexer(const void *vp)
 	return -1;
     if (0 == m->edns.found)
 	return 0;
-    index = (int) (m->edns.bufsiz>>9) + 1;
+    index = (int) (m->edns.bufsiz >> 9) + 1;
     if (index > edns_bufsiz_max)
 	edns_bufsiz_max = index;
     return index;
@@ -37,9 +37,7 @@ edns_bufsiz_iterator(char **label)
     } else if (0 == next_iter) {
 	*label = "None";
     } else {
-	snprintf(buf, 20, "%d-%d",
-		(next_iter - 1)<<9,
-		(next_iter<<9) - 1);
+	snprintf(buf, 20, "%d-%d", (next_iter - 1) << 9, (next_iter << 9) - 1);
 	*label = buf;
     }
     return next_iter++;

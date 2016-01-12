@@ -42,4 +42,3 @@ dns_ip_version_reset(void)
 {
     largest = 0;
 }
-

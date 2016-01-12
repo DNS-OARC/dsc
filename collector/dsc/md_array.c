@@ -16,20 +16,20 @@
 static void md_array_grow(md_array * a, int i1, int i2);
 
 static void
-md_array_free(md_array *a)
+md_array_free(md_array * a)
 {
     if (a->name)
-	xfree((char *)a->name);
+	xfree((char *) a->name);
     if (a->d1.type)
-	xfree((char *)a->d1.type);
+	xfree((char *) a->d1.type);
     if (a->d2.type)
-	xfree((char *)a->d2.type);
+	xfree((char *) a->d2.type);
     /* a->array contents were in an arena, so we don't need to free them. */
     xfree(a);
 }
 
 void
-md_array_clear(md_array *a)
+md_array_clear(md_array * a)
 {
     /* a->array contents were in an arena, so we don't need to free them. */
     a->array = NULL;
@@ -43,8 +43,7 @@ md_array_clear(md_array *a)
 
 md_array *
 md_array_create(const char *name, filter_list * fl,
-    const char *type1, indexer_t *idx1,
-    const char *type2, indexer_t *idx2)
+    const char *type1, indexer_t * idx1, const char *type2, indexer_t * idx2)
 {
     md_array *a = xcalloc(1, sizeof(*a));
     if (NULL == a)
@@ -69,7 +68,7 @@ md_array_create(const char *name, filter_list * fl,
     }
     a->d2.indexer = idx2;
     a->d2.alloc_sz = 0;
-    a->array = NULL; /* will be allocated when needed, in an arena. */
+    a->array = NULL;		/* will be allocated when needed, in an arena. */
     return a;
 }
 
@@ -142,7 +141,8 @@ md_array_grow(md_array * a, int i1, int i2)
 	d2 = acalloc(new_d2_sz, sizeof(*d2));
 	if (NULL == d2) {
 	    /* oops, undo! */
-	    if (d1) afree(d1);
+	    if (d1)
+		afree(d1);
 	    return;
 	}
 
@@ -152,8 +152,7 @@ md_array_grow(md_array * a, int i1, int i2)
 
     if (d1 != a->array) {
 	if (a->array) {
-	    fprintf(stderr, "grew d1 of %s from %d to %d\n",
-		a->name, a->d1.alloc_sz, new_d1_sz);
+	    fprintf(stderr, "grew d1 of %s from %d to %d\n", a->name, a->d1.alloc_sz, new_d1_sz);
 	    afree(a->array);
 	}
 	a->array = d1;
@@ -161,8 +160,7 @@ md_array_grow(md_array * a, int i1, int i2)
     }
     if (d2) {
 	if (a->array[i1].array) {
-	    fprintf(stderr, "grew d2[%d] of %s from %d to %d\n",
-		i1, a->name, a->array[i1].alloc_sz, new_d2_sz);
+	    fprintf(stderr, "grew d2[%d] of %s from %d to %d\n", i1, a->name, a->array[i1].alloc_sz, new_d2_sz);
 	    afree(a->array[i1].array);
 	}
 	a->array[i1].array = d2;
@@ -173,7 +171,8 @@ md_array_grow(md_array * a, int i1, int i2)
 	a->d2.alloc_sz = new_d2_sz;
 }
 
-struct _foo {
+struct _foo
+{
     char *label;
     int val;
 };
@@ -190,7 +189,7 @@ compare(const void *A, const void *B)
 }
 
 int
-md_array_print(md_array * a, md_array_printer * pr, FILE *fp)
+md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
 {
     char *label1;
     char *label2;
@@ -282,7 +281,7 @@ md_array_filter_list_append(filter_list ** fl, FLTR * f)
 }
 
 FLTR *
-md_array_create_filter(const char *name, filter_func *func, const void *context)
+md_array_create_filter(const char *name, filter_func * func, const void *context)
 {
     FLTR *f = xcalloc(1, sizeof(*f));
     if (NULL == f)

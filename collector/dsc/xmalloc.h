@@ -1,8 +1,8 @@
 /* The xmalloc family of functions syslogs an error if the alloc fails. */
-void * xmalloc(size_t size);
-void * xcalloc(size_t number, size_t size);
-void * xrealloc(void *ptr, size_t size);
-char * xstrdup(const char *s);
+void *xmalloc(size_t size);
+void *xcalloc(size_t number, size_t size);
+void *xrealloc(void *ptr, size_t size);
+char *xstrdup(const char *s);
 void xfree(void *ptr);
 
 /* The amalloc family of functions allocates from an "arena", optimized for
@@ -19,8 +19,8 @@ void xfree(void *ptr);
  */
 void useArena();
 void freeArena();
-void * amalloc(size_t size);
-void * acalloc(size_t number, size_t size);
-void * arealloc(void *ptr, size_t size);
-char * astrdup(const char *s);
+void *amalloc(size_t size);
+void *acalloc(size_t number, size_t size);
+void *arealloc(void *ptr, size_t size);
+char *astrdup(const char *s);
 void afree(void *ptr);

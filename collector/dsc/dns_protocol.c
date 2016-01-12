@@ -17,7 +17,7 @@
 #define RFC1035_MAXLABELSZ 63
 
 static int
-rfc1035NameUnpack(const u_char *buf, size_t sz, off_t * off, char *name, int ns)
+rfc1035NameUnpack(const u_char * buf, size_t sz, off_t * off, char *name, int ns)
 {
     off_t no = 0;
     unsigned char c;
@@ -82,7 +82,7 @@ rfc1035NameUnpack(const u_char *buf, size_t sz, off_t * off, char *name, int ns)
 }
 
 static off_t
-grok_question(const u_char *buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
+grok_question(const u_char * buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
 {
     char *t;
     int x;
@@ -107,7 +107,7 @@ grok_question(const u_char *buf, int len, off_t offset, char *qname, unsigned sh
 }
 
 static off_t
-grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message * m)
+grok_additional_for_opt_rr(const u_char * buf, int len, off_t offset, dns_message * m)
 {
     int x;
     unsigned short sometype;
@@ -126,7 +126,7 @@ grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message
 	m->edns.bufsiz = someclass;
 	memcpy(&m->edns.version, buf + offset + 5, 1);
 	us = nptohs(buf + offset + 6);
-	m->edns.DO = (us >> 15) & 0x01;		/* RFC 3225 */
+	m->edns.DO = (us >> 15) & 0x01;	/* RFC 3225 */
     }
     /* get rdlength */
     us = nptohs(buf + offset + 8);
@@ -138,7 +138,7 @@ grok_additional_for_opt_rr(const u_char *buf, int len, off_t offset, dns_message
 }
 
 void
-dns_protocol_handler(const u_char *buf, uint16_t len, void *udata)
+dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
 {
     transport_message *tm = udata;
     unsigned short us;

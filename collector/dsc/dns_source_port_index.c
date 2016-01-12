@@ -78,9 +78,7 @@ dns_sport_range_iterator(char **label)
     }
     if (range_next_iter > range_largest)
 	return -1;
-    snprintf(*label = label_buf, 20, "%d-%d",
-	(range_next_iter << 10),
-	((range_next_iter+1) << 10) - 1);
+    snprintf(*label = label_buf, 20, "%d-%d", (range_next_iter << 10), ((range_next_iter + 1) << 10) - 1);
     return ++range_next_iter;
 }
 

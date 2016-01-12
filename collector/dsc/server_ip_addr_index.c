@@ -12,9 +12,10 @@
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
-typedef struct {
-	inX_addr addr;
-	int index;
+typedef struct
+{
+    inX_addr addr;
+    int index;
 } ipaddrobj;
 
 int
@@ -25,8 +26,7 @@ sip_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc,
-	    1, NULL, afree);
+	theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc, 1, NULL, afree);
 	if (NULL == theHash)
 	    return -1;
     }
@@ -69,4 +69,3 @@ sip_reset()
     theHash = NULL;
     next_idx = 0;
 }
-

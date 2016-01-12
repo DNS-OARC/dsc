@@ -1,5 +1,6 @@
 typedef struct _gen_cnt gen_cnt;
-struct _gen_cnt {
+struct _gen_cnt
+{
     int cnt;
     void *ptr;
 };

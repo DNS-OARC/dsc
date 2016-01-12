@@ -12,9 +12,10 @@
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
-typedef struct {
-	inX_addr addr;
-	int index;
+typedef struct
+{
+    inX_addr addr;
+    int index;
 } ipaddrobj;
 
 int
@@ -25,8 +26,7 @@ cip_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc,
-	    1, NULL, afree);
+	theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc, 1, NULL, afree);
 	if (NULL == theHash)
 	    return -1;
     }
@@ -73,15 +73,14 @@ cip_reset()
 unsigned int
 ipaddr_hashfunc(const void *key)
 {
-	const inX_addr *a = key;
-	return inXaddr_hash(a);
+    const inX_addr *a = key;
+    return inXaddr_hash(a);
 }
 
 int
 ipaddr_cmpfunc(const void *a, const void *b)
 {
-	const inX_addr *a1 = a;
-	const inX_addr *a2 = b;
-	return inXaddr_cmp(a1, a2);
+    const inX_addr *a1 = a;
+    const inX_addr *a2 = b;
+    return inXaddr_cmp(a1, a2);
 }
-

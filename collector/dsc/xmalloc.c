@@ -20,49 +20,50 @@
 void *
 xmalloc(size_t size)
 {
-	void *p = malloc(size);
-	if (NULL == p)
-	    syslog(LOG_CRIT, "malloc: %s", strerror(errno));
-	return p;
+    void *p = malloc(size);
+    if (NULL == p)
+	syslog(LOG_CRIT, "malloc: %s", strerror(errno));
+    return p;
 }
 
 void *
 xcalloc(size_t number, size_t size)
 {
-	void *p = calloc(number,size);
-	if (NULL == p)
-	    syslog(LOG_CRIT, "calloc: %s", strerror(errno));
-	return p;
+    void *p = calloc(number, size);
+    if (NULL == p)
+	syslog(LOG_CRIT, "calloc: %s", strerror(errno));
+    return p;
 }
 
 void *
 xrealloc(void *p, size_t size)
 {
-	p = realloc(p, size);
-	if (NULL == p)
-	    syslog(LOG_CRIT, "realloc: %s", strerror(errno));
-	return p;
+    p = realloc(p, size);
+    if (NULL == p)
+	syslog(LOG_CRIT, "realloc: %s", strerror(errno));
+    return p;
 }
 
 char *
 xstrdup(const char *s)
 {
-	void *p = strdup(s);
-	if (NULL == p)
-	    syslog(LOG_CRIT, "strdup: %s", strerror(errno));
-	return p;
+    void *p = strdup(s);
+    if (NULL == p)
+	syslog(LOG_CRIT, "strdup: %s", strerror(errno));
+    return p;
 }
 
 void
 xfree(void *p)
 {
-	free(p);
+    free(p);
 }
 
 
 /********** amalloc **********/
 
-typedef struct arena {
+typedef struct arena
+{
     struct arena *prevArena;
     u_char *end;
     u_char *nextAlloc;
@@ -86,7 +87,7 @@ newArena(size_t size)
 	return NULL;
     }
     arena->prevArena = NULL;
-    arena->nextAlloc = (u_char*)arena + HEADERSIZE;
+    arena->nextAlloc = (u_char *) arena + HEADERSIZE;
     arena->end = arena->nextAlloc + size;
     return arena;
 }
@@ -125,7 +126,7 @@ amalloc(size_t size)
 	/* Move on to a new chunk. */
 	Arena *new = newArena(CHUNK_SIZE);
 	if (NULL == new)
-		return NULL;
+	    return NULL;
 	new->prevArena = currentArena;
 	currentArena = new;
     }

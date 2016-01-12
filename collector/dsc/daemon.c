@@ -95,8 +95,8 @@ write_pid_file(void)
     syslog(LOG_INFO, "writing PID to %s", pid_file_name);
     fp = fopen(pid_file_name, "w");
     if (NULL == fp) {
-        perror(pid_file_name);
-        syslog(LOG_ERR, "fopen: %s: %s", pid_file_name, strerror(errno));
+	perror(pid_file_name);
+	syslog(LOG_ERR, "fopen: %s: %s", pid_file_name, strerror(errno));
 	return;
     }
     fprintf(fp, "%d\n", getpid());
@@ -110,12 +110,12 @@ disk_is_full(void)
 #if HAVE_STATVFS
     struct statvfs s;
     if (statvfs(".", &s) < 0)
-	return 0;	/* assume not */
+	return 0;		/* assume not */
     avail_bytes = (uint64_t) s.f_frsize * (uint64_t) s.f_bavail;
 #else
     struct statfs s;
     if (statfs(".", &s) < 0)
-	 return 0;	/* assume not */
+	return 0;		/* assume not */
     avail_bytes = (uint64_t) s.f_bsize * (uint64_t) s.f_bavail;
 #endif
     if (avail_bytes < minfree_bytes)
@@ -126,8 +126,7 @@ disk_is_full(void)
 void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [opts] dsc.conf\n",
-	progname);
+    fprintf(stderr, "usage: %s [opts] dsc.conf\n", progname);
     fprintf(stderr, "\t-d\tDebug mode.  Exits after first write.\n");
     fprintf(stderr, "\t-f\tForeground mode.  Don't become a daemon.\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode.\n");
@@ -188,7 +187,7 @@ main(int argc, char *argv[])
 {
     int x;
     int result;
-    struct timeval break_start = {0,0};
+    struct timeval break_start = { 0, 0 };
 
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -226,23 +225,22 @@ main(int argc, char *argv[])
     cip_net_indexer_init();
 
     if (!nodaemon_flag)
-    	daemonize();
+	daemonize();
     write_pid_file();
 
     if (!debug_flag && 0 == n_pcap_offline) {
-        syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
-        sleep(60 - (time(NULL) % 60));
+	syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
+	sleep(60 - (time(NULL) % 60));
     }
     syslog(LOG_INFO, "%s", "Running");
 
     do {
-	useArena(); /* Initialize a memory arena for data collection. */
+	useArena();		/* Initialize a memory arena for data collection. */
 	if (debug_flag && break_start.tv_sec > 0) {
 	    struct timeval now;
 	    gettimeofday(&now, NULL);
 	    syslog(LOG_INFO, "inter-run processing delay: %ld ms",
-		(now.tv_usec - break_start.tv_usec) / 1000 +
-		1000 * (now.tv_sec - break_start.tv_sec));
+		(now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec));
 	}
 #if HAVE_LIBNCAP
 	result = Ncap_run();
@@ -256,7 +254,7 @@ main(int argc, char *argv[])
 	    _exit(0);
 	}
 	/* Parent quickly frees and clears its copy of the data so it can
-	   resume processing packets. */
+	 * resume processing packets. */
 	freeArena();
 	dns_message_clear_arrays();
 
@@ -267,11 +265,9 @@ main(int argc, char *argv[])
 	    pid_t pid;
 	    while ((pid = waitpid(0, &cstatus, WNOHANG)) > 0) {
 		if (WIFSIGNALED(cstatus))
-		    syslog(LOG_NOTICE, "child %d exited with signal %d",
-			pid, WTERMSIG(cstatus));
+		    syslog(LOG_NOTICE, "child %d exited with signal %d", pid, WTERMSIG(cstatus));
 		if (WIFEXITED(cstatus) && WEXITSTATUS(cstatus) != 0)
-		    syslog(LOG_NOTICE, "child %d exited with status %d",
-			pid, WEXITSTATUS(cstatus));
+		    syslog(LOG_NOTICE, "child %d exited with status %d", pid, WEXITSTATUS(cstatus));
 	    }
 	}
 

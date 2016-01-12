@@ -37,8 +37,7 @@
 #include <string.h>
 #include "xmalloc.h"
 
-static char base64_chars[] =
-"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static int
 pos(char c)

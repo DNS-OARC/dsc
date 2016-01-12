@@ -33,8 +33,7 @@
 
 static unsigned short port53;
 
-extern void handle_dns(const u_char *buf, uint16_t len, transport_message *tm,
-    DMC *dns_message_callback);
+extern void handle_dns(const u_char * buf, uint16_t len, transport_message * tm, DMC * dns_message_callback);
 extern int debug_flag;
 extern char *bpf_program_str;	/* from pcap.c */
 static DMC *dns_message_callback;
@@ -54,13 +53,13 @@ handle_ncap(ncap_t nc, void *udata, ncap_msg_ct msg, const char *wtf)
     memset(&tm, '\0', sizeof(tm));
     last_ts = msg->ts;
     if (ncap_ip4 == msg->np) {
-        tm.ip_version = 4;
+	tm.ip_version = 4;
 	inXaddr_assign_v4(&tm.src_ip_addr, &msg->npu.ip4.src);
-        inXaddr_assign_v4(&tm.dst_ip_addr, &msg->npu.ip4.dst);
+	inXaddr_assign_v4(&tm.dst_ip_addr, &msg->npu.ip4.dst);
     } else if (ncap_ip6 == msg->np) {
 	tm.ip_version = 6;
 	inXaddr_assign_v6(&tm.src_ip_addr, &msg->npu.ip6.src);
-        inXaddr_assign_v6(&tm.dst_ip_addr, &msg->npu.ip6.dst);
+	inXaddr_assign_v6(&tm.dst_ip_addr, &msg->npu.ip6.dst);
     }
 
     if (ncap_udp == msg->tp) {
@@ -123,7 +122,7 @@ int
 Ncap_run(DMC * dns_callback)
 {
     int result = 1;
-#   define INTERVAL 60
+#define INTERVAL 60
 
     dns_message_callback = dns_callback;
     struct timeval tv;

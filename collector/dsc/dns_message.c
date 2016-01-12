@@ -58,7 +58,8 @@ extern int debug_flag;
 static md_array_list *Arrays = NULL;
 static filter_list *DNSFilters = NULL;
 
-static const char *printable_dnsname(const char *name)
+static const char *
+printable_dnsname(const char *name)
 {
     static char buf[MAX_QNAME_SZ];
     int i;
@@ -71,8 +72,8 @@ static const char *printable_dnsname(const char *name)
 	    i++;
 	} else {
 	    if (i + 3 > MAX_QNAME_SZ - 1)
-		break; /* expanded character would overflow buffer */
-	    sprintf(buf+i, "%%%02x", (unsigned char)*name);
+		break;		/* expanded character would overflow buffer */
+	    sprintf(buf + i, "%%%02x", (unsigned char) *name);
 	    i += 3;
 	}
     }
@@ -83,22 +84,21 @@ static const char *printable_dnsname(const char *name)
 void
 dns_message_print(dns_message * m)
 {
-	char buf[128];
-	inXaddr_ntop(&m->client_ip_addr, buf, 128);
-	fprintf(stderr, "%15s:%5d", buf, m->tm->src_port);
-	fprintf(stderr, "\t%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" :
-	    (m->tm->proto == IPPROTO_TCP) ? "TCP" : "???");
-	fprintf(stderr, "\tQT=%d", m->qtype);
-	fprintf(stderr, "\tQC=%d", m->qclass);
-	fprintf(stderr, "\tlen=%d", m->msglen);
-	fprintf(stderr, "\tqname=%s", printable_dnsname(m->qname));
-	fprintf(stderr, "\ttld=%s", printable_dnsname(dns_message_tld(m)));
-	fprintf(stderr, "\topcode=%d", m->opcode);
-	fprintf(stderr, "\trcode=%d", m->rcode);
-	fprintf(stderr, "\tmalformed=%d", m->malformed);
-	fprintf(stderr, "\tqr=%d", m->qr);
-	fprintf(stderr, "\trd=%d", m->rd);
-	fprintf(stderr, "\n");
+    char buf[128];
+    inXaddr_ntop(&m->client_ip_addr, buf, 128);
+    fprintf(stderr, "%15s:%5d", buf, m->tm->src_port);
+    fprintf(stderr, "\t%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" : (m->tm->proto == IPPROTO_TCP) ? "TCP" : "???");
+    fprintf(stderr, "\tQT=%d", m->qtype);
+    fprintf(stderr, "\tQC=%d", m->qclass);
+    fprintf(stderr, "\tlen=%d", m->msglen);
+    fprintf(stderr, "\tqname=%s", printable_dnsname(m->qname));
+    fprintf(stderr, "\ttld=%s", printable_dnsname(dns_message_tld(m)));
+    fprintf(stderr, "\topcode=%d", m->opcode);
+    fprintf(stderr, "\trcode=%d", m->rcode);
+    fprintf(stderr, "\tmalformed=%d", m->malformed);
+    fprintf(stderr, "\tqr=%d", m->qr);
+    fprintf(stderr, "\trd=%d", m->rd);
+    fprintf(stderr, "\n");
 }
 
 #if DROP_RECV_RESPOSNE
@@ -214,44 +214,44 @@ qname_filter(const void *vp, const void *ctx)
 }
 
 static indexer_t indexers[] = {
-    { "client",               cip_indexer,                  cip_iterator,                  cip_reset },
-    { "server",               sip_indexer,                  sip_iterator,                  sip_reset },
-    { "cip4_addr",            cip_indexer,                  cip_iterator,                  cip_reset },     /* compatibility */
+    {"client", cip_indexer, cip_iterator, cip_reset},
+    {"server", sip_indexer, sip_iterator, sip_reset},
+    {"cip4_addr", cip_indexer, cip_iterator, cip_reset},	/* compatibility */
 #if HAVE_LIBGEOIP
-    { "country",                  country_indexer,                  country_iterator,                  country_reset },
+    {"country", country_indexer, country_iterator, country_reset},
 #endif
-    { "client_subnet",        cip_net_indexer,              cip_net_iterator,              cip_net_reset },
-    { "cip4_net",             cip_net_indexer,              cip_net_iterator,              cip_net_reset }, /* compatibility */
-    { "null",                 null_indexer,                 null_iterator,                 NULL },
-    { "qclass",               qclass_indexer,               qclass_iterator,               qclass_reset },
-    { "qnamelen",             qnamelen_indexer,             qnamelen_iterator,             qnamelen_reset },
-    { "qname",                qname_indexer,                qname_iterator,                qname_reset },
-    { "second_ld",            second_ld_indexer,            second_ld_iterator,            second_ld_reset },
-    { "third_ld",             third_ld_indexer,             third_ld_iterator,             third_ld_reset },
-    { "msglen",               msglen_indexer,               msglen_iterator,               msglen_reset },
-    { "qtype",                qtype_indexer,                qtype_iterator,                qtype_reset },
-    { "rcode",                rcode_indexer,                rcode_iterator,                rcode_reset },
-    { "tld",                  tld_indexer,                  tld_iterator,                  tld_reset },
-    { "certain_qnames",       certain_qnames_indexer,       certain_qnames_iterator,       NULL },
-    { "query_classification", query_classification_indexer, query_classification_iterator, NULL },
-    { "idn_qname",            idn_qname_indexer,            idn_qname_iterator,            NULL },
-    { "edns_version",         edns_version_indexer,         edns_version_iterator,         NULL },
-    { "edns_bufsiz",          edns_bufsiz_indexer,          edns_bufsiz_iterator,         NULL },
-    { "do_bit",               do_bit_indexer,               do_bit_iterator,               NULL },
-    { "d0_bit",               do_bit_indexer,               do_bit_iterator,               NULL },          /* compat for bug */
-    { "rd_bit",               rd_bit_indexer,               rd_bit_iterator,               NULL },
-    { "tc_bit",               tc_bit_indexer,               tc_bit_iterator,               NULL },
-    { "opcode",               opcode_indexer,               opcode_iterator,               opcode_reset },
-    { "transport",            transport_indexer,            transport_iterator,            NULL },
-    { "dns_ip_version",       dns_ip_version_indexer,       dns_ip_version_iterator,       dns_ip_version_reset },
-    { "dns_source_port",      dns_source_port_indexer,      dns_source_port_iterator,      dns_source_port_reset },
-    { "dns_sport_range",      dns_sport_range_indexer,      dns_sport_range_iterator,      dns_sport_range_reset },
-    { "qr_aa_bits",           qr_aa_bits_indexer,           qr_aa_bits_iterator,           NULL, },
+    {"client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset},
+    {"cip4_net", cip_net_indexer, cip_net_iterator, cip_net_reset},	/* compatibility */
+    {"null", null_indexer, null_iterator, NULL},
+    {"qclass", qclass_indexer, qclass_iterator, qclass_reset},
+    {"qnamelen", qnamelen_indexer, qnamelen_iterator, qnamelen_reset},
+    {"qname", qname_indexer, qname_iterator, qname_reset},
+    {"second_ld", second_ld_indexer, second_ld_iterator, second_ld_reset},
+    {"third_ld", third_ld_indexer, third_ld_iterator, third_ld_reset},
+    {"msglen", msglen_indexer, msglen_iterator, msglen_reset},
+    {"qtype", qtype_indexer, qtype_iterator, qtype_reset},
+    {"rcode", rcode_indexer, rcode_iterator, rcode_reset},
+    {"tld", tld_indexer, tld_iterator, tld_reset},
+    {"certain_qnames", certain_qnames_indexer, certain_qnames_iterator, NULL},
+    {"query_classification", query_classification_indexer, query_classification_iterator, NULL},
+    {"idn_qname", idn_qname_indexer, idn_qname_iterator, NULL},
+    {"edns_version", edns_version_indexer, edns_version_iterator, NULL},
+    {"edns_bufsiz", edns_bufsiz_indexer, edns_bufsiz_iterator, NULL},
+    {"do_bit", do_bit_indexer, do_bit_iterator, NULL},
+    {"d0_bit", do_bit_indexer, do_bit_iterator, NULL},	/* compat for bug */
+    {"rd_bit", rd_bit_indexer, rd_bit_iterator, NULL},
+    {"tc_bit", tc_bit_indexer, tc_bit_iterator, NULL},
+    {"opcode", opcode_indexer, opcode_iterator, opcode_reset},
+    {"transport", transport_indexer, transport_iterator, NULL},
+    {"dns_ip_version", dns_ip_version_indexer, dns_ip_version_iterator, dns_ip_version_reset},
+    {"dns_source_port", dns_source_port_indexer, dns_source_port_iterator, dns_source_port_reset},
+    {"dns_sport_range", dns_sport_range_indexer, dns_sport_range_iterator, dns_sport_range_reset},
+    {"qr_aa_bits", qr_aa_bits_indexer, qr_aa_bits_iterator, NULL,},
     /* these used to be "IP" indexers */
-    { "ip_direction",         ip_direction_indexer,         ip_direction_iterator,         NULL },
-    { "ip_proto",             ip_proto_indexer,             ip_proto_iterator,             ip_proto_reset },
-    { "ip_version",           ip_version_indexer,           ip_version_iterator,           ip_version_reset },
-    { NULL,                   NULL,                         NULL,                          NULL }
+    {"ip_direction", ip_direction_indexer, ip_direction_iterator, NULL},
+    {"ip_proto", ip_proto_indexer, ip_proto_iterator, ip_proto_reset},
+    {"ip_version", ip_version_indexer, ip_version_iterator, ip_version_reset},
+    {NULL, NULL, NULL, NULL}
 };
 
 static indexer_t *
@@ -311,8 +311,7 @@ add_qname_filter(const char *name, const char *pat)
 	regerror(x, r, errbuf, 512);
 	syslog(LOG_ERR, "regcomp: %s", errbuf);
     }
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter(name, qname_filter, r));
+    fl = md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
     return 1;
 }
 
@@ -336,8 +335,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 	syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
 	return 0;
     }
-    a->theArray = md_array_create(name, filters,
-	fn, indexer1, sn, indexer2);
+    a->theArray = md_array_create(name, filters, fn, indexer1, sn, indexer2);
     if (NULL == a->theArray) {
 	syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
 	return 0;
@@ -350,7 +348,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 }
 
 void
-dns_message_report(FILE *fp)
+dns_message_report(FILE * fp)
 {
     md_array_list *a;
     for (a = Arrays; a; a = a->next)
@@ -398,15 +396,15 @@ dns_message_QnameToNld(const char *qname, int nld)
     const char *e = qname + strlen(qname) - 1;
     const char *t;
     int dotcount = 0;
-    int state = 0;	/* 0 = not in dots, 1 = in dots */
+    int state = 0;		/* 0 = not in dots, 1 = in dots */
     while (*e == '.' && e > qname)
 	e--;
     t = e;
     if (0 == strcmp(t, ".arpa"))
-        dotcount--;
+	dotcount--;
     while (t > qname && dotcount < nld) {
-        t--;
-        if ('.' == *t) {
+	t--;
+	if ('.' == *t) {
 	    if (0 == state)
 		dotcount++;
 	    state = 1;
@@ -415,7 +413,7 @@ dns_message_QnameToNld(const char *qname, int nld)
 	}
     }
     while (*t == '.' && t < e)
-        t++;
+	t++;
     return t;
 }
 
@@ -432,20 +430,12 @@ void
 dns_message_init(void)
 {
     filter_list **fl = &DNSFilters;
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("queries-only", queries_only_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("replies-only", replies_only_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("idn-only", idn_qname_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("chaos-class", chaos_class_filter, 0));
-    fl = md_array_filter_list_append(fl,
-	md_array_create_filter("priming-query", priming_query_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("queries-only", queries_only_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("replies-only", replies_only_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("idn-only", idn_qname_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
 }

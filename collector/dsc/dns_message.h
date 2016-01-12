@@ -10,7 +10,8 @@
 
 #define MAX_QNAME_SZ 512
 
-typedef struct {
+typedef struct
+{
     struct timeval ts;
     inX_addr src_ip_addr;
     inX_addr dst_ip_addr;
@@ -21,7 +22,8 @@ typedef struct {
 } transport_message;
 
 typedef struct _dns_message dns_message;
-struct _dns_message {
+struct _dns_message
+{
     transport_message *tm;
     inX_addr client_ip_addr;
     inX_addr server_ip_addr;
@@ -37,7 +39,8 @@ struct _dns_message {
     unsigned int rd:1;		/* set if RECUSION DESIRED bit is set */
     unsigned int aa:1;		/* set if AUTHORITATIVE ANSWER bit is set */
     unsigned int tc:1;		/* set if TRUNCATED RESPONSE bit is set */
-    struct {
+    struct
+    {
 	unsigned int found:1;	/* set if we found an OPT RR */
 	unsigned int DO:1;	/* set if DNSSEC DO bit is set */
 	unsigned char version;	/* version field from OPT RR */
@@ -47,15 +50,16 @@ struct _dns_message {
 };
 
 void dns_message_report(FILE *);
-int dns_message_add_array(const char *, const char *,const char *,const char *,const char *,const char *, dataset_opt);
-const char * dns_message_QnameToNld(const char *, int);
-const char * dns_message_tld(dns_message * m);
+int dns_message_add_array(const char *, const char *, const char *, const char *, const char *, const char *,
+    dataset_opt);
+const char *dns_message_QnameToNld(const char *, int);
+const char *dns_message_tld(dns_message * m);
 void dns_message_init(void);
 void dns_message_clear_arrays(void);
 void dns_message_handle(dns_message *);
 
 #ifndef T_OPT
-#define T_OPT 41	/* OPT pseudo-RR, RFC2761 */
+#define T_OPT 41		/* OPT pseudo-RR, RFC2761 */
 #endif
 
 #ifndef T_AAAA

@@ -15,9 +15,10 @@ static hashkeycmp tld_cmpfunc;
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
-typedef struct {
-	char *tld;
-	int index;
+typedef struct
+{
+    char *tld;
+    int index;
 } tldobj;
 
 int
@@ -30,8 +31,7 @@ tld_indexer(const void *vp)
 	return -1;
     tld = dns_message_tld((dns_message *) m);
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc,
-	    1, afree, afree);
+	theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc, 1, afree, afree);
 	if (NULL == theHash)
 	    return -1;
     }
@@ -84,11 +84,11 @@ tld_reset()
 static unsigned int
 tld_hashfunc(const void *key)
 {
-	return hashendian(key, strlen(key), 0);
+    return hashendian(key, strlen(key), 0);
 }
 
 static int
 tld_cmpfunc(const void *a, const void *b)
 {
-	return strcasecmp(a, b);
+    return strcasecmp(a, b);
 }

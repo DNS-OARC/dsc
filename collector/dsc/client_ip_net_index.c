@@ -18,9 +18,10 @@ static inX_addr v6mask;
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 
-typedef struct {
-	inX_addr addr;
-	int index;
+typedef struct
+{
+    inX_addr addr;
+    int index;
 } ipnetobj;
 
 int
@@ -32,8 +33,7 @@ cip_net_indexer(const void *vp)
     if (m->malformed)
 	return -1;
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc,
-	    1, NULL, afree);
+	theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc, 1, NULL, afree);
 	if (NULL == theHash)
 	    return -1;
     }
@@ -96,14 +96,14 @@ cip_net_indexer_init(void)
 static unsigned int
 ipnet_hashfunc(const void *key)
 {
-	const inX_addr *a = key;
-	return inXaddr_hash(a);
+    const inX_addr *a = key;
+    return inXaddr_hash(a);
 }
 
 static int
 ipnet_cmpfunc(const void *a, const void *b)
 {
-	const inX_addr *a1 = a;
-	const inX_addr *a2 = b;
-	return inXaddr_cmp(a1, a2);
+    const inX_addr *a1 = a;
+    const inX_addr *a2 = b;
+    return inXaddr_cmp(a1, a2);
 }

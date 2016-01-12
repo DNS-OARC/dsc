@@ -19,7 +19,8 @@
 
 #define LARGEST 2
 
-struct _foo {
+struct _foo
+{
     inX_addr addr;
     struct _foo *next;
 };
@@ -29,8 +30,8 @@ static struct _foo *local_addrs = NULL;
 #ifndef DROP_RECV_RESPONSE
 static
 #endif
-int
-ip_is_local(const inX_addr *a)
+    int
+ip_is_local(const inX_addr * a)
 {
     struct _foo *t;
     for (t = local_addrs; t; t = t->next)

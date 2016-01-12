@@ -50,8 +50,7 @@ d2_type(void *pr_data, const char *t)
     d2_type_s = t;
 }
 
-static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-"0123456789._-:";
+static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" "0123456789._-:";
 
 static void
 d1_begin(void *pr_data, char *l)
@@ -109,8 +108,7 @@ finish_data(void *pr_data)
     fprintf(fp, "  </data>\n");
 }
 
-md_array_printer xml_printer =
-{
+md_array_printer xml_printer = {
     start_array,
     finish_array,
     d1_type,

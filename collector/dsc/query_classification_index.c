@@ -9,7 +9,7 @@
 #ifdef __OpenBSD__
 #define C_NONE          254
 #else
-#include <arpa/nameser_compat.h> 
+#include <arpa/nameser_compat.h>
 #endif
 
 #ifndef T_A6
@@ -19,7 +19,8 @@
 #include "dns_message.h"
 #include "md_array.h"
 
-enum {
+enum
+{
     CLASS_OK,
     CLASS_NONAUTH_TLD,
     CLASS_ROOT_SERVERS_NET,
@@ -100,11 +101,11 @@ rfc1918_ptr(const dns_message * m)
 	i >>= 8;
 	i |= ((atoi(t) & 0xff) << 24);
     }
-    if ((i & 0xff000000) == 0x0a000000)		/* 10.0.0.0/8 */
+    if ((i & 0xff000000) == 0x0a000000)	/* 10.0.0.0/8 */
 	return CLASS_RFC1918_PTR;
-    if ((i & 0xfff00000) == 0xac100000)		/* 172.16.0.0/12 */
+    if ((i & 0xfff00000) == 0xac100000)	/* 172.16.0.0/12 */
 	return CLASS_RFC1918_PTR;
-    if ((i & 0xffff0000) == 0xc0a80000)		/* 192.168.0.0/16 */
+    if ((i & 0xffff0000) == 0xc0a80000)	/* 192.168.0.0/16 */
 	return CLASS_RFC1918_PTR;
     return 0;
 }
@@ -261,8 +262,7 @@ query_classification_iterator(char **label)
     return next_iter++;
 }
 
-static const char *KnownTLDS[] =
-{
+static const char *KnownTLDS[] = {
     "com",
     "net",
     "arpa",

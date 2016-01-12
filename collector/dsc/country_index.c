@@ -23,10 +23,11 @@ static GeoIP *geoip;
 static char *ipstr;
 static char unknown[20] = "__";
 
-typedef struct {
+typedef struct
+{
     char *country;
     int index;
-}      countryobj;
+} countryobj;
 
 const char *
 country_get_from_message(dns_message * m)
@@ -37,8 +38,7 @@ country_get_from_message(dns_message * m)
     tm = m->tm;
     inXaddr_ntop(&tm->src_ip_addr, ipstr, 128);
     fprintf(stderr, "ipstring: %s\n", ipstr);
-    cc = GeoIP_country_code_by_addr(geoip,
-	inXaddr_ntop(&tm->src_ip_addr, ipstr, 128)
+    cc = GeoIP_country_code_by_addr(geoip, inXaddr_ntop(&tm->src_ip_addr, ipstr, 128)
 	);
     if (cc == NULL) {
 	cc = unknown;
@@ -57,8 +57,7 @@ country_indexer(const void *vp)
 	return -1;
     country = country_get_from_message((dns_message *) m);
     if (NULL == theHash) {
-	theHash = hash_create(MAX_ARRAY_SZ, country_hashfunc, country_cmpfunc,
-	    1, afree, afree);
+	theHash = hash_create(MAX_ARRAY_SZ, country_hashfunc, country_cmpfunc, 1, afree, afree);
 	if (NULL == theHash)
 	    return -1;
     }
