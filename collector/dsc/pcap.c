@@ -108,7 +108,6 @@ char *bpf_program_str = NULL;
 int vlan_tag_needs_byte_conversion = 1;
 
 extern int dns_protocol_handler(const u_char * buf, int len, void *udata);
-extern int debug_flag;
 #if 0
 static int debug_count = 20;
 #endif
@@ -276,8 +275,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
     uint16_t dnslen;
     int segoff, seglen;
 
-    if (debug_flag > 1)
-	fprintf(stderr, "pcap_handle_tcp_segment: seq=%u, len=%d\n", seq, len);
+    dfprintf(1, "pcap_handle_tcp_segment: seq=%u, len=%d", seq, len);
 
     if (len <= 0)		/* there is no more payload */
 	return;
@@ -286,8 +284,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	/* this segment contains all or part of the 2-byte DNS length field */
 	uint32_t o = seq - tcpstate->seq_start;
 	int l = (len > 1 && o == 0) ? 2 : 1;
-	if (debug_flag > 1)
-	    fprintf(stderr, "pcap_handle_tcp_segment: copying %d bytes to dnslen_buf[%d]\n", l, o);
+	dfprintf(1, "pcap_handle_tcp_segment: copying %d bytes to dnslen_buf[%d]", l, o);
 	memcpy(&tcpstate->dnslen_buf[o], segment, l);
 	if (l == 2)
 	    tcpstate->dnslen_bytes_seen_mask = 3;
@@ -312,8 +309,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	 */
 	tcpstate->dnslen_bytes_seen_mask = 7;
 	tcpstate->seq_start += sizeof(uint16_t) + dnslen;
-	if (debug_flag > 1)
-	    fprintf(stderr, "pcap_handle_tcp_segment: first segment; dnslen = %d\n", dnslen);
+	dfprintf(1, "pcap_handle_tcp_segment: first segment; dnslen = %d", dnslen);
 	if (len >= dnslen) {
 	    /* this segment contains a complete message - avoid the reassembly
 	     * buffer and just handle the message immediately */
@@ -321,8 +317,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	    tcpstate->dnslen_bytes_seen_mask = 0;	/* go back for another message in this tcp connection */
 	    /* handle the trailing part of the segment? */
 	    if (len > dnslen) {
-		if (debug_flag > 1)
-		    fprintf(stderr, "pcap_handle_tcp_segment: segment tail\n");
+		dfprintf(1, "pcap_handle_tcp_segment: %s", "segment tail");
 		pcap_handle_tcp_segment(segment + dnslen, len - dnslen, seq + dnslen, tcpstate, tm);
 	    }
 	    return;
@@ -331,13 +326,11 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	 * At this point we KNOW we have an incomplete message and need to do reassembly.
 	 * i.e.:  assert(len < dnslen);
 	 */
-	if (debug_flag > 2)
-	    fprintf(stderr, "pcap_handle_tcp_segment: buffering segment\n");
+	dfprintf(2, "pcap_handle_tcp_segment: %s", "buffering segment");
 	/* allocate a msgbuf for reassembly */
 	for (m = 0; tcpstate->msgbuf[m];) {
 	    if (++m >= MAX_TCP_MSGS) {
-		if (debug_flag > 1)
-		    fprintf(stderr, "pcap_handle_tcp_segment: out of msgbufs\n");
+		dfprintf(1, "pcap_handle_tcp_segment: %s", "out of msgbufs");
 		return;
 	    }
 	}
@@ -352,12 +345,10 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	tcpstate->msgbuf[m]->holes = 1;
 	tcpstate->msgbuf[m]->hole[0].start = len;
 	tcpstate->msgbuf[m]->hole[0].len = dnslen - len;
-	if (debug_flag > 1) {
-	    fprintf(stderr,
-		"pcap_handle_tcp_segment: new msgbuf %d: seq = %u, dnslen = %d, hole start = %d, hole len = %d\n", m,
-		tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen, tcpstate->msgbuf[m]->hole[0].start,
-		tcpstate->msgbuf[m]->hole[0].len);
-	}
+	dfprintf(1,
+	    "pcap_handle_tcp_segment: new msgbuf %d: seq = %u, dnslen = %d, hole start = %d, hole len = %d", m,
+	    tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen, tcpstate->msgbuf[m]->hole[0].start,
+	    tcpstate->msgbuf[m]->hole[0].len);
 	/* copy segment to appropriate location in reassembly buffer */
 	memcpy(tcpstate->msgbuf[m]->buf, segment, len);
 
@@ -369,8 +360,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	    if (tcpstate->segbuf[s]->seq - seq >= 0 && tcpstate->segbuf[s]->seq - seq < dnslen) {
 		tcp_segbuf_t *segbuf = tcpstate->segbuf[s];
 		tcpstate->segbuf[s] = NULL;
-		if (debug_flag > 1)
-		    fprintf(stderr, "pcap_handle_tcp_segment: message reassembled\n");
+		dfprintf(1, "pcap_handle_tcp_segment: %s", "message reassembled");
 		pcap_handle_tcp_segment(segbuf->buf, segbuf->len, segbuf->seq, tcpstate, tm);
 		/*
 		 * Note that our recursion will also cover any tail messages (I hope).
@@ -389,18 +379,15 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
     for (m = 0;; m++) {
 	if (m >= MAX_TCP_MSGS) {
 	    /* seg does not match any msgbuf; just hold on to it. */
-	    if (debug_flag > 1)
-		fprintf(stderr, "pcap_handle_tcp_segment: seg does not match any msgbuf\n");
+	    dfprintf(1, "pcap_handle_tcp_segment: %s", "seg does not match any msgbuf");
 
 	    if (seq - tcpstate->seq_start > MAX_TCP_WINDOW_SIZE) {
-		if (debug_flag > 1)
-		    fprintf(stderr, "pcap_handle_tcp_segment: seg is outside window; discarding\n");
+		dfprintf(1, "pcap_handle_tcp_segment: %s", "seg is outside window; discarding");
 		return;
 	    }
 	    for (s = 0;; s++) {
 		if (s >= MAX_TCP_SEGS) {
-		    if (debug_flag > 1)
-			fprintf(stderr, "pcap_handle_tcp_segment: out of segbufs\n");
+		    dfprintf(1, "pcap_handle_tcp_segment: %s", "out of segbufs");
 		    return;
 		}
 		if (tcpstate->segbuf[s])
@@ -409,10 +396,8 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 		tcpstate->segbuf[s]->seq = seq;
 		tcpstate->segbuf[s]->len = len;
 		memcpy(tcpstate->segbuf[s]->buf, segment, len);
-		if (debug_flag > 1) {
-		    fprintf(stderr, "pcap_handle_tcp_segment: new segbuf %d: seq = %u, len = %d\n",
-			s, tcpstate->segbuf[s]->seq, tcpstate->segbuf[s]->len);
-		}
+		dfprintf(1, "pcap_handle_tcp_segment: new segbuf %d: seq = %u, len = %d",
+		    s, tcpstate->segbuf[s]->seq, tcpstate->segbuf[s]->len);
 		return;
 	    }
 	}
@@ -421,14 +406,12 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	segoff = seq - tcpstate->msgbuf[m]->seq;
 	if (segoff >= 0 && segoff < tcpstate->msgbuf[m]->dnslen) {
 	    /* segment starts in this msgbuf */
-	    if (debug_flag > 1)
-		fprintf(stderr, "pcap_handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d\n",
-		    m, tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen);
+	    dfprintf(1, "pcap_handle_tcp_segment: seg matches msg %d: seq = %u, dnslen = %d",
+		m, tcpstate->msgbuf[m]->seq, tcpstate->msgbuf[m]->dnslen);
 	    if (segoff + len > tcpstate->msgbuf[m]->dnslen) {
 		/* segment would overflow msgbuf */
 		seglen = tcpstate->msgbuf[m]->dnslen - segoff;
-		if (debug_flag > 1)
-		    fprintf(stderr, "pcap_handle_tcp_segment: using partial segment %d\n", seglen);
+		dfprintf(1, "pcap_handle_tcp_segment: using partial segment %d", seglen);
 	    } else {
 		seglen = len;
 	    }
@@ -449,8 +432,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	if (segoff + seglen <= hole_start)
 	    continue;		/* segment is totally before hole */
 	/* The segment overlaps this hole.  Delete the hole. */
-	if (debug_flag > 1)
-	    fprintf(stderr, "pcap_handle_tcp_segment: overlaping hole %d: %d %d\n", i, hole_start, hole_len);
+	dfprintf(1, "pcap_handle_tcp_segment: overlaping hole %d: %d %d", i, hole_start, hole_len);
 	tcpstate->msgbuf[m]->hole[i].len = 0;
 	tcpstate->msgbuf[m]->holes--;
 	if (segoff + seglen < hole_start + hole_len) {
@@ -459,16 +441,14 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	    newhole->start = segoff + seglen;
 	    newhole->len = (hole_start + hole_len) - newhole->start;
 	    tcpstate->msgbuf[m]->holes++;
-	    if (debug_flag > 1)
-		fprintf(stderr, "pcap_handle_tcp_segment: new post-hole %d: %d %d\n", i, newhole->start, newhole->len);
+	    dfprintf(1, "pcap_handle_tcp_segment: new post-hole %d: %d %d", i, newhole->start, newhole->len);
 	}
 	if (segoff > hole_start) {
 	    /* create a new hole before the segment */
 	    int j;
 	    for (j = 0;; j++) {
 		if (j == MAX_TCP_HOLES) {
-		    if (debug_flag > 1)
-			fprintf(stderr, "pcap_handle_tcp_segment: out of hole descriptors\n");
+		    dfprintf(1, "pcap_handle_tcp_segment: %s", "out of hole descriptors");
 		    return;
 		}
 		if (tcpstate->msgbuf[m]->hole[j].len == 0) {
@@ -479,8 +459,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	    tcpstate->msgbuf[m]->holes++;
 	    newhole->start = hole_start;
 	    newhole->len = segoff - hole_start;
-	    if (debug_flag > 1)
-		fprintf(stderr, "pcap_handle_tcp_segment: new pre-hole %d: %d %d\n", j, newhole->start, newhole->len);
+	    dfprintf(1, "pcap_handle_tcp_segment: new pre-hole %d: %d %d", j, newhole->start, newhole->len);
 	}
 	if (segoff >= hole_start && (hole_len == 0 || segoff + seglen < hole_start + hole_len)) {
 	    /* The segment does not extend past hole boundaries; there is
@@ -492,13 +471,11 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
     /* copy payload to appropriate location in reassembly buffer */
     memcpy(&tcpstate->msgbuf[m]->buf[segoff], segment, seglen);
 
-    if (debug_flag > 1)
-	fprintf(stderr, "pcap_handle_tcp_segment: holes remaining: %d\n", tcpstate->msgbuf[m]->holes);
+    dfprintf(1, "pcap_handle_tcp_segment: holes remaining: %d", tcpstate->msgbuf[m]->holes);
 
     if (tcpstate->msgbuf[m]->holes == 0) {
 	/* We now have a completely reassembled dns message */
-	if (debug_flag > 2)
-	    fprintf(stderr, "pcap_handle_tcp_segment: reassembly to dns_protocol_handler\n");
+	dfprintf(2, "pcap_handle_tcp_segment: %s", "reassembly to dns_protocol_handler");
 	dns_protocol_handler(tcpstate->msgbuf[m]->buf, tcpstate->msgbuf[m]->dnslen, tm);
 	tcpstate->dnslen_bytes_seen_mask = 0;	/* go back for another message in this tcp connection */
 	xfree(tcpstate->msgbuf[m]);
@@ -507,12 +484,10 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
     }
 
     if (seglen < len) {
-	if (debug_flag > 1)
-	    fprintf(stderr, "pcap_handle_tcp_segment: segment tail after reassembly\n");
+	dfprintf(1, "pcap_handle_tcp_segment: %s", "segment tail after reassembly");
 	pcap_handle_tcp_segment(segment + seglen, len - seglen, seq + seglen, tcpstate, tm);
     } else {
-	if (debug_flag > 1)
-	    fprintf(stderr, "pcap_handle_tcp_segment: nothing more after reassembly\n");
+	dfprintf(1, "pcap_handle_tcp_segment: %s", "nothing more after reassembly");
     };
 }
 
@@ -543,8 +518,7 @@ tcpList_remove_older_than(long t)
 	hash_remove(&tcpstate->key, tcpHash);
 	n++;
     }
-    if (debug_flag > 1)
-	fprintf(stderr, "discarded %d old tcpstates\n", n);
+    dfprintf(1, "discarded %d old tcpstates", n);
 }
 
 /*
@@ -579,17 +553,14 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 	inXaddr_ntop(&key.dst_ip_addr, p, 128);
 	p += strlen(p);
 	p += sprintf(p, ":%d ", key.dport);
+	dfprintf(1, "handle_tcp: %s", label);
     }
-
-    if (debug_flag > 1)
-	fprintf(stderr, "\nhandle_tcp(): %s\n", label);
 
     if (port53 != key.dport && port53 != key.sport)
 	return 1;
 
     if (NULL == tcpHash) {
-	if (debug_flag > 2)
-	    fprintf(stderr, "pcap_tcp_handler(): hash_create\n");
+	dfprintf(2, "pcap_tcp_handler: %s", "hash_create");
 	tcpHash = hash_create(MAX_TCP_STATE, tcp_hashfunc, tcp_cmpfunc, 0, NULL, tcpstate_free);
 	if (NULL == tcpHash)
 	    return 1;
@@ -597,23 +568,17 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 
     seq = nptohl(&tcp->th_seq);
     len -= offset;		/* len = length of TCP payload */
-    if (debug_flag > 1)
-	fprintf(stderr, "handle_tcp: seq = %u, len = %d", seq, len);
+    dfprintf(1, "handle_tcp: seq = %u, len = %d", seq, len);
 
     tcpstate = hash_find(&key, tcpHash);
-    if (debug_flag > 1) {
-	if (tcpstate)
-	    fprintf(stderr, ", seq_start = %u, msgs = %d\n", tcpstate->seq_start, tcpstate->msgbufs);
-	else
-	    fprintf(stderr, "\n");
-    }
+    if (tcpstate)
+	dfprintf(1, "handle_tcp: tcpstate->seq_start = %u, ->msgs = %d", tcpstate->seq_start, tcpstate->msgbufs);
 
     if (!tcpstate && !(TCPFLAGSYN(tcp))) {
 	/* There's no existing state, and this is not the start of a stream.
 	 * We have no way to synchronize with the stream, so we give up.
 	 * (This commonly happens for the final ACK in response to a FIN.) */
-	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp: no state\n");
+	dfprintf(1, "handle_tcp: %s", "no state");
 	return 1;
     }
 
@@ -621,8 +586,7 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 	tcpList_remove(tcpstate);	/* remove from its current position */
 
     if (TCPFLAGRST(tcp)) {
-	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp: RST at %u\n", seq);
+	dfprintf(1, "handle_tcp: RST at %u", seq);
 
 	/* remove the state for this direction */
 	if (tcpstate)
@@ -642,16 +606,13 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
     }
 
     if (TCPFLAGSYN(tcp)) {
-	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp: SYN at %u\n", seq);
+	dfprintf(1, "handle_tcp: SYN at %u", seq);
 	seq++;			/* skip the syn */
 	if (tcpstate) {
-	    if (debug_flag > 2)
-		fprintf(stderr, "handle_tcp: ...resetting existing tcpstate\n");
+	    dfprintf(2, "handle_tcp: %s", "...resetting existing tcpstate");
 	    tcpstate_reset(tcpstate, seq);
 	} else {
-	    if (debug_flag > 2)
-		fprintf(stderr, "handle_tcp: ...creating new tcpstate\n");
+	    dfprintf(2, "handle_tcp: %s", "...creating new tcpstate");
 	    tcpstate = xcalloc(1, sizeof(*tcpstate));
 	    if (!tcpstate)
 		return 1;
@@ -668,15 +629,13 @@ pcap_tcp_handler(const struct tcphdr *tcp, int len, void *udata)
 
     if (TCPFLAGFIN(tcp) && !tcpstate->fin) {
 	/* End of tcp stream */
-	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp: FIN at %u\n", seq);
+	dfprintf(1, "handle_tcp: FIN at %u", seq);
 	tcpstate->fin = 1;
     }
 
     if (tcpstate->fin && tcpstate->msgbufs == 0) {
 	/* FIN was seen, and there are no incomplete msgbufs left */
-	if (debug_flag > 1)
-	    fprintf(stderr, "handle_tcp: connection done\n");
+	dfprintf(1, "handle_tcp: %s", "connection done");
 	hash_remove(&key, tcpHash);	/* this also frees tcpstate */
 
     } else {
@@ -701,8 +660,7 @@ static int
 pcap_ipv6_handler(const struct ip6_hdr *ip6, int len, void *udata)
 {
     transport_message *tm = udata;
-    if (debug_flag > 1)
-	fprintf(stderr, "handle_ipv6()\n");
+    dfprintf(1, "pcap_ipv6_handler: %s", "called");
     inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
     inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
     tm->ip_version = 6;
@@ -715,8 +673,7 @@ pcap_match_vlan(unsigned short vlan, void *udata)
     int i;
     if (vlan_tag_needs_byte_conversion)
 	vlan = ntohs(vlan);
-    if (debug_flag > 1)
-	fprintf(stderr, "vlan is %d\n", vlan);
+    dfprintf(1, "vlan is %d", vlan);
     for (i = 0; i < n_vlan_ids; i++)
 	if (vlan_ids[i] == vlan)
 	    return 0;
@@ -825,8 +782,7 @@ Pcap_init(const char *device, int promisc)
 	n_pcap_offline++;
     } else {
 	i->fd = pcap_get_selectable_fd(i->pcap);
-	if (debug_flag)
-	    fprintf(stderr, "Pcap_init: FD_SET %d\n", i->fd);
+	dfprintf(0, "Pcap_init: FD_SET %d", i->fd);
 	FD_SET(i->fd, &pcap_fdset);
 	if (i->fd >= max_pcap_fds)
 	    max_pcap_fds = i->fd + 1;

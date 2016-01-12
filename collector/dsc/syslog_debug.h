@@ -14,3 +14,15 @@ extern int debug_flag;
 	else \
 	    (syslog)(priority, format, __VA_ARGS__); \
     } while (0)
+
+
+/* This dfprintf() macro won't call syslog(), only fprintf to stderr if
+ * debug_flag is on.
+ */
+
+#define dfprintf(lvl, format, ...) \
+    do { \
+	if (debug_flag > lvl) \
+	    fprintf(stderr, format "\n", __VA_ARGS__); \
+    } while (0)
+
