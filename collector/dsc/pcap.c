@@ -901,6 +901,27 @@ Pcap_finish_time(void)
 }
 
 void
+time_t_to_iso8601(char *buff, int size, time_t secs)
+{
+    time_t clone_t = secs;
+    memset(buff, 0, size);
+    struct tm *tm = gmtime(&clone_t);
+    strftime(buff, size, "%FT%TZ", tm);
+}
+
+void
+Pcap_start_time_iso8601(char *buff, int size)
+{
+    return time_t_to_iso8601(buff, size, start_ts.tv_sec);
+}
+
+void
+Pcap_finish_time_iso8601(char *buff, int size)
+{
+    return time_t_to_iso8601(buff, size, finish_ts.tv_sec);
+}
+
+void
 pcap_set_match_vlan(int vlan)
 {
     assert(n_vlan_ids < MAX_VLAN_IDS);
@@ -909,11 +930,8 @@ pcap_set_match_vlan(int vlan)
 
 /* ========== PCAP_STAT INDEXER ========== */
 
-#include "md_array.h"
-
 int pcap_ifname_iterator(char **);
 int pcap_stat_iterator(char **);
-extern md_array_printer xml_printer;
 
 static indexer_t indexers[] = {
     {"ifname", NULL, pcap_ifname_iterator, NULL},
@@ -956,7 +974,7 @@ pcap_stat_iterator(char **label)
 }
 
 void
-pcap_report(FILE * fp)
+pcap_report(FILE * fp, md_array_printer * printer)
 {
     int i;
     md_array *theArray = acalloc(1, sizeof(*theArray));
@@ -976,5 +994,5 @@ pcap_report(FILE * fp)
 	theArray->array[i].array[1] = I->ps1.ps_recv - I->ps0.ps_recv;
 	theArray->array[i].array[2] = I->ps1.ps_drop - I->ps0.ps_drop;
     }
-    md_array_print(theArray, &xml_printer, fp);
+    md_array_print(theArray, printer, fp);
 }

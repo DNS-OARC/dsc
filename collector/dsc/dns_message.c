@@ -18,7 +18,6 @@
 
 #include "xmalloc.h"
 #include "dns_message.h"
-#include "md_array.h"
 #include "null_index.h"
 #include "qtype_index.h"
 #include "qclass_index.h"
@@ -53,7 +52,6 @@
 
 #include "syslog_debug.h"
 
-extern md_array_printer xml_printer;
 extern int debug_flag;
 static md_array_list *Arrays = NULL;
 static filter_list *DNSFilters = NULL;
@@ -348,11 +346,12 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 }
 
 void
-dns_message_report(FILE * fp)
+dns_message_report(FILE *fp, md_array_printer *printer)
 {
     md_array_list *a;
-    for (a = Arrays; a; a = a->next)
-	md_array_print(a->theArray, &xml_printer, fp);
+    for (a = Arrays; a; a = a->next) {
+        md_array_print(a->theArray, printer, fp);
+    }
 }
 
 void

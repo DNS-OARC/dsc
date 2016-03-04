@@ -22,6 +22,16 @@ run_dir "/usr/local/dsc/run/NODENAME";
 #
 minfree_bytes 5000000;
 
+
+# add_output
+#       Set an additional output format. Files with this format 
+#       will be generated along with the XML files.
+#       Currently, the available additional outputs are json and
+#       ext_json. At most one add_output can be set.
+#
+# add_output json;
+
+
 # pid_file
 #
 #	filename where DSC should store its process-id
