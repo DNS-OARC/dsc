@@ -6,7 +6,9 @@
 #include <assert.h>
 #include <ctype.h>
 #include <arpa/nameser.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
+#endif
 #include <syslog.h>
 
 #include "xmalloc.h"

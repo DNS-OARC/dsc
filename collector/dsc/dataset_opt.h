@@ -1,5 +1,5 @@
-#ifndef DATASET_OPT_H
-#define DATASET_OPT_H
+#ifndef __dsc_dataset_opt_h
+#define __dsc_dataset_opt_h
 
 typedef struct
 {
@@ -7,4 +7,4 @@ typedef struct
     int max_cells;		// max 2nd dim cells to print
 } dataset_opt;
 
-#endif
+#endif /* __dsc_dataset_opt_h */

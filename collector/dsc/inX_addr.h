@@ -1,6 +1,5 @@
-
-#ifndef INX_ADDR_H
-#define INX_ADDR_H
+#ifndef __dsc_inX_addr_h
+#define __dsc_inX_addr_h
 
 typedef union
 {
@@ -24,4 +23,4 @@ extern inX_addr inXaddr_mask(const inX_addr * a, const inX_addr * mask);
 extern int inXaddr_assign_v4(inX_addr *, const struct in_addr *);
 extern int inXaddr_assign_v6(inX_addr *, const struct in6_addr *);
 
-#endif /* INX_ADDR_H */
+#endif /* __dsc_inX_addr_h */

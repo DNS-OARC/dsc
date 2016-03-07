@@ -1,3 +1,6 @@
+#ifndef __dsc_dns_message_h
+#define __dsc_dns_message_h
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -69,3 +72,5 @@ void dns_message_handle(dns_message *);
 #ifndef C_CHAOS
 #define C_CHAOS 3
 #endif
+
+#endif /* __dsc_dns_message_h */

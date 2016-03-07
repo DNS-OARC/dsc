@@ -1,3 +1,6 @@
+#ifndef __dsc_ncap_h
+#define __dsc_ncap_h
+
 
 #if HAVE_LIBNCAP
 void Ncap_init(const char *device, int promisc);
@@ -6,3 +9,5 @@ void Ncap_close(void);
 int Ncap_start_time(void);
 int Ncap_finish_time(void);
 #endif
+
+#endif /* __dsc_ncap_h */

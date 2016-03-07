@@ -1,3 +1,6 @@
+#ifndef __dsc_syslog_debug_h
+#define __dsc_syslog_debug_h
+
 extern int debug_flag;
 
 /* This syslog() macro normally calls the real syslog() function, unless
@@ -26,3 +29,5 @@ extern int debug_flag;
 	    fprintf(stderr, format "\n", __VA_ARGS__); \
     } while (0)
 
+
+#endif /* __dsc_syslog_debug_h */

@@ -3,8 +3,12 @@ HAPY=../TmfBase/Hapy
 CFLAGS=-g -Wall -DUSE_IPV6=1
 CPPFLAGS = ${CFLAGS}
 MYCPPFLAGS = -g -DUSE_IPV6=1 -I $(HAPY)/src/include -I/usr/local/include
-TODAY != date +%Y%m%d
 INSTALLDIR=/usr/local/dsc
+
+CC=@CC@
+CPP=@CPP@
+CXX=@CXX@
+CXXFLAGS=@CXXFLAGS@
 
 LDFLAGS += @LDFLAGS@	# from configure
 CFLAGS += @CFLAGS@	# from configure
@@ -78,9 +82,6 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(PROG)
 	cd $(HAPY); $(MAKE) $@
-
-tar:
-	cd /tmp; cvs checkout -d $(PROG)-$(TODAY) $(PROG) ; tar czvf $(PROG)-$(TODAY).tar.gz $(PROG)-$(TODAY)
 
 
 ParseConfig.o: ParseConfig.cc $(LIBHAPY)

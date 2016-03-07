@@ -1,3 +1,6 @@
+#ifndef __dsc_hashtbl_h
+#define __dsc_hashtbl_h
+
 
 typedef struct _hashitem
 {
@@ -50,3 +53,5 @@ extern uint32_t hashword(const uint32_t * k, size_t length, uint32_t initval);
 #else
 #define hashendian hashlittle
 #endif
+
+#endif /* __dsc_hashtbl_h */
