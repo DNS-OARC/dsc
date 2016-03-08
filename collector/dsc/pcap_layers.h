@@ -1,3 +1,6 @@
+#ifndef __dsc_pcap_layers_h
+#define __dsc_pcap_layers_h
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/ip6.h>
@@ -26,3 +29,5 @@ extern int (*callback_l7) (const u_char * l7, int len, void *userdata);
 
 extern void handle_pcap(u_char * userdata, const struct pcap_pkthdr *hdr, const u_char * pkt);
 extern int pcap_layers_init(int dlt, int reassemble);
+
+#endif /* __dsc_pcap_layers_h */

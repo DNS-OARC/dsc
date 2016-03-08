@@ -1,3 +1,6 @@
+#ifndef __dsc_md_array_h
+#define __dsc_md_array_h
+
 
 
 typedef struct _md_array md_array;
@@ -80,3 +83,5 @@ md_array *md_array_create(const char *name, filter_list *, const char *, indexer
 int md_array_print(md_array * a, md_array_printer * pr, FILE * fp);
 filter_list **md_array_filter_list_append(filter_list ** fl, FLTR * f);
 FLTR *md_array_create_filter(const char *name, filter_func *, const void *context);
+
+#endif /* __dsc_md_array_h */

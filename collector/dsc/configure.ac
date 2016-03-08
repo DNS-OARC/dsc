@@ -1,8 +1,5 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-
 AC_PREREQ(2.61)
-AC_INIT(DSC, trunk, dsc@measurement-factory.com)
+AC_INIT([DSC], [1.0.0], [dsc-dev@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AC_CONFIG_SRCDIR([md_array.c])
 AC_CONFIG_HEADER([config.h])
 
@@ -22,7 +19,26 @@ AC_CHECK_LIB([GeoIP], [GeoIP_open])
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h memory.h netdb.h netinet/in.h stdint.h stdlib.h string.h strings.h sys/mount.h sys/param.h sys/socket.h sys/statfs.h sys/statvfs.h sys/time.h syslog.h unistd.h])
+AC_CHECK_HEADERS([ \
+    arpa/nameser_compat.h \
+    arpa/inet.h \
+    fcntl.h \
+    memory.h \
+    netdb.h \
+    netinet/in.h \
+    stdint.h \
+    stdlib.h \
+    string.h \
+    strings.h \
+    sys/mount.h \
+    sys/param.h \
+    sys/socket.h \
+    sys/statfs.h \
+    sys/statvfs.h \
+    sys/time.h \
+    syslog.h \
+    unistd.h \
+])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -46,7 +62,22 @@ AC_FUNC_MEMCMP
 AC_FUNC_REALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STAT
-AC_CHECK_FUNCS([dup2 gettimeofday memset regcomp select strcasecmp strchr strdup strerror strrchr strspn strstr strtoull statvfs])
+AC_CHECK_FUNCS([ \
+    dup2 \
+    gettimeofday \
+    memset \
+    regcomp \
+    select \
+    strcasecmp \
+    strchr \
+    strdup \
+    strerror \
+    strrchr \
+    strspn \
+    strstr \
+    strtoull \
+    statvfs \
+])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
