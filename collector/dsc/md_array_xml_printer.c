@@ -117,5 +117,9 @@ md_array_printer xml_printer = {
     finish_data,
     d1_begin,
     d1_end,
-    print_element
+    print_element,
+    "XML",
+    "<dscdata>\n",
+    "</dscdata>\n",
+    "xml"
 };

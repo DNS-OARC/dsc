@@ -7,6 +7,7 @@
 #include <syslog.h>
 
 #include "xmalloc.h"
+#include "dataset_opt.h"
 #include "md_array.h"
 #include "dns_message.h"
 #include "pcap.h"
@@ -213,7 +214,7 @@ md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
 	nvals = a->d2.alloc_sz;
 	sortme = xcalloc(nvals, sizeof(*sortme));
 	if (NULL == sortme) {
-	    syslog(LOG_CRIT, "%s", "Cant output file chunk due to malloc failure!");
+	    syslog(LOG_CRIT, "Cant output %s file chunk due to malloc failure!", pr->format);
 	    continue;		/* OUCH! */
 	}
 	while ((i2 = a->d2.indexer->iter_fn(&label2)) > -1) {

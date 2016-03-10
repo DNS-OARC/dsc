@@ -15,8 +15,8 @@ void Ncap_init(const char *device, int promisc);
 #endif
 void Pcap_init(const char *device, int promisc);
 uint64_t minfree_bytes = 0;
-char output_json = 0;
-char output_ext_json = 0;
+int output_format_xml = 0;
+int output_format_json = 0;
 
 int
 open_interface(const char *interface)
@@ -120,32 +120,20 @@ set_minfree_bytes(const char *s)
     return 1;
 }
 
-int check_unique_json_output(const char *output_format)
-{
-    if (output_json || output_ext_json) {
-        syslog(LOG_ERR, "add_output '%s' set but a json-like additional output already exists", output_format);
-        return 0;
-    }
-    return 1;
-}
-
 int
-set_additional_output(const char *output_format)
+set_output_format(const char *output_format)
 {
-    syslog(LOG_INFO, "add_output %s", output_format);
+    syslog(LOG_INFO, "output_format %s", output_format);
 
-    if (0 == strcmp(output_format, "json")) {
-        if (!check_unique_json_output(output_format))
-            return 0;
-        output_json = 1;
+    if ( !strcmp(output_format, "XML") ) {
+        output_format_xml = 1;
         return 1;
     }
-    if (0 == strcmp(output_format, "ext_json")) {
-        if (!check_unique_json_output(output_format))
-            return 0;
-        output_ext_json = 1;
+    else if ( !strcmp(output_format, "JSON") ) {
+        output_format_json = 1;
         return 1;
     }
-    syslog(LOG_ERR, "unknown add_output '%s'", output_format);
+
+    syslog(LOG_ERR, "unknown output format '%s'", output_format);
     return 0;
 }

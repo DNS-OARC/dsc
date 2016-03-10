@@ -26,7 +26,7 @@ extern "C" int set_bpf_vlan_tag_byte_order(const char *);
 extern "C" int set_bpf_program(const char *);
 extern "C" int set_match_vlan(const char *);
 extern "C" int add_qname_filter(const char *name, const char *re);
-extern "C" int set_additional_output(const char *);
+extern "C" int set_output_format(const char *);
 
 extern "C" void ParseConfig(const char *);
 
@@ -45,7 +45,7 @@ Rule rHexPart;
 Rule rIPv6Address;
 Rule rIPAddress;
 Rule rHostOrNet;
-Rule rOutputs;
+Rule rOutputFormats;
 
 Rule rInterface("Interface", 0);
 Rule rRunDir("RunDir", 0);
@@ -56,14 +56,14 @@ Rule rPacketFilterProg("PacketFilterProg", 0);
 Rule rDatasetOpt("DatasetOpt", 0);
 Rule rDataset("Dataset", 0);
 Rule rBVTBO("BVTBO", 0);
-Rule rAddOutput("AddOutput", 0);
+Rule rOutputFormat("OutputFormat", 0);
 Rule rMatchVlan("MatchVlan", 0);
 Rule rQnameFilter("QnameFilter", 0);
 
 Rule rConfig;
 
 string
-remove_quotes(const string &s) 
+remove_quotes(const string &s)
 {
 	string::size_type f = s.find_first_of('"');
 	string::size_type l = s.find_last_of('"');
@@ -155,10 +155,10 @@ interpret(const Pree &tree, int level)
 			return 0;
 		}
 	} else
-	if (tree.rid() == rAddOutput.id()) {
+	if (tree.rid() == rOutputFormat.id()) {
 		assert(tree.count() > 1);
-		if (set_additional_output(tree[1].image().c_str()) != 1) {
-			cerr << "interpret() failure in set_additional_output" << endl;
+		if (set_output_format(tree[1].image().c_str()) != 1) {
+			cerr << "interpret() failure in output_format" << endl;
 			return 0;
 		}
 	} else
@@ -216,7 +216,7 @@ ParseConfig(const char *fn)
 	rIPv6Address = rHexPart >> * ( ":" >> rIPv4Address );
 	rIPAddress = rIPv4Address | rIPv6Address;
 	rHostOrNet = string_r("host") | string_r("net");
-        rOutputs = string_r("json") | string_r("ext_json");
+	rOutputFormats = string_r("XML") | string_r("JSON");
 
 	// rule/line level
 	rInterface = "interface" >>rBareToken >>";" ;
@@ -232,7 +232,7 @@ ParseConfig(const char *fn)
 		>>rBareToken
 		>>*rDatasetOpt >>";" ;
 	rBVTBO = "bpf_vlan_tag_byte_order" >>rHostOrNet >>";" ;
-        rAddOutput = "add_output" >>rOutputs >>";" ;
+        rOutputFormat = "output_format" >>rOutputFormats >>";" ;
 	rMatchVlan = "match_vlan" >> +rDecimalNumber >>";" ;
 	rQnameFilter = "qname_filter" >>rBareToken >>rBareToken >>";" ;
 
@@ -246,7 +246,7 @@ ParseConfig(const char *fn)
 		rPacketFilterProg |
 		rDataset |
 		rBVTBO |
-        rAddOutput |
+        rOutputFormat |
 		rMatchVlan |
 		rQnameFilter
 	) >> end_r;
@@ -264,7 +264,7 @@ ParseConfig(const char *fn)
 	rDecimalNumber.leaf(true);
 	rIPv4Address.leaf(true);
 	rHostOrNet.leaf(true);
-	rOutputs.leaf(true);
+	rOutputFormats.leaf(true);
 
 	// commit points
         rInterface.committed(true);
@@ -274,7 +274,7 @@ ParseConfig(const char *fn)
         rPacketFilterProg.committed(true);
         rDataset.committed(true);
 	rBVTBO.committed(true);
-	rAddOutput.committed(true);
+	rOutputFormat.committed(true);
 	rMatchVlan.committed(true);
 
 	std::string config;

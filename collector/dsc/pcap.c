@@ -303,7 +303,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	 * If one doesn't remember we're past the then,
 	 * one loops forever getting more msgbufs rather than filling
 	 * in the contents of THIS message.
-	 * 
+	 *
 	 * We need to later reset that mask when we process the message
 	 * (method: tcpstate->dnslen_bytes_seen_mask = 0).
 	 */
@@ -898,27 +898,6 @@ int
 Pcap_finish_time(void)
 {
     return (int) finish_ts.tv_sec;
-}
-
-void
-time_t_to_iso8601(char *buff, int size, time_t secs)
-{
-    time_t clone_t = secs;
-    memset(buff, 0, size);
-    struct tm *tm = gmtime(&clone_t);
-    strftime(buff, size, "%FT%TZ", tm);
-}
-
-void
-Pcap_start_time_iso8601(char *buff, int size)
-{
-    return time_t_to_iso8601(buff, size, start_ts.tv_sec);
-}
-
-void
-Pcap_finish_time_iso8601(char *buff, int size)
-{
-    return time_t_to_iso8601(buff, size, finish_ts.tv_sec);
 }
 
 void

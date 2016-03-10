@@ -22,16 +22,6 @@ run_dir "/usr/local/dsc/run/NODENAME";
 #
 minfree_bytes 5000000;
 
-
-# add_output
-#       Set an additional output format. Files with this format
-#       will be generated along with the XML files.
-#       Currently, the available additional outputs are json and
-#       ext_json. At most one add_output can be set.
-#
-# add_output json;
-
-
 # pid_file
 #
 #	filename where DSC should store its process-id
@@ -127,3 +117,15 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #	packets with these VLAN IDs will be analyzed by DSC.
 #
 #match_vlan 100 200;
+
+# output_format
+#
+#   Specify the output format, can be give multiple times to output in more then
+#   one format. Default output format is XML.
+#
+#   Available formats are:
+#   - XML
+#   - JSON
+#
+#output_format XML
+#output_format JSON

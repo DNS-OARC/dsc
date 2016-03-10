@@ -1,6 +1,3 @@
-#ifndef __dsc_pcap_layers_h
-#define __dsc_pcap_layers_h
-
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/ip6.h>
@@ -14,6 +11,9 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
+
+#ifndef __dsc_pcap_layers_h
+#define __dsc_pcap_layers_h
 
 typedef int l7_callback(const u_char *, int, void *);
 
