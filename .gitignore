@@ -17,3 +17,4 @@ collector/TmfBase/Hapy/tests/Makefile
 collector/dsc/Makefile
 collector/dsc/dsc
 autom4te.cache
+Makefile.old

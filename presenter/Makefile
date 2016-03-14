@@ -1,7 +1,7 @@
 INSTALLDIR=/usr/local/dsc
 MKDIRS=data cache etc var var/log
 
-all clean:
+all:
 	(cd cron; $(MAKE) $@)
 	(cd extractor; $(MAKE) $@)
 	(cd grapher; $(MAKE) $@)
@@ -19,3 +19,5 @@ install:
 	(cd extractor; $(MAKE) $@)
 	(cd grapher; $(MAKE) $@)
 
+clean:
+	(cd perllib; test -f Makefile && $(MAKE) $@ || true)
