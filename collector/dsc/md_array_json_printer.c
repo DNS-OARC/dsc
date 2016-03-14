@@ -84,6 +84,8 @@ d1_begin(void *pr_data, char *l)
 
     fprintf(fp, "    {\n");
     fprintf(fp, "      \"%s\": \"%s\",\n", d1_type_s, l);
+    if ( e )
+        fprintf(fp, "      \"base64\": true,\n");
     fprintf(fp, "      \"%s\": [", d2_type_s);
 
     if (e)
@@ -110,7 +112,10 @@ print_element(void *pr_data, char *l, int val)
         element_comma = 1;
     }
 
-    fprintf(fp, "        { \"val\": \"%s\", \"count\": %d }", l, val);
+    fprintf(fp, "        { \"val\": \"%s\"", l);
+    if ( e )
+        fprintf(fp, ", \"base64\": true");
+    fprintf(fp, ", \"count\": %d }", val);
 
     if (e)
 	xfree(e);
@@ -140,7 +145,10 @@ finish_data(void *pr_data)
 {
     FILE *fp = pr_data;
 
-    fprintf(fp, "\n  ]\n");
+    if ( data_comma )
+        fprintf(fp, "\n");
+
+    fprintf(fp, "  ]\n");
 }
 
 md_array_printer json_printer = {
