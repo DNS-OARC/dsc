@@ -16,3 +16,4 @@ collector/TmfBase/Hapy/src/include/Hapy/ac-config.h
 collector/TmfBase/Hapy/tests/Makefile
 collector/dsc/Makefile
 collector/dsc/dsc
+autom4te.cache

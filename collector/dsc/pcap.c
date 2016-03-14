@@ -303,7 +303,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
 	 * If one doesn't remember we're past the then,
 	 * one loops forever getting more msgbufs rather than filling
 	 * in the contents of THIS message.
-	 * 
+	 *
 	 * We need to later reset that mask when we process the message
 	 * (method: tcpstate->dnslen_bytes_seen_mask = 0).
 	 */
@@ -909,11 +909,8 @@ pcap_set_match_vlan(int vlan)
 
 /* ========== PCAP_STAT INDEXER ========== */
 
-#include "md_array.h"
-
 int pcap_ifname_iterator(char **);
 int pcap_stat_iterator(char **);
-extern md_array_printer xml_printer;
 
 static indexer_t indexers[] = {
     {"ifname", NULL, pcap_ifname_iterator, NULL},
@@ -956,7 +953,7 @@ pcap_stat_iterator(char **label)
 }
 
 void
-pcap_report(FILE * fp)
+pcap_report(FILE * fp, md_array_printer * printer)
 {
     int i;
     md_array *theArray = acalloc(1, sizeof(*theArray));
@@ -976,5 +973,5 @@ pcap_report(FILE * fp)
 	theArray->array[i].array[1] = I->ps1.ps_recv - I->ps0.ps_recv;
 	theArray->array[i].array[2] = I->ps1.ps_drop - I->ps0.ps_drop;
     }
-    md_array_print(theArray, &xml_printer, fp);
+    md_array_print(theArray, printer, fp);
 }

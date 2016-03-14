@@ -53,6 +53,10 @@ extern void country_indexer_init(void);
 extern void ParseConfig(const char *);
 extern uint64_t minfree_bytes;
 extern int n_pcap_offline;
+extern md_array_printer xml_printer;
+extern md_array_printer json_printer;
+extern int output_format_xml;
+extern int output_format_json;
 
 void
 daemonize(void)
@@ -134,7 +138,7 @@ usage(void)
 }
 
 static int
-dump_reports(void)
+dump_report(md_array_printer * printer)
 {
     int fd;
     FILE *fp;
@@ -142,13 +146,13 @@ dump_reports(void)
     char tname[128];
 
     if (disk_is_full()) {
-	syslog(LOG_NOTICE, "%s", "Not enough free disk space to write XML files");
+	syslog(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
 	return 1;
     }
 #if HAVE_LIBNCAP
-    snprintf(fname, 128, "%d.dscdata.xml", Ncap_finish_time());
+    snprintf(fname, 128, "%d.dscdata.%s", Ncap_finish_time(), printer->extension);
 #else
-    snprintf(fname, 128, "%d.dscdata.xml", Pcap_finish_time());
+    snprintf(fname, 128, "%d.dscdata.%s", Pcap_finish_time(), printer->extension);
 #endif
     snprintf(tname, 128, "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
@@ -164,11 +168,14 @@ dump_reports(void)
     }
     if (debug_flag)
 	fprintf(stderr, "writing to %s\n", tname);
-    fprintf(fp, "<dscdata>\n");
+
+    fputs(printer->start_file, fp);
+
     /* amalloc_report(); */
-    pcap_report(fp);
-    dns_message_report(fp);
-    fprintf(fp, "</dscdata>\n");
+    pcap_report(fp, printer);
+    dns_message_report(fp, printer);
+
+    fputs(printer->end_file, fp);
 
     /*
      * XXX need chmod because files are written as root, but may be processed
@@ -178,7 +185,23 @@ dump_reports(void)
     fclose(fp);
     if (debug_flag)
 	fprintf(stderr, "renaming to %s\n", fname);
+
     rename(tname, fname);
+    return 0;
+}
+
+static int
+dump_reports(void)
+{
+    int ret;
+
+    if ( output_format_xml && (ret = dump_report(&xml_printer)) ) {
+        return ret;
+    }
+    if ( output_format_json && (ret = dump_report(&json_printer)) ) {
+        return ret;
+    }
+
     return 0;
 }
 
@@ -223,6 +246,9 @@ main(int argc, char *argv[])
     country_indexer_init();
 #endif
     cip_net_indexer_init();
+    if ( !output_format_xml && !output_format_json ) {
+        output_format_xml = 1;
+    }
 
     if (!nodaemon_flag)
 	daemonize();

@@ -15,6 +15,8 @@ void Ncap_init(const char *device, int promisc);
 #endif
 void Pcap_init(const char *device, int promisc);
 uint64_t minfree_bytes = 0;
+int output_format_xml = 0;
+int output_format_json = 0;
 
 int
 open_interface(const char *interface)
@@ -116,4 +118,22 @@ set_minfree_bytes(const char *s)
     syslog(LOG_INFO, "minfree_bytes %s", s);
     minfree_bytes = strtoull(s, NULL, 10);
     return 1;
+}
+
+int
+set_output_format(const char *output_format)
+{
+    syslog(LOG_INFO, "output_format %s", output_format);
+
+    if ( !strcmp(output_format, "XML") ) {
+        output_format_xml = 1;
+        return 1;
+    }
+    else if ( !strcmp(output_format, "JSON") ) {
+        output_format_json = 1;
+        return 1;
+    }
+
+    syslog(LOG_ERR, "unknown output format '%s'", output_format);
+    return 0;
 }

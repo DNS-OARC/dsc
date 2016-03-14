@@ -1,8 +1,6 @@
 #ifndef __dsc_md_array_h
 #define __dsc_md_array_h
 
-
-
 typedef struct _md_array md_array;
 typedef struct _md_array_printer md_array_printer;
 typedef struct _md_array_list md_array_list;
@@ -69,6 +67,10 @@ struct _md_array_printer
     void (*d1_begin) (void *, char *);
     void (*d1_end) (void *, char *);
     void (*print_element) (void *, char *label, int);
+    const char * format;
+    const char * start_file;
+    const char * end_file;
+    const char * extension;
 };
 
 struct _md_array_list
