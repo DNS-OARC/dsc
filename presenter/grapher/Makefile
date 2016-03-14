@@ -28,6 +28,3 @@ install:
 	@test -d ${INSTALLDIR}/share/ || mkdir ${INSTALLDIR}/share/
 	@test -d ${INSTALLDIR}/share/html || mkdir ${INSTALLDIR}/share/html/
 	install -m 644 ${SHAREHTMLFILES} ${INSTALLDIR}/share/html/
-
-clean:
-	
