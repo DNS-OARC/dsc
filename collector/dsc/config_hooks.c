@@ -8,6 +8,7 @@
 #include "xmalloc.h"
 #include "dns_message.h"
 #include "syslog_debug.h"
+#include "hashtbl.h"
 
 int promisc_flag;
 #if HAVE_LIBNCAP
@@ -17,6 +18,8 @@ void Pcap_init(const char *device, int promisc);
 uint64_t minfree_bytes = 0;
 int output_format_xml = 0;
 int output_format_json = 0;
+#define MAX_HASH_SIZE 512
+static hashtbl * dataset_hash = NULL;
 
 int
 open_interface(const char *interface)
@@ -72,14 +75,49 @@ set_pid_file(const char *s)
     return 1;
 }
 
+static unsigned int
+dataset_hashfunc(const void *key)
+{
+    return hashendian(key, strlen(key), 0);
+}
+
+static int
+dataset_cmpfunc(const void *a, const void *b)
+{
+    return strcasecmp(a, b);
+}
 int
 add_dataset(const char *name, const char *layer_ignored,
     const char *firstname, const char *firstindexer,
     const char *secondname, const char *secondindexer, const char *filtername, dataset_opt opts)
 {
+    char * dup;
+
+    if ( !dataset_hash ) {
+        if ( !(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, afree, afree)) ) {
+            syslog(LOG_ERR, "unable to create dataset %s due to internal error", name);
+            return 0;
+        }
+    }
+
+    if ( hash_find(name, dataset_hash) ) {
+        syslog(LOG_ERR, "unable to create dataset %s: already exists", name);
+        return 0;
+    }
+
+    if ( !(dup = xstrdup(name)) ) {
+        syslog(LOG_ERR, "unable to create dataset %s due to internal error", name);
+        return 0;
+    }
+
+    if ( hash_add(dup, dup, dataset_hash) ) {
+        afree(dup);
+        syslog(LOG_ERR, "unable to create dataset %s due to internal error", name);
+        return 0;
+    }
+
     syslog(LOG_INFO, "creating dataset %s", name);
     return dns_message_add_array(name, firstname, firstindexer, secondname, secondindexer, filtername, opts);
-    return 0;
 }
 
 int
