@@ -66,6 +66,7 @@ GENERATED = \
     config.log \
     config.status \
     Makefile \
+    test/Makefile \
     -rf autom4te.cache
 
 LIBHAPY=$(HAPY)/src/.libs/libHapy.a
@@ -89,11 +90,14 @@ install: $(PROG)
 clean:
 	rm -f $(OBJS)
 	(cd $(HAPY); test -s Makefile && $(MAKE) clean || true)
+	(cd test; $(MAKE) clean)
 
 distclean: clean
 	rm -f $(PROG) $(GENERATED)
 	(cd $(HAPY); test -s Makefile && $(MAKE) distclean || true)
 
+check:
+	(cd test; $(MAKE) check)
 
 ParseConfig.o: ParseConfig.cc $(LIBHAPY)
 	$(CXX) -c -o $@ ${MYCPPFLAGS} ParseConfig.cc
@@ -110,8 +114,6 @@ $(HAPY)/Makefile:
 export:
 	CVSROOT=`cat CVS/Root`; cd /tmp; cvs -d $$CVSROOT export -r HEAD -d dsc-`date +%Y%m%d` dsc
 
-configure: configure.scan
-	autoconf configure.scan > _$@
-	autoheader configure.scan
-	mv _$@ $@
-	chmod 755 $@
+configure: configure.ac config.h.in
+	autoconf
+	autoheader

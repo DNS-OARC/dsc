@@ -79,5 +79,5 @@ AC_CHECK_FUNCS([ \
     statvfs \
 ])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile test/Makefile])
 AC_OUTPUT

@@ -2,6 +2,9 @@ all:
 	(cd dsc; test -s Makefile || ./configure ; $(MAKE) $@)
 	(cd cron; $(MAKE) $@)
 
+check:
+	(cd dsc; $(MAKE) $@)
+
 install: all
 	(cd dsc; $(MAKE) $@)
 	(cd cron; $(MAKE) $@)
