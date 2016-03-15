@@ -1,0 +1,339 @@
+[
+{
+  "name": "pcap_stats",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "ifname", "pcap_stat" ],
+  "data": [
+    {
+      "ifname": "Li8xNDU4MDQ0NjU3LnBjYXA=",
+      "base64": true,
+      "pcap_stat": [
+        { "val": "pkts_captured", "count": 8 }
+      ]
+    }
+  ]
+},
+{
+  "name": "direction_vs_ipproto",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Direction", "IPProto" ],
+  "data": [
+    {
+      "Direction": "sent",
+      "IPProto": []
+    },
+    {
+      "Direction": "recv",
+      "IPProto": []
+    },
+    {
+      "Direction": "else",
+      "IPProto": [
+        { "val": "udp", "count": 8 }
+      ]
+    }
+  ]
+},
+{
+  "name": "client_port_range",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "PortRange" ],
+  "data": [
+    {
+      "All": "ALL",
+      "PortRange": [
+        { "val": "43008-44031", "count": 1 },
+        { "val": "56320-57343", "count": 1 },
+        { "val": "57344-58367", "count": 1 },
+        { "val": "58368-59391", "count": 1 }
+      ]
+    }
+  ]
+},
+{
+  "name": "transport_vs_qtype",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Transport", "Qtype" ],
+  "data": [
+    {
+      "Transport": "udp",
+      "Qtype": [
+        { "val": "1", "count": 2 },
+        { "val": "12", "count": 2 }
+      ]
+    },
+    {
+      "Transport": "tcp",
+      "Qtype": []
+    }
+  ]
+},
+{
+  "name": "ipv6_rsn_abusers",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "ClientAddr" ],
+  "data": [
+  ]
+},
+{
+  "name": "idn_vs_tld",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "TLD" ],
+  "data": [
+  ]
+},
+{
+  "name": "rd_bit",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "RD" ],
+  "data": [
+    {
+      "All": "ALL",
+      "RD": [
+        { "val": "set", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "do_bit",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "D0" ],
+  "data": [
+    {
+      "All": "ALL",
+      "D0": [
+        { "val": "clr", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "edns_bufsiz",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "EDNSBufSiz" ],
+  "data": [
+    {
+      "All": "ALL",
+      "EDNSBufSiz": [
+        { "val": "None", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "edns_version",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "EDNSVersion" ],
+  "data": [
+    {
+      "All": "ALL",
+      "EDNSVersion": [
+        { "val": "none", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "idn_qname",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "IDNQname" ],
+  "data": [
+    {
+      "All": "ALL",
+      "IDNQname": [
+        { "val": "normal", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "chaos_types_and_names",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Qtype", "Qname" ],
+  "data": [
+  ]
+},
+{
+  "name": "client_addr_vs_rcode",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Rcode", "ClientAddr" ],
+  "data": [
+    {
+      "Rcode": "0",
+      "ClientAddr": [
+        { "val": "172.17.0.16", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "client_subnet2",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Class", "ClientSubnet" ],
+  "data": [
+    {
+      "Class": "ok",
+      "ClientSubnet": [
+        { "val": "172.17.0.0", "count": 4 }
+      ]
+    },
+    {
+      "Class": "non-auth-tld",
+      "ClientSubnet": []
+    }
+  ]
+},
+{
+  "name": "certain_qnames_vs_qtype",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "CertainQnames", "Qtype" ],
+  "data": [
+    {
+      "CertainQnames": "localhost",
+      "Qtype": []
+    },
+    {
+      "CertainQnames": "X.root-servers.net",
+      "Qtype": []
+    },
+    {
+      "CertainQnames": "else",
+      "Qtype": [
+        { "val": "1", "count": 2 },
+        { "val": "12", "count": 2 }
+      ]
+    }
+  ]
+},
+{
+  "name": "qtype_vs_tld",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Qtype", "TLD" ],
+  "data": [
+    {
+      "Qtype": "1",
+      "TLD": [
+        { "val": "com", "count": 1 },
+        { "val": "se", "count": 1 }
+      ]
+    },
+    {
+      "Qtype": "12",
+      "TLD": [
+        { "val": "arpa", "count": 2 }
+      ]
+    }
+  ]
+},
+{
+  "name": "qtype_vs_qnamelen",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Qtype", "QnameLen" ],
+  "data": [
+    {
+      "Qtype": "1",
+      "QnameLen": [
+        { "val": "13", "count": 1 },
+        { "val": "14", "count": 1 }
+      ]
+    },
+    {
+      "Qtype": "12",
+      "QnameLen": [
+        { "val": "27", "count": 2 }
+      ]
+    }
+  ]
+},
+{
+  "name": "client_subnet",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "ClientSubnet" ],
+  "data": [
+    {
+      "All": "ALL",
+      "ClientSubnet": [
+        { "val": "172.17.0.0", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "rcode_vs_replylen",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Rcode", "ReplyLen" ],
+  "data": [
+    {
+      "Rcode": "0",
+      "ReplyLen": [
+        { "val": "142", "count": 2 },
+        { "val": "47", "count": 1 },
+        { "val": "48", "count": 1 }
+      ]
+    }
+  ]
+},
+{
+  "name": "opcode",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Opcode" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Opcode": [
+        { "val": "0", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "rcode",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Rcode" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Rcode": [
+        { "val": "0", "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "qtype",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Qtype" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Qtype": [
+        { "val": "1", "count": 2 },
+        { "val": "12", "count": 2 }
+      ]
+    }
+  ]
+}
+]

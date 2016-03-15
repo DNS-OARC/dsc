@@ -6,4 +6,4 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libpcap-dev libproc-pid-file-perl autoconf automake libtool
 install: ( cd collector/dsc && autoconf )
-script: ( cd collector && make )
+script: ( cd collector && make all check )

@@ -1,0 +1,9 @@
+check:
+	../dsc ./1458044657.conf
+	while ! test -f 1458044657.dscdata.json; do sleep 1; done
+	diff 1458044657.dscdata.json 1458044657.json_gold
+	while ! test -f 1458044657.dscdata.xml; do sleep 1; done
+	diff 1458044657.dscdata.xml 1458044657.xml_gold
+
+clean:
+	rm -f *.xml *.json *.ok
