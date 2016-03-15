@@ -942,10 +942,12 @@ The configuration file currently understands the following directives:
 
 \item[interface]
 
-	The interface name to sniff packets from.   You may specify multiple
-	interfaces.
+	The interface name to sniff packets from or a pcap file to
+	read packets from.   You may specify multiple interfaces.
 
-	Example: {\tt interface fxp0;\/}
+	Example:
+	{\tt interface fxp0;\/}
+	{\tt interface /path/to/dump.pcap;\/}
 
 \item[bpf\_vlan\_tag\_byte\_order]
 

@@ -45,10 +45,11 @@ pid_file "/var/run/dsc.pid";
 
 # interface
 #
-# 	specifies a network interface to sniff packets from.
-#	can specify more than one.
+#	specifies a network interface to sniff packets from or a pcap
+#	file to read packets from, can specify more than one.
 #
 interface fxp0;
+#interface /path/to/dump.pcap
 
 # qname_filter
 #
