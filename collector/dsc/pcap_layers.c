@@ -228,7 +228,18 @@ handle_ipv4_fragment(const struct ip *ip, int len, void *userdata)
     nf = l->frags;
     while ((f = nf)) {
 	nf = f->next;
-	memcpy(newbuf + f->offset, f->buf, f->len);
+	if (s >= f->offset + f->len) {
+	    /*
+	     * buffer overflow protection.  When s was calculated above,
+	     * the for loop breaks upon no more fragments.  But there
+	     * could be multiple fragments with more=0.  So here we make
+	     * sure the memcpy doesn't exceed the size of newbuf.
+	     */
+#if DEBUG
+	    fprintf(stderr, "reassemble memcpy (%p, %p, %u, more=%u\n", newbuf + f->offset, f->buf, f->len, f->more);
+#endif
+	    memcpy(newbuf + f->offset, f->buf, f->len);
+	}
 	free(f->buf);
 	free(f);
     }
