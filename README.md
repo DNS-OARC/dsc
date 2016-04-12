@@ -1,14 +1,47 @@
-# dsc
+# DNS Statistics Collector
 
-Welcome to the DSC source code repository.
+DNS Statistics Collector (DSC) is a tool used for collecting and exploring
+statistics from busy DNS servers.  It uses a distributed architecture with
+collectors running on or near nameservers sending their data to one or more
+central presenters for display and archiving.  Collectors use pcap to sniff
+network traffic.  They transmit aggregated data to the presenter as XML data.
 
-DSC - DNS Stats Collector is a tool used for collecting and exploring statistics from busy DNS servers. It uses a distributed architecture with collectors running on or near nameservers sending their data to one or more central presenters for display and archiving. Collectors use pcap to sniff network traffic. They transmit aggregated data to the
-presenter as XML data.  More information about DSC may be found here:
+More information about DSC may be found here:
+- https://www.dns-oarc.net/tools/dsc
+- https://www.dns-oarc.net/oarc/data/dsc
 
-https://www.dns-oarc.net/tools/dsc
+Issues should be reported here:
+- https://github.com/DNS-OARC/dsc/issues
 
-Plus there's a FAQ:
+Mailinglist:
+- https://lists.dns-oarc.net/mailman/listinfo/dsc
 
-https://www.dns-oarc.net/oarc/data/dsc
+# Install
 
-And of course mailing lists to join development discussions, which are linked from that page.
+Following build tools are needed, example for Debian/Ubuntu.
+
+```
+sudo apt-get install build-essential automake autoconf
+```
+
+Following dependencies are needed, example for Debian/Ubuntu.
+
+```
+sudo apt-get install libpcap-dev libproc-pid-file-perl
+```
+
+If you are installing from the GitHub repository you need to initialize the
+submodule first and generate configure.
+
+```
+git submodule update --init
+./autogen.sh
+```
+
+Now you can compile with optinal options and install.
+
+```
+./configure [options ... ]
+make
+make install
+```
