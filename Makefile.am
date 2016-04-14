@@ -5,6 +5,6 @@ SUBDIRS = src cron
 
 dist_doc_DATA = README.md CHANGES LICENSE
 
-EXTRA_DIST = doc ports
+EXTRA_DIST = doc ports autogen.sh
 
 test: check

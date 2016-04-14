@@ -11,7 +11,7 @@ AM_CPPFLAGS = -I$(srcdir) \
     -Wall \
     -DUSE_IPV6=1
 
-sysconf_DATA = dsc.conf.sample
+dist_sysconf_DATA = dsc.conf.sample
 
 bin_PROGRAMS = dsc
 dsc_SOURCES = base64.c \
@@ -105,7 +105,6 @@ dist_dsc_SOURCES = base64.h \
 dsc_LDADD = $(srcdir)/TmfBase/Hapy/src/.libs/libHapy.a
 
 EXTRA_DIST = TmfBase \
-    dsc.conf.sample \
     dsc.sh
 
 dist-hook:
