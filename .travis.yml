@@ -6,3 +6,13 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libpcap-dev libproc-pid-file-perl autoconf automake
 install: ./autogen.sh
+script:
+  - ./configure
+  - make
+  - make test
+  - make dist
+  - tar zxvf *.tar.gz
+  - cd dsc-[0-9]*
+  - ./configure
+  - make
+  - make test
