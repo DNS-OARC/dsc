@@ -85,6 +85,25 @@ AC_FUNC_STAT
 AC_CHECK_FUNCS([dup2 gettimeofday memset regcomp select strcasecmp strchr])
 AC_CHECK_FUNCS([strdup strerror strrchr strspn strstr strtoull statvfs])
 
+# pid file
+AC_ARG_WITH(pid-file,
+    [AS_HELP_STRING([--with-pid-file=FILE],
+        [write pid to FILE [/run/dsc.pid]])],
+    [],
+    [with_pid_file=/run/dsc.pid])
+
+AC_SUBST([DSC_PID_FILE], [$with_pid_file])
+
+# data dir
+AC_ARG_WITH(data-dir,
+    [AS_HELP_STRING([--with-data-dir=DIR],
+        [use DIR for DSC data [LOCALSTATEDIR/lib/dsc]])],
+    [],
+    [with_data_dir=${localstatedir}/lib/dsc])
+
+AC_SUBST([DSC_DATA_DIR], [$with_data_dir])
+
+# Generate
 AC_CONFIG_FILES([
     Makefile
     src/Makefile

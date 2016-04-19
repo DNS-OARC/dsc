@@ -1,4 +1,5 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
+CLEANFILES = dsc.conf.sample
 
 SUBDIRS = test
 
@@ -7,11 +8,16 @@ AM_CFLAGS = -I$(srcdir) \
     -DUSE_IPV6=1
 
 AM_CPPFLAGS = -I$(srcdir) \
+    -ITmfBase/Hapy/src/include \
     -I$(srcdir)/TmfBase/Hapy/src/include \
     -Wall \
     -DUSE_IPV6=1
 
-dist_sysconf_DATA = dsc.conf.sample
+EXTRA_DIST = TmfBase \
+    dsc.sh \
+    dsc.conf.sample.in
+
+sysconf_DATA = dsc.conf.sample
 
 bin_PROGRAMS = dsc
 dsc_SOURCES = base64.c \
@@ -102,19 +108,21 @@ dist_dsc_SOURCES = base64.h \
     xmalloc.h \
     pcap_layers/byteorder.h \
     pcap_layers/pcap_layers.h
-dsc_LDADD = $(srcdir)/TmfBase/Hapy/src/.libs/libHapy.a
+dsc_LDADD = TmfBase/Hapy/src/.libs/libHapy.a
 
-EXTRA_DIST = TmfBase \
-    dsc.sh
+dsc.conf.sample: dsc.conf.sample.in Makefile
+	sed -e 's,[@]DSC_PID_FILE[@],$(DSC_PID_FILE),g' \
+	    -e 's,[@]DSC_DATA_DIR[@],$(DSC_DATA_DIR),g' \
+	    < $(srcdir)/dsc.conf.sample.in > dsc.conf.sample
 
 dist-hook:
 	cd $(distdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) distclean
 
-$(srcdir)/TmfBase/Hapy/src/.libs/libHapy.a:
-	cd $(srcdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) all
+TmfBase/Hapy/src/.libs/libHapy.a:
+	cd TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) all
 
 clean-local:
-	cd $(srcdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) clean
+	cd TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) clean
 
 maintainer-clean-local:
-	cd $(srcdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) maintainer-clean
+	cd TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) maintainer-clean

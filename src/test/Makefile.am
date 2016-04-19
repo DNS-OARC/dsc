@@ -1,7 +1,7 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 
-CLEANFILES = $(srcdir)/1458044657.dscdata.json \
-    $(srcdir)/1458044657.dscdata.xml
+CLEANFILES = 1458044657.dscdata.json \
+    1458044657.dscdata.xml
 
 TESTS = test1.sh
 

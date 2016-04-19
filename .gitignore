@@ -12,6 +12,7 @@ src/TmfBase/Hapy/_configs.sed
 src/TmfBase/Hapy/libtool
 src/TmfBase/Hapy/src/include/Hapy/ac-config.h
 src/dsc
+src/dsc.conf.sample
 autom4te.cache
 Makefile.old
 aclocal.m4
