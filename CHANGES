@@ -1,3 +1,115 @@
+2016-01-11 Duane Wessels
+
+    added dfprintf() macro to improve code readability and avoid
+    multi-line if (debug_lvl) fprintf(...) statements.
+
+2016-01-11 Duane Wessels
+
+    Commenting out ancount and nscount to silence compiler warnings
+    about unused variables.
+
+2016-01-11 Duane Wessels
+
+    Patch from John Heidemann relating to TCP reassembly
+    - fix for multiple DNS messages per TCP connection that span
+      multiple segments
+    - some editorial code changes (== to >=)
+    - additional debugging statements
+
+2016-01-11 Duane Wessels
+
+    Minor fix: debugging statement wasn't protected with debug_flag
+    check. (thanks John H).
+
+2015-12-23 Duane Wessels
+
+    add prototype for dns_message_handle()
+
+2015-12-23 Duane Wessels
+
+    Experimental feature to drop "received responses" and "sent queries"
+    since DSC is generally used to monitor authoritative servers that,
+    under normal operation, never receive responses nor send queries.
+    Currently protected with #ifdefs.
+
+2015-12-15 Duane Wessels
+
+    Oops, forgot to set dns_message->server_ip_addr for new server_addr
+    indexer
+
+2015-11-23 Duane Wessels
+
+    removing one level of the "dsc/dsc" top directory
+
+2015-11-11 aqadeer
+
+    In pcap.c pcap_setnonblock doesn't accept captured files anymore and
+    must need a device from where it could do live capture.  For offline
+    files to work, a simple check is added to by-pass this porblem.
+
+2015-11-05 Duane Wessels
+
+    Added a 'server' indexer.  This records the server (query destination)
+    IP address.
+
+2015-11-05 Duane Wessels
+
+    Renamed "client_ipv4" to "client_ip" because it supports v4 and v6
+
+2015-11-04 Duane Wessels
+
+    Update copy of pcap_layers.c from https://github.com/wessels/pcap_layers
+
+2015-11-04 Duane Wessels
+
+    avoid "void *" pointer arithmetic (Yoshitaka Aharen)
+
+2015-10-09 Duane Wessels
+
+    bugfix: handle receiving TCP dns length prefix out of order.
+
+    A user reported that when a TCP segment containing only the DNS message
+    length is received *after* the message it references (i.e., out-of-order),
+    then DSC goes into a 100% CPU loop.  Confirmed that the code doesn't work
+    correctly when dnslen comes out-of-order, but I wasn't able to easily
+    reproduce the 100% CPU bug.
+
+    The fix is to add a "dnslen_bytes_seen_mask" variable that tracks which
+    of the two dnslen bytes we've seen.  Once both bytes have been seen,
+    then we can proceed to reassembling the message buffer.
+
+2015-10-09 Duane Wessels
+
+    cosmetic: rename ipv4 to ip4 to be consistent with ip6
+
+2015-10-09 Duane Wessels
+
+    Regarding recent change to add pcap_layers library, forgot to add it
+    to Makefile.in (vs Makefile) before committing.
+
+2015-10-09 Duane Wessels
+
+    Integrated https://github.com/wessels/pcap_layers with DSC collector.
+    The DSC code now includes a copy of the pcap_layers library, which does
+    a better job of extracting the layers of a pcap packet.  In particular,
+    it does IP fragmentation reassembly, which is important for DSC and
+    RSSAC-002. At this time the DSC code still does TCP reassembly, however.
+
+    Removed USE_IPV6 ifdefs.  IPV6 support is now always compiled.
+
+2015-10-08 Duane Wessels
+
+    Removing "DMC *dns_message_callback" because there is only one that
+    would ever be used. The callback layer of indirection makes the code
+    a little confusing, and also this change is in preparation for bringing
+    in a third-party pcap layer handling library which will work slightly
+    differently.
+
+2015-10-08 Duane Wessels
+
+    The "ip_message" code has not been in use since a commit back in 2012.
+    But the code lingered, until now.
+
 2015-02-25 Duane Wessels
 
     User reported a concern with the way dsc-xml-extractor.pl called
@@ -117,7 +229,7 @@
 
     Also added a pseudo-dataset that reports on pcap packets captured
     and dropped.
-    
+
 
 2008-12-02 Duane Wessels
 
@@ -234,7 +346,7 @@
     script.
 
 2008-01-04 Ken Keys
-   
+
     Previously, a child was forked for each collection interval.
     Memory allocated for collected data was freed by simply exiting
     the child.  But this left no way to preserve any data across
