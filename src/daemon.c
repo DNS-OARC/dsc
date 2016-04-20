@@ -49,6 +49,7 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <signal.h>
 #if HAVE_STATVFS
 #if HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
@@ -87,6 +88,8 @@ extern md_array_printer json_printer;
 extern int output_format_xml;
 extern int output_format_json;
 
+void sigrecv(int);
+
 void
 daemonize(void)
 {
@@ -98,6 +101,10 @@ daemonize(void)
     }
     if (pid > 0)
         exit(0);
+    if (pid == 0) {
+        if (signal(SIGTERM,sigrecv) == SIG_IGN)
+            signal(SIGTERM, SIG_IGN);
+    }
     if (setsid() < 0)
         syslog(LOG_ERR, "setsid failed: %s", strerror(errno));
     closelog();
@@ -232,6 +239,13 @@ dump_reports(void)
     }
 
     return 0;
+}
+
+void sigrecv(int signum)
+{
+    syslog(LOG_INFO,"Received Signal %d. Dumping XML and exiting ....",signum);
+    dump_reports();
+    _exit(0);
 }
 
 int
