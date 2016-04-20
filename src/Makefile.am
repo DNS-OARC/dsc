@@ -17,7 +17,8 @@ EXTRA_DIST = TmfBase \
     dsc.sh \
     dsc.conf.sample.in
 
-sysconf_DATA = dsc.conf.sample
+etcdir = $(sysconfdir)/dsc
+etc_DATA = dsc.conf.sample
 
 bin_PROGRAMS = dsc
 dsc_SOURCES = base64.c \
