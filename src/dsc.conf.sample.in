@@ -47,9 +47,9 @@ pid_file "@DSC_PID_FILE@";
 #	specifies a network interface to sniff packets from or a pcap
 #	file to read packets from, can specify more than one.
 #
-#interface eth0
-interface fxp0;
-#interface /path/to/dump.pcap
+#interface eth0;
+#interface fxp0;
+#interface /path/to/dump.pcap;
 
 # qname_filter
 #
