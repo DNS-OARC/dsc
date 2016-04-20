@@ -54,6 +54,7 @@ extern "C" int open_interface(const char *);
 extern "C" int set_run_dir(const char *);
 extern "C" int set_minfree_bytes(const char *);
 extern "C" int set_pid_file(const char *);
+extern "C" int set_statistics_interval(const char *);
 extern "C" int add_dataset(const char *name, const char *layer,
 	const char *firstname, const char *firstindexer,
 	const char *secondname, const char *secondindexer,
@@ -87,6 +88,7 @@ Rule rInterface("Interface", 0);
 Rule rRunDir("RunDir", 0);
 Rule rMinfreeBytes("MinfreeBytes", 0);
 Rule rPidFile("PidFile", 0);
+Rule rStatisticsInterval("StatisticsInterval",0);
 Rule rLocalAddr("LocalAddr", 0);
 Rule rPacketFilterProg("PacketFilterProg", 0);
 Rule rDatasetOpt("DatasetOpt", 0);
@@ -155,6 +157,13 @@ interpret(const Pree &tree, int level)
 			return 0;
 		}
 	} else
+        if (tree.rid() == rStatisticsInterval.id()) {
+                assert(tree.count() > 1);
+                if (set_statistics_interval(remove_quotes(tree[1].image()).c_str()) != 1) {
+                        cerr << "interpret(( failures in statistics_interval" << endl;
+                        return 0;
+                }
+        } else
         if (tree.rid() == rLocalAddr.id()) {
 		assert(tree.count() > 1);
 		if (add_local_address(tree[1].image().c_str()) != 1) {
@@ -259,6 +268,7 @@ ParseConfig(const char *fn)
 	rRunDir = "run_dir" >>rQuotedToken >>";" ;
 	rMinfreeBytes = "minfree_bytes" >>rDecimalNumber >>";" ;
 	rPidFile = "pid_file" >>rQuotedToken >>";" ;
+	rStatisticsInterval = "statistics_interval" >>rDecimalNumber >> ";" ;
 	rLocalAddr = "local_address" >>rIPAddress >>";" ;
 	rPacketFilterProg = "bpf_program" >>rQuotedToken >>";" ;
 	rDatasetOpt = rBareToken >> "=" >> rDecimalNumber;
@@ -278,6 +288,7 @@ ParseConfig(const char *fn)
 		rRunDir |
 		rMinfreeBytes |
 		rPidFile |
+		rStatisticsInterval |
 		rLocalAddr |
 		rPacketFilterProg |
 		rDataset |
