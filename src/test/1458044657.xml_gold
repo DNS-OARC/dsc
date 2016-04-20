@@ -3,7 +3,7 @@
   <dimension number="1" type="ifname"/>
   <dimension number="2" type="pcap_stat"/>
   <data>
-    <ifname val="Li8xNDU4MDQ0NjU3LnBjYXA=" base64="1">
+    <ifname val="Li8xNDU4MDQ0NjU3LnBjYXAuZGlzdA==" base64="1">
       <pcap_stat val="pkts_captured" count="8"/>
     </ifname>
   </data>

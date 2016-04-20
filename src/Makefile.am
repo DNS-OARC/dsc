@@ -113,8 +113,8 @@ dsc_LDADD = TmfBase/Hapy/src/.libs/libHapy.a
 
 dsc.conf.sample: dsc.conf.sample.in Makefile
 	sed -e 's,[@]DSC_PID_FILE[@],$(DSC_PID_FILE),g' \
-	    -e 's,[@]DSC_DATA_DIR[@],$(DSC_DATA_DIR),g' \
-	    < $(srcdir)/dsc.conf.sample.in > dsc.conf.sample
+        -e 's,[@]DSC_DATA_DIR[@],$(DSC_DATA_DIR),g' \
+        < $(srcdir)/dsc.conf.sample.in > dsc.conf.sample
 
 dist-hook:
 	cd $(distdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) distclean
