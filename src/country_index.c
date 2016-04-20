@@ -49,6 +49,7 @@
 #include "md_array.h"
 #include "hashtbl.h"
 
+extern int debug_flag;
 static hashfunc country_hashfunc;
 static hashkeycmp country_cmpfunc;
 
@@ -56,8 +57,11 @@ static hashkeycmp country_cmpfunc;
 static hashtbl *theHash = NULL;
 static int next_idx = 0;
 static GeoIP *geoip;
+static GeoIP *geoip6;
 static char *ipstr;
-static char unknown[20] = "__";
+static char *unknown = "??";
+static char *unknown_v4 = "?4";
+static char *unknown_v6 = "?6";
 
 typedef struct
 {
@@ -72,14 +76,29 @@ country_get_from_message(dns_message * m)
     const char *cc;
 
     tm = m->tm;
-    inXaddr_ntop(&tm->src_ip_addr, ipstr, 128);
-    fprintf(stderr, "ipstring: %s\n", ipstr);
-    cc = GeoIP_country_code_by_addr(geoip, inXaddr_ntop(&tm->src_ip_addr, ipstr, 128)
-        );
-    if (cc == NULL) {
+    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, 80)) {
+        if (debug_flag)
+            fprintf(stderr, "country_index: Error converting IP address.\n");
+        return(unknown);
+    }
+    switch(tm->ip_version) {
+    case 4:
+        cc = GeoIP_country_code_by_addr(geoip,ipstr);
+        if (cc == NULL) {
+            cc = unknown_v4;
+        }
+        break;
+    case 6:
+        cc = GeoIP_country_code_by_addr_v6(geoip6,ipstr);
+        if (cc == NULL) {
+            cc = unknown_v6;
+        }
+        break;
+    default:
         cc = unknown;
     }
-    fprintf(stderr, "country code: %s\n", cc);
+    if (debug_flag)
+        fprintf(stderr, "country_index: country code: %s\n", cc);
     return (cc);
 }
 
@@ -158,8 +177,24 @@ country_cmpfunc(const void *a, const void *b)
 void
 country_indexer_init()
 {
-    geoip = GeoIP_new(GEOIP_STANDARD);
+    geoip = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_MEMORY_CACHE | GEOIP_CHECK_CACHE);
+    if (geoip == NULL) {
+        fprintf(stderr, "country_index: Error opening IPv4 Country DB. Make sure libgeoip's GeoIP.dat file is available.\n");
+        exit(1);
+    }
+    geoip6 = GeoIP_open_type(GEOIP_COUNTRY_EDITION_V6, GEOIP_MEMORY_CACHE | GEOIP_CHECK_CACHE);
+    if (geoip6 == NULL) {
+        fprintf(stderr, "country_index: Error opening IPv6 Country DB. Make sure libgeoip's GeoIPv6.dat file is available.\n");
+        exit(1);
+    }
     ipstr = malloc(80);
+    if (!ipstr) {
+        fprintf(stderr, "country_index: Error allocating memory.\n");
+        exit(1);
+    }
+    if (debug_flag)
+        fprintf(stderr, "country_index: Sucessfully initialized GeoIP.\n");
 }
 
 #endif
+
