@@ -177,12 +177,12 @@ country_cmpfunc(const void *a, const void *b)
 void
 country_indexer_init()
 {
-    geoip = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_MEMORY_CACHE | GEOIP_CHECK_CACHE);
+    geoip = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_MEMORY_CACHE);
     if (geoip == NULL) {
         fprintf(stderr, "country_index: Error opening IPv4 Country DB. Make sure libgeoip's GeoIP.dat file is available.\n");
         exit(1);
     }
-    geoip6 = GeoIP_open_type(GEOIP_COUNTRY_EDITION_V6, GEOIP_MEMORY_CACHE | GEOIP_CHECK_CACHE);
+    geoip6 = GeoIP_open_type(GEOIP_COUNTRY_EDITION_V6, GEOIP_MEMORY_CACHE);
     if (geoip6 == NULL) {
         fprintf(stderr, "country_index: Error opening IPv6 Country DB. Make sure libgeoip's GeoIPv6.dat file is available.\n");
         exit(1);
