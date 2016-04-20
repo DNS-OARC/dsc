@@ -167,6 +167,13 @@ queries_only_filter(const void *vp, const void *ctx)
 }
 
 static int
+nxdomains_only_filter(const void *vp, const void *ctx)
+{
+    const dns_message *m = vp;
+    return m->rcode == 3;
+}
+
+static int
 popular_qtypes_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
@@ -469,6 +476,7 @@ dns_message_init(void)
     filter_list **fl = &DNSFilters;
     fl = md_array_filter_list_append(fl, md_array_create_filter("queries-only", queries_only_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("replies-only", replies_only_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("nxdomains-only", nxdomains_only_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("idn-only", idn_qname_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
