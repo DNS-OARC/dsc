@@ -101,10 +101,6 @@ daemonize(void)
     }
     if (pid > 0)
         exit(0);
-    if (pid == 0) {
-        if (signal(SIGTERM,sigrecv) == SIG_IGN)
-            signal(SIGTERM, SIG_IGN);
-    }
     if (setsid() < 0)
         syslog(LOG_ERR, "setsid failed: %s", strerror(errno));
     closelog();
@@ -254,6 +250,7 @@ main(int argc, char *argv[])
     int x;
     int result;
     struct timeval break_start = { 0, 0 };
+    struct sigaction new_action, old_action;
 
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -305,6 +302,22 @@ main(int argc, char *argv[])
 
     do {
         useArena();                /* Initialize a memory arena for data collection. */
+
+        /* Catch SIGTERM to write a final XML file (unless SIGTERM
+           was already set to be ignored) */
+        new_action.sa_handler = sigrecv;
+        sigemptyset (&new_action.sa_mask);
+        new_action.sa_flags = 0;
+        sigaction (SIGTERM, NULL, &old_action);
+        if (old_action.sa_handler != SIG_IGN) {
+            syslog(LOG_INFO, "%s", "Installing signal handler for SIGTERM");
+            if (sigaction (SIGTERM, &new_action, NULL)) {
+                syslog(LOG_INFO, "%s", "Failed to install signal handler for SIGTERM");
+            };
+        } else {
+            syslog(LOG_INFO, "%s", "Not installing signal handler for SIGTERM as already set to 'ignore'");
+        }
+
         if (debug_flag && break_start.tv_sec > 0) {
             struct timeval now;
             gettimeofday(&now, NULL);
