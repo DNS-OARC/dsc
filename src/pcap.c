@@ -143,6 +143,7 @@ static int debug_count = 20;
 static struct timeval last_ts;
 static struct timeval start_ts;
 static struct timeval finish_ts;
+static struct timeval now_ts;
 #define MAX_VLAN_IDS 100
 static int n_vlan_ids = 0;
 static int vlan_ids[MAX_VLAN_IDS];
@@ -926,7 +927,12 @@ Pcap_start_time(void)
 int
 Pcap_finish_time(void)
 {
-    return (int) finish_ts.tv_sec;
+    gettimeofday(&now_ts, NULL);
+    if (now_ts.tv_sec < finish_ts.tv_sec) {
+       return (int) now_ts.tv_sec;
+    } else {
+       return (int) finish_ts.tv_sec;
+    }
 }
 
 void
