@@ -6,7 +6,7 @@
   "dimensions": [ "ifname", "pcap_stat" ],
   "data": [
     {
-      "ifname": "Li8xNDU4MDQ0NjU3LnBjYXA=",
+      "ifname": "Li8xNDU4MDQ0NjU3LnBjYXAuZGlzdA==",
       "base64": true,
       "pcap_stat": [
         { "val": "pkts_captured", "count": 8 }

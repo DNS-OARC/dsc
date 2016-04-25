@@ -6,7 +6,10 @@ collectors running on or near nameservers sending their data to one or more
 central presenters for display and archiving.  Collectors use pcap to sniff
 network traffic.  They transmit aggregated data to the presenter as XML data.
 
-More information about DSC may be found here:
+DNS Statistics Presenter can be found here:
+- https://github.com/DNS-OARC/dsp
+
+More information about DSC/DSP may be found here:
 - https://www.dns-oarc.net/tools/dsc
 - https://www.dns-oarc.net/oarc/data/dsc
 

@@ -8,11 +8,11 @@ before_install:
 install: ./autogen.sh
 script:
   - ./configure
-  - make
-  - make test
   - make dist
   - tar zxvf *.tar.gz
   - cd dsc-[0-9]*
-  - ./configure
+  - mkdir build
+  - cd build
+  - ../configure
   - make
   - make test

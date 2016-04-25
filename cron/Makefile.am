@@ -1,6 +1,7 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 
-dist_libexec_SCRIPTS = upload-x509.sh \
+uploaddir = $(libexecdir)/dsc
+dist_upload_SCRIPTS = upload-x509.sh \
     upload-rsync.sh \
     upload-ssh.sh \
     upload-prep.pl
