@@ -147,6 +147,8 @@ Ncap_init(const char *device, int promisc)
     }
 }
 
+extern int sig_while_processing;
+
 int
 Ncap_run(DMC * dns_callback)
 {
@@ -159,9 +161,13 @@ Ncap_run(DMC * dns_callback)
     TIMEVAL_TO_TIMESPEC(&tv, &start_ts);
     finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
     finish_ts.tv_nsec = 0;
-    while (last_ts.tv_sec < finish_ts.tv_sec) {
+    while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing) {
         NC->collect(NC, 1, handle_ncap, NULL);
     }
+
+    if (sig_while_processing)
+        finish_ts = last_ts;
+
     return result;
 }
 

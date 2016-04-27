@@ -49,22 +49,25 @@
 
 #include "dataset_opt.h"
 
-extern "C" int add_local_address(const char *);
-extern "C" int open_interface(const char *);
-extern "C" int set_run_dir(const char *);
-extern "C" int set_minfree_bytes(const char *);
-extern "C" int set_pid_file(const char *);
-extern "C" int add_dataset(const char *name, const char *layer,
-	const char *firstname, const char *firstindexer,
-	const char *secondname, const char *secondindexer,
-	const char *filtername, dataset_opt opts);
-extern "C" int set_bpf_vlan_tag_byte_order(const char *);
-extern "C" int set_bpf_program(const char *);
-extern "C" int set_match_vlan(const char *);
-extern "C" int add_qname_filter(const char *name, const char *re);
-extern "C" int set_output_format(const char *);
+extern "C" {
+int add_local_address(const char *);
+int open_interface(const char *);
+int set_run_dir(const char *);
+int set_minfree_bytes(const char *);
+int set_pid_file(const char *);
+int add_dataset(const char *name, const char *layer,
+    const char *firstname, const char *firstindexer,
+    const char *secondname, const char *secondindexer,
+    const char *filtername, dataset_opt opts);
+int set_bpf_vlan_tag_byte_order(const char *);
+int set_bpf_program(const char *);
+int set_match_vlan(const char *);
+int add_qname_filter(const char *name, const char *re);
+int set_output_format(const char *);
+void set_dump_reports_on_exit(void);
 
-extern "C" void ParseConfig(const char *);
+void ParseConfig(const char *);
+}
 
 using namespace Hapy;
 
@@ -95,6 +98,7 @@ Rule rBVTBO("BVTBO", 0);
 Rule rOutputFormat("OutputFormat", 0);
 Rule rMatchVlan("MatchVlan", 0);
 Rule rQnameFilter("QnameFilter", 0);
+Rule rDumpReportsOnExit("DumpReportsOnExit", 0);
 
 Rule rConfig;
 
@@ -220,6 +224,9 @@ interpret(const Pree &tree, int level)
 			return 0;
 		}
 	} else
+	if (tree.rid() == rDumpReportsOnExit.id()) {
+	    set_dump_reports_on_exit();
+	} else
         {
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (interpret(tree[i], level + 1) != 1) {
@@ -271,6 +278,7 @@ ParseConfig(const char *fn)
         rOutputFormat = "output_format" >>rOutputFormats >>";" ;
 	rMatchVlan = "match_vlan" >> +rDecimalNumber >>";" ;
 	rQnameFilter = "qname_filter" >>rBareToken >>rBareToken >>";" ;
+	rDumpReportsOnExit = "dump_reports_on_exit;";
 
 	// the whole config
 	rConfig = *(
@@ -284,7 +292,8 @@ ParseConfig(const char *fn)
 		rBVTBO |
         rOutputFormat |
 		rMatchVlan |
-		rQnameFilter
+		rQnameFilter |
+		rDumpReportsOnExit
 	) >> end_r;
 
 	// trimming - do not allow whitespace INSIDE these objects
