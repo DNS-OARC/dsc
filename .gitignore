@@ -13,6 +13,8 @@ src/TmfBase/Hapy/libtool
 src/TmfBase/Hapy/src/include/Hapy/ac-config.h
 src/dsc
 src/dsc.conf.sample
+src/dsc.1
+src/dsc.conf.5
 autom4te.cache
 Makefile.old
 aclocal.m4
