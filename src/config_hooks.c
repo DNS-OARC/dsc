@@ -56,6 +56,7 @@ int output_format_xml = 0;
 int output_format_json = 0;
 #define MAX_HASH_SIZE 512
 static hashtbl * dataset_hash = NULL;
+int dump_reports_on_exit = 0;
 
 int
 open_interface(const char *interface)
@@ -210,4 +211,12 @@ set_output_format(const char *output_format)
 
     syslog(LOG_ERR, "unknown output format '%s'", output_format);
     return 0;
+}
+
+void
+set_dump_reports_on_exit(void)
+{
+    syslog(LOG_INFO, "dump_reports_on_exit", "");
+
+    dump_reports_on_exit = 1;
 }

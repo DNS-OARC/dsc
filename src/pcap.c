@@ -843,6 +843,8 @@ Pcap_init(const char *device, int promisc)
     }
 }
 
+extern int sig_while_processing;
+
 int
 Pcap_run(void)
 {
@@ -868,14 +870,14 @@ Pcap_run(void)
                 finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
                 finish_ts.tv_usec = 0;
             }
-        } while (last_ts.tv_sec < finish_ts.tv_sec);
-        if (result <= 0)
+        } while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing);
+        if (result <= 0 || sig_while_processing)
             finish_ts = last_ts;        /* finish was cut short */
     } else {
         gettimeofday(&start_ts, NULL);
         finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
         finish_ts.tv_usec = 0;
-        while (last_ts.tv_sec < finish_ts.tv_sec) {
+        while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing) {
             fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
             if (NULL == R) {
                 gettimeofday(&last_ts, NULL);
@@ -902,6 +904,9 @@ Pcap_run(void)
             I->ps0 = I->ps1;
             pcap_stats(I->pcap, &I->ps1);
         }
+
+        if (sig_while_processing)
+            finish_ts = last_ts;
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
     return result;

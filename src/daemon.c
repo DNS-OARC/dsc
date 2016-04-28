@@ -60,6 +60,7 @@
 #if HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
 #endif
+#include <signal.h>
 
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -74,6 +75,7 @@ char *pid_file_name = NULL;
 int promisc_flag = 1;
 int debug_flag = 0;
 int nodaemon_flag = 0;
+int have_reports = 0;
 
 extern void cip_net_indexer_init(void);
 #if HAVE_LIBGEOIP
@@ -86,6 +88,7 @@ extern md_array_printer xml_printer;
 extern md_array_printer json_printer;
 extern int output_format_xml;
 extern int output_format_json;
+extern int dump_reports_on_exit;
 
 void
 daemonize(void)
@@ -234,12 +237,44 @@ dump_reports(void)
     return 0;
 }
 
+static void
+sig_ignore(int signum)
+{
+    if (debug_flag)
+        syslog(LOG_INFO, "Received signal %d, ignoring", signum);
+
+    return;
+}
+
+static void
+sig_exit(int signum)
+{
+    syslog(LOG_INFO, "Received signal %d, exiting", signum);
+
+    exit(0);
+}
+
+int sig_while_processing = 0;
+static void
+sig_exit_dumping(int signum)
+{
+    if (have_reports) {
+        syslog(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
+        sig_while_processing = signum;
+    }
+    else {
+        syslog(LOG_INFO, "Received signal %d, exiting", signum);
+        exit(0);
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
     int x;
     int result;
     struct timeval break_start = { 0, 0 };
+    struct sigaction action;
 
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -283,6 +318,46 @@ main(int argc, char *argv[])
         daemonize();
     write_pid_file();
 
+    /*
+     * Install signal handler for signals to ignore
+     */
+
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = sig_ignore;
+    sigfillset(&action.sa_mask);
+
+    if (sigaction(SIGHUP, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGHUP: %s", strerror(errno));
+    if (sigaction(SIGCHLD, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGCHLD: %s", strerror(errno));
+    if (sigaction(SIGPIPE, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGPIPE: %s", strerror(errno));
+    if (sigaction(SIGUSR1, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGUSR1: %s", strerror(errno));
+    if (sigaction(SIGUSR2, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGUSR2: %s", strerror(errno));
+
+    /*
+     * Do not ignore SIGINT if we are running in the foreground
+     */
+
+    if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
+
+    /*
+     * Install signal handler for signals to exit on
+     */
+
+    if (dump_reports_on_exit)
+        action.sa_handler = sig_exit_dumping;
+    else
+        action.sa_handler = sig_exit;
+
+    if (sigaction(SIGTERM, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
+    if (sigaction(SIGQUIT, &action, NULL))
+        syslog(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
+
     if (!debug_flag && 0 == n_pcap_offline) {
         syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
         sleep(60 - (time(NULL) % 60));
@@ -297,6 +372,10 @@ main(int argc, char *argv[])
             syslog(LOG_INFO, "inter-run processing delay: %ld ms",
                 (now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec));
         }
+
+        /* Indicate we might have reports to dump on exit */
+        have_reports = 1;
+
 #if HAVE_LIBNCAP
         result = Ncap_run();
 #else
@@ -304,10 +383,18 @@ main(int argc, char *argv[])
 #endif
         if (debug_flag)
             gettimeofday(&break_start, NULL);
+
         if (0 == fork()) {
             dump_reports();
             _exit(0);
         }
+
+        if (sig_while_processing) {
+            syslog(LOG_INFO, "Received signal %d before, exiting now", sig_while_processing);
+            exit(0);
+        }
+        have_reports = 0;
+
         /* Parent quickly frees and clears its copy of the data so it can
          * resume processing packets. */
         freeArena();
