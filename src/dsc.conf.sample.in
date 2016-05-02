@@ -75,6 +75,7 @@ dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype que
 dataset client_subnet2 dns Class:query_classification ClientSubnet:cip4_net queries-only max-cells=200;
 dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client replies-only max-cells=50;
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname chaos-class,queries-only;
+#dataset country_code dns All:null CountryCode:country queries-only;
 dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
 dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
 dataset edns_bufsiz dns All:null EDNSBufSiz:edns_bufsiz queries-only;
@@ -135,3 +136,11 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #   NOTE: Timing in the data files will be off!
 #
 #dump_reports_on_exit;
+
+# geoip
+#
+#   Following configuration is used for MaxMind GeoIP Legacy API
+#   if present and enabled during compilation.
+#
+#geoip_v4_dat "/usr/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE MMAP_CACHE;
+#geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";

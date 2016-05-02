@@ -34,6 +34,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <syslog.h>
+
 #ifndef __dsc_syslog_debug_h
 #define __dsc_syslog_debug_h
 

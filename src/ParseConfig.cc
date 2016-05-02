@@ -34,6 +34,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,6 +48,10 @@
 #include <Hapy/IoStream.h>
 
 #include <errno.h>
+
+#if HAVE_LIBGEOIP
+#include <GeoIP.h>
+#endif
 
 #include "dataset_opt.h"
 
@@ -65,6 +71,8 @@ int set_match_vlan(const char *);
 int add_qname_filter(const char *name, const char *re);
 int set_output_format(const char *);
 void set_dump_reports_on_exit(void);
+int set_geoip_v4_dat(const char * dat, int options);
+int set_geoip_v6_dat(const char * dat, int options);
 
 void ParseConfig(const char *);
 }
@@ -99,6 +107,8 @@ Rule rOutputFormat("OutputFormat", 0);
 Rule rMatchVlan("MatchVlan", 0);
 Rule rQnameFilter("QnameFilter", 0);
 Rule rDumpReportsOnExit("DumpReportsOnExit", 0);
+Rule rGeoIPv4Dat("GeoIPv4Dat", 0);
+Rule rGeoIPv6Dat("GeoIPv6Dat", 0);
 
 Rule rConfig;
 
@@ -227,6 +237,62 @@ interpret(const Pree &tree, int level)
 	if (tree.rid() == rDumpReportsOnExit.id()) {
 	    set_dump_reports_on_exit();
 	} else
+	if (tree.rid() == rGeoIPv4Dat.id()) {
+	    int options = 0;
+
+#if HAVE_LIBGEOIP
+		for(unsigned int i = 0; i<tree[2].count(); i++) {
+            if ( tree[2][i].image() == "STANDARD" ) {
+                options |= GEOIP_STANDARD;
+            }
+            else if ( tree[2][i].image() == "MEMORY_CACHE" ) {
+                options |= GEOIP_MEMORY_CACHE;
+            }
+            else if ( tree[2][i].image() == "CHECK_CACHE" ) {
+                options |= GEOIP_CHECK_CACHE;
+            }
+            else if ( tree[2][i].image() == "INDEX_CACHE" ) {
+                options |= GEOIP_INDEX_CACHE;
+            }
+            else if ( tree[2][i].image() == "MMAP_CACHE" ) {
+                options |= GEOIP_MMAP_CACHE;
+            }
+		}
+#endif
+
+		if (set_geoip_v4_dat(remove_quotes(tree[1].image()).c_str(), options) != 1) {
+			cerr << "interpret() failure in geoip_v4_dat" << endl;
+			return 0;
+		}
+	} else
+	if (tree.rid() == rGeoIPv6Dat.id()) {
+	    int options = 0;
+
+#if HAVE_LIBGEOIP
+		for(unsigned int i = 0; i<tree[2].count(); i++) {
+            if ( tree[2][i].image() == "STANDARD" ) {
+                options |= GEOIP_STANDARD;
+            }
+            else if ( tree[2][i].image() == "MEMORY_CACHE" ) {
+                options |= GEOIP_MEMORY_CACHE;
+            }
+            else if ( tree[2][i].image() == "CHECK_CACHE" ) {
+                options |= GEOIP_CHECK_CACHE;
+            }
+            else if ( tree[2][i].image() == "INDEX_CACHE" ) {
+                options |= GEOIP_INDEX_CACHE;
+            }
+            else if ( tree[2][i].image() == "MMAP_CACHE" ) {
+                options |= GEOIP_MMAP_CACHE;
+            }
+		}
+#endif
+
+		if (set_geoip_v6_dat(remove_quotes(tree[1].image()).c_str(), options) != 1) {
+			cerr << "interpret() failure in geoip_v6_dat" << endl;
+			return 0;
+		}
+	} else
         {
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (interpret(tree[i], level + 1) != 1) {
@@ -279,6 +345,8 @@ ParseConfig(const char *fn)
 	rMatchVlan = "match_vlan" >> +rDecimalNumber >>";" ;
 	rQnameFilter = "qname_filter" >>rBareToken >>rBareToken >>";" ;
 	rDumpReportsOnExit = "dump_reports_on_exit;";
+	rGeoIPv4Dat = "geoip_v4_dat" >> rQuotedToken >> *rBareToken >> ";";
+	rGeoIPv6Dat = "geoip_v6_dat" >> rQuotedToken >> *rBareToken >> ";";
 
 	// the whole config
 	rConfig = *(
@@ -293,7 +361,9 @@ ParseConfig(const char *fn)
         rOutputFormat |
 		rMatchVlan |
 		rQnameFilter |
-		rDumpReportsOnExit
+		rDumpReportsOnExit |
+		rGeoIPv4Dat |
+		rGeoIPv6Dat
 	) >> end_r;
 
 	// trimming - do not allow whitespace INSIDE these objects
@@ -321,6 +391,8 @@ ParseConfig(const char *fn)
 	rBVTBO.committed(true);
 	rOutputFormat.committed(true);
 	rMatchVlan.committed(true);
+	rGeoIPv4Dat.committed(true);
+	rGeoIPv6Dat.committed(true);
 
 	std::string config;
 	char c;
