@@ -1,5 +1,5 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
-CLEANFILES = dsc.conf.sample
+CLEANFILES = dsc.conf.sample dsc.1 dsc.conf.5
 
 SUBDIRS = test
 
@@ -15,7 +15,9 @@ AM_CPPFLAGS = -I$(srcdir) \
 
 EXTRA_DIST = TmfBase \
     dsc.sh \
-    dsc.conf.sample.in
+    dsc.conf.sample.in \
+    dsc.1.in \
+    dsc.conf.5.in
 
 etcdir = $(sysconfdir)/dsc
 etc_DATA = dsc.conf.sample
@@ -110,11 +112,27 @@ dist_dsc_SOURCES = base64.h \
     pcap_layers/byteorder.h \
     pcap_layers/pcap_layers.h
 dsc_LDADD = TmfBase/Hapy/src/.libs/libHapy.a
+man1_MANS = dsc.1
+man5_MANS = dsc.conf.5
 
 dsc.conf.sample: dsc.conf.sample.in Makefile
 	sed -e 's,[@]DSC_PID_FILE[@],$(DSC_PID_FILE),g' \
         -e 's,[@]DSC_DATA_DIR[@],$(DSC_DATA_DIR),g' \
         < $(srcdir)/dsc.conf.sample.in > dsc.conf.sample
+
+dsc.1: dsc.1.in Makefile
+	sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
+        -e 's,[@]PACKAGE_URL[@],$(PACKAGE_URL),g' \
+        -e 's,[@]PACKAGE_BUGREPORT[@],$(PACKAGE_BUGREPORT),g' \
+        -e 's,[@]etcdir[@],$(etcdir),g' \
+        < $(srcdir)/dsc.1.in > dsc.1
+
+dsc.conf.5: dsc.conf.5.in Makefile
+	sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
+        -e 's,[@]PACKAGE_URL[@],$(PACKAGE_URL),g' \
+        -e 's,[@]PACKAGE_BUGREPORT[@],$(PACKAGE_BUGREPORT),g' \
+        -e 's,[@]etcdir[@],$(etcdir),g' \
+        < $(srcdir)/dsc.conf.5.in > dsc.conf.5
 
 dist-hook:
 	cd $(distdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) distclean

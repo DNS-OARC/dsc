@@ -41,7 +41,7 @@ git submodule update --init
 ./autogen.sh
 ```
 
-Now you can compile with optinal options and install.
+Now you can compile with optional options and install.
 
 ```
 ./configure [options ... ]
