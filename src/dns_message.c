@@ -54,6 +54,7 @@
 #endif
 
 
+#include "config.h"
 #include "xmalloc.h"
 #include "dns_message.h"
 #include "null_index.h"
