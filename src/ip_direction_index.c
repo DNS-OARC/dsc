@@ -52,6 +52,7 @@
 #include "inX_addr.h"
 #include "dns_message.h"
 #include "md_array.h"
+#include "syslog_debug.h"
 
 #define LARGEST 2
 
@@ -95,7 +96,7 @@ ip_local_address(const char *presentation)
     if (NULL == n)
         return 0;
     if (inXaddr_pton(presentation, &n->addr) != 1) {
-        fprintf(stderr, "yucky IP address %s\n", presentation);
+        dfprintf(0, "yucky IP address %s", presentation);
         xfree(n);
         return 0;
     }

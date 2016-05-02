@@ -96,13 +96,13 @@ daemonize(void)
     int fd;
     pid_t pid;
     if ((pid = fork()) < 0) {
-        syslog(LOG_ERR, "fork failed: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "fork failed: %s", strerror(errno));
         exit(1);
     }
     if (pid > 0)
         exit(0);
     if (setsid() < 0)
-        syslog(LOG_ERR, "setsid failed: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "setsid failed: %s", strerror(errno));
     closelog();
 #ifdef TIOCNOTTY
     if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
@@ -112,7 +112,7 @@ daemonize(void)
 #endif
     fd = open("/dev/null", O_RDWR);
     if (fd < 0) {
-        syslog(LOG_ERR, "/dev/null: %s\n", strerror(errno));
+        dsyslogf(LOG_ERR, "/dev/null: %s\n", strerror(errno));
     } else {
         dup2(fd, 0);
         dup2(fd, 1);
@@ -128,11 +128,11 @@ write_pid_file(void)
     FILE *fp;
     if (NULL == pid_file_name)
         return;
-    syslog(LOG_INFO, "writing PID to %s", pid_file_name);
+    dsyslogf(LOG_INFO, "writing PID to %s", pid_file_name);
     fp = fopen(pid_file_name, "w");
     if (NULL == fp) {
         perror(pid_file_name);
-        syslog(LOG_ERR, "fopen: %s: %s", pid_file_name, strerror(errno));
+        dsyslogf(LOG_ERR, "fopen: %s: %s", pid_file_name, strerror(errno));
         return;
     }
     fprintf(fp, "%d\n", getpid());
@@ -178,7 +178,7 @@ dump_report(md_array_printer * printer)
     char tname[128];
 
     if (disk_is_full()) {
-        syslog(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
+        dsyslogf(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
         return 1;
     }
 #if HAVE_LIBNCAP
@@ -189,17 +189,16 @@ dump_report(md_array_printer * printer)
     snprintf(tname, 128, "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
-        syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+        dsyslogf(LOG_ERR, "%s: %s", tname, strerror(errno));
         return 1;
     }
     fp = fdopen(fd, "w");
     if (NULL == fp) {
-        syslog(LOG_ERR, "%s: %s", tname, strerror(errno));
+        dsyslogf(LOG_ERR, "%s: %s", tname, strerror(errno));
         close(fd);
         return 1;
     }
-    if (debug_flag)
-        fprintf(stderr, "writing to %s\n", tname);
+    dfprintf(0, "writing to %s", tname);
 
     fputs(printer->start_file, fp);
 
@@ -215,8 +214,7 @@ dump_report(md_array_printer * printer)
      */
     fchmod(fd, 0664);
     fclose(fp);
-    if (debug_flag)
-        fprintf(stderr, "renaming to %s\n", fname);
+    dfprintf(0, "renaming to %s", fname);
 
     rename(tname, fname);
     return 0;
@@ -241,7 +239,7 @@ static void
 sig_ignore(int signum)
 {
     if (debug_flag)
-        syslog(LOG_INFO, "Received signal %d, ignoring", signum);
+        dsyslogf(LOG_INFO, "Received signal %d, ignoring", signum);
 
     return;
 }
@@ -249,7 +247,7 @@ sig_ignore(int signum)
 static void
 sig_exit(int signum)
 {
-    syslog(LOG_INFO, "Received signal %d, exiting", signum);
+    dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
 
     exit(0);
 }
@@ -259,11 +257,11 @@ static void
 sig_exit_dumping(int signum)
 {
     if (have_reports) {
-        syslog(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
+        dsyslogf(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
         sig_while_processing = signum;
     }
     else {
-        syslog(LOG_INFO, "Received signal %d, exiting", signum);
+        dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
         exit(0);
     }
 }
@@ -327,22 +325,22 @@ main(int argc, char *argv[])
     sigfillset(&action.sa_mask);
 
     if (sigaction(SIGHUP, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGHUP: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGHUP: %s", strerror(errno));
     if (sigaction(SIGCHLD, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGCHLD: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGCHLD: %s", strerror(errno));
     if (sigaction(SIGPIPE, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGPIPE: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGPIPE: %s", strerror(errno));
     if (sigaction(SIGUSR1, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGUSR1: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGUSR1: %s", strerror(errno));
     if (sigaction(SIGUSR2, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGUSR2: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGUSR2: %s", strerror(errno));
 
     /*
      * Do not ignore SIGINT if we are running in the foreground
      */
 
     if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
 
     /*
      * Install signal handler for signals to exit on
@@ -354,22 +352,22 @@ main(int argc, char *argv[])
         action.sa_handler = sig_exit;
 
     if (sigaction(SIGTERM, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
     if (sigaction(SIGQUIT, &action, NULL))
-        syslog(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
 
     if (!debug_flag && 0 == n_pcap_offline) {
-        syslog(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
+        dsyslogf(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
         sleep(60 - (time(NULL) % 60));
     }
-    syslog(LOG_INFO, "%s", "Running");
+    dsyslog(LOG_INFO, "Running");
 
     do {
         useArena();                /* Initialize a memory arena for data collection. */
         if (debug_flag && break_start.tv_sec > 0) {
             struct timeval now;
             gettimeofday(&now, NULL);
-            syslog(LOG_INFO, "inter-run processing delay: %ld ms",
+            dsyslogf(LOG_INFO, "inter-run processing delay: %ld ms",
                 (now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec));
         }
 
@@ -390,7 +388,7 @@ main(int argc, char *argv[])
         }
 
         if (sig_while_processing) {
-            syslog(LOG_INFO, "Received signal %d before, exiting now", sig_while_processing);
+            dsyslogf(LOG_INFO, "Received signal %d before, exiting now", sig_while_processing);
             exit(0);
         }
         have_reports = 0;
@@ -407,9 +405,9 @@ main(int argc, char *argv[])
             pid_t pid;
             while ((pid = waitpid(0, &cstatus, WNOHANG)) > 0) {
                 if (WIFSIGNALED(cstatus))
-                    syslog(LOG_NOTICE, "child %d exited with signal %d", pid, WTERMSIG(cstatus));
+                    dsyslogf(LOG_NOTICE, "child %d exited with signal %d", pid, WTERMSIG(cstatus));
                 if (WIFEXITED(cstatus) && WEXITSTATUS(cstatus) != 0)
-                    syslog(LOG_NOTICE, "child %d exited with status %d", pid, WEXITSTATUS(cstatus));
+                    dsyslogf(LOG_NOTICE, "child %d exited with status %d", pid, WEXITSTATUS(cstatus));
             }
         }
 

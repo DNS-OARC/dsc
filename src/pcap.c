@@ -365,7 +365,7 @@ pcap_handle_tcp_segment(u_char * segment, int len, uint32_t seq, tcpstate_t * tc
         }
         tcpstate->msgbuf[m] = xcalloc(1, sizeof(tcp_msgbuf_t) + dnslen);
         if (NULL == tcpstate->msgbuf[m]) {
-            syslog(LOG_ERR, "out of memory for tcp_msgbuf (%d)", dnslen);
+            dsyslogf(LOG_ERR, "out of memory for tcp_msgbuf (%d)", dnslen);
             return;
         }
         tcpstate->msgbufs++;
@@ -789,22 +789,22 @@ Pcap_init(const char *device, int promisc)
         i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1, errbuf);
     }
     if (NULL == i->pcap) {
-        syslog(LOG_ERR, "pcap_open_*: %s", errbuf);
+        dsyslogf(LOG_ERR, "pcap_open_*: %s", errbuf);
         exit(1);
     }
     if (!pcap_file(i->pcap) && pcap_setnonblock(i->pcap, 1, errbuf) < 0) {
-        syslog(LOG_ERR, "pcap_setnonblock(%s): %s", device, errbuf);
+        dsyslogf(LOG_ERR, "pcap_setnonblock(%s): %s", device, errbuf);
         exit(1);
     }
     memset(&fp, '\0', sizeof(fp));
     x = pcap_compile(i->pcap, &fp, bpf_program_str, 1, 0);
     if (x < 0) {
-        syslog(LOG_ERR, "pcap_compile failed: %s", pcap_geterr(i->pcap));
+        dsyslogf(LOG_ERR, "pcap_compile failed: %s", pcap_geterr(i->pcap));
         exit(1);
     }
     x = pcap_setfilter(i->pcap, &fp);
     if (x < 0) {
-        syslog(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(i->pcap));
+        dsyslogf(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(i->pcap));
         exit(1);
     }
     if (pcap_file(i->pcap)) {
@@ -830,15 +830,15 @@ Pcap_init(const char *device, int promisc)
         callback_l7 = dns_protocol_handler;
     } else {
         if (pcap_datalink(i->pcap) != pcap_datalink(interfaces[0].pcap)) {
-            syslog(LOG_ERR, "%s", "All interfaces must have same datalink type");
-            syslog(LOG_ERR, "First interface has datalink type %d", pcap_datalink(interfaces[0].pcap));
-            syslog(LOG_ERR, "Interface '%s' has datalink type %d", device, pcap_datalink(i->pcap));
+            dsyslogf(LOG_ERR, "%s", "All interfaces must have same datalink type");
+            dsyslogf(LOG_ERR, "First interface has datalink type %d", pcap_datalink(interfaces[0].pcap));
+            dsyslogf(LOG_ERR, "Interface '%s' has datalink type %d", device, pcap_datalink(i->pcap));
             exit(1);
         }
     }
     n_interfaces++;
     if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_interfaces > n_pcap_offline)) {
-        syslog(LOG_ERR, "%s", "offline interface must be only interface");
+        dsyslogf(LOG_ERR, "%s", "offline interface must be only interface");
         exit(1);
     }
 }
