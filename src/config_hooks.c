@@ -57,6 +57,10 @@ int output_format_json = 0;
 #define MAX_HASH_SIZE 512
 static hashtbl * dataset_hash = NULL;
 int dump_reports_on_exit = 0;
+char * geoip_v4_dat = NULL;
+int geoip_v4_options = 0;
+char * geoip_v6_dat = NULL;
+int geoip_v6_options = 0;
 
 int
 open_interface(const char *interface)
@@ -219,4 +223,30 @@ set_dump_reports_on_exit(void)
     dsyslog(LOG_INFO, "dump_reports_on_exit");
 
     dump_reports_on_exit = 1;
+}
+
+int
+set_geoip_v4_dat(const char * dat, int options)
+{
+    geoip_v4_options = options;
+    if ( (geoip_v4_dat = strdup(dat)) ) {
+        dsyslogf(LOG_INFO, "GeoIP v4 dat %s %d", geoip_v4_dat, geoip_v4_options);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set GeoIP v4 dat, strdup: %s", strerror(errno));
+    return 0;
+}
+
+int
+set_geoip_v6_dat(const char * dat, int options)
+{
+    geoip_v6_options = options;
+    if ( (geoip_v6_dat = strdup(dat)) ) {
+        dsyslogf(LOG_INFO, "GeoIP v6 dat %s %d", geoip_v6_dat, geoip_v6_options);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set GeoIP v6 dat, strdup: %s", strerror(errno));
+    return 0;
 }

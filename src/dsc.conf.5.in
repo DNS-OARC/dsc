@@ -135,6 +135,14 @@ DATA FORMATS and FILE NAMING CONVENTIONS.
 Dump any remaining report before exiting.
 
 NOTE: Timing in the data files will be off!
+.TP
+\fBgeoip_v4_dat\fR " FILE " [ OPTION ... ] ;
+Specify the GeoIP dat file to open for IPv4 lookup, see section GEOIP
+for options.
+.TP
+\fBgeoip_v6_dat\fR " FILE " [ OPTION ... ] ;
+Specify the GeoIP dat file to open for IPv6 lookup, see section GEOIP
+for options.
 .SH DATASETS
 A \fBdataset\fR is a 2-D array of counters.  For example, you
 might have a dataset with \*(lqQuery Type\*(rq along one dimension and
@@ -256,6 +264,9 @@ provide a small amount of privacy and anonymization.
 .TP
 \fBclient\fR
 The IP (v4 and v6) address of the DNS client.
+.TP
+\fBcountry\fR
+The country code of the IP (v4 and v6), see section GEOIP.
 .TP
 \fBdo_bit\fR
 This indexer has only two values: 0 or 1.  It indicates
@@ -559,6 +570,41 @@ a particular tuple is zero, it should not be included in the output.
 Note that the contents of the output do not indicate where it
 came from.  In particular, the server and node that it came from
 are not present.
+.SH GEOIP
+Country code lookup is available using MaxMind GeoIP Legacy API if it
+was enabled during compilation.
+
+Multiple options can be give to the database and are directly linked
+to the options for \fIGeoIP_open()\fR but without the prefix of
+\fBGEOIP_\fR, example:
+
+.nf
+    geoip_v4_dat "/usr/local/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE;
+.fi
+
+GeoIP documentation says:
+.TP
+\fBSTANDARD\fR
+Read database from file system. This uses the least memory.
+.TP
+\fBMEMORY_CACHE\fR
+Load database into memory. Provides faster performance but uses more memory.
+.TP
+\fBCHECK_CACHE\fR
+Check for updated database. If database has been updated, reload file
+handle and/or memory cache.
+.TP
+\fBINDEX_CACHE\fR
+Cache only the the most frequently accessed index portion of the database,
+resulting in faster lookups than GEOIP_STANDARD, but less memory usage
+than GEOIP_MEMORY_CACHE. This is useful for larger databases such as
+GeoIP Legacy Organization and GeoIP Legacy City. Note: for GeoIP Legacy
+Country, Region and Netspeed databases, GEOIP_INDEX_CACHE is equivalent
+to GEOIP_MEMORY_CACHE.
+.TP
+\fBMMAP_CACHE\fR
+Load database into mmap shared memory. MMAP is not available for
+32bit Windows.
 .SH EXAMPLE
 .nf
 local_address 127.0.0.1;
@@ -592,6 +638,7 @@ dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype que
 dataset client_subnet2 dns Class:query_classification ClientSubnet:cip4_net queries-only max-cells=200;
 dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client replies-only max-cells=50;
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname chaos-class,queries-only;
+#dataset country_code dns All:null CountryCode:country queries-only;
 dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
 dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
 dataset edns_bufsiz dns All:null EDNSBufSiz:edns_bufsiz queries-only;
@@ -619,6 +666,9 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 
 output_format XML
 #output_format JSON
+
+#geoip_v4_dat "/usr/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE MMAP_CACHE;
+#geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";
 .fi
 .SH FILES
 @etcdir@/dsc.conf
