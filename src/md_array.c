@@ -187,7 +187,7 @@ md_array_grow(md_array * a, int i1, int i2)
 
     if (d1 != a->array) {
         if (a->array) {
-            fprintf(stderr, "grew d1 of %s from %d to %d\n", a->name, a->d1.alloc_sz, new_d1_sz);
+            dfprintf(0, "grew d1 of %s from %d to %d", a->name, a->d1.alloc_sz, new_d1_sz);
             afree(a->array);
         }
         a->array = d1;
@@ -195,7 +195,7 @@ md_array_grow(md_array * a, int i1, int i2)
     }
     if (d2) {
         if (a->array[i1].array) {
-            fprintf(stderr, "grew d2[%d] of %s from %d to %d\n", i1, a->name, a->array[i1].alloc_sz, new_d2_sz);
+            dfprintf(0, "grew d2[%d] of %s from %d to %d", i1, a->name, a->array[i1].alloc_sz, new_d2_sz);
             afree(a->array[i1].array);
         }
         a->array[i1].array = d2;
@@ -249,7 +249,7 @@ md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
         nvals = a->d2.alloc_sz;
         sortme = xcalloc(nvals, sizeof(*sortme));
         if (NULL == sortme) {
-            syslog(LOG_CRIT, "Cant output %s file chunk due to malloc failure!", pr->format);
+            dsyslogf(LOG_CRIT, "Cant output %s file chunk due to malloc failure!", pr->format);
             continue;                /* OUCH! */
         }
         while ((i2 = a->d2.indexer->iter_fn(&label2)) > -1) {

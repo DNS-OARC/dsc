@@ -122,7 +122,7 @@ Ncap_init(const char *device, int promisc)
     if (NULL == NC) {
         NC = ncap_create(NCAP_SNAPLEN);
         if (NULL == NC) {
-            syslog(LOG_ERR, "ncap_create*: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "ncap_create*: %s", strerror(errno));
             exit(1);
         }
     }
@@ -134,7 +134,7 @@ Ncap_init(const char *device, int promisc)
     if (0 == stat(device, &sb)) {
         FILE *fp = fopen(device, "r");
         if (NULL == fp) {
-            syslog(LOG_ERR, "fopen %s: %s", device, strerror(errno));
+            dsyslogf(LOG_ERR, "fopen %s: %s", device, strerror(errno));
             exit(1);
         }
         r = NC->add_fp(NC, fp, ncap_ncap, device);
@@ -142,7 +142,7 @@ Ncap_init(const char *device, int promisc)
         r = NC->add_if(NC, device, bpf_program_str, promisc, vlan_ids, n_vlan_ids, NULL);
     }
     if (ncap_failure == r) {
-        syslog(LOG_ERR, "NC->add_*() error: %s", "some error");
+        dsyslogf(LOG_ERR, "NC->add_*() error: %s", "some error");
         exit(1);
     }
 }

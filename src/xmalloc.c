@@ -58,7 +58,7 @@ xmalloc(size_t size)
 {
     void *p = malloc(size);
     if (NULL == p)
-        syslog(LOG_CRIT, "malloc: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "malloc: %s", strerror(errno));
     return p;
 }
 
@@ -67,7 +67,7 @@ xcalloc(size_t number, size_t size)
 {
     void *p = calloc(number, size);
     if (NULL == p)
-        syslog(LOG_CRIT, "calloc: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "calloc: %s", strerror(errno));
     return p;
 }
 
@@ -76,7 +76,7 @@ xrealloc(void *p, size_t size)
 {
     p = realloc(p, size);
     if (NULL == p)
-        syslog(LOG_CRIT, "realloc: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "realloc: %s", strerror(errno));
     return p;
 }
 
@@ -85,7 +85,7 @@ xstrdup(const char *s)
 {
     void *p = strdup(s);
     if (NULL == p)
-        syslog(LOG_CRIT, "strdup: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "strdup: %s", strerror(errno));
     return p;
 }
 
@@ -119,7 +119,7 @@ newArena(size_t size)
     size = align(size, ALIGNMENT);
     arena = malloc(HEADERSIZE + size);
     if (NULL == arena) {
-        syslog(LOG_CRIT, "amalloc %d: %s", (int) size, strerror(errno));
+        dsyslogf(LOG_CRIT, "amalloc %d: %s", (int) size, strerror(errno));
         return NULL;
     }
     arena->prevArena = NULL;

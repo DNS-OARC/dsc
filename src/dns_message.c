@@ -305,7 +305,7 @@ dns_message_find_indexer(const char *in)
         if (0 == strcmp(in, indexer->name))
             return indexer;
     }
-    syslog(LOG_ERR, "unknown indexer '%s'", in);
+    dsyslogf(LOG_ERR, "unknown indexer '%s'", in);
     return NULL;
 }
 
@@ -328,7 +328,7 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
             fl = md_array_filter_list_append(fl, f->filter);
             continue;
         }
-        syslog(LOG_ERR, "unknown filter '%s'", t);
+        dsyslogf(LOG_ERR, "unknown filter '%s'", t);
         xfree(copy);
         return 0;
     }
@@ -346,13 +346,13 @@ add_qname_filter(const char *name, const char *pat)
         fl = &((*fl)->next);
     r = xcalloc(1, sizeof(*r));
     if (NULL == r) {
-        syslog(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
+        dsyslogf(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
         return 0;
     }
     if (0 != (x = regcomp(r, pat, REG_EXTENDED | REG_ICASE))) {
         char errbuf[512];
         regerror(x, r, errbuf, 512);
-        syslog(LOG_ERR, "regcomp: %s", errbuf);
+        dsyslogf(LOG_ERR, "regcomp: %s", errbuf);
     }
     fl = md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
     return 1;
@@ -375,12 +375,12 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
 
     a = xcalloc(1, sizeof(*a));
     if (a == NULL) {
-        syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
+        dsyslogf(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
         return 0;
     }
     a->theArray = md_array_create(name, filters, fn, indexer1, sn, indexer2);
     if (NULL == a->theArray) {
-        syslog(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
+        dsyslogf(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
         return 0;
     }
     a->theArray->opts = opts;
