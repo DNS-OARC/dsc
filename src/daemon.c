@@ -126,17 +126,72 @@ void
 write_pid_file(void)
 {
     FILE *fp;
-    if (NULL == pid_file_name)
+    int fd, flags;
+    struct flock lock;
+
+    if (!pid_file_name)
         return;
-    dsyslogf(LOG_INFO, "writing PID to %s", pid_file_name);
-    fp = fopen(pid_file_name, "w");
-    if (NULL == fp) {
-        perror(pid_file_name);
-        dsyslogf(LOG_ERR, "fopen: %s: %s", pid_file_name, strerror(errno));
-        return;
+
+    /*
+     * Open the PID file, create if it does not exist.
+     */
+
+    if ((fd = open(pid_file_name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
+        dsyslogf(LOG_ERR, "unable to open PID file %s: %s", pid_file_name, strerror(errno));
+        exit(2);
     }
-    fprintf(fp, "%d\n", getpid());
-    fclose(fp);
+
+    /*
+     * Set close-on-exec flag
+     */
+
+    if ((flags = fcntl(fd, F_GETFD)) == -1) {
+        dsyslogf(LOG_ERR, "unable to get PID file flags: %s", strerror(errno));
+        exit(2);
+    }
+
+    flags |= FD_CLOEXEC;
+
+    if (fcntl(fd, F_SETFD, flags) == 1) {
+        dsyslogf(LOG_ERR, "unable to set PID file flags: %s", strerror(errno));
+        exit(2);
+    }
+
+    /*
+     * Lock the PID file
+     */
+
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+
+    if (fcntl(fd, F_SETLK, &lock) == -1) {
+        if (errno == EACCES || errno == EAGAIN) {
+            dsyslog(LOG_ERR, "PID file locked by other process");
+            exit(3);
+        }
+
+        dsyslogf(LOG_ERR, "unable to lock PID file: %s", strerror(errno));
+        exit(2);
+    }
+
+    /*
+     * Write our PID to the file
+     */
+
+    if (ftruncate(fd, 0) == -1) {
+        dsyslogf(LOG_ERR, "unable to truncate PID file: %s", strerror(errno));
+        exit(2);
+    }
+
+    dsyslogf(LOG_INFO, "writing PID to %s", pid_file_name);
+
+    fp = fdopen(fd, "w");
+    if (!fp || fprintf(fp, "%d\n", getpid()) < 1 ) {
+        dsyslogf(LOG_ERR, "unable to write to PID file: %s", strerror(errno));
+        exit(2);
+    }
 }
 
 int
