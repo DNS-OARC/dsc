@@ -265,6 +265,9 @@ provide a small amount of privacy and anonymization.
 \fBclient\fR
 The IP (v4 and v6) address of the DNS client.
 .TP
+\fBserver\fR
+The IP (v4 and v6) address of the DNS server.
+.TP
 \fBcountry\fR
 The country code of the IP (v4 and v6), see section GEOIP.
 .TP
@@ -278,6 +281,9 @@ security RRs.\fR
 \fBedns_version\fR
 The EDNS version number, if any, in a DNS query.  EDNS
 Version 0 is documented in RFC 2671.
+.TP
+\fBedns_bufsiz\fR
+The EDNS buffer size per 512 chunks (0-511, 512-1023 etc).
 .TP
 \fBidn_qname\fR
 This indexer has only two values: 0 or 1.  It returns 1
@@ -372,11 +378,31 @@ when the entire response won't fit into a UDP message.
 \fBtld\fR
 The TLD of the first QNAME in a DNS message's question section.
 .TP
+\fBsecond_ld\fR
+The Second LD of the first QNAME in a DNS message's question section.
+.TP
+\fBthird_ld\fR
+The Third LD of the first QNAME in a DNS message's question section.
+.TP
 \fBtransport\fR
 Indicates whether the DNS message is carried via UDP or TCP.
 .TP
 \fBdns_ip_version\fR
 The IP version number that carried the DNS message.
+.TP
+\fBdns_source_port\fR
+The source port of the DNS message.
+.TP
+\fBdns_sport_range\fR
+The source port of the DNS message per 1024 chunks (0-1023, 1024-2047 etc).
+.TP
+\fBqr_aa_bits\fR
+The "qr_aa_bits" dataset may be useful when \fBdsc\fR is monitoring
+an authoritative name server.  This dataset counts the number of DNS
+messages received with each combination of QR,AA bits.  Normally
+the authoritative name server should *receive* only *queries*.  If
+the name server is the target of a DNS reflection attack, it will
+probably receive DNS *responses* which have the QR bit set.
 .SH "DNS FILTERS"
 You must specify one or more of the following filters (separated
 by commas) on the \fBdataset\fR line. Note that multiple filters
@@ -394,6 +420,9 @@ where the QR bit is set to 0.
 Count only DNS response messages.  A query is a DNS message
 where the QR bit is set to 1.
 .TP
+\fBnxdomains-only\fR
+Count only NXDOMAIN responses.
+.TP
 \fBpopular-qtypes\fR
 Count only DNS messages where the query type is one of:
 A, NS, CNAME, SOA, PTR, MX, AAAA, A6, ANY.
@@ -403,7 +432,7 @@ Count only DNS messages where the query name is in the
 internationalized domain name format.
 .TP
 \fBaaaa-or-a6-only\fR
-Count only DNS Messages where the query type is AAAA or A6.
+Count only DNS messages where the query type is AAAA or A6.
 .TP
 \fBroot-servers-net-only\fR
 Count only DNS messages where the query name is within
@@ -413,6 +442,9 @@ the \fIroot-servers.net\fR domain.
 Counts only DNS messages where QCLASS is equal to CHAOS (3).  The
 CHAOS class is generally used for only the special \fIhostname.bind\fR
 and \fIversion.bind\fR queries.
+.TP
+\fBpriming-query\fR
+Count only DNS messages where the query type is NS and QNAME is \*(lq.\*(rq.
 .SH "QNAME FILTERS"
 Defines a custom QNAME-based filter for DNS messages.  If you
 refer to this named filter on a dataset line, then only queries
@@ -543,8 +575,8 @@ PARAMETERS).  \fI-:SKIPPED:-\fR is the number of cells that were not
 included in the output.  \fI-:SKIPPED_SUM:-\fR, is the sum of the
 counts for all the skipped cells.
 
-Note that ``one-dimensional datasets'' still use two dimensions in
-the output.  The first dimension type and value will be ``All'' as shown
+Note that \*(lqone-dimensional datasets\*(rq still use two dimensions in
+the output.  The first dimension type and value will be \*(lqAll\*(rq as shown
 in the example below:
 
 .nf
@@ -631,11 +663,11 @@ dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
 dataset opcode dns All:null Opcode:opcode queries-only;
 dataset rcode_vs_replylen dns Rcode:rcode ReplyLen:msglen replies-only;
-dataset client_subnet dns All:null ClientSubnet:cip4_net queries-only max-cells=200;
+dataset client_subnet dns All:null ClientSubnet:client_subnet queries-only max-cells=200;
 dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
 dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes max-cells=200;
 dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype queries-only;
-dataset client_subnet2 dns Class:query_classification ClientSubnet:cip4_net queries-only max-cells=200;
+dataset client_subnet2 dns Class:query_classification ClientSubnet:client_subnet queries-only max-cells=200;
 dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client replies-only max-cells=50;
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname chaos-class,queries-only;
 #dataset country_code dns All:null CountryCode:country queries-only;
@@ -648,19 +680,17 @@ dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
 dataset ipv6_rsn_abusers dns All:null ClientAddr:client queries-only,aaaa-or-a6-only,root-servers-net-only max-cells=50;
 dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
 dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
+#dataset second_ld_vs_rcode dns Rcode:rcode SecondLD:second_ld replies-only max-cells=50;
+#dataset third_ld_vs_rcode dns Rcode:rcode ThirdLD:third_ld replies-only max-cells=50;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
+#dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
 
 # Datasets for collecting data on priming queries at root nameservers
 #
 #dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
 #dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
 
-# The "qr_aa_bits" dataset may be useful when DSC is monitoring
-# an authoritative name server.  This dataset counts the number of DNS
-# messages received with each combination of QR,AA bits.  Normally
-# the authoritative name server should *receive* only *queries*.  If
-# the name server is the target of a DNS reflection attack, it will
-# probably receive DNS *responses* which have the QR bit set.
+# Dataset for monitoring an authoritative nameserver for DNS reflection attack
 #
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 
@@ -677,9 +707,13 @@ output_format XML
 .SH "SEE ALSO"
 dsc(1)
 .SH AUTHORS
-Jerry Lundström
+Jerry Lundström, DNS-OARC
 .br
-Duane Wessels
+Duane Wessels, Measurement Factory / Verisign
+.br
+Ken Keys, Cooperative Association for Internet Data Analysis
+.br
+Sebastian Castro, New Zealand Registry Services
 .LP
 Maintained by DNS-OARC
 .LP

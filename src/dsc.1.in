@@ -70,9 +70,13 @@ Default configuration file for dsc
 .SH "SEE ALSO"
 dsc.conf(5)
 .SH AUTHORS
-Jerry Lundström
+Jerry Lundström, DNS-OARC
 .br
-Duane Wessels
+Duane Wessels, Measurement Factory / Verisign
+.br
+Ken Keys, Cooperative Association for Internet Data Analysis
+.br
+Sebastian Castro, New Zealand Registry Services
 .LP
 Maintained by DNS-OARC
 .LP

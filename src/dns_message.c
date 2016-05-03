@@ -260,12 +260,10 @@ qname_filter(const void *vp, const void *ctx)
 static indexer_t indexers[] = {
     {"client", cip_indexer, cip_iterator, cip_reset},
     {"server", sip_indexer, sip_iterator, sip_reset},
-    {"cip4_addr", cip_indexer, cip_iterator, cip_reset},        /* compatibility */
 #if HAVE_LIBGEOIP
     {"country", country_indexer, country_iterator, country_reset},
 #endif
     {"client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset},
-    {"cip4_net", cip_net_indexer, cip_net_iterator, cip_net_reset},        /* compatibility */
     {"null", null_indexer, null_iterator, NULL},
     {"qclass", qclass_indexer, qclass_iterator, qclass_reset},
     {"qnamelen", qnamelen_indexer, qnamelen_iterator, qnamelen_reset},
@@ -282,7 +280,6 @@ static indexer_t indexers[] = {
     {"edns_version", edns_version_indexer, edns_version_iterator, NULL},
     {"edns_bufsiz", edns_bufsiz_indexer, edns_bufsiz_iterator, NULL},
     {"do_bit", do_bit_indexer, do_bit_iterator, NULL},
-    {"d0_bit", do_bit_indexer, do_bit_iterator, NULL},        /* compat for bug */
     {"rd_bit", rd_bit_indexer, rd_bit_iterator, NULL},
     {"tc_bit", tc_bit_indexer, tc_bit_iterator, NULL},
     {"opcode", opcode_indexer, opcode_iterator, opcode_reset},
@@ -291,7 +288,9 @@ static indexer_t indexers[] = {
     {"dns_source_port", dns_source_port_indexer, dns_source_port_iterator, dns_source_port_reset},
     {"dns_sport_range", dns_sport_range_indexer, dns_sport_range_iterator, dns_sport_range_reset},
     {"qr_aa_bits", qr_aa_bits_indexer, qr_aa_bits_iterator, NULL,},
+
     /* these used to be "IP" indexers */
+
     {"ip_direction", ip_direction_indexer, ip_direction_iterator, NULL},
     {"ip_proto", ip_proto_indexer, ip_proto_iterator, ip_proto_reset},
     {"ip_version", ip_version_indexer, ip_version_iterator, ip_version_reset},
