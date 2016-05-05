@@ -1,5 +1,16 @@
 dist: xenial
+env:
+  global:
+   - secure: "f8D1AVTzm3cPlUpToXROVW2qIFue+icTLUDnRf98X2BcZkhMbeaYrEbVvcYwL0Qp6jgSe2VShZzix74S9Ns/zIT+m/yjzx7vsTxl0BRJ8wGeINclCpYLZ+MFNt/X4AjeYMgVFTZAh9l+RelrzqnDuoJC9nuZH1Vn7RG/KZhtGuPjZYH7C2MGLhmr9kJ3NcLAlA06Fyy8ZhgsW4DNjICzesxz7hDY/W1CgkrTfVZqUukdprXBrRD3Z+JU9rh+x4TMIsF/kMZ54d5DT+jemr8Hk4tjdCUm91oAqWni2vO6Yj9FPHDQhiEickLxa7Bkbodem2xuJ1pA7V/4cTmz5JE4s5BecW8qyJP/O/NZS7i1TgDsbEFE7qTIYtk1A6Z0ALTw/AZ0+HtQFz+RxVHrmeMBEBYCxmuYrkmlHtrlRcKWaqQd4XX8jUzmJ1Vfc8eovTX/ne1oxGXcx+l9h0wFh4fyK8MZRivFO7R4wU6X8ViUBdrKXee0xdx1oOc86cdls7mPW3gAsjSrUutKM0S6X5al2QsqW50obeEUaUk9eMJP7Fzw7094EGBGJWzClm6lqRoA33/50BsKCo4YieN6iUkLuX7tlz+H2FdjWIU/jgpVTHWarOP5V63XNGlSKTQec9pj1ShnUQTvrGxvO0DObaXuR2wdFpfPIS5WnZ7YQ7BsujM="
 addons:
+  coverity_scan:
+    project:
+      name: "DNS-OARC/dsc"
+      description: "Build submitted via Travis CI"
+    notification_email: lundstrom.jerry@gmail.com
+    build_command_prepend: "./autogen.sh && ./configure && make clean"
+    build_command: "make"
+    branch_pattern: coverity_scan
   apt:
     update: true
     packages:
@@ -9,16 +20,5 @@ addons:
     - libmaxminddb-dev
 language: c
 compiler:
-  - clang
   - gcc
-install: ./autogen.sh
-script:
-  - ./configure --enable-warn-all
-  - make dist
-  - tar zxvf *.tar.gz
-  - cd dsc-*[0-9]
-  - mkdir build
-  - cd build
-  - ../configure --enable-warn-all
-  - make
-  - make test
+script: true
