@@ -42,6 +42,7 @@ AC_CONFIG_HEADER([src/config.h])
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_INSTALL
+AM_PROG_CC_C_O
 
 # Checks for libraries.
 AC_CHECK_LIB([ncap], [ncap_create])
