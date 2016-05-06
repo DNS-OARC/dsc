@@ -176,8 +176,7 @@ md_array_grow(md_array * a, int i1, int i2)
         d2 = acalloc(new_d2_sz, sizeof(*d2));
         if (NULL == d2) {
             /* oops, undo! */
-            if (d1)
-                afree(d1);
+            afree(d1);
             return;
         }
 
