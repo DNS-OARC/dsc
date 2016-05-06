@@ -1,5 +1,7 @@
 # DNS Statistics Collector
 
+[![Build Status](https://travis-ci.org/DNS-OARC/dsc.svg?branch=develop)](https://travis-ci.org/DNS-OARC/dsc) [![Coverity Scan Build Status](https://scan.coverity.com/projects/8773/badge.svg)](https://scan.coverity.com/projects/dns-oarc-dsc)
+
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring
 statistics from busy DNS servers.  It uses a distributed architecture with
 collectors running on or near nameservers sending their data to one or more
