@@ -271,7 +271,9 @@ dump_report(md_array_printer * printer)
     fclose(fp);
     dfprintf(0, "renaming to %s", fname);
 
-    rename(tname, fname);
+    if (rename(tname, fname)) {
+        dsyslogf(LOG_ERR, "unable to move report from %s to %s: %s", tname, fname, strerror(errno));
+    }
     return 0;
 }
 

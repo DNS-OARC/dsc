@@ -991,6 +991,10 @@ pcap_report(FILE * fp, md_array_printer * printer)
 {
     int i;
     md_array *theArray = acalloc(1, sizeof(*theArray));
+    if ( !theArray ) {
+        dsyslog(LOG_ERR, "unable to write report, out of memory");
+        return;
+    }
     theArray->name = "pcap_stats";
     theArray->d1.indexer = &indexers[0];
     theArray->d1.type = "ifname";
@@ -999,6 +1003,10 @@ pcap_report(FILE * fp, md_array_printer * printer)
     theArray->d2.type = "pcap_stat";
     theArray->d2.alloc_sz = 3;
     theArray->array = acalloc(n_interfaces, sizeof(*theArray->array));
+    if ( !theArray->array ) {
+        dsyslog(LOG_ERR, "unable to write report, out of memory");
+        return;
+    }
     for (i = 0; i < n_interfaces; i++) {
         struct _interface *I = &interfaces[i];
         theArray->array[i].alloc_sz = 3;

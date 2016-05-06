@@ -381,6 +381,7 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     a->theArray = md_array_create(name, filters, fn, indexer1, sn, indexer2);
     if (NULL == a->theArray) {
         dsyslogf(LOG_ERR, "Cant allocate memory for '%s' DNS message array", name);
+        xfree(a);
         return 0;
     }
     a->theArray->opts = opts;
