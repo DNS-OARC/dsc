@@ -63,6 +63,9 @@ Foreground mode.  Don't become a daemon.
 .TP
 .B \-p
 Don't put interface in promiscuous mode.
+.TP
+.B \-v
+Print version and exit.
 .SH FILES
 .TP
 @etcdir@/dsc.conf
