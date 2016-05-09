@@ -221,7 +221,15 @@ usage(void)
     fprintf(stderr, "\t-d\tDebug mode.  Exits after first write.\n");
     fprintf(stderr, "\t-f\tForeground mode.  Don't become a daemon.\n");
     fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode.\n");
+    fprintf(stderr, "\t-v\tPrint version and exit.\n");
     exit(1);
+}
+
+void
+version(void)
+{
+    printf("dsc version " PACKAGE_VERSION "\n");
+    exit(0);
 }
 
 static int
@@ -337,7 +345,7 @@ main(int argc, char *argv[])
     srandom(time(NULL));
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
-    while ((x = getopt(argc, argv, "fpd")) != -1) {
+    while ((x = getopt(argc, argv, "fpdv")) != -1) {
         switch (x) {
         case 'f':
             nodaemon_flag = 1;
@@ -349,6 +357,8 @@ main(int argc, char *argv[])
             debug_flag++;
             nodaemon_flag = 1;
             break;
+        case 'v':
+            version();
         default:
             usage();
             break;
