@@ -153,13 +153,13 @@ int
 Ncap_run(DMC * dns_callback)
 {
     int result = 1;
-#define INTERVAL 60
+    extern uint64_t statistics_interval;
 
     dns_message_callback = dns_callback;
     struct timeval tv;
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &start_ts);
-    finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
+    finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
     finish_ts.tv_nsec = 0;
     while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing) {
         NC->collect(NC, 1, handle_ncap, NULL);
