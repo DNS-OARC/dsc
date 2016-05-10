@@ -1,6 +1,6 @@
 2016-05-10 Jerry Lundström
 
-    Release 2.0.0rc1
+    Release 2.0.0-rc.1
 
     This release brings a major update to the DSC software with the separation
     of the Collector and the Presenter, this repository will only include
