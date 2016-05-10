@@ -4,7 +4,7 @@ MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
 
 SUBDIRS = src cron
 
-dist_doc_DATA = README.md CHANGES LICENSE
+dist_doc_DATA = README.md CHANGES LICENSE UPGRADE.md
 
 EXTRA_DIST = doc ports autogen.sh
 
