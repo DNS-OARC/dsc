@@ -80,6 +80,7 @@ int have_reports = 0;
 extern void cip_net_indexer_init(void);
 #if HAVE_LIBGEOIP
 extern void country_indexer_init(void);
+extern void asn_indexer_init(void);
 #endif
 extern void ParseConfig(const char *);
 extern uint64_t minfree_bytes;
@@ -373,6 +374,7 @@ main(int argc, char *argv[])
     ParseConfig(argv[0]);
 #if HAVE_LIBGEOIP
     country_indexer_init();
+    asn_indexer_init();
 #endif
     cip_net_indexer_init();
     if ( !output_format_xml && !output_format_json ) {

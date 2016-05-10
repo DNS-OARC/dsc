@@ -37,6 +37,7 @@ dsc_SOURCES = base64.c \
     qclass_index.c \
     tld_index.c \
     country_index.c \
+    asn_index.c \
     rcode_index.c \
     qnamelen_index.c \
     qname_index.c \
@@ -74,6 +75,7 @@ dist_dsc_SOURCES = base64.h \
     client_ip_addr_index.h \
     client_ip_net_index.h \
     country_index.h \
+    asn_index.h \
     dataset_opt.h \
     dns_ip_version_index.h \
     dns_message.h \

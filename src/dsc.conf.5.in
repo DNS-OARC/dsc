@@ -137,12 +137,20 @@ Dump any remaining report before exiting.
 NOTE: Timing in the data files will be off!
 .TP
 \fBgeoip_v4_dat\fR " FILE " [ OPTION ... ] ;
-Specify the GeoIP dat file to open for IPv4 lookup, see section GEOIP
-for options.
+Specify the GeoIP dat file to open for IPv4 country lookup, see section
+GEOIP for options.
 .TP
 \fBgeoip_v6_dat\fR " FILE " [ OPTION ... ] ;
-Specify the GeoIP dat file to open for IPv6 lookup, see section GEOIP
-for options.
+Specify the GeoIP dat file to open for IPv6 country lookup, see section
+GEOIP for options.
+.TP
+\fBgeoip_asn_v4_dat\fR " FILE " [ OPTION ... ] ;
+Specify the GeoIP dat file to open for IPv4 AS number lookup, see section
+GEOIP for options.
+.TP
+\fBgeoip_asn_v6_dat\fR " FILE " [ OPTION ... ] ;
+Specify the GeoIP dat file to open for IPv6 AS number lookup, see section
+GEOIP for options.
 .SH DATASETS
 A \fBdataset\fR is a 2-D array of counters.  For example, you
 might have a dataset with \*(lqQuery Type\*(rq along one dimension and
@@ -270,6 +278,9 @@ The IP (v4 and v6) address of the DNS server.
 .TP
 \fBcountry\fR
 The country code of the IP (v4 and v6), see section GEOIP.
+.TP
+\fBasn\fR
+The AS (autonomous system) number of the IP (v4 and v6), see section GEOIP.
 .TP
 \fBdo_bit\fR
 This indexer has only two values: 0 or 1.  It indicates
@@ -603,8 +614,8 @@ Note that the contents of the output do not indicate where it
 came from.  In particular, the server and node that it came from
 are not present.
 .SH GEOIP
-Country code lookup is available using MaxMind GeoIP Legacy API if it
-was enabled during compilation.
+Country code and AS number lookup is available using MaxMind GeoIP Legacy
+API if it was enabled during compilation.
 
 Multiple options can be give to the database and are directly linked
 to the options for \fIGeoIP_open()\fR but without the prefix of
@@ -612,6 +623,7 @@ to the options for \fIGeoIP_open()\fR but without the prefix of
 
 .nf
     geoip_v4_dat "/usr/local/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE;
+    geoip_asn_v6_dat "/usr/local/share/GeoIP/GeoIPASNumv6.dat" MEMORY_CACHE;
 .fi
 
 GeoIP documentation says:
@@ -671,6 +683,7 @@ dataset client_subnet2 dns Class:query_classification ClientSubnet:client_subnet
 dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client replies-only max-cells=50;
 dataset chaos_types_and_names dns Qtype:qtype Qname:qname chaos-class,queries-only;
 #dataset country_code dns All:null CountryCode:country queries-only;
+#dataset asn_all dns IPVersion:dns_ip_version ASN:asn queries-only max-cells=200;
 dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
 dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
 dataset edns_bufsiz dns All:null EDNSBufSiz:edns_bufsiz queries-only;
@@ -699,6 +712,8 @@ output_format XML
 
 #geoip_v4_dat "/usr/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE MMAP_CACHE;
 #geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";
+#geoip_asn_v4_dat "/usr/share/GeoIP/GeoIPASNum.dat" MEMORY_CACHE;
+#geoip_asn_v6_dat "/usr/share/GeoIP/GeoIPASNumv6.dat" MEMORY_CACHE;
 .fi
 .SH FILES
 @etcdir@/dsc.conf

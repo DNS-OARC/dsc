@@ -61,6 +61,10 @@ char * geoip_v4_dat = NULL;
 int geoip_v4_options = 0;
 char * geoip_v6_dat = NULL;
 int geoip_v6_options = 0;
+char * geoip_asn_v4_dat = NULL;
+int geoip_asn_v4_options = 0;
+char * geoip_asn_v6_dat = NULL;
+int geoip_asn_v6_options = 0;
 
 int
 open_interface(const char *interface)
@@ -248,5 +252,31 @@ set_geoip_v6_dat(const char * dat, int options)
     }
 
     dsyslogf(LOG_ERR, "unable to set GeoIP v6 dat, strdup: %s", strerror(errno));
+    return 0;
+}
+
+int
+set_geoip_asn_v4_dat(const char * dat, int options)
+{
+    geoip_asn_v4_options = options;
+    if ( (geoip_asn_v4_dat = strdup(dat)) ) {
+        dsyslogf(LOG_INFO, "GeoIP ASN v4 dat %s %d", geoip_asn_v4_dat, geoip_asn_v4_options);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v4 dat, strdup: %s", strerror(errno));
+    return 0;
+}
+
+int
+set_geoip_asn_v6_dat(const char * dat, int options)
+{
+    geoip_asn_v6_options = options;
+    if ( (geoip_asn_v6_dat = strdup(dat)) ) {
+        dsyslogf(LOG_INFO, "GeoIP ASN v6 dat %s %d", geoip_asn_v6_dat, geoip_asn_v6_options);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", strerror(errno));
     return 0;
 }

@@ -73,6 +73,8 @@ int set_output_format(const char *);
 void set_dump_reports_on_exit(void);
 int set_geoip_v4_dat(const char * dat, int options);
 int set_geoip_v6_dat(const char * dat, int options);
+int set_geoip_asn_v4_dat(const char * dat, int options);
+int set_geoip_asn_v6_dat(const char * dat, int options);
 
 void ParseConfig(const char *);
 }
@@ -109,6 +111,8 @@ Rule rQnameFilter("QnameFilter", 0);
 Rule rDumpReportsOnExit("DumpReportsOnExit", 0);
 Rule rGeoIPv4Dat("GeoIPv4Dat", 0);
 Rule rGeoIPv6Dat("GeoIPv6Dat", 0);
+Rule rGeoIPASNv4Dat("GeoIPASNv4Dat", 0);
+Rule rGeoIPASNv6Dat("GeoIPASNv6Dat", 0);
 
 Rule rConfig;
 
@@ -293,6 +297,62 @@ interpret(const Pree &tree, int level)
 			return 0;
 		}
 	} else
+	if (tree.rid() == rGeoIPASNv4Dat.id()) {
+	    int options = 0;
+
+#if HAVE_LIBGEOIP
+		for(unsigned int i = 0; i<tree[2].count(); i++) {
+            if ( tree[2][i].image() == "STANDARD" ) {
+                options |= GEOIP_STANDARD;
+            }
+            else if ( tree[2][i].image() == "MEMORY_CACHE" ) {
+                options |= GEOIP_MEMORY_CACHE;
+            }
+            else if ( tree[2][i].image() == "CHECK_CACHE" ) {
+                options |= GEOIP_CHECK_CACHE;
+            }
+            else if ( tree[2][i].image() == "INDEX_CACHE" ) {
+                options |= GEOIP_INDEX_CACHE;
+            }
+            else if ( tree[2][i].image() == "MMAP_CACHE" ) {
+                options |= GEOIP_MMAP_CACHE;
+            }
+		}
+#endif
+
+		if (set_geoip_asn_v4_dat(remove_quotes(tree[1].image()).c_str(), options) != 1) {
+			cerr << "interpret() failure in geoip_asn_v4_dat" << endl;
+			return 0;
+		}
+	} else
+	if (tree.rid() == rGeoIPASNv6Dat.id()) {
+	    int options = 0;
+
+#if HAVE_LIBGEOIP
+		for(unsigned int i = 0; i<tree[2].count(); i++) {
+            if ( tree[2][i].image() == "STANDARD" ) {
+                options |= GEOIP_STANDARD;
+            }
+            else if ( tree[2][i].image() == "MEMORY_CACHE" ) {
+                options |= GEOIP_MEMORY_CACHE;
+            }
+            else if ( tree[2][i].image() == "CHECK_CACHE" ) {
+                options |= GEOIP_CHECK_CACHE;
+            }
+            else if ( tree[2][i].image() == "INDEX_CACHE" ) {
+                options |= GEOIP_INDEX_CACHE;
+            }
+            else if ( tree[2][i].image() == "MMAP_CACHE" ) {
+                options |= GEOIP_MMAP_CACHE;
+            }
+		}
+#endif
+
+		if (set_geoip_asn_v6_dat(remove_quotes(tree[1].image()).c_str(), options) != 1) {
+			cerr << "interpret() failure in geoip_asn_v6_dat" << endl;
+			return 0;
+		}
+	} else
         {
                 for (unsigned int i = 0; i < tree.count(); i++) {
                         if (interpret(tree[i], level + 1) != 1) {
@@ -347,6 +407,8 @@ ParseConfig(const char *fn)
 	rDumpReportsOnExit = "dump_reports_on_exit;";
 	rGeoIPv4Dat = "geoip_v4_dat" >> rQuotedToken >> *rBareToken >> ";";
 	rGeoIPv6Dat = "geoip_v6_dat" >> rQuotedToken >> *rBareToken >> ";";
+	rGeoIPASNv4Dat = "geoip_asn_v4_dat" >> rQuotedToken >> *rBareToken >> ";";
+	rGeoIPASNv6Dat = "geoip_asn_v6_dat" >> rQuotedToken >> *rBareToken >> ";";
 
 	// the whole config
 	rConfig = *(
@@ -363,7 +425,9 @@ ParseConfig(const char *fn)
 		rQnameFilter |
 		rDumpReportsOnExit |
 		rGeoIPv4Dat |
-		rGeoIPv6Dat
+		rGeoIPv6Dat |
+		rGeoIPASNv4Dat |
+		rGeoIPASNv6Dat
 	) >> end_r;
 
 	// trimming - do not allow whitespace INSIDE these objects
@@ -393,6 +457,8 @@ ParseConfig(const char *fn)
 	rMatchVlan.committed(true);
 	rGeoIPv4Dat.committed(true);
 	rGeoIPv6Dat.committed(true);
+	rGeoIPASNv4Dat.committed(true);
+	rGeoIPASNv6Dat.committed(true);
 
 	std::string config;
 	char c;
