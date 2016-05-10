@@ -62,6 +62,7 @@
 #include "qclass_index.h"
 #if HAVE_LIBGEOIP
 #include "country_index.h"
+#include "asn_index.h"
 #endif
 #include "tld_index.h"
 #include "rcode_index.h"
@@ -262,6 +263,7 @@ static indexer_t indexers[] = {
     {"server", sip_indexer, sip_iterator, sip_reset},
 #if HAVE_LIBGEOIP
     {"country", country_indexer, country_iterator, country_reset},
+    {"asn", asn_indexer, asn_iterator, asn_reset},
 #endif
     {"client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset},
     {"null", null_indexer, null_iterator, NULL},
