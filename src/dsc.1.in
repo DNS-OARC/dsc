@@ -1,0 +1,102 @@
+.\" Copyright (c) 2016, OARC, Inc.
+.\" Copyright (c) 2007, The Measurement Factory, Inc.
+.\" Copyright (c) 2007, Internet Systems Consortium, Inc.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. Neither the name of the copyright holder nor the names of its
+.\"    contributors may be used to endorse or promote products derived
+.\"    from this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+.\" "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+.\" LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+.\" FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+.\" COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+.\" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+.\" BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+.\" CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+.\" ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.TH dsc 1 "@PACKAGE_VERSION@" "DNS Statistics Collector"
+.SH NAME
+dsc \- DNS Statistics Collector
+.SH SYNOPSIS
+.B dsc
+[
+.B \-dfp
+]
+.I dsc.conf
+.SH DESCRIPTION
+DNS Statistics Collector (\fIdsc\fR) is a tool used for collecting and exploring
+statistics from busy DNS servers.  It can be used in a distributed
+architecture to run collectors on or near nameservers sending their data
+to one or more central presenters for display and archiving.
+
+.I dsc
+will chroot to a directory on startup and output statistics into files in
+various formats.
+
+See \fIdsc.conf(5)\fR on how to configure \fIdsc\fR, what formats exists,
+their structure and output filenames.
+.SH OPTIONS
+.TP
+.B \-d
+Debug mode.  Exits after first write.
+.TP
+.B \-f
+Foreground mode.  Don't become a daemon.
+.TP
+.B \-p
+Don't put interface in promiscuous mode.
+.TP
+.B \-v
+Print version and exit.
+.SH FILES
+.TP
+@etcdir@/dsc.conf
+Default configuration file for dsc
+.SH "SEE ALSO"
+dsc.conf(5)
+.SH AUTHORS
+Jerry Lundström, DNS-OARC
+.br
+Duane Wessels, Measurement Factory / Verisign
+.br
+Ken Keys, Cooperative Association for Internet Data Analysis
+.br
+Sebastian Castro, New Zealand Registry Services
+.LP
+Maintained by DNS-OARC
+.LP
+.RS
+.I https://www.dns-oarc.net/tools/dsc
+.RE
+.LP
+.SH BUGS
+For issues and feature requests please use:
+.LP
+.RS
+\fI@PACKAGE_URL@\fP
+.RE
+.LP
+For question and help please use:
+.LP
+.RS
+\fI@PACKAGE_BUGREPORT@\fP
+.RE
+.LP

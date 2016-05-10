@@ -1,0 +1,736 @@
+.\" Copyright (c) 2016, OARC, Inc.
+.\" Copyright (c) 2007, The Measurement Factory, Inc.
+.\" Copyright (c) 2007, Internet Systems Consortium, Inc.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. Neither the name of the copyright holder nor the names of its
+.\"    contributors may be used to endorse or promote products derived
+.\"    from this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+.\" "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+.\" LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+.\" FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+.\" COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+.\" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+.\" BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+.\" CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+.\" ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.TH dsc.conf 5 "@PACKAGE_VERSION@" "DNS Statistics Collector"
+.SH NAME
+dsc.conf \- Configuration for the DNS Statistics Collector
+.SH DESCRIPTION
+The file
+.I dsc.conf
+contains defaults for the program
+.B dsc(1) .
+Each line is a configuration option and may have arguments in the form
+.IR "option value;" .
+Comment lines must have a hash sign (#) in the first column.
+.SH CONFIGURATION
+.TP
+\fBlocal_address\fR IP ;
+Specifies the DNS server's local IP address.  It is used to
+determine the direction of an IP packet: sending, receiving,
+or other.  You may specify multiple local addresses by repeating
+the \fBlocal_address\fR line any number of times.
+.TP
+\fBrun_dir\fR PATH ;
+A directory that will become
+.I dsc
+current directory
+after it starts.  Output files will be written here, as will
+any core dumps.
+.TP
+\fBminfree_bytes\fR BYTES ;
+If the filesystem where
+.I dsc
+writes its output files
+does not have at least this much free space, then
+.I dsc
+will not write the files.  This prevents
+.I dsc
+from filling up the filesystem.  The files that would have been
+written are simply lost and cannot be recovered.  Output files will
+be written again when the filesystem has the necessary free space.
+.TP
+\fBpid_file\fR " FILE " ;
+The file where
+.I dsc
+will store its process id.
+.TP
+\fBbpf_program\fR " RULE " ;
+A Berkeley Packet Filter program string.  You may use this
+to further restrict the traffic seen but note that
+.I dsc
+currently has one indexer that looks at all IP
+packets.  If you specify something like \fBudp port 53\fR
+that indexer will not work.
+
+However, if you want to monitor multiple DNS servers with
+separate
+.I dsc
+instances on one collector box, then you
+may need to use \fBbpf_program\fR to make sure that each
+.I dsc
+process sees only the traffic it should see.
+
+Note that this directive must go before the \fBinterface\fR
+directive because
+.I dsc
+makes only one pass through
+the configuration file and the BPF filter is set when the
+interface is initialized.
+.TP
+\fBinterface\fR IFACE | FILE ;
+The interface name to sniff packets from or a pcap file to
+read packets from.   You may specify multiple interfaces.
+.TP
+\fBqname_filter\fR NAME FILTER ;
+This directive allows you to define custom filters to match
+query names in DNS messages.  Please see section QNAME FILTERS
+for more information.
+.TP
+\fBdatasets\fR NAME TYPE LABEL:FIRST LABEL:SECOND FILTERS [ PARAMETERS ] ;
+This directive is the hart of \fBdsc\fR.  However, it is also
+the most complex (see section DATASETS).
+
+See section EXAMPLE for a set of defined good datasets which is also
+installed as \fBdsc.conf.sample\fR.
+.TP
+\fBbpf_vlan_tag_byte_order\fR TYPE ;
+.I dsc
+knows about VLAN tags.  Some operating systems (FreeBSD-4.x) have
+a bug whereby the VLAN tag id is byte-swapped.  Valid values for
+this directive are \fBhost\fR and \fBnet\fR (the default).  Set
+this to \fBhost\fR if you suspect your operating system has the VLAN
+tag byte order bug.
+.TP
+\fBmatch_vlan\fR ID [ ID ... ] ;
+A white-space separated list of VLAN identifiers.  If set, only the
+packets belonging to these VLANs are analyzed.
+.TP
+\fBoutput_format\fR FORMAT ;
+Specify the output format, can be give multiple times to output in
+more then one format.  Default output format is XML, see section
+DATA FORMATS and FILE NAMING CONVENTIONS.
+.TP
+\fBdump_reports_on_exit\fR ;
+Dump any remaining report before exiting.
+
+NOTE: Timing in the data files will be off!
+.TP
+\fBgeoip_v4_dat\fR " FILE " [ OPTION ... ] ;
+Specify the GeoIP dat file to open for IPv4 lookup, see section GEOIP
+for options.
+.TP
+\fBgeoip_v6_dat\fR " FILE " [ OPTION ... ] ;
+Specify the GeoIP dat file to open for IPv6 lookup, see section GEOIP
+for options.
+.SH DATASETS
+A \fBdataset\fR is a 2-D array of counters.  For example, you
+might have a dataset with \*(lqQuery Type\*(rq along one dimension and
+\*(lqQuery Name Length\*(rq on the other.  The result is a table that
+shows the distribution of query name lengths for each query type.
+
+A dataset has the following format:
+
+\fBdatasets\fR NAME TYPE LABEL:FIRST LABEL:SECOND FILTERS [ PARAMETERS ] ;
+
+.TP
+\fBNAME\fR
+The name of the dataset, this must be unique and is used in the filename
+for the output files.
+.TP
+\fBTYPE\fR
+The protocol layer, available layers are:
+.nf
+    ip
+    dns
+.fi
+.TP
+\fBLABEL\fR
+The label of the dimensions.
+.TP
+\fBFIRST\fR
+The indexer for the first dimension, see INDEXERS sections.
+.TP
+\fBSECOND\fR
+The indexer for the second dimension, see INDEXERS sections.
+.TP
+\fBFILTERS\fR
+One or more filters, see FILTERS sections.
+.TP
+\fBPARAMETERS\fR
+Zero or more parameters, see section PARAMETERS.
+.LP
+.SH "INDEXERS AND FILTERS"
+An
+.I indexer
+is simply a function that transforms the attributes
+of an IP/DNS message into an array index.  For some attributes the
+transformation is straightforward.  For example, the \*(lqQuery Type\*(rq
+indexer simply extracts the query type value from a DNS message and
+uses this 16-bit value as the array index.
+
+Other attributes are slightly more complicated.  For example, the
+\*(lqTLD\*(rq indexer extracts the TLD of the QNAME field of a DNS message
+and maps it to an integer.  The indexer maintains a simple internal
+table of TLD-to-integer mappings.  The actual integer values are
+unimportant because the TLD strings, not the integers, appear in
+the resulting data.
+
+When you specify an indexer on a \fBdataset\fR line, you must
+provide both the name of the indexer and a label.  The Label appears
+as an attribute in the output.
+
+For example the following line:
+
+.nf
+    dataset the_dataset dns Foo:foo Bar:bar queries-only;
+.fi
+
+Would produce the following XML output:
+
+.nf
+    <array name="the_dataset" dimensions="2" start_time="1091663940" ...
+      <dimension number="1" type="Foo"/>
+      <dimension number="2" type="Bar"/>
+      <data>
+        <Foo val="1">
+          <Bar val="0" count="4"/>
+          ...
+          <Bar val="100" count="41"/>
+        </Foo>
+        <Foo val="2">
+          ...
+        </Foo>
+      </data>
+    </array>
+.fi
+.SH "IP INDEXERS"
+.I dsc
+includes only minimal support for collecting IP-layer
+stats.  Mostly we are interested in finding out the mix of
+IP protocols received by the DNS server.  It can also show us
+if/when the DNS server is the subject of denial-of-service
+attack.
+.TP
+\fBip_direction\fR
+One of three values: \fBsent\fR, \fBrecv\fR or \fBelse\fR.  Direction
+is determined based on the setting for \fBlocal_address\fR in the
+configuration file.
+.TP
+\fBip_proto\fR
+The IP protocol type, e.g.: \fBtcp\fR, \fBudp\fR or \fBicmp\fR.
+Note that the \fBbpf_program\fR setting affects all traffic seen.  If
+the program contains the word \*(lqudp\*(rq then you won't see any counts
+for non-UDP traffic.
+.TP
+\fBip_version\fR
+The IP version number, e.g.: \fB4\fR or \fB6\fR.  Can be used to
+compare how much traffic comes in via IPv6 compared to IPv4.
+.SH "IP FILTERS"
+Currently there is only one IP protocol filter: \fBany\fR.
+It includes all received packets.
+.SH "DNS INDEXERS"
+.TP
+\fBcertain_qnames\fR
+This indexer isolates the two most popular query names seen
+by DNS root servers: \fIlocalhost\fR and \fI[a--m].root-servers.net\fR.
+.TP
+\fBclient_subnet\fR
+Groups DNS messages together by the subnet of the
+client's IP address.  The subnet is masked by /24 for IPv4
+and by /96 for IPv6.  We use this to make datasets with
+large, diverse client populations more manageable and to
+provide a small amount of privacy and anonymization.
+.TP
+\fBclient\fR
+The IP (v4 and v6) address of the DNS client.
+.TP
+\fBserver\fR
+The IP (v4 and v6) address of the DNS server.
+.TP
+\fBcountry\fR
+The country code of the IP (v4 and v6), see section GEOIP.
+.TP
+\fBdo_bit\fR
+This indexer has only two values: 0 or 1.  It indicates
+whether or not the \*(lqDO\*(rq bit is set in a DNS query.  According to
+RFC 2335: \fISetting the DO bit to one in a query indicates
+to the server that the resolver is able to accept DNSSEC
+security RRs.\fR
+.TP
+\fBedns_version\fR
+The EDNS version number, if any, in a DNS query.  EDNS
+Version 0 is documented in RFC 2671.
+.TP
+\fBedns_bufsiz\fR
+The EDNS buffer size per 512 chunks (0-511, 512-1023 etc).
+.TP
+\fBidn_qname\fR
+This indexer has only two values: 0 or 1.  It returns 1
+when the first QNAME in the DNS message question section
+is an internationalized domain name (i.e., containing
+non-ASCII characters).  Such QNAMEs begin with the string
+\fIxn--\fR.  This convention is documented in RFC 3490.
+.TP
+\fBmsglen\fR
+The overall length (size) of the DNS message.
+.TP
+\fBnull\fR
+A \*(lqno-op\*(rq indexer that always returns the same value.
+This can be used to effectively turn the 2-D table into a
+1-D array.
+.TP
+\fBopcode\fR
+The DNS message opcode is a four-bit field.  QUERY is the
+most common opcode.  Additional currently defined opcodes
+include: IQUERY, STATUS, NOTIFY, and UPDATE.
+.TP
+\fBqclass\fR
+The DNS message query class (QCLASS) is a 16-bit value.  IN
+is the most common query class.  Additional currently defined
+query class values include: CHAOS, HS, NONE, and ANY.
+.TP
+\fBqname\fR
+The full QNAME string from the first (and usually only)
+QNAME in the question section of a DNS message.
+.TP
+\fBqnamelen\fR
+The length of the first (and usually only) QNAME in a DNS
+message question section.  Note this is the \*(lqexpanded\*(rq
+length if the message happens to take advantage of DNS
+message \*(lqcompression\*(rq.
+.TP
+\fBqtype\fR
+The query type (QTYPE) for the first QNAME in the DNS message
+question section.  Well-known query types include: A, AAAA,
+A6, CNAME, PTR, MX, NS, SOA, and ANY.
+.TP
+\fBquery_classification\fR
+A stateless classification of \*(lqbogus\*(rq queries:
+.RS
+.TP
+non-auth-tld
+When the TLD is not one of the IANA-approved TLDs.
+.TP
+root-servers.net
+A query for a root server IP address.
+.TP
+localhost
+A query for the localhost IP address.
+.TP
+a-for-root
+An \*(lqA\*(rq query for the DNS root (.).
+.TP
+a-for-a
+An \*(lqA\*(rq query for an IPv4 address.
+.TP
+rfc1918-ptr
+A PTR query for an RFC 1918 address.
+.TP
+funny-class
+A query with an unknown/undefined query class.
+.TP
+funny-qtype
+A query with an unknown/undefined query type.
+.TP
+src-port-zero
+When the UDP message's source port equals zero.
+.TP
+malformed
+A malformed DNS message that could not be entirely parsed.
+.RE
+.TP
+\fBrcode\fR
+The RCODE value in a DNS response.  The most common response
+codes are 0 (NO ERROR) and 3 (NXDOMAIN).
+.TP
+\fBrd_bit\fR
+This indexer returns 1 if the RD (recursion desired) bit is
+set in the query.  Usually only stub resolvers set the RD bit.
+Usually authoritative servers do not offer recursion to their
+clients.
+.TP
+\fBtc_bit\fR
+This indexer returns 1 if the TC (truncated) bit is
+set (in a response).  An authoritative server sets the TC bit
+when the entire response won't fit into a UDP message.
+.TP
+\fBtld\fR
+The TLD of the first QNAME in a DNS message's question section.
+.TP
+\fBsecond_ld\fR
+The Second LD of the first QNAME in a DNS message's question section.
+.TP
+\fBthird_ld\fR
+The Third LD of the first QNAME in a DNS message's question section.
+.TP
+\fBtransport\fR
+Indicates whether the DNS message is carried via UDP or TCP.
+.TP
+\fBdns_ip_version\fR
+The IP version number that carried the DNS message.
+.TP
+\fBdns_source_port\fR
+The source port of the DNS message.
+.TP
+\fBdns_sport_range\fR
+The source port of the DNS message per 1024 chunks (0-1023, 1024-2047 etc).
+.TP
+\fBqr_aa_bits\fR
+The "qr_aa_bits" dataset may be useful when \fBdsc\fR is monitoring
+an authoritative name server.  This dataset counts the number of DNS
+messages received with each combination of QR,AA bits.  Normally
+the authoritative name server should *receive* only *queries*.  If
+the name server is the target of a DNS reflection attack, it will
+probably receive DNS *responses* which have the QR bit set.
+.SH "DNS FILTERS"
+You must specify one or more of the following filters (separated
+by commas) on the \fBdataset\fR line. Note that multiple filters
+are \fIAND\fRed together.  That is, they narrow the input stream, rather
+than broaden it.
+.TP
+\fBany\fR
+The no-op filter, counts all messages.
+.TP
+\fBqueries-only\fR
+Count only DNS query messages.  A query is a DNS message
+where the QR bit is set to 0.
+.TP
+\fBreplies-only\fR
+Count only DNS response messages.  A query is a DNS message
+where the QR bit is set to 1.
+.TP
+\fBnxdomains-only\fR
+Count only NXDOMAIN responses.
+.TP
+\fBpopular-qtypes\fR
+Count only DNS messages where the query type is one of:
+A, NS, CNAME, SOA, PTR, MX, AAAA, A6, ANY.
+.TP
+\fBidn-only\fR
+Count only DNS messages where the query name is in the
+internationalized domain name format.
+.TP
+\fBaaaa-or-a6-only\fR
+Count only DNS messages where the query type is AAAA or A6.
+.TP
+\fBroot-servers-net-only\fR
+Count only DNS messages where the query name is within
+the \fIroot-servers.net\fR domain.
+.TP
+\fBchaos-class\fR
+Counts only DNS messages where QCLASS is equal to CHAOS (3).  The
+CHAOS class is generally used for only the special \fIhostname.bind\fR
+and \fIversion.bind\fR queries.
+.TP
+\fBpriming-query\fR
+Count only DNS messages where the query type is NS and QNAME is \*(lq.\*(rq.
+.SH "QNAME FILTERS"
+Defines a custom QNAME-based filter for DNS messages.  If you
+refer to this named filter on a dataset line, then only queries
+or replies for matching QNAMEs will be counted.  The QNAME
+argument is a regular expression.  For example:
+
+.nf
+    qname_filter WWW-Only ^www\. ;
+    dataset qtype dns All:null Qtype:qtype queries-only,WWW-Only ;
+.fi
+.SH PARAMETERS
+.I dsc
+currently supports the following optional parameters:
+.TP
+\fBmin-count\fR=NN
+Cells with counts less than \fBNN\fR are not included in
+the output.  Instead, they are aggregated into the special
+values \fI-:SKIPPED:-\fR and \fI-:SKIPPED_SUM:-\fR.
+This helps reduce the size of datasets with a large number
+of small counts.
+.TP
+\fBmax-cells\fR=NN
+A different, perhaps better, way of limiting the size
+of a dataset.  Instead of trying to determine an appropriate
+\fBmin-count\fR value in advance, \fBmax-cells\fR
+allows you put a limit on the number of cells to
+include for the second dataset dimension.  If the dataset
+has 9 possible first-dimension values, and you specify
+a \fBmax-cell\fR count of 100, then the dataset will not
+have more than 900 total values.  The cell values are sorted
+and the top \fBmax-cell\fR values are output.  Values
+that fall below the limit are aggregated into the special
+\fI-:SKIPPED:-\fR and \fI-:SKIPPED_SUM:-\fR entries.
+.SH "FILE NAMING CONVENTIONS"
+The filename is in the format:
+.nf
+    ${timestamp}.dscdata.${format}
+.fi
+
+For example:
+.nf
+    1154649660.dscdata.xml
+.fi
+.SH "DATA FORMATS"
+.TP
+\fBXML\fR
+A dataset XML file has the following structure:
+.RE
+
+.nf
+<array name="dataset-name" dimensions="2" start_time="unix-seconds"
+        stop_time="unix-seconds">
+  <dimension number="1" type="Label1"/>
+  <dimension number="2" type="Label2"/>
+  <data>
+    <Label1 val="D1-V1">
+      <Label2 val="D2-V1" count="N1"/>
+      <Label2 val="D2-V2" count="N2"/>
+      <Label2 val="D2-V3" count="N3"/>
+    </Label1>
+    <Label1 val="D1-V2">
+      <Label2 val="D2-V1" count="N1"/>
+      <Label2 val="D2-V2" count="N2"/>
+      <Label2 val="D2-V3" count="N3"/>
+    </Label1>
+  </data>
+</array>
+.fi
+.TP
+\fBJSON\fR
+A dataset JSON file has the following structure:
+.RE
+
+.nf
+{
+  "name": "dataset-name",
+  "start_time": unix-seconds,
+  "stop_time": unix-seconds,
+  "dimensions": [ "Label1", "Label2" ],
+  "data": [
+    {
+      "Label1": "D1-V1",
+      "Label2": [
+        { "val": "D2-V1", "count": N1 },
+        { "val": "D2-V2", "count": N2 },
+        { "val": "D2-V3", "count": N3 }
+      ]
+    },
+    {
+      "Label1": "D1-V2-base64",
+      "base64": true,
+      "Label2": [
+        { "val": "D2-V1", "count": N1 },
+        { "val": "D2-V2-base64", "base64": true, "count": N2 },
+        { "val": "D2-V3", "count": N3 }
+      ]
+    }
+  ]
+}
+.fi
+
+\fBdataset-name\fR, \fBLabel1\fR, and \fBLabel2\fR come from the
+dataset definition.
+
+The \fBstart_time\fR and \fBstop_time\fR attributes
+are given in Unix seconds.  They are normally 60-seconds apart.
+.I dsc
+usually starts a new measurement interval on 60 second
+boundaries.  That is:
+
+.nf
+    stop_time mod{60} == 0
+.fi
+
+The \fBLabel1\fR attributes (\fID1-V1\fR, \fID1-V2\fR) are
+values for the first dimension indexer.  Similarly, the \fBLabel2\fR
+attributes (\fID2-V1\fR, \fID2-V2\fR \fID2-V3\fR) are values for the
+second dimension indexer.  For some indexers these values are numeric,
+for others they are strings.  If the value contains certain non-printable
+characters, the string is base64-encoded and the optional BASE64
+attribute is set to 1/true.
+
+There are two special \fBval\fRs that help keep large datasets down
+to a reasonable size: \fI-:SKIPPED:-\fR and
+\fI-:SKIPPED_SUM:-\fR.  These may be present on datasets that use
+the \fImin-count\fR and \fImax-cells\fR parameters (see section
+PARAMETERS).  \fI-:SKIPPED:-\fR is the number of cells that were not
+included in the output.  \fI-:SKIPPED_SUM:-\fR, is the sum of the
+counts for all the skipped cells.
+
+Note that \*(lqone-dimensional datasets\*(rq still use two dimensions in
+the output.  The first dimension type and value will be \*(lqAll\*(rq as shown
+in the example below:
+
+.nf
+    <array name="rcode" dimensions="2" start_time="1154649600"
+            stop_time="1154649660">
+      <dimension number="1" type="All"/>
+      <dimension number="2" type="Rcode"/>
+      <data>
+        <All val="ALL">
+          <Rcode val="0" count="70945"/>
+          <Rcode val="3" count="50586"/>
+          <Rcode val="4" count="121"/>
+          <Rcode val="1" count="56"/>
+          <Rcode val="5" count="44"/>
+        </All>
+      </data>
+    </array>
+.fi
+
+The \fBcount\fR values are always integers.  If the count for
+a particular tuple is zero, it should not be included in the output.
+
+Note that the contents of the output do not indicate where it
+came from.  In particular, the server and node that it came from
+are not present.
+.SH GEOIP
+Country code lookup is available using MaxMind GeoIP Legacy API if it
+was enabled during compilation.
+
+Multiple options can be give to the database and are directly linked
+to the options for \fIGeoIP_open()\fR but without the prefix of
+\fBGEOIP_\fR, example:
+
+.nf
+    geoip_v4_dat "/usr/local/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE;
+.fi
+
+GeoIP documentation says:
+.TP
+\fBSTANDARD\fR
+Read database from file system. This uses the least memory.
+.TP
+\fBMEMORY_CACHE\fR
+Load database into memory. Provides faster performance but uses more memory.
+.TP
+\fBCHECK_CACHE\fR
+Check for updated database. If database has been updated, reload file
+handle and/or memory cache.
+.TP
+\fBINDEX_CACHE\fR
+Cache only the the most frequently accessed index portion of the database,
+resulting in faster lookups than GEOIP_STANDARD, but less memory usage
+than GEOIP_MEMORY_CACHE. This is useful for larger databases such as
+GeoIP Legacy Organization and GeoIP Legacy City. Note: for GeoIP Legacy
+Country, Region and Netspeed databases, GEOIP_INDEX_CACHE is equivalent
+to GEOIP_MEMORY_CACHE.
+.TP
+\fBMMAP_CACHE\fR
+Load database into mmap shared memory. MMAP is not available for
+32bit Windows.
+.SH EXAMPLE
+.nf
+local_address 127.0.0.1;
+local_address ::1;
+
+run_dir "/var/lib/dsc";
+
+minfree_bytes 5000000;
+
+pid_file "/run/dsc.pid";
+
+# Example filters
+#
+#bpf_program "udp port 53";
+#bpf_program "tcp port 53 or udp port 53";
+
+# Use this to see only DNS *queries*
+#
+#bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
+
+interface eth0;
+
+dataset qtype dns All:null Qtype:qtype queries-only;
+dataset rcode dns All:null Rcode:rcode replies-only;
+dataset opcode dns All:null Opcode:opcode queries-only;
+dataset rcode_vs_replylen dns Rcode:rcode ReplyLen:msglen replies-only;
+dataset client_subnet dns All:null ClientSubnet:client_subnet queries-only max-cells=200;
+dataset qtype_vs_qnamelen dns Qtype:qtype QnameLen:qnamelen queries-only;
+dataset qtype_vs_tld dns Qtype:qtype TLD:tld queries-only,popular-qtypes max-cells=200;
+dataset certain_qnames_vs_qtype dns CertainQnames:certain_qnames Qtype:qtype queries-only;
+dataset client_subnet2 dns Class:query_classification ClientSubnet:client_subnet queries-only max-cells=200;
+dataset client_addr_vs_rcode dns Rcode:rcode ClientAddr:client replies-only max-cells=50;
+dataset chaos_types_and_names dns Qtype:qtype Qname:qname chaos-class,queries-only;
+#dataset country_code dns All:null CountryCode:country queries-only;
+dataset idn_qname dns All:null IDNQname:idn_qname queries-only;
+dataset edns_version dns All:null EDNSVersion:edns_version queries-only;
+dataset edns_bufsiz dns All:null EDNSBufSiz:edns_bufsiz queries-only;
+dataset do_bit dns All:null D0:do_bit queries-only;
+dataset rd_bit dns All:null RD:rd_bit queries-only;
+dataset idn_vs_tld dns All:null TLD:tld queries-only,idn-only;
+dataset ipv6_rsn_abusers dns All:null ClientAddr:client queries-only,aaaa-or-a6-only,root-servers-net-only max-cells=50;
+dataset transport_vs_qtype dns Transport:transport Qtype:qtype queries-only;
+dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
+#dataset second_ld_vs_rcode dns Rcode:rcode SecondLD:second_ld replies-only max-cells=50;
+#dataset third_ld_vs_rcode dns Rcode:rcode ThirdLD:third_ld replies-only max-cells=50;
+dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
+#dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
+
+# Datasets for collecting data on priming queries at root nameservers
+#
+#dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
+#dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
+
+# Dataset for monitoring an authoritative nameserver for DNS reflection attack
+#
+#dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
+
+output_format XML
+#output_format JSON
+
+#geoip_v4_dat "/usr/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE MMAP_CACHE;
+#geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";
+.fi
+.SH FILES
+@etcdir@/dsc.conf
+.br
+@etcdir@/dsc.conf.sample
+.SH "SEE ALSO"
+dsc(1)
+.SH AUTHORS
+Jerry Lundström, DNS-OARC
+.br
+Duane Wessels, Measurement Factory / Verisign
+.br
+Ken Keys, Cooperative Association for Internet Data Analysis
+.br
+Sebastian Castro, New Zealand Registry Services
+.LP
+Maintained by DNS-OARC
+.LP
+.RS
+.I https://www.dns-oarc.net/tools/dsc
+.RE
+.LP
+.SH BUGS
+For issues and feature requests please use:
+.LP
+.RS
+\fI@PACKAGE_URL@\fP
+.RE
+.LP
+For question and help please use:
+.LP
+.RS
+\fI@PACKAGE_BUGREPORT@\fP
+.RE
+.LP

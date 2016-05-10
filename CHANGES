@@ -1,3 +1,196 @@
+2016-05-10 Jerry Lundström
+
+    Release 2.0.0rc1
+
+    This release brings a major update to the DSC software with the separation
+    of the Collector and the Presenter, this repository will only include
+    the Collector from now on.
+
+    Please read UPGRADE.md for information on upgrading from previous version.
+
+    Major changes / additions are:
+    - Use of Automake and rework of the Makefiles
+    - Conform to FHS 3.0
+    - Man-pages (man dsc, man dsc.conf)
+    - Continuous Integration testing using Travis-CI
+    - Compatibility testing on Debian, CentOS, FreeBSD and OpenBSD
+    - Use of Coverity Scan to find defects
+    - JSON output format, see output_format in dsc.conf(5).
+    - IPv6 support in country indexer and libgeoip is now runtime
+      configurable, see geoip_v4_dat / geoip_v6_dat in dsc.conf(5).
+    - Signal handling and optional write reports on exit, see
+      dump_reports_on_exit in dsc.conf(5).
+    - Upload scripts are deprecated
+
+    Credits:
+    - Klaus Darilion NIC.AT for GeoIP IPv6 patch.
+    - Michael Braunoeder NIC.AT for NXDOMAIN filter patch.
+    - L-root for overflow bugfix IP fragments.
+    - McStork for JSON output patch.
+
+    69ef9b4 Add -v to display version
+    7e5b403 Fix defects
+    0f64128 Add badges
+    f795ed3 Old automake needs AM_PROG_CC_C_O
+    27ae870 Fix #4: Remove old indexers, update indexers and filters
+            documentation, update authors.
+    d873411 Fix #38: Use locking to ensure we do not overwrite PID file
+    800fe83 Fix #35: GeoIP configurable. Fix debug and syslog in country
+            indexer. Add documentation and config example.
+    a1dcdf1 Avoid the checks for newer .dat files, this may have performance
+            impacts.
+    bb9a059 Add IPv6 support to country indexer and add some failure handling
+    03e16a8 Include config.h as this defines HAVE_LIBGEOIP. Thus, the geoip
+            code was not used yet.
+    7808d2e New dsyslog/dsyslogf/dfprint macro. Change fprintf to dfprintf.
+    fe47288 Fix #34: Create man-pages.
+    7a9b3c3 Fix #33: Handle most signals, new config option to dump reports
+            on exit.
+    4753eda Add a filter to track NXDOMAIN responses
+    1565952 Add info about DSP
+    05ef699 Fix make test in dist.
+    68bdc9b No default interface in conf example
+    2be98be Correct libexec directory. Install etc files in subdirectory.
+    319ac4e Only build dist. Build in a build directory.
+    96e0e73 Fix #16: conform to FHS. Automake tweaks.
+    bbcca74 Fix #23: Add missing changes for master branch
+    197ad52 No need to install autoconf/automake in Travis
+    eb95ee1 Add license to cron scripts
+    4f62420 Fix/add make dist and try it in Travis
+    ac4c634 Reconstruct repository to move out presenter. Update licenses.
+            Use pcap_layers as a git submodule. Use automake/autoconf.
+    89c7f4c Import patched pcap_layers.c code with buffer overflow bugfix
+    2787db2 Only wait a certain number of times for the files to appear
+    b5d911d Add the first test, simple run and compare gold files
+    32fd807 Fix #13: Document ability to read packets from pcap files
+    eee217e Rework some of the Makefiles based on some of the patches found in
+            the Debian packages
+    7a2a67e Fix #12: Add hash for dataset names and check for duplicates
+    ed1eba9 Add base64 for certain non-printable characters in JSON output and
+            remove extra new-line
+    580d543 Add output_format and JSON structure description to documentation
+    d2d1ed2 Fix #3: Reworked JSON output format implementation
+    2e2f90f Give option for additional output JSON/Extended JSON
+    a23b6af Ignore generated files
+    f4214f3 Add Travis CI. Remove old TODAY/tar commands. Add ifndef/def to
+            all .h files. Fix issue with arpa/nameser_compat.h on OpenBSD by
+            checking for the header file and only including it if it exists.
+            Rename configure.scan to configure.ac and change contact info and
+            version. Update configure using autoconf 2.69 on Ubuntu 14.04 LTS.
+            Set CC/CPP/CXX/CXXFLAGS in Makefile found by configure.
+
+2016-01-11 Duane Wessels
+
+    added dfprintf() macro to improve code readability and avoid
+    multi-line if (debug_lvl) fprintf(...) statements.
+
+2016-01-11 Duane Wessels
+
+    Commenting out ancount and nscount to silence compiler warnings
+    about unused variables.
+
+2016-01-11 Duane Wessels
+
+    Patch from John Heidemann relating to TCP reassembly
+    - fix for multiple DNS messages per TCP connection that span
+      multiple segments
+    - some editorial code changes (== to >=)
+    - additional debugging statements
+
+2016-01-11 Duane Wessels
+
+    Minor fix: debugging statement wasn't protected with debug_flag
+    check. (thanks John H).
+
+2015-12-23 Duane Wessels
+
+    add prototype for dns_message_handle()
+
+2015-12-23 Duane Wessels
+
+    Experimental feature to drop "received responses" and "sent queries"
+    since DSC is generally used to monitor authoritative servers that,
+    under normal operation, never receive responses nor send queries.
+    Currently protected with #ifdefs.
+
+2015-12-15 Duane Wessels
+
+    Oops, forgot to set dns_message->server_ip_addr for new server_addr
+    indexer
+
+2015-11-23 Duane Wessels
+
+    removing one level of the "dsc/dsc" top directory
+
+2015-11-11 aqadeer
+
+    In pcap.c pcap_setnonblock doesn't accept captured files anymore and
+    must need a device from where it could do live capture.  For offline
+    files to work, a simple check is added to by-pass this porblem.
+
+2015-11-05 Duane Wessels
+
+    Added a 'server' indexer.  This records the server (query destination)
+    IP address.
+
+2015-11-05 Duane Wessels
+
+    Renamed "client_ipv4" to "client_ip" because it supports v4 and v6
+
+2015-11-04 Duane Wessels
+
+    Update copy of pcap_layers.c from https://github.com/wessels/pcap_layers
+
+2015-11-04 Duane Wessels
+
+    avoid "void *" pointer arithmetic (Yoshitaka Aharen)
+
+2015-10-09 Duane Wessels
+
+    bugfix: handle receiving TCP dns length prefix out of order.
+
+    A user reported that when a TCP segment containing only the DNS message
+    length is received *after* the message it references (i.e., out-of-order),
+    then DSC goes into a 100% CPU loop.  Confirmed that the code doesn't work
+    correctly when dnslen comes out-of-order, but I wasn't able to easily
+    reproduce the 100% CPU bug.
+
+    The fix is to add a "dnslen_bytes_seen_mask" variable that tracks which
+    of the two dnslen bytes we've seen.  Once both bytes have been seen,
+    then we can proceed to reassembling the message buffer.
+
+2015-10-09 Duane Wessels
+
+    cosmetic: rename ipv4 to ip4 to be consistent with ip6
+
+2015-10-09 Duane Wessels
+
+    Regarding recent change to add pcap_layers library, forgot to add it
+    to Makefile.in (vs Makefile) before committing.
+
+2015-10-09 Duane Wessels
+
+    Integrated https://github.com/wessels/pcap_layers with DSC collector.
+    The DSC code now includes a copy of the pcap_layers library, which does
+    a better job of extracting the layers of a pcap packet.  In particular,
+    it does IP fragmentation reassembly, which is important for DSC and
+    RSSAC-002. At this time the DSC code still does TCP reassembly, however.
+
+    Removed USE_IPV6 ifdefs.  IPV6 support is now always compiled.
+
+2015-10-08 Duane Wessels
+
+    Removing "DMC *dns_message_callback" because there is only one that
+    would ever be used. The callback layer of indirection makes the code
+    a little confusing, and also this change is in preparation for bringing
+    in a third-party pcap layer handling library which will work slightly
+    differently.
+
+2015-10-08 Duane Wessels
+
+    The "ip_message" code has not been in use since a commit back in 2012.
+    But the code lingered, until now.
+
 2015-02-25 Duane Wessels
 
     User reported a concern with the way dsc-xml-extractor.pl called
@@ -117,7 +310,7 @@
 
     Also added a pseudo-dataset that reports on pcap packets captured
     and dropped.
-    
+
 
 2008-12-02 Duane Wessels
 
@@ -234,7 +427,7 @@
     script.
 
 2008-01-04 Ken Keys
-   
+
     Previously, a child was forked for each collection interval.
     Memory allocated for collected data was freed by simply exiting
     the child.  But this left no way to preserve any data across

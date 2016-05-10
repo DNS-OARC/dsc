@@ -80,7 +80,7 @@ POSSIBILITY OF SUCH DAMAGE.
 \chapter{Introduction}
 
 {\dsc} is a system for collecting and presenting statistics from
-a busy DNS server.  
+a busy DNS server.
 
 \section{Components}
 
@@ -169,12 +169,12 @@ data files and generate Ploticus scriptfiles to generate plots.  Plots
 are always generated on demand via the CGI application.
 
 \path|dsc-grapher.pl| is the script that displays graphs from the
-archived data.  
+archived data.
 
 
 \section{Architecture}
 
-Figure~\ref{fig-architecture} shows the {\dsc} architecture.  
+Figure~\ref{fig-architecture} shows the {\dsc} architecture.
 
 \begin{figure}
 \centerline{\psfig{figure=dsc-arch.eps,width=3.5in}}
@@ -187,7 +187,7 @@ actually consist of multiple nodes.  Figure~\ref{fig-architecture}
 shows six collectors (the circles) and two servers (the rounded
 rectangles).  For a real-world example, consider a DNS root server.
 IP Anycast allows a DNS root server to have geographically distributed
-nodes that share a single IP address.  We call each instance a 
+nodes that share a single IP address.  We call each instance a
 {\em node\/} and all nodes sharing the single IP address belong
 to the same {\em server\/}.
 
@@ -290,7 +290,7 @@ You must create it manually:
 % make install
 \end{MyVerbatim}
 
-Note that {\dsc}'s Perl modules are installed in the 
+Note that {\dsc}'s Perl modules are installed in the
 ``site\_perl'' directory.  You'll probably need {\em root\/}
 privileges to install files there.
 
@@ -410,7 +410,7 @@ with {\tt nice\/}.  Here is the cron job that we use:
 
 The other useful cron script is \path|remove-xmls.pl|.  It removes
 XML files older than a specified number of days.  Since most of the
-information in the XML files is archived into easier-to-parse 
+information in the XML files is archived into easier-to-parse
 data files, you can remove the XML files after a few days.  This is
 the job that we use:
 
@@ -459,7 +459,7 @@ technique (such as scp or rsync) you can skip these instructions.
 \section{Generating X.509 Certificates}
 
 We use X.509 certificates to authenticate both sides
-of an SSL connection when uploading XML data files from 
+of an SSL connection when uploading XML data files from
 the collector to the presenter.
 
 Certificate generation is a tricky thing.  We use three different
@@ -482,7 +482,7 @@ used to create X.509 certificates.  You can find them in the
 into \path|/usr/local/dsc|.  You should edit \path|openssl.conf|
 and enter the relevant information for your organization.
 
-\subsection{Certificate Authority} 
+\subsection{Certificate Authority}
 
 You may need to create a self-signed certificate authority if you
 don't already have one.  The CA signs client and server certificates.
@@ -491,7 +491,7 @@ collector sites.  Here is how to use our \path|create-ca-cert.sh|
 script:
 
 \begin{MyVerbatim}
-% sh create-ca-cert.sh 
+% sh create-ca-cert.sh
 CREATING CA CERT
 Generating a 2048 bit RSA private key
 ..............................................................................
@@ -504,7 +504,7 @@ Verifying - Enter PEM pass phrase:
 \end{MyVerbatim}
 
 
-\subsection{Server Certificate} 
+\subsection{Server Certificate}
 
 The server certificate is used by the HTTP server (Apache/mod\_ssl).
 The clients will have a copy of the CA certificate so they
@@ -513,7 +513,7 @@ Use the \path|create-srv-cert.sh| script to create a server
 certificate:
 
 \begin{MyVerbatim}
-% sh create-srv-cert.sh 
+% sh create-srv-cert.sh
 CREATING SERVER REQUEST
 Generating a 1024 bit RSA private key
 ..........................++++++
@@ -604,7 +604,7 @@ Country Name (2 letter code) [AU]:US
 State or Province Name (full name) [Some-State]:California
 Locality Name (eg, city) []:Los Angeles
 Organization Name (eg, company) [Internet Widgits Pty Ltd]:Some DNS Server
-Organizational Unit Name (eg, section) []:x-root  
+Organizational Unit Name (eg, section) []:x-root
 Common Name (eg, YOUR name) []:LAX
 Email Address []:noc@example.com
 
@@ -626,7 +626,7 @@ organizationalUnitName:PRINTABLE:'x-root  '
 commonName            :PRINTABLE:'LAX'
 emailAddress          :IA5STRING:'noc@example.com'
 Certificate is to be certified until Jun  3 20:17:24 2013 GMT (3000 days)
-Sign the certificate? [y/n]:y 
+Sign the certificate? [y/n]:y
 
 
 1 out of 1 certificate requests certified, commit? [y/n]y
@@ -743,7 +743,7 @@ prefix, you can manually copy these files to a location
 of your choosing.  If you do that, you'll also need to
 edit the cron scripts to match your choice of pathnames, etc.
 
-\section{Uploading XML Files} 
+\section{Uploading XML Files}
 \label{sec-install-collector-cron}
 
 This section describes how XML files are transferred from
@@ -863,7 +863,7 @@ XML files.  These subdirectories reduce filesystem pressure in the event
 of backlogs.
 
 {\em rsync\/} over {\em ssh\/} requires you to use RSA or DSA public keys
-that do not have a passphrase.  If you do not want to use one of 
+that do not have a passphrase.  If you do not want to use one of
 {\em ssh\/}'s default identity files, you can create one specifically
 for this script.  It should be named \path|dsc_uploader_id| (and
 \path|dsc_uploader_id.pub|) in the \$HOME/.ssh directory of the user
@@ -942,10 +942,12 @@ The configuration file currently understands the following directives:
 
 \item[interface]
 
-	The interface name to sniff packets from.   You may specify multiple
-	interfaces.
+	The interface name to sniff packets from or a pcap file to
+	read packets from.   You may specify multiple interfaces.
 
-	Example: {\tt interface fxp0;\/}
+	Example:
+	{\tt interface fxp0;\/}
+	{\tt interface /path/to/dump.pcap;\/}
 
 \item[bpf\_vlan\_tag\_byte\_order]
 
@@ -981,6 +983,17 @@ The configuration file currently understands the following directives:
 	Later, as you become more familiar with {\dsc}, you may
 	want to read the next chapter and add your own custom
 	datasets.
+
+\item[output\_format]
+
+	Specify the output format, can be give multiple times to output in more then
+	one format. Default output format is XML.
+
+	Available formats are:
+	- XML
+	- JSON
+
+	Example: {\tt output\_format JSON}
 \end{description}
 
 
@@ -1118,7 +1131,7 @@ required:
 \begin{description}
 \item[timezone]
 	Sets the time zone for dates and times displayed in the
-	graphs. 
+	graphs.
 	You can use this if you want to override the system
 	time zone.
 	The value for this directive should be the name
@@ -1220,7 +1233,7 @@ The {\em dataset\/} definition syntax in \path|dsc.conf| is:
 {\em protocol\/}
 {\em Label1:Indexer1\/}
 {\em Label2:Indexer2\/}
-{\em filter\/} 
+{\em filter\/}
 {\em [parameters]\/};
 \vspace{2ex}
 
@@ -1296,7 +1309,7 @@ and~\ref{tbl-ip-indexers}.
 \begin{tabular}{|lll|}
 \hline
 Indexer & Label & Description \\
-\hline 
+\hline
 ip\_direction & Direction & one of sent, recv, or other \\
 ip\_proto & IPProto & IP protocol (icmp, tcp, udp) \\
 ip\_version & IP version number (4, 6) \\
@@ -1341,7 +1354,7 @@ It includes all received packets.
 \begin{tabular}{|lll|}
 \hline
 Indexer & Label & Description \\
-\hline 
+\hline
 certain\_qnames & CertainQnames & Popular query names seen at roots \\
 client\_subnet & ClientSubnet & The client's IP subnet (/24 for IPv4, /96 for IPv6) \\
 client & ClientAddr & The client's IP address \\
@@ -1442,7 +1455,7 @@ for DNS messages, and here are their descriptions:
 	\end{itemize}
 \item[rcode]
 	The RCODE value in a DNS response.  The most common response
-	codes are 0 (NO ERROR) and 3 (NXDOMAIN). 
+	codes are 0 (NO ERROR) and 3 (NXDOMAIN).
 \item[rd\_bit]
 	This indexer returns 1 if the RD (recursion desired) bit is
 	set in the query.  Usually only stub resolvers set the RD bit.
@@ -1472,7 +1485,7 @@ the {\tt dataset\/} line:
 	Count only DNS query messages.  A query is a DNS message
 	where the QR bit is set to 0.
 \item[replies-only]
-	Count only DNS response messages.  A query is a DNS message 
+	Count only DNS response messages.  A query is a DNS message
         where the QR bit is set to 1.
 \item[popular-qtypes]
 	Count only DNS messages where the query type is one of:
@@ -1592,7 +1605,7 @@ stop\_time \bmod{60} == 0
 \end{equation}
 
 The LABEL1 VAL attributes ({\em D1-V1\/}, {\em D1-V2\/}, etc) are
-values for the first dimension indexer.  
+values for the first dimension indexer.
 Similarly, the LABEL2 VAL attributes ({\em D2-V1\/}, {\em D2-V2\/},
 {\em D2-V3\/}) are values for the second dimension indexer.
 For some indexers these
@@ -1643,7 +1656,7 @@ Here is a short sample XML file with real content:
 \end{MyVerbatim}
 
 \noindent
-Please see 
+Please see
 \path|http://dns.measurement-factory.com/tools/dsc/sample-xml/|
 for more sample XML files.
 
@@ -1656,7 +1669,7 @@ and {\em LABEL2\/} strings are different
 for each dataset:
 
 \begin{MyVerbatim}
-<!DOCTYPE ARRAY [  
+<!DOCTYPE ARRAY [
 
 <!ELEMENT ARRAY (DIMENSION+, DATA))>
 <!ELEMENT DIMENSION>
@@ -1673,7 +1686,7 @@ for each dataset:
 <!ATTLIST LABEL2 VAL CDATA #REQUIRED>
 <!ATTLIST LABEL2 COUNT CDATA #REQUIRED>
 
-]> 
+]>
 \end{MyVerbatim}
 
 \subsection{XML File Naming Conventions}
@@ -1706,11 +1719,44 @@ Unix epoch seconds and is usually the same as the {\em stop\_time\/}
 value.
 
 
+\section{JSON Structure}
+
+The JSON structure mimics the XML structure so that elements are the same.
+
+\begin{MyVerbatim}
+{
+  "name": "dataset-name",
+  "start_time": unix-seconds,
+  "stop_time": unix-seconds,
+  "dimensions": [ "Label1", "Label2" ],
+  "data": [
+    {
+      "Label1": "D1-V1",
+      "Label2": [
+        { "val": "D2-V1", "count": N1 },
+        { "val": "D2-V2", "count": N2 },
+        { "val": "D2-V3", "count": N3 }
+      ]
+    },
+    {
+      "Label1": "D1-V1-base64",
+      "base64": true,
+      "Label2": [
+        { "val": "D2-V1", "count": N1 },
+        { "val": "D2-V2-base64", "base64": true, "count": N2 },
+        { "val": "D2-V3", "count": N3 }
+      ]
+    }
+  ]
+}
+\end{MyVerbatim}
+
+
 \section{Archived Data Format}
 
 {\dsc} actually uses four different file formats for archived
 datasets.  These are all text-based and designed to be quickly
-read from, and written to, by Perl scripts.  
+read from, and written to, by Perl scripts.
 
 \subsection{Format 1}
 

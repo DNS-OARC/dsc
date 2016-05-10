@@ -23,7 +23,7 @@ $(DOC).dvi: $(DOC).tex $(FIGS)
 
 .png.eps:
 	pngtopnm $< | pnmtops -noturn > $@
-	
+
 
 all: $(DOC).ps $(DOC).pdf
 
