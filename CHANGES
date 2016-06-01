@@ -1,6 +1,6 @@
-2016-05-10 Jerry Lundström
+2016-06-01 Jerry Lundström
 
-    Release 2.0.0-rc.1
+    Release 2.0.0
 
     This release brings a major update to the DSC software with the separation
     of the Collector and the Presenter, this repository will only include
@@ -27,6 +27,16 @@
     - Michael Braunoeder NIC.AT for NXDOMAIN filter patch.
     - L-root for overflow bugfix IP fragments.
     - McStork for JSON output patch.
+
+    Changes since release candidate:
+
+    1be5148 Fix #57: Flush the pid file to write it out and add test for
+            pid file
+    0f79aa0 Use Semantic Versioning 2.0.0 semver.org
+
+2016-05-10 Jerry Lundström
+
+    Release 2.0.0-rc.1
 
     69ef9b4 Add -v to display version
     7e5b403 Fix defects

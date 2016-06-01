@@ -188,7 +188,7 @@ write_pid_file(void)
     dsyslogf(LOG_INFO, "writing PID to %s", pid_file_name);
 
     fp = fdopen(fd, "w");
-    if (!fp || fprintf(fp, "%d\n", getpid()) < 1 ) {
+    if (!fp || fprintf(fp, "%d\n", getpid()) < 1 || fflush(fp)) {
         dsyslogf(LOG_ERR, "unable to write to PID file: %s", strerror(errno));
         exit(2);
     }
