@@ -379,6 +379,13 @@ main(int argc, char *argv[])
         output_format_xml = 1;
     }
 
+    /*
+     * Do not damonize if we only have offline files
+     */
+    if (n_pcap_offline) {
+        nodaemon_flag = 1;
+    }
+
     if (!nodaemon_flag)
         daemonize();
     write_pid_file();
