@@ -110,6 +110,12 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #match_vlan 100 200;
 
+# statistics_interval
+#
+#   Specify how often we write statistics, default to 60 seconds.
+#
+#statistics_interval 60
+
 # output_format
 #
 #   Specify the output format, can be give multiple times to output in more then

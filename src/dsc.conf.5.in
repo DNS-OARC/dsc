@@ -126,6 +126,9 @@ tag byte order bug.
 A white-space separated list of VLAN identifiers.  If set, only the
 packets belonging to these VLANs are analyzed.
 .TP
+\fBstatistics_interval\fR SECONDS ;
+Specify how often \fBdsc\fR should write statistics, default to 60 seconds.
+.TP
 \fBoutput_format\fR FORMAT ;
 Specify the output format, can be give multiple times to output in
 more then one format.  Default output format is XML, see section
@@ -694,6 +697,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 
+#statistics_interval 60
 output_format XML
 #output_format JSON
 
