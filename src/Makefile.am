@@ -27,7 +27,6 @@ dsc_SOURCES = base64.c \
     generic_counter.c \
     pcap_layers/pcap_layers.c \
     pcap.c \
-    ncap.c \
     dns_protocol.c \
     dns_message.c \
     daemon.c \
@@ -90,7 +89,6 @@ dist_dsc_SOURCES = base64.h \
     ip_version_index.h \
     md_array.h \
     msglen_index.h \
-    ncap.h \
     null_index.h \
     opcode_index.h \
     pcap.h \

@@ -45,7 +45,6 @@ AC_PROG_INSTALL
 AM_PROG_CC_C_O
 
 # Checks for libraries.
-AC_CHECK_LIB([ncap], [ncap_create])
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])

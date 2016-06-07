@@ -48,9 +48,6 @@
 #include "hashtbl.h"
 
 int promisc_flag;
-#if HAVE_LIBNCAP
-void Ncap_init(const char *device, int promisc);
-#endif
 void Pcap_init(const char *device, int promisc);
 uint64_t minfree_bytes = 0;
 int output_format_xml = 0;
@@ -68,11 +65,7 @@ int
 open_interface(const char *interface)
 {
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
-#if HAVE_LIBNCAP
-    Ncap_init(interface, promisc_flag);
-#else
     Pcap_init(interface, promisc_flag);
-#endif
     return 1;
 }
 
