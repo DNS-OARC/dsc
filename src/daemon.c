@@ -65,9 +65,6 @@
 #include "xmalloc.h"
 #include "dns_message.h"
 #include "pcap.h"
-#if HAVE_LIBNCAP
-#include "ncap.h"
-#endif
 #include "syslog_debug.h"
 
 char *progname = NULL;
@@ -244,11 +241,7 @@ dump_report(md_array_printer * printer)
         dsyslogf(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
         return 1;
     }
-#if HAVE_LIBNCAP
-    snprintf(fname, 128, "%d.dscdata.%s", Ncap_finish_time(), printer->extension);
-#else
     snprintf(fname, 128, "%d.dscdata.%s", Pcap_finish_time(), printer->extension);
-#endif
     snprintf(tname, 128, "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
@@ -448,11 +441,7 @@ main(int argc, char *argv[])
         /* Indicate we might have reports to dump on exit */
         have_reports = 1;
 
-#if HAVE_LIBNCAP
-        result = Ncap_run();
-#else
         result = Pcap_run();
-#endif
         if (debug_flag)
             gettimeofday(&break_start, NULL);
 
@@ -487,10 +476,7 @@ main(int argc, char *argv[])
 
     } while (result > 0 && debug_flag == 0);
 
-#if HAVE_LIBNCAP
-    Ncap_close();
-#else
     Pcap_close();
-#endif
+
     return 0;
 }
