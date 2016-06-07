@@ -850,7 +850,7 @@ Pcap_run(void)
 {
     int i;
     int result = 1;
-#define INTERVAL 60
+    extern uint64_t statistics_interval;
 
     for (i = 0; i < n_interfaces; i++)
         interfaces[i].pkts_captured = 0;
@@ -858,7 +858,7 @@ Pcap_run(void)
         result = 0;
         if (finish_ts.tv_sec > 0) {
             start_ts.tv_sec = finish_ts.tv_sec;
-            finish_ts.tv_sec += INTERVAL;
+            finish_ts.tv_sec += statistics_interval;
         }
         do {
             result = pcap_dispatch(interfaces[0].pcap, 1, pcap_handle_packet, 0);
@@ -867,7 +867,7 @@ Pcap_run(void)
             interfaces[0].pkts_captured += result;
             if (start_ts.tv_sec == 0) {
                 start_ts = last_ts;
-                finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
+                finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
                 finish_ts.tv_usec = 0;
             }
         } while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing);
@@ -875,7 +875,7 @@ Pcap_run(void)
             finish_ts = last_ts;        /* finish was cut short */
     } else {
         gettimeofday(&start_ts, NULL);
-        finish_ts.tv_sec = ((start_ts.tv_sec / INTERVAL) + 1) * INTERVAL;
+        finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
         finish_ts.tv_usec = 0;
         while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing) {
             fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);

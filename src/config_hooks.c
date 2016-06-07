@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -56,6 +57,7 @@ int output_format_xml = 0;
 int output_format_json = 0;
 #define MAX_HASH_SIZE 512
 static hashtbl * dataset_hash = NULL;
+uint64_t statistics_interval = 60; /* default interval in seconds*/
 int dump_reports_on_exit = 0;
 char * geoip_v4_dat = NULL;
 int geoip_v4_options = 0;
@@ -127,6 +129,23 @@ dataset_cmpfunc(const void *a, const void *b)
 {
     return strcasecmp(a, b);
 }
+
+int
+set_statistics_interval (const char *s)
+{
+    dsyslogf(LOG_INFO, "Setting statistics interval to: %s", s);
+    statistics_interval = strtoull(s, NULL, 10);
+    if (statistics_interval == ULLONG_MAX) {
+        dsyslogf(LOG_ERR, "strtoull: %s", strerror(errno));
+        return 0;
+    }
+    if (!statistics_interval) {
+        dsyslog(LOG_ERR, "statistics_interval can not be zero");
+        return 0;
+    }
+    return 1;
+}
+
 int
 add_dataset(const char *name, const char *layer_ignored,
     const char *firstname, const char *firstindexer,
