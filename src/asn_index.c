@@ -64,18 +64,19 @@ static hashtbl *theHash = NULL;
 static int next_idx = 0;
 static GeoIP *geoip = NULL;
 static GeoIP *geoip6 = NULL;
-static char *ipstr;
-static char *nodb = "noGeoIPDB";
-static char *unknown = "unknown";
-static char *unknown_v4 = "unknown IPv4";
-static char *unknown_v6 = "unknown IPv6";
+static char ipstr[81];
+static char *nodb = "NODB";
+static char *unknown = "??";
+static char *unknown_v4 = "?4";
+static char *unknown_v6 = "?6";
+static char *_asn = NULL;
 
 typedef struct {
     char *asn;
     int index;
-}      asnobj;
+} asnobj;
 
-char *
+const char *
 asn_get_from_message(dns_message * m)
 {
     transport_message *tm;
@@ -84,55 +85,63 @@ asn_get_from_message(dns_message * m)
 
     tm = m->tm;
 
-    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, 80)) {
+    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr)-1)) {
         dfprint(0, "asn_index: Error converting IP address");
-        return(strdup(unknown));
+        return unknown;
     }
     dfprintf(0, "asn_index: IP %s is IPv%d", ipstr, tm->ip_version);
+
+    if (_asn) {
+        free(_asn);
+        _asn = NULL;
+    }
 
     switch(tm->ip_version) {
     case 4:
         if (geoip) {
-            asn = GeoIP_name_by_addr(geoip,ipstr);
-            if (asn == NULL) {
-                asn = strdup(unknown_v4); /* strdup uses malloc, just like libgeoip */
+            if ((_asn = GeoIP_name_by_addr(geoip, ipstr))) {
+                asn = _asn;
+            }
+            else {
+                asn = unknown_v4;
             }
         } else {
-	        asn = strdup(nodb);
+	        asn = nodb;
         }
         break;
+
     case 6:
         if (geoip6) {
-            asn = GeoIP_name_by_addr_v6(geoip6,ipstr);
-            if (asn == NULL) {
-                asn = strdup(unknown_v6); /* strdup uses malloc, just like libgeoip */
+            if ((_asn = GeoIP_name_by_addr_v6(geoip6, ipstr))) {
+                asn = _asn;
+            }
+            else {
+                asn = unknown_v6;
             }
             break;
         } else {
-	        asn = strdup(nodb);
+	        asn = nodb;
         }
+        break;
+
     default:
-        asn = strdup(unknown);
-    }
-    if (asn == NULL) {
-        dfprint(0, "asn_index: Error allocating memory");
-        return(NULL);
+        asn = unknown;
     }
 
     dfprintf(0, "asn_index: full network name: %s", asn);
 
     /* libgeoip reports for networks with the same ASN different network names.
-       Probably it uses the network description, not the AS description. Therefore,
-       we truncate after the first space and only use the AS number. Mappings
-       to AS names must be done in the presenter.
-    */
-    truncate = strchr(asn,' ');
+     * Probably it uses the network description, not the AS description. Therefore,
+     * we truncate after the first space and only use the AS number. Mappings
+     * to AS names must be done in the presenter.
+     */
+    truncate = strchr(asn, ' ');
     if (truncate) {
-        *truncate='\0';
+        *truncate = 0;
     }
 
     dfprintf(0, "asn_index: truncated network name: %s", asn);
-    return (asn);
+    return asn;
 }
 
 int
@@ -141,46 +150,43 @@ asn_indexer(const void *vp)
     const dns_message *m = vp;
     char *asn;
     asnobj *obj;
+
     if (m->malformed)
         return -1;
+
     asn = asn_get_from_message((dns_message *) m);
     if (asn == NULL)
         return -1;
+
     if (NULL == theHash) {
-        theHash = hash_create(MAX_ARRAY_SZ, asn_hashfunc, asn_cmpfunc,
-            1, afree, afree);
-        if (NULL == theHash) {
-            free(asn);
+        theHash = hash_create(MAX_ARRAY_SZ, asn_hashfunc, asn_cmpfunc, 1, afree, afree);
+        if (NULL == theHash)
             return -1;
-        }
     }
+
     if ((obj = hash_find(asn, theHash))) {
-        free(asn);
         return obj->index;
     }
+
     obj = acalloc(1, sizeof(*obj));
-    if (NULL == obj) {
-        free(asn);
+    if (NULL == obj)
         return -1;
-    }
-    /* If I directly use the buffer from libgeoip with
-         obj->asn = asn;
-       then valgrind complains that the buffer is not freed.
-       But it does not complain when copying the buffer in my
-       own buffer and freeing the buffer from libgeoip */
+
     obj->asn = astrdup(asn);
-    free(asn);
     if (NULL == obj->asn) {
         afree(obj);
         return -1;
     }
+
     obj->index = next_idx;
     if (0 != hash_add(obj->asn, obj, theHash)) {
         afree(obj->asn);
         afree(obj);
         return -1;
     }
+
     next_idx++;
+
     return obj->index;
 }
 
@@ -239,11 +245,7 @@ asn_indexer_init()
             exit(1);
         }
     }
-    ipstr = malloc(80);
-    if (!ipstr) {
-        dsyslog(LOG_ERR, "asn_index: Error allocating memory");
-        exit(1);
-    }
+    memset(ipstr, 0, sizeof(ipstr));
     if (geoip || geoip6) {
         dsyslog(LOG_INFO, "asn_index: Sucessfully initialized GeoIP ASN");
     }
@@ -253,4 +255,3 @@ asn_indexer_init()
 }
 
 #endif
-

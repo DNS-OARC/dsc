@@ -63,7 +63,7 @@ static hashtbl *theHash = NULL;
 static int next_idx = 0;
 static GeoIP *geoip = NULL;
 static GeoIP *geoip6 = NULL;
-static char *ipstr;
+static char ipstr[81];
 static char *unknown = "??";
 static char *unknown_v4 = "?4";
 static char *unknown_v6 = "?6";
@@ -81,7 +81,7 @@ country_get_from_message(dns_message * m)
     const char *cc;
 
     tm = m->tm;
-    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, 80)) {
+    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr)-1)) {
         dfprint(0, "country_index: Error converting IP address");
         return(unknown);
     }
@@ -202,11 +202,7 @@ country_indexer_init()
             exit(1);
         }
     }
-    ipstr = malloc(80);
-    if (!ipstr) {
-        dsyslog(LOG_ERR, "country_index: Error allocating memory");
-        exit(1);
-    }
+    memset(ipstr, 0, sizeof(ipstr));
     if (geoip || geoip6) {
         dsyslog(LOG_INFO, "country_index: Sucessfully initialized GeoIP");
     }
