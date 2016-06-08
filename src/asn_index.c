@@ -42,6 +42,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <GeoIP.h>
 
 #include "xmalloc.h"
@@ -51,12 +52,12 @@
 #include "syslog_debug.h"
 
 extern int debug_flag;
-extern char * geoip_v4_dat;
-extern int geoip_v4_options;
-extern char * geoip_v6_dat;
-extern int geoip_v6_options;
-static hashfunc country_hashfunc;
-static hashkeycmp country_cmpfunc;
+extern char * geoip_asn_v4_dat;
+extern int geoip_asn_v4_options;
+extern char * geoip_asn_v6_dat;
+extern int geoip_asn_v6_options;
+static hashfunc asn_hashfunc;
+static hashkeycmp asn_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl *theHash = NULL;
@@ -64,94 +65,136 @@ static int next_idx = 0;
 static GeoIP *geoip = NULL;
 static GeoIP *geoip6 = NULL;
 static char ipstr[81];
+static char *nodb = "NODB";
 static char *unknown = "??";
 static char *unknown_v4 = "?4";
 static char *unknown_v6 = "?6";
+static char *_asn = NULL;
 
-typedef struct
-{
-    char *country;
+typedef struct {
+    char *asn;
     int index;
-} countryobj;
+} asnobj;
 
 const char *
-country_get_from_message(dns_message * m)
+asn_get_from_message(dns_message * m)
 {
     transport_message *tm;
-    const char *cc;
+    char *asn;
+    char *truncate;
 
     tm = m->tm;
-    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr)-1)) {
-        dfprint(0, "country_index: Error converting IP address");
-        return(unknown);
-    }
 
-    cc = unknown;
+    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr)-1)) {
+        dfprint(0, "asn_index: Error converting IP address");
+        return unknown;
+    }
+    dfprintf(0, "asn_index: IP %s is IPv%d", ipstr, tm->ip_version);
+
+    if (_asn) {
+        free(_asn);
+        _asn = NULL;
+    }
 
     switch(tm->ip_version) {
     case 4:
         if (geoip) {
-            cc = GeoIP_country_code_by_addr(geoip,ipstr);
-            if (cc == NULL) {
-                cc = unknown_v4;
+            if ((_asn = GeoIP_name_by_addr(geoip, ipstr))) {
+                asn = _asn;
             }
+            else {
+                asn = unknown_v4;
+            }
+        } else {
+	        asn = nodb;
         }
         break;
+
     case 6:
         if (geoip6) {
-            cc = GeoIP_country_code_by_addr_v6(geoip6,ipstr);
-            if (cc == NULL) {
-                cc = unknown_v6;
+            if ((_asn = GeoIP_name_by_addr_v6(geoip6, ipstr))) {
+                asn = _asn;
             }
+            else {
+                asn = unknown_v6;
+            }
+            break;
+        } else {
+	        asn = nodb;
         }
         break;
+
     default:
-        break;
+        asn = unknown;
     }
 
-    dfprintf(1, "country_index: country code: %s", cc);
-    return (cc);
+    dfprintf(0, "asn_index: full network name: %s", asn);
+
+    /* libgeoip reports for networks with the same ASN different network names.
+     * Probably it uses the network description, not the AS description. Therefore,
+     * we truncate after the first space and only use the AS number. Mappings
+     * to AS names must be done in the presenter.
+     */
+    truncate = strchr(asn, ' ');
+    if (truncate) {
+        *truncate = 0;
+    }
+
+    dfprintf(0, "asn_index: truncated network name: %s", asn);
+    return asn;
 }
 
 int
-country_indexer(const void *vp)
+asn_indexer(const void *vp)
 {
     const dns_message *m = vp;
-    const char *country;
-    countryobj *obj;
+    char *asn;
+    asnobj *obj;
+
     if (m->malformed)
         return -1;
-    country = country_get_from_message((dns_message *) m);
+
+    asn = asn_get_from_message((dns_message *) m);
+    if (asn == NULL)
+        return -1;
+
     if (NULL == theHash) {
-        theHash = hash_create(MAX_ARRAY_SZ, country_hashfunc, country_cmpfunc, 1, afree, afree);
+        theHash = hash_create(MAX_ARRAY_SZ, asn_hashfunc, asn_cmpfunc, 1, afree, afree);
         if (NULL == theHash)
             return -1;
     }
-    if ((obj = hash_find(country, theHash)))
+
+    if ((obj = hash_find(asn, theHash))) {
         return obj->index;
+    }
+
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
         return -1;
-    obj->country = astrdup(country);
-    if (NULL == obj->country) {
+
+    obj->asn = astrdup(asn);
+    if (NULL == obj->asn) {
         afree(obj);
         return -1;
     }
+
     obj->index = next_idx;
-    if (0 != hash_add(obj->country, obj, theHash)) {
-        afree(obj->country);
+    if (0 != hash_add(obj->asn, obj, theHash)) {
+        afree(obj->asn);
         afree(obj);
         return -1;
     }
+
     next_idx++;
+
     return obj->index;
 }
 
 int
-country_iterator(char **label)
+asn_iterator(char **label)
 {
-    countryobj *obj;
-    static char label_buf[MAX_QNAME_SZ];
+    asnobj *obj;
+    static char label_buf[128];
     if (0 == next_idx)
         return -1;
     if (NULL == label) {
@@ -161,53 +204,53 @@ country_iterator(char **label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
         return -1;
-    snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->country);
+    snprintf(label_buf, 128, "%s", obj->asn);
     *label = label_buf;
     return obj->index;
 }
 
 void
-country_reset()
+asn_reset()
 {
     theHash = NULL;
     next_idx = 0;
 }
 
 static unsigned int
-country_hashfunc(const void *key)
+asn_hashfunc(const void *key)
 {
     return hashendian(key, strlen(key), 0);
 }
 
 static int
-country_cmpfunc(const void *a, const void *b)
+asn_cmpfunc(const void *a, const void *b)
 {
     return strcasecmp(a, b);
 }
 
 void
-country_indexer_init()
+asn_indexer_init()
 {
-    if (geoip_v4_dat) {
-        geoip = GeoIP_open(geoip_v4_dat, geoip_v4_options);
+    if (geoip_asn_v4_dat) {
+        geoip = GeoIP_open(geoip_asn_v4_dat, geoip_asn_v4_options);
         if (geoip == NULL) {
-            dsyslog(LOG_ERR, "country_index: Error opening IPv4 Country DB. Make sure libgeoip's GeoIP.dat file is available");
+            dsyslog(LOG_ERR, "asn_index: Error opening IPv4 ASNum DB. Make sure libgeoip's GeoIPASNum.dat file is available");
             exit(1);
         }
     }
-    if (geoip_v6_dat) {
-        geoip6 = GeoIP_open(geoip_v6_dat, geoip_v6_options);
+    if (geoip_asn_v6_dat) {
+        geoip6 = GeoIP_open(geoip_asn_v6_dat, geoip_asn_v6_options);
         if (geoip6 == NULL) {
-            dsyslog(LOG_ERR, "country_index: Error opening IPv6 Country DB. Make sure libgeoip's GeoIPv6.dat file is available");
+            dsyslog(LOG_ERR, "asn_index: Error opening IPv6 ASNum DB. Make sure libgeoip's GeoIPASNumv6.dat file is available");
             exit(1);
         }
     }
     memset(ipstr, 0, sizeof(ipstr));
     if (geoip || geoip6) {
-        dsyslog(LOG_INFO, "country_index: Sucessfully initialized GeoIP");
+        dsyslog(LOG_INFO, "asn_index: Sucessfully initialized GeoIP ASN");
     }
     else {
-        dsyslog(LOG_INFO, "country_index: No database loaded for GeoIP");
+        dsyslog(LOG_INFO, "asn_index: No database loaded for GeoIP ASN");
     }
 }
 
