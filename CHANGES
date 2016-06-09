@@ -1,3 +1,32 @@
+2016-06-09 Jerry Lundström
+
+    Release 2.1.0
+
+    This release brings a couple of new features, the ability to change
+    the interval for which DSC writes out the statistics files and a new
+    indexer for AS numbers.
+    There was also an issue detected in Ubuntu 16.04 when reading pcap files
+    would result in doubling the statistics if running in daemon mode.
+    Looking at the strace it might be a issue with the kernel, libc, pcap or
+    a combination that results in the open file handle to reset and essentially
+    read all the data twice.
+
+    Credits:
+    - Klaus Darilion NIC.AT for interval changes and AS number indexer.
+
+    Commits:
+
+    8ab8632 Rewrote ASN indexer to remove the need for malloc/free. Removed
+            the need to malloc ipstr. Use same unknown tags as country
+            indexer.
+    89d4984 add ASN index: maps src-IP to AS number using GeoIP ASNum DB
+    8d5c6bf Fix #14: Remove ncap
+    c0f00e7 Add test for statistics_interval
+    cf9ede2 Add checks and documentation for statistics_interval
+    93eeecd new config option 'statistics_interval' (defaults to 60s)
+    a28f5d4 Fix #62: Do not go into daemon mode if reading offline files
+    2bc1abb Add information about puppet module
+
 2016-06-01 Jerry Lundström
 
     Release 2.0.0
