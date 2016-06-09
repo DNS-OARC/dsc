@@ -50,3 +50,10 @@ Now you can compile with optional options and install.
 make
 make install
 ```
+
+# Puppet
+
+John Bond at ICANN DNS Engineering team has developed a puppet module for DSC,
+the module and code can be found here:
+- https://forge.puppet.com/icann/dsc
+- https://github.com/icann-dns/puppet-dsc

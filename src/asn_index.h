@@ -34,16 +34,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_ncap_h
-#define __dsc_ncap_h
+#ifndef __dsc_asn_index_h
+#define __dsc_asn_index_h
 
 
-#if HAVE_LIBNCAP
-void Ncap_init(const char *device, int promisc);
-int Ncap_run(DMC *, IPC *);
-void Ncap_close(void);
-int Ncap_start_time(void);
-int Ncap_finish_time(void);
-#endif
+/* check HAVE_LIBGEOIP before #including this file */
 
-#endif /* __dsc_ncap_h */
+int asn_indexer(const void *);
+int asn_iterator(char **label);
+void asn_reset(void);
+
+#endif /* __dsc_asn_index_h */
