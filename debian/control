@@ -1,0 +1,21 @@
+Source: dsc
+Section: net
+Priority: optional
+Maintainer: Jerry Lundström <lundstrom.jerry@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), build-essential, automake, autoconf,
+ libpcap-dev, libproc-pid-file-perl, netbase
+Standards-Version: 3.9.4
+Homepage: https://www.dns-oarc.net/oarc/data/dsc
+Vcs-Git: https://github.com/DNS-OARC/dsc.git
+Vcs-Browser: https://github.com/DNS-OARC/dsc
+
+Package: dsc
+Architecture: any
+Conflicts: dsc-statistics-collector
+Depends: ${shlibs:Depends}, ${misc:Depends}, libproc-pid-file-perl
+Description: DNS Statistics Collector
+ DNS Statistics Collector (DSC) is a tool used for collecting and exploring
+ statistics from busy DNS servers. It uses a distributed architecture with
+ collectors running on or near nameservers sending their data to one or more
+ central presenters for display and archiving. Collectors use pcap to sniff
+ network traffic. They transmit aggregated data to the presenter as XML data.
