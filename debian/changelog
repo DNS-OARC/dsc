@@ -1,3 +1,9 @@
+dsc (2.1.0-8~unstable+1) unstable; urgency=low
+
+  * Fix package dependencies.
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Mon, 27 Jun 2016 12:26:01 +0200
+
 dsc (2.1.0-7~unstable+1) unstable; urgency=low
 
   * Release 2.1.0
