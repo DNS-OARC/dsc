@@ -875,25 +875,35 @@ Pcap_run(void)
             finish_ts = last_ts;        /* finish was cut short */
     } else {
         gettimeofday(&start_ts, NULL);
+        gettimeofday(&last_ts, NULL);
         finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
         finish_ts.tv_usec = 0;
+
         while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing) {
             fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
-            if (NULL == R) {
-                gettimeofday(&last_ts, NULL);
-            }
+            int pkts;
+
             /*
              * Here we intentionally ignore the return value from
              * select() and always try to read from all pcaps. See
              * http://www.tcpdump.org/lists/workers/2002/09/msg00033.html
              */
-            for (i = 0; i < n_interfaces; i++) {
+            for (pkts = 0, i = 0; i < n_interfaces; i++) {
                 struct _interface *I = &interfaces[i];
                 if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
                     int x = pcap_dispatch(I->pcap, -1, pcap_handle_packet, 0);
-                    if (x > 0)
+                    if (x > 0) {
                         I->pkts_captured += x;
+                        pkts += x;
+                    }
                 }
+            }
+
+            /*
+             * Set last timestamp if no FD was set or no packets been processed.
+             */
+            if (NULL == R || !pkts) {
+                gettimeofday(&last_ts, NULL);
             }
         }
         /*
