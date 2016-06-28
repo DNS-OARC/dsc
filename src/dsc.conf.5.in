@@ -710,9 +710,9 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 
-#statistics_interval 60
-output_format XML
-#output_format JSON
+#statistics_interval 60;
+output_format XML;
+#output_format JSON;
 
 #geoip_v4_dat "/usr/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE MMAP_CACHE;
 #geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";

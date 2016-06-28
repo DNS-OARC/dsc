@@ -115,7 +115,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #   Specify how often we write statistics, default to 60 seconds.
 #
-#statistics_interval 60
+#statistics_interval 60;
 
 # output_format
 #
@@ -126,8 +126,8 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #   - XML
 #   - JSON
 #
-#output_format XML
-#output_format JSON
+#output_format XML;
+#output_format JSON;
 
 # dump_reports_on_exit
 #
