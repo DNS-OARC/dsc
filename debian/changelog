@@ -1,0 +1,32 @@
+dsc (2.1.1-1~unstable+1) unstable; urgency=low
+
+  * Release 2.1.1
+
+    Bugfixes:
+    - 22688c1 Fix pcap/select last_ts
+      In some cases `select` will return the fd set as if there are packets
+      to read but there aren't. That would case the last timestamp to not
+      advance and the `Pcap_run` loop to never finish.
+      This fix add a check on packets captured and sets last timestamp if
+      none where caught.
+
+    Commits:
+
+    d115b3f Correct configuration, missing `;`.
+    22688c1 Fix pcap/select last_ts
+    b6d3dd8 Fix package dependencies.
+    c8979c4 Add debian/ubuntu package files
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Tue, 28 Jun 2016 14:14:56 +0200
+
+dsc (2.1.0-8~unstable+1) unstable; urgency=low
+
+  * Fix package dependencies.
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Mon, 27 Jun 2016 12:26:01 +0200
+
+dsc (2.1.0-7~unstable+1) unstable; urgency=low
+
+  * Release 2.1.0
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Thu, 23 Jun 2016 07:11:43 +0000
