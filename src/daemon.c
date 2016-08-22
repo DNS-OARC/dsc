@@ -70,6 +70,9 @@
 char *progname = NULL;
 char *pid_file_name = NULL;
 int promisc_flag = 1;
+int monitor_flag = 0;
+int immediate_flag = 0;
+int threads_flag = 1;
 int debug_flag = 0;
 int nodaemon_flag = 0;
 int have_reports = 0;
@@ -216,10 +219,15 @@ void
 usage(void)
 {
     fprintf(stderr, "usage: %s [opts] dsc.conf\n", progname);
-    fprintf(stderr, "\t-d\tDebug mode.  Exits after first write.\n");
-    fprintf(stderr, "\t-f\tForeground mode.  Don't become a daemon.\n");
-    fprintf(stderr, "\t-p\tDon't put interface in promiscuous mode.\n");
-    fprintf(stderr, "\t-v\tPrint version and exit.\n");
+    fprintf(stderr,
+        "\t-d\tDebug mode.  Exits after first write.\n"
+        "\t-f\tForeground mode.  Don't become a daemon.\n"
+        "\t-p\tDon't put interface in promiscuous mode.\n"
+        "\t-m\tEnable monitor mode on interfaces.\n"
+        "\t-i\tEnable immediate mode on interfaces.\n"
+        "\t-T\tDisable usage of threads in pcap thread.\n"
+        "\t-v\tPrint version and exit.\n"
+    );
     exit(1);
 }
 
@@ -339,7 +347,7 @@ main(int argc, char *argv[])
     srandom(time(NULL));
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
-    while ((x = getopt(argc, argv, "fpdv")) != -1) {
+    while ((x = getopt(argc, argv, "fpdvmiT")) != -1) {
         switch (x) {
         case 'f':
             nodaemon_flag = 1;
@@ -350,6 +358,15 @@ main(int argc, char *argv[])
         case 'd':
             debug_flag++;
             nodaemon_flag = 1;
+            break;
+        case 'm':
+            monitor_flag = 1;
+            break;
+        case 'i':
+            immediate_flag = 1;
+            break;
+        case 'T':
+            threads_flag = 0;
             break;
         case 'v':
             version();
@@ -363,6 +380,16 @@ main(int argc, char *argv[])
 
     if (argc != 1)
         usage();
+
+    if (!promisc_flag)
+        dsyslog(LOG_INFO, "disabling interface promiscuous mode");
+    if (monitor_flag)
+        dsyslog(LOG_INFO, "enabling interface monitor mode");
+    if (immediate_flag)
+        dsyslog(LOG_INFO, "enabling interface immediate mode");
+    if (!threads_flag)
+        dsyslog(LOG_INFO, "disabling usage of threads in pcap thread");
+
     dns_message_init();
     ParseConfig(argv[0]);
 #if HAVE_LIBGEOIP

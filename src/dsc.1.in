@@ -38,7 +38,7 @@ dsc \- DNS Statistics Collector
 .SH SYNOPSIS
 .B dsc
 [
-.B \-dfp
+.B \-dfpmiTv
 ]
 .I dsc.conf
 .SH DESCRIPTION
@@ -63,6 +63,15 @@ Foreground mode.  Don't become a daemon.
 .TP
 .B \-p
 Don't put interface in promiscuous mode.
+.TP
+.B \-m
+Enable monitor mode on interfaces.
+.TP
+.B \-i
+Enable immediate mode on interfaces.
+.TP
+.B \-T
+Disable usage of threads in pcap thread.
 .TP
 .B \-v
 Print version and exit.
