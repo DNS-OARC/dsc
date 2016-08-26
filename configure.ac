@@ -44,11 +44,13 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AM_PROG_CC_C_O
 
+# pcap thread
+AX_PCAP_THREAD
+
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])
-AC_CHECK_LIB([pcap], [pcap_open_live])
 AC_CHECK_LIB([GeoIP], [GeoIP_open])
 
 # Checks for header files.

@@ -46,9 +46,12 @@
 #include "dns_message.h"
 #include "syslog_debug.h"
 #include "hashtbl.h"
+#include "pcap.h"
 
-int promisc_flag;
-void Pcap_init(const char *device, int promisc);
+extern int promisc_flag;
+extern int monitor_flag;
+extern int immediate_flag;
+extern int threads_flag;
 uint64_t minfree_bytes = 0;
 int output_format_xml = 0;
 int output_format_json = 0;
@@ -69,7 +72,7 @@ int
 open_interface(const char *interface)
 {
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
-    Pcap_init(interface, promisc_flag);
+    Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag);
     return 1;
 }
 
