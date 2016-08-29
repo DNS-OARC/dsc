@@ -17,10 +17,6 @@ Copyright: 2016 Duane Wessels
            2016 The Measurement Factory, Inc.
 License: MIT
 
-Files: src/TmfBase/Hapy/*
-Copyright: 2016 Good folks at The Measurement Factory http://www.measurement-factory.com/
-License: The Measurement Factory
-
 Files: src/base64.c
 Copyright: 1995-2001 Kungliga Tekniska Högskolan (Royal Institute of Technology, Stockholm, Sweden)
 License: BSD-3-Clause
@@ -77,25 +73,6 @@ License: MIT
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
-
-License: The Measurement Factory
- The Authors hereby dedicate the entire copyright in Hapy software
- to the public domain.
- .
- The Authors make this dedication for the benefit of the public at
- large and to the detriment of Authors' heirs and successors.
- Dedicator intends this dedication to be an overt act of
- relinquishment in perpetuity of all present and future rights
- under copyright law, whether vested or contingent, in the Hapy
- software.  Dedicator understands that such relinquishment of all
- rights includes the relinquishment of all rights to enforce (by
- lawsuit or otherwise) those copyrights in Hapy software.
- .
- The Authors recognize that, once placed in the public domain, Hapy
- software may be freely reproduced, distributed, transmitted, used,
- modified, built upon, or otherwise exploited by anyone for any
- purpose, commercial or non-commercial, and in any way, including
- by methods that have not yet been invented or conceived.
 
 License: Public Domain
  Public Domain.

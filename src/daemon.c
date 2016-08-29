@@ -66,6 +66,7 @@
 #include "dns_message.h"
 #include "pcap.h"
 #include "syslog_debug.h"
+#include "parse_conf.h"
 
 char *progname = NULL;
 char *pid_file_name = NULL;
@@ -82,7 +83,6 @@ extern void cip_net_indexer_init(void);
 extern void country_indexer_init(void);
 extern void asn_indexer_init(void);
 #endif
-extern void ParseConfig(const char *);
 extern uint64_t minfree_bytes;
 extern int n_pcap_offline;
 extern md_array_printer xml_printer;
@@ -391,7 +391,9 @@ main(int argc, char *argv[])
         dsyslog(LOG_INFO, "disabling usage of threads in pcap thread");
 
     dns_message_init();
-    ParseConfig(argv[0]);
+    if (parse_conf(argv[0])) {
+        return 1;
+    }
 #if HAVE_LIBGEOIP
     country_indexer_init();
     asn_indexer_init();

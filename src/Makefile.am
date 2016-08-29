@@ -8,17 +8,7 @@ AM_CFLAGS = -I$(srcdir) \
     -DUSE_IPV6=1 \
     $(PTHREAD_CFLAGS)
 
-AM_CPPFLAGS = -I$(srcdir) \
-    -ITmfBase/Hapy/src/include \
-    -I$(srcdir)/TmfBase/Hapy/src/include \
-    -Wall \
-    -DUSE_IPV6=1 \
-    $(PTHREAD_CFLAGS)
-
-AM_CXXFLAGS = $(AM_CPPFLAGS)
-
-EXTRA_DIST = TmfBase \
-    dsc.sh \
+EXTRA_DIST = dsc.sh \
     dsc.conf.sample.in \
     dsc.1.in \
     dsc.conf.5.in
@@ -66,13 +56,13 @@ dsc_SOURCES = base64.c \
     transport_index.c \
     dns_ip_version_index.c \
     dns_source_port_index.c \
-    ParseConfig.cc \
     config_hooks.c \
     hashtbl.c \
     lookup3.c \
     xmalloc.c \
     inX_addr.c \
-    pcap-thread/pcap_thread.c
+    pcap-thread/pcap_thread.c \
+    parse_conf.c
 dist_dsc_SOURCES = base64.h \
     byteorder.h \
     certain_qnames_index.h \
@@ -116,9 +106,10 @@ dist_dsc_SOURCES = base64.h \
     xmalloc.h \
     pcap_layers/byteorder.h \
     pcap_layers/pcap_layers.h \
-    pcap-thread/pcap_thread.h
-dsc_LDADD = TmfBase/Hapy/src/.libs/libHapy.a \
-    $(PTHREAD_LIBS)
+    pcap-thread/pcap_thread.h \
+    parse_conf.h \
+    config_hooks.h
+dsc_LDADD = $(PTHREAD_LIBS)
 man1_MANS = dsc.1
 man5_MANS = dsc.conf.5
 
@@ -140,15 +131,3 @@ dsc.conf.5: dsc.conf.5.in Makefile
         -e 's,[@]PACKAGE_BUGREPORT[@],$(PACKAGE_BUGREPORT),g' \
         -e 's,[@]etcdir[@],$(etcdir),g' \
         < $(srcdir)/dsc.conf.5.in > dsc.conf.5
-
-dist-hook:
-	cd $(distdir)/TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) distclean
-
-TmfBase/Hapy/src/.libs/libHapy.a:
-	cd TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) all
-
-clean-local:
-	cd TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) clean
-
-maintainer-clean-local:
-	cd TmfBase/Hapy && $(MAKE) $(AM_MAKEFLAGS) maintainer-clean
