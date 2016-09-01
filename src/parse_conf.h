@@ -35,39 +35,6 @@
 #ifndef __dsc_parse_conf_h
 #define __dsc_parse_conf_h
 
-#define PARSE_CONF_EINVAL   -2
-#define PARSE_CONF_ERROR    -1
-#define PARSE_CONF_OK       0
-#define PARSE_CONF_LAST     1
-#define PARSE_CONF_COMMENT  2
-#define PARSE_CONF_EMPTY    3
-
-#define PARSE_MAX_ARGS 64
-
-typedef enum token_type token_type_t;
-enum token_type {
-    TOKEN_END = 0,
-    TOKEN_STRING,
-    TOKEN_NUMBER,
-    TOKEN_STRINGS,
-    TOKEN_NUMBERS,
-    TOKEN_ANY
-};
-
-typedef struct token token_t;
-struct token {
-    token_type_t    type;
-    const char*     token;
-    size_t          length;
-};
-
-typedef struct token_syntax token_syntax_t;
-struct token_syntax {
-    const char*         token;
-    int                 (*parse)(const token_t* tokens);
-    const token_type_t  syntax[PARSE_MAX_ARGS];
-};
-
 int parse_conf(const char* file);
 
 #endif /* __dsc_parse_conf_h */

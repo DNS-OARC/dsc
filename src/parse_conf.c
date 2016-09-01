@@ -47,7 +47,40 @@
 #include "dns_message.h"
 #include "syslog_debug.h"
 
-int parse_conf_token(char** conf, size_t* length, token_t* token) {
+#define PARSE_CONF_EINVAL   -2
+#define PARSE_CONF_ERROR    -1
+#define PARSE_CONF_OK       0
+#define PARSE_CONF_LAST     1
+#define PARSE_CONF_COMMENT  2
+#define PARSE_CONF_EMPTY    3
+
+#define PARSE_MAX_ARGS 64
+
+typedef enum conf_token_type conf_token_type_t;
+enum conf_token_type {
+    TOKEN_END = 0,
+    TOKEN_STRING,
+    TOKEN_NUMBER,
+    TOKEN_STRINGS,
+    TOKEN_NUMBERS,
+    TOKEN_ANY
+};
+
+typedef struct conf_token conf_token_t;
+struct conf_token {
+    conf_token_type_t   type;
+    const char*         token;
+    size_t              length;
+};
+
+typedef struct conf_token_syntax conf_token_syntax_t;
+struct conf_token_syntax {
+    const char*             token;
+    int                     (*parse)(const conf_token_t* tokens);
+    const conf_token_type_t syntax[PARSE_MAX_ARGS];
+};
+
+int parse_conf_token(char** conf, size_t* length, conf_token_t* token) {
     int quoted = 0, end = 0;
 
     if (!conf || !*conf || !length || !token) {
@@ -103,7 +136,7 @@ int parse_conf_token(char** conf, size_t* length, token_t* token) {
     return PARSE_CONF_ERROR;
 }
 
-int parse_conf_interface(const token_t* tokens) {
+int parse_conf_interface(const conf_token_t* tokens) {
     char* interface = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -117,7 +150,7 @@ int parse_conf_interface(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_run_dir(const token_t* tokens) {
+int parse_conf_run_dir(const conf_token_t* tokens) {
     char* run_dir = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -131,7 +164,7 @@ int parse_conf_run_dir(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_minfree_bytes(const token_t* tokens) {
+int parse_conf_minfree_bytes(const conf_token_t* tokens) {
     char* minfree_bytes = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -145,7 +178,7 @@ int parse_conf_minfree_bytes(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_pid_file(const token_t* tokens) {
+int parse_conf_pid_file(const conf_token_t* tokens) {
     char* pid_file = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -159,7 +192,7 @@ int parse_conf_pid_file(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_statistics_interval(const token_t* tokens) {
+int parse_conf_statistics_interval(const conf_token_t* tokens) {
     char* statistics_interval = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -173,7 +206,7 @@ int parse_conf_statistics_interval(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_local_address(const token_t* tokens) {
+int parse_conf_local_address(const conf_token_t* tokens) {
     char* local_address = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -187,7 +220,7 @@ int parse_conf_local_address(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_bpf_program(const token_t* tokens) {
+int parse_conf_bpf_program(const conf_token_t* tokens) {
     char* bpf_program = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -201,7 +234,7 @@ int parse_conf_bpf_program(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_dataset(const token_t* tokens) {
+int parse_conf_dataset(const conf_token_t* tokens) {
     char* name = strndup(tokens[1].token, tokens[1].length);
     char* layer = strndup(tokens[2].token, tokens[2].length);
     char* dim1_name = strndup(tokens[3].token, tokens[3].length);
@@ -286,7 +319,7 @@ int parse_conf_dataset(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_bpf_vlan_tag_byte_order(const token_t* tokens) {
+int parse_conf_bpf_vlan_tag_byte_order(const conf_token_t* tokens) {
     char* bpf_vlan_tag_byte_order = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -300,7 +333,7 @@ int parse_conf_bpf_vlan_tag_byte_order(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_output_format(const token_t* tokens) {
+int parse_conf_output_format(const conf_token_t* tokens) {
     char* output_format = strndup(tokens[1].token, tokens[1].length);
     int ret;
 
@@ -314,7 +347,7 @@ int parse_conf_output_format(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_match_vlan(const token_t* tokens) {
+int parse_conf_match_vlan(const conf_token_t* tokens) {
     int ret = 0;
     size_t i;
 
@@ -336,7 +369,7 @@ int parse_conf_match_vlan(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_qname_filter(const token_t* tokens) {
+int parse_conf_qname_filter(const conf_token_t* tokens) {
     char* name = strndup(tokens[1].token, tokens[1].length);
     char* re = strndup(tokens[2].token, tokens[2].length);
     int ret;
@@ -354,13 +387,13 @@ int parse_conf_qname_filter(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_dump_reports_on_exit(const token_t* tokens) {
+int parse_conf_dump_reports_on_exit(const conf_token_t* tokens) {
     set_dump_reports_on_exit();
     return 0;
 }
 
 #if HAVE_LIBGEOIP
-int parse_conf_geoip_options(const token_t* tokens, int* options) {
+int parse_conf_geoip_options(const conf_token_t* tokens, int* options) {
     size_t i;
 
     for (i = 2; tokens[i].type != TOKEN_END; i++) {
@@ -388,7 +421,7 @@ int parse_conf_geoip_options(const token_t* tokens, int* options) {
 }
 #endif
 
-int parse_conf_geoip_v4_dat(const token_t* tokens) {
+int parse_conf_geoip_v4_dat(const conf_token_t* tokens) {
     char* geoip_v4_dat = strndup(tokens[1].token, tokens[1].length);
     int ret, options = 0;
 
@@ -409,7 +442,7 @@ int parse_conf_geoip_v4_dat(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_geoip_v6_dat(const token_t* tokens) {
+int parse_conf_geoip_v6_dat(const conf_token_t* tokens) {
     char* geoip_v6_dat = strndup(tokens[1].token, tokens[1].length);
     int ret, options = 0;
 
@@ -430,7 +463,7 @@ int parse_conf_geoip_v6_dat(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_geoip_asn_v4_dat(const token_t* tokens) {
+int parse_conf_geoip_asn_v4_dat(const conf_token_t* tokens) {
     char* geoip_asn_v4_dat = strndup(tokens[1].token, tokens[1].length);
     int ret, options = 0;
 
@@ -451,7 +484,7 @@ int parse_conf_geoip_asn_v4_dat(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_geoip_asn_v6_dat(const token_t* tokens) {
+int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens) {
     char* geoip_asn_v6_dat = strndup(tokens[1].token, tokens[1].length);
     int ret, options = 0;
 
@@ -472,7 +505,7 @@ int parse_conf_geoip_asn_v6_dat(const token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-static token_syntax_t _syntax[] = {
+static conf_token_syntax_t _syntax[] = {
     {
         "interface",
         parse_conf_interface,
@@ -562,9 +595,9 @@ static token_syntax_t _syntax[] = {
     { 0, 0, { TOKEN_END } }
 };
 
-int parse_conf_tokens(const token_t* tokens, size_t token_size, size_t line) {
-    const token_syntax_t* syntax;
-    const token_type_t*   type;
+int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line) {
+    const conf_token_syntax_t* syntax;
+    const conf_token_type_t*   type;
     size_t i;
 
     if (!tokens || !token_size) {
@@ -650,7 +683,7 @@ int parse_conf(const char* file) {
     char buffer[4096];
     char* buf;
     size_t s, i, line = 0;
-    token_t tokens[PARSE_MAX_ARGS];
+    conf_token_t tokens[PARSE_MAX_ARGS];
     int ret;
 
     if (!file) {
@@ -661,7 +694,7 @@ int parse_conf(const char* file) {
         return 1;
     }
     while (fgets(buffer, sizeof(buffer), fp)) {
-        memset(tokens, 0, sizeof(token_t) * PARSE_MAX_ARGS);
+        memset(tokens, 0, sizeof(conf_token_t) * PARSE_MAX_ARGS);
         line++;
         /*
          * Go to the first non white-space character
