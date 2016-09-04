@@ -39,10 +39,9 @@ AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
-AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_INSTALL
 AM_PROG_CC_C_O
+AC_PROG_INSTALL
 
 # pcap thread
 AX_PCAP_THREAD
@@ -112,5 +111,4 @@ AC_CONFIG_FILES([
     src/test/Makefile
     cron/Makefile
 ])
-AC_CONFIG_SUBDIRS([src/TmfBase/Hapy])
 AC_OUTPUT

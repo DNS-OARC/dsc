@@ -98,6 +98,8 @@ void dns_message_init(void);
 void dns_message_clear_arrays(void);
 void dns_message_handle(dns_message *);
 
+int add_qname_filter(const char *name, const char *re);
+
 #ifndef T_OPT
 #define T_OPT 41                /* OPT pseudo-RR, RFC2761 */
 #endif
