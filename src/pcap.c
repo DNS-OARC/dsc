@@ -831,7 +831,7 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
             dsyslogf(LOG_ERR, "unable to set snap length: %s", pcap_thread_strerr(err));
             exit(1);
         }
-        if (bpf_program_str && (err = pcap_thread_set_filter(&pcap_thread, bpf_program_str, 0))) {
+        if (bpf_program_str && (err = pcap_thread_set_filter(&pcap_thread, bpf_program_str, strlen(bpf_program_str)))) {
             dsyslogf(LOG_ERR, "unable to set pcap filter: %s", pcap_thread_strerr(err));
             exit(1);
         }
