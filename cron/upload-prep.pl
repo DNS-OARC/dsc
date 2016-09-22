@@ -81,12 +81,11 @@ foreach my $conf (</usr/local/dsc/etc/*.conf>) {
         		}
         		my $new = "$upload/$yymmdd/$old";
         		link ($old, $new) or die "ln $old $new: $!";
-			#
-			# the above link(2) could fail if the file was
-			# previously linked but not yet unlinked.  To
-			# workaround we could do some stat(2)s and
-			# ignore if they have the same inum?
-			#
+        		
+        		# Check if the file was previously linked but not yet unlinked
+        		if ((stat($old))[1] != (stat($new))[1] ) {
+        			link ($old, $new) or die "ln $old $new: $!";
+        		}
 		}
 
 		unlink $old or die "unlink $old: $!";
