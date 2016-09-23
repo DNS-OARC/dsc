@@ -80,8 +80,7 @@ foreach my $conf (</usr/local/dsc/etc/*.conf>) {
 					or die "mkdir $upload/$yymmdd: $!";
         		}
         		my $new = "$upload/$yymmdd/$old";
-        		link ($old, $new) or die "ln $old $new: $!";
-        		
+
         		# Check if the file was previously linked but not yet unlinked
         		if ((stat($old))[1] != (stat($new))[1] ) {
         			link ($old, $new) or die "ln $old $new: $!";
