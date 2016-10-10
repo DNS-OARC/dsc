@@ -52,6 +52,7 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
+#include <errno.h>
 
 #include <sys/socket.h>
 #include <net/if_arp.h>
@@ -73,6 +74,9 @@
 #include "syslog_debug.h"
 #include "hashtbl.h"
 #include "pcap_layers.h"
+
+#include "config.h"
+#include "pcap-thread/pcap_thread.h"
 
 #define PCAP_SNAPLEN 65536
 #ifndef ETHER_HDR_LEN
@@ -119,8 +123,6 @@
 struct _interface
 {
     char *device;
-    pcap_t *pcap;
-    int fd;
     struct pcap_stat ps0, ps1;
     unsigned int pkts_captured;
 };
@@ -128,9 +130,8 @@ struct _interface
 #define MAX_N_INTERFACES 10
 static int n_interfaces = 0;
 static struct _interface *interfaces = NULL;
-static fd_set pcap_fdset;
-static int max_pcap_fds = 0;
 static unsigned short port53;
+pcap_thread_t pcap_thread = PCAP_THREAD_T_INIT;
 
 int n_pcap_offline = 0;                /* global so daemon.c can use it */
 char *bpf_program_str = NULL;
@@ -709,9 +710,26 @@ pcap_match_vlan(unsigned short vlan, void *udata)
     return 1;
 }
 
+/*
+ * Forward declares for pcap_layers since we need to call datalink
+ * handlers directly.
+ */
+#if USE_PPP
+void handle_ppp(const u_char * pkt, int len, void *userdata);
+#endif
+void handle_null(const u_char * pkt, int len, void *userdata);
+#ifdef DLT_LOOP
+void handle_loop(const u_char * pkt, int len, void *userdata);
+#endif
+#ifdef DLT_RAW
+void handle_raw(const u_char * pkt, int len, void *userdata);
+#endif
+void handle_ether(const u_char * pkt, int len, void *userdata);
+
 static void
-pcap_handle_packet(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt)
+pcap_handle_packet(u_char * udata, const struct pcap_pkthdr *hdr, const u_char * pkt, const char* name, int dlt)
 {
+    void (*handle_datalink) (const u_char * pkt, int len, void *userdata);
     transport_message tm;
 
 #if 0                                /* enable this to test code with unaligned headers */
@@ -725,7 +743,35 @@ pcap_handle_packet(u_char * udata, const struct pcap_pkthdr *hdr, const u_char *
         return;
     memset(&tm, 0, sizeof(tm));
     assign_timeval(tm.ts, hdr->ts);
-    handle_pcap((u_char *) & tm, hdr, pkt);
+
+    switch (dlt) {
+        case DLT_EN10MB:
+            handle_datalink = handle_ether;
+            break;
+#if USE_PPP
+        case DLT_PPP:
+            handle_datalink = handle_ppp;
+            break;
+#endif
+#ifdef DLT_LOOP
+        case DLT_LOOP:
+            handle_datalink = handle_loop;
+            break;
+#endif
+#ifdef DLT_RAW
+        case DLT_RAW:
+            handle_datalink = handle_raw;
+            break;
+#endif
+        case DLT_NULL:
+            handle_datalink = handle_null;
+            break;
+        default:
+            fprintf(stderr, "unsupported data link type %d", dlt);
+            exit(1);
+    }
+
+    handle_datalink(pkt, hdr->caplen, (u_char*)&tm);
 }
 
 
@@ -735,36 +781,64 @@ pcap_handle_packet(u_char * udata, const struct pcap_pkthdr *hdr, const u_char *
 
 
 
+extern int sig_while_processing;
+static int sig_got = 0;
 
-static fd_set *
-Pcap_select(const fd_set * theFdSet, int sec, int usec)
-{
-    /* XXX BUG: libpcap may have already buffered a packet that we have not
-     * processed yet, but this select will not wake up until new data arrives
-     * on the socket.  This problem is serious only if there are long gaps
-     * between packets. */
-    static fd_set R;
-    struct timeval to;
-    to.tv_sec = sec;
-    to.tv_usec = usec;
-    R = *theFdSet;
-    if (select(max_pcap_fds, &R, NULL, NULL, &to) > 0)
-        return &R;
-    return NULL;
+void _callback(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* pkt, const char* name, int dlt) {
+    struct _interface* i;
+    if (!user) {
+        dsyslog(LOG_ERR, "internal error");
+        exit(2);
+    }
+    i = (struct _interface*)user;
+
+    i->pkts_captured++;
+
+    pcap_handle_packet(user, pkthdr, pkt, name, dlt);
+
+    if (sig_while_processing && !sig_got) {
+        pcap_thread_stop(&pcap_thread);
+        sig_got = 1;
+    }
 }
 
 void
-Pcap_init(const char *device, int promisc)
+Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads)
 {
     struct stat sb;
-    struct bpf_program fp;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    int x;
     struct _interface *i;
+    int err;
 
     if (interfaces == NULL) {
         interfaces = xcalloc(MAX_N_INTERFACES, sizeof(*interfaces));
-        FD_ZERO(&pcap_fdset);
+        if ((err = pcap_thread_set_promiscuous(&pcap_thread, promisc))) {
+            dsyslogf(LOG_ERR, "unable to set promiscuous mode: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if ((err = pcap_thread_set_monitor(&pcap_thread, monitor))) {
+            dsyslogf(LOG_ERR, "unable to set monitor mode: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if ((err = pcap_thread_set_immediate_mode(&pcap_thread, immediate))) {
+            dsyslogf(LOG_ERR, "unable to set immediate mode: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if ((err = pcap_thread_set_use_threads(&pcap_thread, threads))) {
+            dsyslogf(LOG_ERR, "unable to set use threads: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if ((err = pcap_thread_set_snaplen(&pcap_thread, PCAP_SNAPLEN))) {
+            dsyslogf(LOG_ERR, "unable to set snap length: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if (bpf_program_str && (err = pcap_thread_set_filter(&pcap_thread, bpf_program_str, strlen(bpf_program_str)))) {
+            dsyslogf(LOG_ERR, "unable to set pcap filter: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if ((err = pcap_thread_set_callback(&pcap_thread, _callback))) {
+            dsyslogf(LOG_ERR, "unable to set pcap callback: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
     }
     assert(interfaces);
     assert(n_interfaces < MAX_N_INTERFACES);
@@ -775,52 +849,55 @@ Pcap_init(const char *device, int promisc)
     last_ts.tv_sec = last_ts.tv_usec = 0;
     finish_ts.tv_sec = finish_ts.tv_usec = 0;
 
-    if (0 == stat(device, &sb)) {
-        i->pcap = pcap_open_offline(device, errbuf);
-    } else {
-        /*
-         * NOTE: the to_ms argument here used to be 50, which seems to make
-         * good sense, but actually causes problems when taking packets from
-         * multiple interfaces (and one of those interfaces is very quiet).
-         * Even though we select() on the pcap FDs, we ignore what it tells
-         * us and always try to read from all interfaces, so the timeout
-         * here is important.
-         */
-        i->pcap = pcap_open_live((char *) device, PCAP_SNAPLEN, promisc, 1, errbuf);
-    }
-    if (NULL == i->pcap) {
-        dsyslogf(LOG_ERR, "pcap_open_*: %s", errbuf);
-        exit(1);
-    }
-    if (!pcap_file(i->pcap) && pcap_setnonblock(i->pcap, 1, errbuf) < 0) {
-        dsyslogf(LOG_ERR, "pcap_setnonblock(%s): %s", device, errbuf);
-        exit(1);
-    }
-    memset(&fp, '\0', sizeof(fp));
-    x = pcap_compile(i->pcap, &fp, bpf_program_str, 1, 0);
-    if (x < 0) {
-        dsyslogf(LOG_ERR, "pcap_compile failed: %s", pcap_geterr(i->pcap));
-        exit(1);
-    }
-    x = pcap_setfilter(i->pcap, &fp);
-    if (x < 0) {
-        dsyslogf(LOG_ERR, "pcap_setfilter failed: %s", pcap_geterr(i->pcap));
-        exit(1);
-    }
-    if (pcap_file(i->pcap)) {
+    if (!stat(device, &sb)) {
+        if ((err = pcap_thread_open_offline(&pcap_thread, device, i))) {
+            dsyslogf(LOG_ERR, "unable to open offline file %s: %s", device, pcap_thread_strerr(err));
+            if (err == PCAP_THREAD_EPCAP) {
+                dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
+                    pcap_thread_status(&pcap_thread),
+                    pcap_statustostr(pcap_thread_status(&pcap_thread)),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            else if (err == PCAP_THREAD_ERRNO) {
+                dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
+                    errno,
+                    strerror(errno),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            exit(1);
+        }
+
         n_pcap_offline++;
-    } else {
-        i->fd = pcap_get_selectable_fd(i->pcap);
-        dfprintf(0, "Pcap_init: FD_SET %d", i->fd);
-        FD_SET(i->fd, &pcap_fdset);
-        if (i->fd >= max_pcap_fds)
-            max_pcap_fds = i->fd + 1;
     }
+    else {
+        if ((err = pcap_thread_open(&pcap_thread, device, i))) {
+            dsyslogf(LOG_ERR, "unable to open interface %s: %s", device, pcap_thread_strerr(err));
+            if (err == PCAP_THREAD_EPCAP) {
+                dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
+                    pcap_thread_status(&pcap_thread),
+                    pcap_statustostr(pcap_thread_status(&pcap_thread)),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            else if (err == PCAP_THREAD_ERRNO) {
+                dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
+                    errno,
+                    strerror(errno),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            exit(1);
+        }
+    }
+
     if (0 == n_interfaces) {
         /*
          * Initialize pcap_layers library and specifiy IP fragment reassembly
+         * Datalink type is handled in callback
          */
-        pcap_layers_init(pcap_datalink(i->pcap), 1);
+        pcap_layers_init(DLT_EN10MB, 1);
         if (n_vlan_ids)
             callback_vlan = pcap_match_vlan;
         callback_ipv4 = pcap_ipv4_handler;
@@ -828,106 +905,165 @@ Pcap_init(const char *device, int promisc)
         callback_udp = pcap_udp_handler;
         callback_tcp = pcap_tcp_handler;
         callback_l7 = dns_protocol_handler;
-    } else {
-        if (pcap_datalink(i->pcap) != pcap_datalink(interfaces[0].pcap)) {
-            dsyslogf(LOG_ERR, "%s", "All interfaces must have same datalink type");
-            dsyslogf(LOG_ERR, "First interface has datalink type %d", pcap_datalink(interfaces[0].pcap));
-            dsyslogf(LOG_ERR, "Interface '%s' has datalink type %d", device, pcap_datalink(i->pcap));
-            exit(1);
-        }
     }
     n_interfaces++;
     if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_interfaces > n_pcap_offline)) {
-        dsyslogf(LOG_ERR, "%s", "offline interface must be only interface");
+        dsyslog(LOG_ERR, "offline interface must be only interface");
         exit(1);
     }
 }
 
-extern int sig_while_processing;
+void _stats(u_char* user, const struct pcap_stat* stats, const char* name, int dlt) {
+    int i;
+    struct _interface *I = 0;
+
+    for (i = 0; i < n_interfaces; i++) {
+        if (!strcmp(name, interfaces[i].device)) {
+            I = &interfaces[i];
+            break;
+        }
+    }
+
+    if (I) {
+        I->ps0 = I->ps1;
+        I->ps1 = *stats;
+    }
+}
 
 int
 Pcap_run(void)
 {
-    int i;
-    int result = 1;
+    int i, err;
     extern uint64_t statistics_interval;
+    struct timeval timedrun = { 0, 0 };
 
     for (i = 0; i < n_interfaces; i++)
         interfaces[i].pkts_captured = 0;
+
     if (n_pcap_offline > 0) {
-        result = 0;
         if (finish_ts.tv_sec > 0) {
             start_ts.tv_sec = finish_ts.tv_sec;
             finish_ts.tv_sec += statistics_interval;
         }
-        do {
-            result = pcap_dispatch(interfaces[0].pcap, 1, pcap_handle_packet, 0);
-            if (result <= 0)        /* error or EOF */
-                break;
-            interfaces[0].pkts_captured += result;
-            if (start_ts.tv_sec == 0) {
-                start_ts = last_ts;
-                finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
-                finish_ts.tv_usec = 0;
+        else {
+            /*
+             * First run, need to walk each pcap savefile and find
+             * the first start time
+             */
+
+            if ((err = pcap_thread_next_reset(&pcap_thread))) {
+                dsyslogf(LOG_ERR, "unable to reset pcap thread next: %s", pcap_thread_strerr(err));
+                exit(1);
             }
-        } while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing);
-        if (result <= 0 || sig_while_processing)
-            finish_ts = last_ts;        /* finish was cut short */
-    } else {
+            for (i = 0; i < n_pcap_offline; i++) {
+                if ((err = pcap_thread_next(&pcap_thread))) {
+                     if (err != PCAP_THREAD_EPCAP) {
+                        dsyslogf(LOG_ERR, "unable to do pcap thread next: %s", pcap_thread_strerr(err));
+                        exit(1);
+                     }
+                     continue;
+                }
+
+                if (!start_ts.tv_sec
+                    || last_ts.tv_sec < start_ts.tv_sec
+                    || (last_ts.tv_sec == start_ts.tv_sec && last_ts.tv_usec < start_ts.tv_usec))
+                {
+                    start_ts = last_ts;
+                }
+            }
+
+            if (!start_ts.tv_sec) {
+                return 0;
+            }
+
+            finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
+            finish_ts.tv_usec = 0;
+        }
+
+        i = 0;
+        do {
+            err = pcap_thread_next(&pcap_thread);
+            if (err == PCAP_THREAD_EPCAP) {
+                /*
+                 * Potential EOF, count number of times
+                 */
+                i++;
+            }
+            else if (err) {
+                dsyslogf(LOG_ERR, "unable to do pcap thread next: %s", pcap_thread_strerr(err));
+                exit(1);
+            }
+            else {
+                i = 0;
+            }
+
+            if (i == n_pcap_offline || sig_while_processing) {
+                /*
+                 * All pcaps reports EOF or we got a signal, nothing more to do
+                 */
+                finish_ts = last_ts;
+                return 0;
+            }
+        } while (last_ts.tv_sec < finish_ts.tv_sec);
+    }
+    else {
         gettimeofday(&start_ts, NULL);
         gettimeofday(&last_ts, NULL);
         finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
         finish_ts.tv_usec = 0;
-
-        while (last_ts.tv_sec < finish_ts.tv_sec && !sig_while_processing) {
-            fd_set *R = Pcap_select(&pcap_fdset, 0, 250000);
-            int pkts;
-
-            /*
-             * Here we intentionally ignore the return value from
-             * select() and always try to read from all pcaps. See
-             * http://www.tcpdump.org/lists/workers/2002/09/msg00033.html
-             */
-            for (pkts = 0, i = 0; i < n_interfaces; i++) {
-                struct _interface *I = &interfaces[i];
-                if (FD_ISSET(interfaces[i].fd, &pcap_fdset)) {
-                    int x = pcap_dispatch(I->pcap, -1, pcap_handle_packet, 0);
-                    if (x > 0) {
-                        I->pkts_captured += x;
-                        pkts += x;
-                    }
-                }
-            }
-
-            /*
-             * Set last timestamp if no FD was set or no packets been processed.
-             */
-            if (NULL == R || !pkts) {
-                gettimeofday(&last_ts, NULL);
-            }
+        timedrun.tv_sec = finish_ts.tv_sec - start_ts.tv_sec;
+        if ((err = pcap_thread_set_timedrun(&pcap_thread, timedrun))) {
+            dsyslogf(LOG_ERR, "unable to set pcap thread timed run: %s", pcap_thread_strerr(err));
+            exit(1);
         }
-        /*
-         * get pcap stats
-         */
-        for (i = 0; i < n_interfaces; i++) {
-            struct _interface *I = &interfaces[i];
-            I->ps0 = I->ps1;
-            pcap_stats(I->pcap, &I->ps1);
+
+        if ((err = pcap_thread_run(&pcap_thread))) {
+            dsyslogf(LOG_ERR, "unable to pcap thread run: %s", pcap_thread_strerr(err));
+            if (err == PCAP_THREAD_EPCAP) {
+                dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
+                    pcap_thread_status(&pcap_thread),
+                    pcap_statustostr(pcap_thread_status(&pcap_thread)),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            else if (err == PCAP_THREAD_ERRNO) {
+                dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
+                    errno,
+                    strerror(errno),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            exit(1);
+        }
+
+        if ((err = pcap_thread_stats(&pcap_thread, _stats, 0))) {
+            dsyslogf(LOG_ERR, "unable to get pcap thread stats: %s", pcap_thread_strerr(err));
+            if (err == PCAP_THREAD_EPCAP) {
+                dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
+                    pcap_thread_status(&pcap_thread),
+                    pcap_statustostr(pcap_thread_status(&pcap_thread)),
+                    pcap_thread_errbuf(&pcap_thread)
+                );
+            }
+            exit(1);
         }
 
         if (sig_while_processing)
             finish_ts = last_ts;
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
-    return result;
+    return 1;
 }
 
 void
 Pcap_close(void)
 {
     int i;
+
+    pcap_thread_close(&pcap_thread);
     for (i = 0; i < n_interfaces; i++)
-        pcap_close(interfaces[i].pcap);
+        if (interfaces[i].device) free(interfaces[i].device);
+
     xfree(interfaces);
     interfaces = NULL;
 }

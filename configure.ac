@@ -33,22 +33,23 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.1.1], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.2.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
-AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_INSTALL
 AM_PROG_CC_C_O
+AC_PROG_INSTALL
+
+# pcap thread
+AX_PCAP_THREAD
 
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])
-AC_CHECK_LIB([pcap], [pcap_open_live])
 AC_CHECK_LIB([GeoIP], [GeoIP_open])
 
 # Checks for header files.
@@ -58,7 +59,7 @@ AC_CHECK_HEADERS([arpa/nameser_compat.h arpa/inet.h fcntl.h memory.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h stdint.h stdlib.h string.h])
 AC_CHECK_HEADERS([strings.h sys/mount.h sys/param.h sys/socket.h])
 AC_CHECK_HEADERS([sys/statfs.h sys/statvfs.h sys/time.h syslog.h])
-AC_CHECK_HEADERS([unistd.h])
+AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -110,5 +111,4 @@ AC_CONFIG_FILES([
     src/test/Makefile
     cron/Makefile
 ])
-AC_CONFIG_SUBDIRS([src/TmfBase/Hapy])
 AC_OUTPUT

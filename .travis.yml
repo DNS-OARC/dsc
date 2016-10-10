@@ -1,4 +1,4 @@
-language: cpp
+language: c
 compiler:
   - clang
   - gcc
@@ -10,7 +10,7 @@ script:
   - ./configure
   - make dist
   - tar zxvf *.tar.gz
-  - cd dsc-[0-9]*
+  - cd dsc-*[0-9]
   - mkdir build
   - cd build
   - ../configure

@@ -3,6 +3,8 @@
 *.la
 config.log
 config.status
+config.guess
+config.sub
 stamp-h1
 .deps
 .libs

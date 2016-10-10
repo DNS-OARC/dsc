@@ -1,3 +1,43 @@
+dsc (2.2.0-1~unstable+1) unstable; urgency=low
+
+  * Release 2.2.0
+
+    Some big changes in this release are the removal of the C++ configure
+    parser library Hapy and the addition of pcap-thread to (hopefully)
+    handle capturing packet in a correct and efficiant way.
+
+    With that addition of pcap-thread comes new runtime options:
+    - `-m` sets monitor mode on interfaces
+    - `-i` sets immediate mode on interfaces
+    - `-T` disable the usage of threads in pcap thread
+
+    Bugfixes:
+    - d95190a fixes a small memory leak in `Pcap_init()` and a possible
+      bug where `-p` might never been used because of not being declared
+      external.
+    - 55e1056 added check for `netinet/ip_compat.h` for use in
+      `src/pcap_layers/pcap_layers.c`.
+
+    Commits:
+
+    0a1ce91 Fix coverity issues
+    5a1d410 Delete useless line (related to mayasd#84)
+    443db3e Check if the file was previously linked but not yet unlinked
+            (Tim CLERC.IM)
+    02a7621 Fix #82: Oops, `pcap_thread_set_filter()` had changed during
+            development and missed this
+    2a8aa29 Move definition of token struct inside and changed name to not
+            conflict on FreeBSD
+    43da964 Fix #9: Implement conf parser in C and remove dependency of
+            Hapy and C++
+    9f46f0d Update pcap thread to version 1.1.1
+    d95190a Use pcap thread, new options `-miT` and possible bugfix for
+            `-p` and a small memory leak fix
+    55e1056 Fix #77: Check for netinet/ip_compat
+    4e120f9 Fix travis script, only expand dir.
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Mon, 10 Oct 2016 10:57:09 +0200
+
 dsc (2.1.1-1~unstable+1) unstable; urgency=low
 
   * Release 2.1.1

@@ -1,7 +1,5 @@
 /*
  * Copyright (c) 2016, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,16 +32,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "md_array.h"
+#ifndef __dsc_config_hooks_h
+#define __dsc_config_hooks_h
 
-#ifndef __dsc_pcap_h
-#define __dsc_pcap_h
+#include "dataset_opt.h"
 
-void Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads);
-int Pcap_run();
-void Pcap_close(void);
-int Pcap_start_time(void);
-int Pcap_finish_time(void);
-void pcap_report(FILE *, md_array_printer*);
+int open_interface(const char *interface);
+int set_bpf_program(const char *s);
+int add_local_address(const char *s);
+int set_run_dir(const char *dir);
+int set_pid_file(const char *s);
+int set_statistics_interval (const char *s);
+int add_dataset(const char *name, const char *layer_ignored, const char *firstname, const char *firstindexer, const char *secondname, const char *secondindexer, const char *filtername, dataset_opt opts);
+int set_bpf_vlan_tag_byte_order(const char *which);
+int set_match_vlan(const char *s);
+int set_minfree_bytes(const char *s);
+int set_output_format(const char *output_format);
+void set_dump_reports_on_exit(void);
+int set_geoip_v4_dat(const char * dat, int options);
+int set_geoip_v6_dat(const char * dat, int options);
+int set_geoip_asn_v4_dat(const char * dat, int options);
+int set_geoip_asn_v6_dat(const char * dat, int options);
 
-#endif /* __dsc_pcap_h */
+#endif /* __dsc_config_hooks_h */

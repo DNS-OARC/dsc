@@ -1,7 +1,5 @@
 /*
  * Copyright (c) 2016, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,16 +32,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "md_array.h"
+#ifndef __dsc_parse_conf_h
+#define __dsc_parse_conf_h
 
-#ifndef __dsc_pcap_h
-#define __dsc_pcap_h
+int parse_conf(const char* file);
 
-void Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads);
-int Pcap_run();
-void Pcap_close(void);
-int Pcap_start_time(void);
-int Pcap_finish_time(void);
-void pcap_report(FILE *, md_array_printer*);
-
-#endif /* __dsc_pcap_h */
+#endif /* __dsc_parse_conf_h */
