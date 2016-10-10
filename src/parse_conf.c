@@ -303,7 +303,7 @@ int parse_conf_dataset(const conf_token_t* tokens) {
     if (!(dim1_indexer = strchr(dim1_name, ':'))
         || !(dim2_indexer = strchr(dim2_name, ':')))
     {
-        return 1;
+        ret = 1;
     }
     else {
         *dim1_indexer = *dim2_indexer = 0;
@@ -638,7 +638,7 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
             continue;
         }
         if (*type == TOKEN_ANY) {
-            if (tokens[i].type != TOKEN_STRING || tokens[i].type != TOKEN_NUMBER) {
+            if (tokens[i].type != TOKEN_STRING && tokens[i].type != TOKEN_NUMBER) {
                 fprintf(stderr, "CONFIG ERROR [%lu:%lu]: Wrong token for argument %lu, expected a string or number\n", line, i, i);
                 return 1;
             }
@@ -731,10 +731,12 @@ int parse_conf(const char* file) {
         }
         else if (ret == PARSE_CONF_OK) {
             fprintf(stderr, "CONFIG ERROR [%lu]: Too many arguments", line);
+            fclose(fp);
             return 1;
         }
         else if (ret != PARSE_CONF_LAST) {
             fprintf(stderr, "CONFIG ERROR [%lu]: Invalid syntax", line);
+            fclose(fp);
             return 1;
         }
 
@@ -742,6 +744,7 @@ int parse_conf(const char* file) {
          * Configure using the tokens
          */
         if (parse_conf_tokens(tokens, i, line)) {
+            fclose(fp);
             return 1;
         }
     }
