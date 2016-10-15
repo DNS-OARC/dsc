@@ -90,6 +90,7 @@ extern md_array_printer json_printer;
 extern int output_format_xml;
 extern int output_format_json;
 extern int dump_reports_on_exit;
+extern uint64_t statistics_interval;
 
 void
 daemonize(void)
@@ -455,8 +456,8 @@ main(int argc, char *argv[])
         dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
 
     if (!debug_flag && 0 == n_pcap_offline) {
-        dsyslogf(LOG_INFO, "Sleeping for %d seconds", 60 - (int) (time(NULL) % 60));
-        sleep(60 - (time(NULL) % 60));
+        dsyslogf(LOG_INFO, "Sleeping for %ld seconds", statistics_interval - (int) (time(NULL) % statistics_interval));
+        sleep(statistics_interval - (time(NULL) % statistics_interval));
     }
     dsyslog(LOG_INFO, "Running");
 
