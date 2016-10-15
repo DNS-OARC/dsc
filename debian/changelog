@@ -1,3 +1,23 @@
+dsc (2.2.1-1~unstable+1) unstable; urgency=low
+
+  * Release 2.2.1
+
+    Two bugfixes with one being critical (caused segfault, sorry for that)
+    - `pcap-thread` had an issue that threads where not closed on exit
+      of `pcap_thread_run()`, this only created many threads in my testing
+      environment but reports came in that it segfaulted.
+    - When started `dsc` (not in debug mode) it will wait to align with
+      the time, that did not get update with the configurable interval
+      change.
+
+    Commits:
+
+    6e3654b Fix #90: Update pcap-thread to v1.1.2 to fix a segfault issue
+    c9350a3 Fix #92: Honor configured interval when aligning
+    acaf617 minor typo
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Sun, 16 Oct 2016 00:08:49 +0200
+
 dsc (2.2.0-1~unstable+1) unstable; urgency=low
 
   * Release 2.2.0
