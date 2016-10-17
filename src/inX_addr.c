@@ -77,7 +77,7 @@ unsigned int
 inXaddr_hash(const inX_addr * a)
 {
     /* just ignore the upper bits for v6? */
-    return ntohl(a->_.in4.s_addr);
+    return ntohl(a->_.pad1.s_addr) + ntohl(a->_.in4.s_addr);
 }
 
 int
