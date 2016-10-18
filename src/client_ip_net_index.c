@@ -133,7 +133,7 @@ static unsigned int
 ipnet_hashfunc(const void *key)
 {
     const inX_addr *a = key;
-    return inXaddr_hash(a);
+    return ntohl(a->_.pad1.s_addr) + ntohl(a->_.in4.s_addr);
 }
 
 static int
