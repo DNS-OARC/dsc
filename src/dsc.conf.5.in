@@ -45,11 +45,11 @@ Each line is a configuration option and may have arguments in the form
 Comment lines must have a hash sign (#) in the first column.
 .SH CONFIGURATION
 .TP
-\fBlocal_address\fR IP ;
-Specifies the DNS server's local IP address.  It is used to
-determine the direction of an IP packet: sending, receiving,
-or other.  You may specify multiple local addresses by repeating
-the \fBlocal_address\fR line any number of times.
+\fBlocal_address\fR IP [ MASK / BITS ];
+Specifies the DNS server's local IP address with an optional mask/bits
+for local networks.  It is used to determine the direction of an IP packet:
+sending, receiving, or other.  You may specify multiple local addresses
+by repeating the \fBlocal_address\fR line any number of times.
 .TP
 \fBrun_dir\fR PATH ;
 A directory that will become
@@ -656,6 +656,9 @@ Load database into mmap shared memory. MMAP is not available for
 .nf
 local_address 127.0.0.1;
 local_address ::1;
+#local_address 127.0.0.0 255.0.0.0;
+#local_address 192.168.0.0 24;
+#local_address 10.0.0.0 8;
 
 run_dir "/var/lib/dsc";
 

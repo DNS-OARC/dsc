@@ -88,11 +88,11 @@ set_bpf_program(const char *s)
 }
 
 int
-add_local_address(const char *s)
+add_local_address(const char *s, const char *m)
 {
-    extern int ip_local_address(const char *);
-    dsyslogf(LOG_INFO, "adding local address %s", s);
-    return ip_local_address(s);
+    extern int ip_local_address(const char *, const char *);
+    dsyslogf(LOG_INFO, "adding local address %s%s%s", s, m ? " mask " : "", m ? m : "");
+    return ip_local_address(s, m);
 }
 
 int

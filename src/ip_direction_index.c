@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -59,6 +60,7 @@
 struct _foo
 {
     inX_addr addr;
+    inX_addr mask;
     struct _foo *next;
 };
 
@@ -71,9 +73,12 @@ static
 ip_is_local(const inX_addr * a)
 {
     struct _foo *t;
-    for (t = local_addrs; t; t = t->next)
-        if (0 == inXaddr_cmp(&t->addr, a))
+    for (t = local_addrs; t; t = t->next) {
+        inX_addr m = inXaddr_mask(a, &(t->mask));
+        if (!inXaddr_cmp(&(t->addr), &m)) {
             return 1;
+        }
+    }
     return 0;
 }
 
@@ -90,7 +95,7 @@ ip_direction_indexer(const void *vp)
 }
 
 int
-ip_local_address(const char *presentation)
+ip_local_address(const char *presentation, const char *mask)
 {
     struct _foo *n = xcalloc(1, sizeof(*n));
     if (NULL == n)
@@ -99,6 +104,60 @@ ip_local_address(const char *presentation)
         dfprintf(0, "yucky IP address %s", presentation);
         xfree(n);
         return 0;
+    }
+    memset(&(n->mask), 255, sizeof(n->mask));
+    if (mask) {
+        if (!strchr(mask, '.') && !strchr(mask, ':')) {
+            in_addr_t bit_mask = -1;
+            int bits = atoi(mask);
+
+            if (strchr(presentation, ':')) {
+                if (bits < 0 || bits > 128) {
+                    dfprintf(0, "yucky IP mask bits %s", mask);
+                    xfree(n);
+                    return 0;
+                }
+
+                if (bits > 96) {
+                    bit_mask <<= 128 - bits;
+                    n->mask._.in4.s_addr = htonl(bit_mask);
+                }
+                else {
+                    n->mask._.in4.s_addr = 0;
+                    if (bits > 64) {
+                        bit_mask <<= 96 - bits;
+                        n->mask._.pad2.s_addr = htonl(bit_mask);
+                    }
+                    else {
+                        n->mask._.pad2.s_addr = 0;
+                        if (bits > 32) {
+                            bit_mask <<= 64 - bits;
+                            n->mask._.pad1.s_addr = htonl(bit_mask);
+                        }
+                        else {
+                            n->mask._.pad1.s_addr = 0;
+                            bit_mask <<= 32 - bits;
+                            n->mask._.pad0.s_addr = htonl(bit_mask);
+                        }
+                    }
+                }
+            }
+            else {
+                if (bits < 0 || bits > 32) {
+                    dfprintf(0, "yucky IP mask bits %s", mask);
+                    xfree(n);
+                    return 0;
+                }
+
+                bit_mask <<= 32 - bits;
+                n->mask._.in4.s_addr = htonl(bit_mask);
+            }
+        }
+        else if (inXaddr_pton(mask, &n->mask) != 1) {
+            dfprintf(0, "yucky IP mask %s", mask);
+            xfree(n);
+            return 0;
+        }
     }
     n->next = local_addrs;
     local_addrs = n;
