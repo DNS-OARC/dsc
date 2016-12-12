@@ -590,12 +590,12 @@ static conf_token_syntax_t _syntax[] = {
     },
     {
         "geoip_asn_v4_dat",
-        0,
+        parse_conf_geoip_asn_v4_dat,
         { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
     },
     {
         "geoip_asn_v6_dat",
-        0,
+        parse_conf_geoip_asn_v6_dat,
         { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
     },
 
