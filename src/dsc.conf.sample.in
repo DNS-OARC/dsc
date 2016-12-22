@@ -1,51 +1,55 @@
 # local_address
 #
-#	specifies a local IP address.  used to determine the
-#	"direction" of an IP packet: sending or receiving or other.
-#	Repeat any number of times for all local addresses.
+#  Specifies a local IP address with an optional mask/bits for local
+#  networks.  Used to determine the "direction" of an IP packet: sending
+#  or receiving or other. Repeat any number of times for all local
+#  addresses.
 #
 local_address 127.0.0.1;
 local_address ::1;
+#local_address 127.0.0.0 255.0.0.0;
+#local_address 192.168.0.0 24;
+#local_address 10.0.0.0 8;
 
 # run_dir
 #
-#	dsc passes this directory to chdir() after starting.
+#  dsc passes this directory to chdir() after starting.
 #
 run_dir "@DSC_DATA_DIR@";
 
 # minfree_bytes
 #
-#	If the filesystem has less than this amount of free
-#	space, then dsc will not write its XML files to disk.
-#	The data will be lost.
+#  If the filesystem has less than this amount of free
+#  space, then dsc will not write its XML files to disk.
+#  The data will be lost.
 #
 minfree_bytes 5000000;
 
 # pid_file
 #
-#	filename where DSC should store its process-id
+#  filename where DSC should store its process-id
 #
 pid_file "@DSC_PID_FILE@";
 
 # bpf_program
 #
-#	a berkely packet filter program.  it can be used to limit
-#	the number and type of queries that the application receives
-#	from the kernel.  note if you limit it to "udp port 53" the
-#	IP-based collectors do not work
+#  a berkely packet filter program.  it can be used to limit
+#  the number and type of queries that the application receives
+#  from the kernel.  note if you limit it to "udp port 53" the
+#  IP-based collectors do not work
 #
-#	NOTE: bpf_program must GO BEFORE interface
+#  NOTE: bpf_program must GO BEFORE interface
 #
-#	use this to see only DNS messages
+#  use this to see only DNS messages
 #bpf_program "udp port 53";
 #
-#	use this to see only DNS *queries*
+#  use this to see only DNS *queries*
 #bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
 # interface
 #
-#	specifies a network interface to sniff packets from or a pcap
-#	file to read packets from, can specify more than one.
+#  specifies a network interface to sniff packets from or a pcap
+#  file to read packets from, can specify more than one.
 #
 #interface eth0;
 #interface fxp0;
@@ -53,17 +57,17 @@ pid_file "@DSC_PID_FILE@";
 
 # qname_filter
 #
-#	Defines a custom QNAME-based filter for DNS messages.  If
-#	you refer to this named filter on a dataset line, then only
-#	queries or replies for matching QNAMEs will be counted.
-#	The QNAME argument is a regular expression.  For example:
+#  Defines a custom QNAME-based filter for DNS messages.  If
+#  you refer to this named filter on a dataset line, then only
+#  queries or replies for matching QNAMEs will be counted.
+#  The QNAME argument is a regular expression.  For example:
 #
 #qname_filter WWW-Only ^www\. ;
 #dataset qtype dns All:null Qtype:qtype queries-only,WWW-Only ;
 
 # datasets
 #
-#	please see the DSC manual for more information.
+#  please see the DSC manual for more information.
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
 dataset opcode dns All:null Opcode:opcode queries-only;
@@ -91,7 +95,7 @@ dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
 
-#	datasets for collecting data on priming queries at root nameservers
+#  datasets for collecting data on priming queries at root nameservers
 #dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
 #dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
 
@@ -100,14 +104,14 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 
 # bpf_vlan_tag_byte_order
 #
-#	Set this to 'host' on FreeBSD-4 where the VLAN id that we
-#	get from BPF appears to already be in host byte order.
+#  Set this to 'host' on FreeBSD-4 where the VLAN id that we
+#  get from BPF appears to already be in host byte order.
 #bpf_vlan_tag_byte_order host;
 
 # match_vlan
 #
-#	A whitespace-separated list of VLAN IDs.  If set, only the
-#	packets with these VLAN IDs will be analyzed by DSC.
+#  A whitespace-separated list of VLAN IDs.  If set, only the
+#  packets with these VLAN IDs will be analyzed by DSC.
 #
 #match_vlan 100 200;
 

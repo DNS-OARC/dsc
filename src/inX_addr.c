@@ -76,8 +76,18 @@ inXaddr_pton(const char *buf, inX_addr * a)
 unsigned int
 inXaddr_hash(const inX_addr * a)
 {
-    /* just ignore the upper bits for v6? */
-    return ntohl(a->_.in4.s_addr);
+    unsigned int lowest32;
+
+    if ((lowest32 = ntohl(a->_.in4.s_addr))) {
+        return lowest32;
+    }
+    if ((lowest32 = ntohl(a->_.pad2.s_addr))) {
+        return lowest32;
+    }
+    if ((lowest32 = ntohl(a->_.pad1.s_addr))) {
+        return lowest32;
+    }
+    return ntohl(a->_.pad0.s_addr);
 }
 
 int

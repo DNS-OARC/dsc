@@ -39,7 +39,7 @@
 
 int open_interface(const char *interface);
 int set_bpf_program(const char *s);
-int add_local_address(const char *s);
+int add_local_address(const char *s, const char *m);
 int set_run_dir(const char *dir);
 int set_pid_file(const char *s);
 int set_statistics_interval (const char *s);

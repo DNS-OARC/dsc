@@ -61,6 +61,9 @@
 #include <sys/statfs.h>
 #endif
 #include <signal.h>
+#if HAVE_PTHREAD
+#include <pthread.h>
+#endif
 
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -304,15 +307,6 @@ dump_reports(void)
 }
 
 static void
-sig_ignore(int signum)
-{
-    if (debug_flag)
-        dsyslogf(LOG_INFO, "Received signal %d, ignoring", signum);
-
-    return;
-}
-
-static void
 sig_exit(int signum)
 {
     dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
@@ -327,6 +321,7 @@ sig_exit_dumping(int signum)
     if (have_reports) {
         dsyslogf(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
         sig_while_processing = signum;
+        Pcap_stop();
     }
     else {
         dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
@@ -334,13 +329,35 @@ sig_exit_dumping(int signum)
     }
 }
 
+#if HAVE_PTHREAD
+static void *
+sig_thread(void * arg) {
+    sigset_t *set = (sigset_t*)arg;
+    int sig, err;
+
+    if ((err = sigwait(set, &sig))) {
+        dsyslogf(LOG_DEBUG, "Error sigwait(): %d", err);
+        return 0;
+    }
+
+    if (dump_reports_on_exit)
+        sig_exit_dumping(sig);
+    else
+        sig_exit(sig);
+
+    return 0;
+}
+#endif
+
 int
 main(int argc, char *argv[])
 {
     int x;
     int result;
     struct timeval break_start = { 0, 0 };
-    struct sigaction action;
+#if HAVE_PTHREAD
+    pthread_t sigthread;
+#endif
 
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -416,44 +433,66 @@ main(int argc, char *argv[])
     write_pid_file();
 
     /*
-     * Install signal handler for signals to ignore
+     * Handle signal when using pthreads
      */
 
-    memset(&action, 0, sizeof(action));
-    action.sa_handler = sig_ignore;
-    sigfillset(&action.sa_mask);
+#if HAVE_PTHREAD
+    {
+        sigset_t set;
+        int err;
 
-    if (sigaction(SIGHUP, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGHUP: %s", strerror(errno));
-    if (sigaction(SIGCHLD, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGCHLD: %s", strerror(errno));
-    if (sigaction(SIGPIPE, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGPIPE: %s", strerror(errno));
-    if (sigaction(SIGUSR1, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGUSR1: %s", strerror(errno));
-    if (sigaction(SIGUSR2, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGUSR2: %s", strerror(errno));
+        sigfillset(&set);
+        if ((err = pthread_sigmask(SIG_BLOCK, &set, 0))) {
+            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", strerror(err));
+            exit(1);
+        }
+
+        sigemptyset(&set);
+        sigaddset(&set, SIGTERM);
+        sigaddset(&set, SIGQUIT);
+        if (nodaemon_flag)
+            sigaddset(&set, SIGINT);
+
+        if ((err = pthread_create(&sigthread, 0, &sig_thread, (void*)&set))) {
+            dsyslogf(LOG_ERR, "Unable to start signal thread: %s", strerror(err));
+            exit(1);
+        }
+    }
+#else
 
     /*
-     * Do not ignore SIGINT if we are running in the foreground
+     * Handle signal without pthreads
      */
 
-    if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
+    {
+        sigset_t set;
+        struct sigaction action;
 
-    /*
-     * Install signal handler for signals to exit on
-     */
+        sigfillset(&set);
+        sigdelset(&set, SIGTERM);
+        sigdelset(&set, SIGQUIT);
+        if (nodaemon_flag)
+            sigdelset(&set, SIGINT);
 
-    if (dump_reports_on_exit)
-        action.sa_handler = sig_exit_dumping;
-    else
-        action.sa_handler = sig_exit;
+        if (sigprocmask(SIG_BLOCK, &set, 0))
+            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", strerror(errno));
 
-    if (sigaction(SIGTERM, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
-    if (sigaction(SIGQUIT, &action, NULL))
-        dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
+        memset(&action, 0, sizeof(action));
+        sigfillset(&action.sa_mask);
+
+        if (dump_reports_on_exit)
+            action.sa_handler = sig_exit_dumping;
+        else
+            action.sa_handler = sig_exit;
+
+        if (sigaction(SIGTERM, &action, NULL))
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
+        if (sigaction(SIGQUIT, &action, NULL))
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
+        if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
+    }
+#endif
 
     if (!debug_flag && 0 == n_pcap_offline) {
         dsyslogf(LOG_INFO, "Sleeping for %ld seconds", statistics_interval - (int) (time(NULL) % statistics_interval));

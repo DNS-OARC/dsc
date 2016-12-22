@@ -208,15 +208,22 @@ int parse_conf_statistics_interval(const conf_token_t* tokens) {
 
 int parse_conf_local_address(const conf_token_t* tokens) {
     char* local_address = strndup(tokens[1].token, tokens[1].length);
+    char* local_mask = 0;
     int ret;
 
     if (!local_address) {
         errno = ENOMEM;
         return -1;
     }
+    if (tokens[2].token != TOKEN_END && !(local_mask = strndup(tokens[2].token, tokens[2].length))) {
+        free(local_address);
+        errno = ENOMEM;
+        return -1;
+    }
 
-    ret = add_local_address(local_address);
+    ret = add_local_address(local_address, local_mask);
     free(local_address);
+    free(local_mask);
     return ret == 1 ? 0 : 1;
 }
 
@@ -534,7 +541,7 @@ static conf_token_syntax_t _syntax[] = {
     {
         "local_address",
         parse_conf_local_address,
-        { TOKEN_STRING, TOKEN_END }
+        { TOKEN_STRING, TOKEN_ANY, TOKEN_END }
     },
     {
         "bpf_program",
@@ -583,12 +590,12 @@ static conf_token_syntax_t _syntax[] = {
     },
     {
         "geoip_asn_v4_dat",
-        0,
+        parse_conf_geoip_asn_v4_dat,
         { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
     },
     {
         "geoip_asn_v6_dat",
-        0,
+        parse_conf_geoip_asn_v6_dat,
         { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
     },
 

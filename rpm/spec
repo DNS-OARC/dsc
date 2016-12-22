@@ -1,0 +1,80 @@
+Name:           dsc
+Version:        2.3.0
+Release:        1%{?dist}
+Summary:        DNS Statistics Collector
+
+License:        BSD-3-Clause
+URL:            https://www.dns-oarc.net/oarc/data/dsc
+# Using same naming as to build debs, get the source (and rename it) at
+# https://www.dns-oarc.net/dsc/download and change %setup
+Source0:        %{name}_%{version}.orig.tar.gz
+
+BuildRequires:  libpcap-devel
+BuildRequires:  perl
+BuildRequires:  perl(Proc::PID::File)
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  libtool
+Requires:       perl
+Requires:       perl(Proc::PID::File)
+
+%description
+DNS Statistics Collector (DSC) is a tool used for collecting and exploring
+statistics from busy DNS servers. It uses a distributed architecture with
+collectors running on or near nameservers sending their data to one or more
+central presenters for display and archiving. Collectors use pcap to sniff
+network traffic. They transmit aggregated data to the presenter as XML data.
+
+%prep
+%setup -q -n %{name}_%{version}
+
+
+%build
+sh autogen.sh
+%configure
+make %{?_smp_mflags}
+
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root)
+%config %{_sysconfdir}/*
+%{_bindir}/*
+%{_libexecdir}/*
+%{_datadir}/doc/*
+%{_mandir}/man1/*
+%{_mandir}/man5/*
+
+
+%changelog
+* Thu Dec 22 2016 Jerry Lundström <lundstrom.jerry@gmail.com> 2.3.0-1
+- Release 2.3.0
+  * Rare lockup has been fixed that could happen if a signal was received
+    in the wrong thread at the wrong time due to `pcap_thread_stop()`
+    canceling and waiting on threads to join again. The handling of signals
+    have been improved for threaded and non-threaded operations.
+  * A couple of bugfixes, one to fix loading of GeoIP ASN database and
+    another to use the lowest 32 bits of an IP address (being v4 or v6)
+    in the IP hash making it a bit more efficient for v6 addresses.
+  * New functionality for the configure option `local_address`, you can now
+    specify a network mask (see `man 5 dsc.conf` for syntax).
+  * Commits:
+    e286298 Fix CID 158968 Bad bit shift operation
+    c15db43 Update to pcap-thread v1.2.1
+    1ac06ac Move stopping process to not require a packet
+    597dd34 Handle signals better with and without pthreads
+    bcf99e8 Add RPM spec and ACLOCAL_AMFLAGS to build on CentOS 6
+    667fe69 fixed load geoIP ASN database from config-file
+    e1304d4 Fix #97: Add optional mask to `local_address` so you can
+            specify networks
+    5dae7dd Fix #96: Hash the lowest 32 bits of IP addresses
+* Tue Dec 13 2016 Jerry Lundström <lundstrom.jerry@gmail.com> 2.2.1-1
+- Initial package

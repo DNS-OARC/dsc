@@ -782,7 +782,6 @@ pcap_handle_packet(u_char * udata, const struct pcap_pkthdr *hdr, const u_char *
 
 
 extern int sig_while_processing;
-static int sig_got = 0;
 
 void _callback(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* pkt, const char* name, int dlt) {
     struct _interface* i;
@@ -795,11 +794,6 @@ void _callback(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* pkt
     i->pkts_captured++;
 
     pcap_handle_packet(user, pkthdr, pkt, name, dlt);
-
-    if (sig_while_processing && !sig_got) {
-        pcap_thread_stop(&pcap_thread);
-        sig_got = 1;
-    }
 }
 
 void
@@ -1053,6 +1047,12 @@ Pcap_run(void)
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
     return 1;
+}
+
+void
+Pcap_stop(void)
+{
+    pcap_thread_stop(&pcap_thread);
 }
 
 void
