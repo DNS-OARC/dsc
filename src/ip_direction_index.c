@@ -136,8 +136,13 @@ ip_local_address(const char *presentation, const char *mask)
                         }
                         else {
                             n->mask._.pad1.s_addr = 0;
-                            bit_mask <<= 32 - bits;
-                            n->mask._.pad0.s_addr = htonl(bit_mask);
+                            if (bits) {
+                                bit_mask <<= 32 - bits;
+                                n->mask._.pad0.s_addr = htonl(bit_mask);
+                            }
+                            else {
+                                n->mask._.pad0.s_addr = 0;
+                            }
                         }
                     }
                 }
@@ -149,8 +154,13 @@ ip_local_address(const char *presentation, const char *mask)
                     return 0;
                 }
 
-                bit_mask <<= 32 - bits;
-                n->mask._.in4.s_addr = htonl(bit_mask);
+                if (bits) {
+                    bit_mask <<= 32 - bits;
+                    n->mask._.in4.s_addr = htonl(bit_mask);
+                }
+                else {
+                    n->mask._.in4.s_addr = 0;
+                }
             }
         }
         else if (inXaddr_pton(mask, &n->mask) != 1) {
