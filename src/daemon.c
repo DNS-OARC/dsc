@@ -321,6 +321,7 @@ sig_exit_dumping(int signum)
     if (have_reports) {
         dsyslogf(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
         sig_while_processing = signum;
+        Pcap_stop();
     }
     else {
         dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
