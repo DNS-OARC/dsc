@@ -229,7 +229,7 @@ usage(void)
         "\t-p\tDon't put interface in promiscuous mode.\n"
         "\t-m\tEnable monitor mode on interfaces.\n"
         "\t-i\tEnable immediate mode on interfaces.\n"
-        "\t-T\tDisable usage of threads in pcap thread.\n"
+        "\t-T\tDisable the usage of threads.\n"
         "\t-v\tPrint version and exit.\n"
     );
     exit(1);
@@ -406,7 +406,7 @@ main(int argc, char *argv[])
     if (immediate_flag)
         dsyslog(LOG_INFO, "enabling interface immediate mode");
     if (!threads_flag)
-        dsyslog(LOG_INFO, "disabling usage of threads in pcap thread");
+        dsyslog(LOG_INFO, "disabling the usage of threads");
 
     dns_message_init();
     if (parse_conf(argv[0])) {
