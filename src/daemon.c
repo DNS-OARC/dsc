@@ -359,7 +359,7 @@ main(int argc, char *argv[])
     pthread_t sigthread;
 #endif
 
-    progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
+    progname = xstrdup(strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
         return 1;
     srandom(time(NULL));
