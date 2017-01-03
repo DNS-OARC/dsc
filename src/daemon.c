@@ -437,7 +437,7 @@ main(int argc, char *argv[])
      */
 
 #if HAVE_PTHREAD
-    {
+    if (threads_flag) {
         sigset_t set;
         int err;
 
@@ -458,13 +458,13 @@ main(int argc, char *argv[])
             exit(1);
         }
     }
-#else
-
-    /*
-     * Handle signal without pthreads
-     */
-
+    else
+#endif
     {
+        /*
+         * Handle signal without pthreads
+         */
+
         sigset_t set;
         struct sigaction action;
 
@@ -492,7 +492,6 @@ main(int argc, char *argv[])
         if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
             dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
     }
-#endif
 
     if (!debug_flag && 0 == n_pcap_offline) {
         dsyslogf(LOG_INFO, "Sleeping for %ld seconds", statistics_interval - (int) (time(NULL) % statistics_interval));
@@ -517,6 +516,38 @@ main(int argc, char *argv[])
             gettimeofday(&break_start, NULL);
 
         if (0 == fork()) {
+            struct sigaction action;
+
+            /*
+             * Remove the blocking of signals
+             */
+
+#if HAVE_PTHREAD
+            if (threads_flag) {
+                sigset_t set;
+
+                /*
+                 * Reset the signal process mask since the signal thread
+                 * will not make the fork
+                 */
+
+                sigemptyset(&set);
+                sigaddset(&set, SIGTERM);
+                sigaddset(&set, SIGQUIT);
+                sigaddset(&set, SIGINT);
+
+                sigprocmask(SIG_UNBLOCK, &set, 0);
+            }
+#endif
+
+            memset(&action, 0, sizeof(action));
+            sigfillset(&action.sa_mask);
+            action.sa_handler = SIG_DFL;
+
+            sigaction(SIGTERM, &action, NULL);
+            sigaction(SIGQUIT, &action, NULL);
+            sigaction(SIGINT, &action, NULL);
+
             dump_reports();
             _exit(0);
         }
