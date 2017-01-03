@@ -71,7 +71,7 @@ Enable monitor mode on interfaces.
 Enable immediate mode on interfaces.
 .TP
 .B \-T
-Disable usage of threads in pcap thread.
+Disable the usage of threads.
 .TP
 .B \-v
 Print version and exit.
