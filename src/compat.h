@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -34,63 +34,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <netdb.h>
-#include <string.h>
+#ifndef __dsc_compat_h
+#define __dsc_compat_h
 
-#include "dns_message.h"
-#include "md_array.h"
+#include <stddef.h>
 
-static int largest = 0;
+const char* dsc_strerror(int errnum, char* buf, size_t buflen);
 
-int
-ip_proto_indexer(const void *vp)
-{
-    const dns_message *m = vp;
-    const transport_message *tm = m->tm;
-    int i = (int) tm->proto;
-    if (i > largest)
-        largest = i;
-    return i;
-}
-
-static int next_iter = 0;
-
-int
-ip_proto_iterator(char **label)
-{
-    static char label_buf[20];
-#if __OpenBSD__
-    struct protoent_data pdata;
-#else
-    char buf[1024];
-#endif
-    struct protoent proto;
-    struct protoent *p;
-    if (NULL == label) {
-        next_iter = 0;
-        return largest + 1;
-    }
-    if (next_iter > largest)
-        return -1;
-#if __OpenBSD__
-    memset(&pdata, 0, sizeof(struct protoent_data));
-    getprotobynumber_r(next_iter, &proto, &pdata);
-    p = &proto;
-#else
-    getprotobynumber_r(next_iter, &proto, buf, sizeof(buf), &p);
-#endif
-    if (p)
-        *label = p->p_name;
-    else
-        snprintf(*label = label_buf, 20, "p%d", next_iter);
-    return next_iter++;
-}
-
-void
-ip_proto_reset()
-{
-    largest = 0;
-}
+#endif /* __dsc_compat_h */

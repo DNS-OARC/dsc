@@ -77,6 +77,7 @@
 
 #include "config.h"
 #include "pcap-thread/pcap_thread.h"
+#include "compat.h"
 
 #define PCAP_SNAPLEN 65536
 #ifndef ETHER_HDR_LEN
@@ -799,6 +800,7 @@ void _callback(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* pkt
 void
 Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads)
 {
+    char errbuf[512];
     struct stat sb;
     struct _interface *i;
     int err;
@@ -856,7 +858,7 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
             else if (err == PCAP_THREAD_ERRNO) {
                 dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
                     errno,
-                    strerror(errno),
+                    dsc_strerror(errno, errbuf, sizeof(errbuf)),
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
@@ -878,7 +880,7 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
             else if (err == PCAP_THREAD_ERRNO) {
                 dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
                     errno,
-                    strerror(errno),
+                    dsc_strerror(errno, errbuf, sizeof(errbuf)),
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
@@ -1021,9 +1023,10 @@ Pcap_run(void)
                 );
             }
             else if (err == PCAP_THREAD_ERRNO) {
+                char errbuf[512];
                 dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
                     errno,
-                    strerror(errno),
+                    dsc_strerror(errno, errbuf, sizeof(errbuf)),
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }

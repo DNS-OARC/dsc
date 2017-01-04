@@ -62,7 +62,8 @@ dsc_SOURCES = base64.c \
     xmalloc.c \
     inX_addr.c \
     pcap-thread/pcap_thread.c \
-    parse_conf.c
+    parse_conf.c \
+    compat.c
 dist_dsc_SOURCES = base64.h \
     byteorder.h \
     certain_qnames_index.h \
@@ -108,7 +109,8 @@ dist_dsc_SOURCES = base64.h \
     pcap_layers/pcap_layers.h \
     pcap-thread/pcap_thread.h \
     parse_conf.h \
-    config_hooks.h
+    config_hooks.h \
+    compat.h
 dsc_LDADD = $(PTHREAD_LIBS)
 man1_MANS = dsc.1
 man5_MANS = dsc.conf.5

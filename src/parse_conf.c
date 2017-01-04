@@ -46,6 +46,7 @@
 #include "config_hooks.h"
 #include "dns_message.h"
 #include "syslog_debug.h"
+#include "compat.h"
 
 #define PARSE_CONF_EINVAL   -2
 #define PARSE_CONF_ERROR    -1
@@ -672,7 +673,8 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
         int ret = syntax->parse(tokens);
 
         if (ret < 0) {
-            fprintf(stderr, "CONFIG ERROR [%lu]: %s", line, strerror(errno));
+            char errbuf[512];
+            fprintf(stderr, "CONFIG ERROR [%lu]: %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         }
         if (ret > 0) {
             fprintf(stderr, "CONFIG ERROR [%lu]: Unable to configure ", line);

@@ -47,6 +47,7 @@
 #include "syslog_debug.h"
 #include "hashtbl.h"
 #include "pcap.h"
+#include "compat.h"
 
 extern int promisc_flag;
 extern int monitor_flag;
@@ -100,8 +101,9 @@ set_run_dir(const char *dir)
 {
     dsyslogf(LOG_INFO, "setting current directory to %s", dir);
     if (chdir(dir) < 0) {
+        char errbuf[512];
         perror(dir);
-        dsyslogf(LOG_ERR, "chdir: %s: %s", dir, strerror(errno));
+        dsyslogf(LOG_ERR, "chdir: %s: %s", dir, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return 0;
     }
     return 1;
@@ -136,7 +138,8 @@ set_statistics_interval (const char *s)
     dsyslogf(LOG_INFO, "Setting statistics interval to: %s", s);
     statistics_interval = strtoull(s, NULL, 10);
     if (statistics_interval == ULLONG_MAX) {
-        dsyslogf(LOG_ERR, "strtoull: %s", strerror(errno));
+        char errbuf[512];
+        dsyslogf(LOG_ERR, "strtoull: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return 0;
     }
     if (!statistics_interval) {
@@ -247,51 +250,59 @@ set_dump_reports_on_exit(void)
 int
 set_geoip_v4_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_v4_options = options;
     if ( (geoip_v4_dat = strdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP v4 dat %s %d", geoip_v4_dat, geoip_v4_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP v4 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP v4 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 
 int
 set_geoip_v6_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_v6_options = options;
     if ( (geoip_v6_dat = strdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP v6 dat %s %d", geoip_v6_dat, geoip_v6_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP v6 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP v6 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 
 int
 set_geoip_asn_v4_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_asn_v4_options = options;
     if ( (geoip_asn_v4_dat = strdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP ASN v4 dat %s %d", geoip_asn_v4_dat, geoip_asn_v4_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v4 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v4 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 
 int
 set_geoip_asn_v6_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_asn_v6_options = options;
     if ( (geoip_asn_v6_dat = strdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP ASN v6 dat %s %d", geoip_asn_v6_dat, geoip_asn_v6_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }

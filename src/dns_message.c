@@ -314,12 +314,13 @@ dns_message_find_indexer(const char *in)
 static int
 dns_message_find_filters(const char *fn, filter_list ** fl)
 {
+    char *tok = 0;
     char *t;
     char *copy = xstrdup(fn);
     filter_list *f;
     if (NULL == copy)
         return 0;
-    for (t = strtok(copy, ","); t; t = strtok(NULL, ",")) {
+    for (t = strtok_r(copy, ",", &tok); t; t = strtok_r(NULL, ",", &tok)) {
         if (0 == strcmp(t, "any"))
             continue;
         for (f = DNSFilters; f; f = f->next) {
