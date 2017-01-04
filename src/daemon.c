@@ -70,6 +70,7 @@
 #include "pcap.h"
 #include "syslog_debug.h"
 #include "parse_conf.h"
+#include "compat.h"
 
 char *progname = NULL;
 char *pid_file_name = NULL;
@@ -98,16 +99,17 @@ extern uint64_t statistics_interval;
 void
 daemonize(void)
 {
+    char errbuf[512];
     int fd;
     pid_t pid;
     if ((pid = fork()) < 0) {
-        dsyslogf(LOG_ERR, "fork failed: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "fork failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(1);
     }
     if (pid > 0)
         exit(0);
     if (setsid() < 0)
-        dsyslogf(LOG_ERR, "setsid failed: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "setsid failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     closelog();
 #ifdef TIOCNOTTY
     if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
@@ -117,7 +119,7 @@ daemonize(void)
 #endif
     fd = open("/dev/null", O_RDWR);
     if (fd < 0) {
-        dsyslogf(LOG_ERR, "/dev/null: %s\n", strerror(errno));
+        dsyslogf(LOG_ERR, "/dev/null: %s\n", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     } else {
         dup2(fd, 0);
         dup2(fd, 1);
@@ -130,6 +132,7 @@ daemonize(void)
 void
 write_pid_file(void)
 {
+    char errbuf[512];
     FILE *fp;
     int fd, flags;
     struct flock lock;
@@ -142,7 +145,7 @@ write_pid_file(void)
      */
 
     if ((fd = open(pid_file_name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-        dsyslogf(LOG_ERR, "unable to open PID file %s: %s", pid_file_name, strerror(errno));
+        dsyslogf(LOG_ERR, "unable to open PID file %s: %s", pid_file_name, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -151,14 +154,14 @@ write_pid_file(void)
      */
 
     if ((flags = fcntl(fd, F_GETFD)) == -1) {
-        dsyslogf(LOG_ERR, "unable to get PID file flags: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to get PID file flags: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
     flags |= FD_CLOEXEC;
 
     if (fcntl(fd, F_SETFD, flags) == 1) {
-        dsyslogf(LOG_ERR, "unable to set PID file flags: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to set PID file flags: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -177,7 +180,7 @@ write_pid_file(void)
             exit(3);
         }
 
-        dsyslogf(LOG_ERR, "unable to lock PID file: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to lock PID file: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -186,7 +189,7 @@ write_pid_file(void)
      */
 
     if (ftruncate(fd, 0) == -1) {
-        dsyslogf(LOG_ERR, "unable to truncate PID file: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to truncate PID file: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -194,7 +197,7 @@ write_pid_file(void)
 
     fp = fdopen(fd, "w");
     if (!fp || fprintf(fp, "%d\n", getpid()) < 1 || fflush(fp)) {
-        dsyslogf(LOG_ERR, "unable to write to PID file: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to write to PID file: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 }
@@ -245,6 +248,7 @@ version(void)
 static int
 dump_report(md_array_printer * printer)
 {
+    char errbuf[512];
     int fd;
     FILE *fp;
     char fname[128];
@@ -258,12 +262,12 @@ dump_report(md_array_printer * printer)
     snprintf(tname, 128, "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
-        dsyslogf(LOG_ERR, "%s: %s", tname, strerror(errno));
+        dsyslogf(LOG_ERR, "%s: %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return 1;
     }
     fp = fdopen(fd, "w");
     if (NULL == fp) {
-        dsyslogf(LOG_ERR, "%s: %s", tname, strerror(errno));
+        dsyslogf(LOG_ERR, "%s: %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         close(fd);
         return 1;
     }
@@ -286,7 +290,7 @@ dump_report(md_array_printer * printer)
     dfprintf(0, "renaming to %s", fname);
 
     if (rename(tname, fname)) {
-        dsyslogf(LOG_ERR, "unable to move report from %s to %s: %s", tname, fname, strerror(errno));
+        dsyslogf(LOG_ERR, "unable to move report from %s to %s: %s", tname, fname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
     }
     return 0;
 }
@@ -352,6 +356,7 @@ sig_thread(void * arg) {
 int
 main(int argc, char *argv[])
 {
+    char errbuf[512];
     int x;
     int result;
     struct timeval break_start = { 0, 0 };
@@ -362,7 +367,6 @@ main(int argc, char *argv[])
     progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
         return 1;
-    srandom(time(NULL));
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
     while ((x = getopt(argc, argv, "fpdvmiT")) != -1) {
@@ -443,7 +447,7 @@ main(int argc, char *argv[])
 
         sigfillset(&set);
         if ((err = pthread_sigmask(SIG_BLOCK, &set, 0))) {
-            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", strerror(err));
+            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", dsc_strerror(err, errbuf, sizeof(errbuf)));
             exit(1);
         }
 
@@ -454,7 +458,7 @@ main(int argc, char *argv[])
             sigaddset(&set, SIGINT);
 
         if ((err = pthread_create(&sigthread, 0, &sig_thread, (void*)&set))) {
-            dsyslogf(LOG_ERR, "Unable to start signal thread: %s", strerror(err));
+            dsyslogf(LOG_ERR, "Unable to start signal thread: %s", dsc_strerror(err, errbuf, sizeof(errbuf)));
             exit(1);
         }
     }
@@ -475,7 +479,7 @@ main(int argc, char *argv[])
             sigdelset(&set, SIGINT);
 
         if (sigprocmask(SIG_BLOCK, &set, 0))
-            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
 
         memset(&action, 0, sizeof(action));
         sigfillset(&action.sa_mask);
@@ -486,11 +490,11 @@ main(int argc, char *argv[])
             action.sa_handler = sig_exit;
 
         if (sigaction(SIGTERM, &action, NULL))
-            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         if (sigaction(SIGQUIT, &action, NULL))
-            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
-            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     }
 
     if (!debug_flag && 0 == n_pcap_offline) {
