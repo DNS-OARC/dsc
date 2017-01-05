@@ -609,12 +609,12 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
     size_t i;
 
     if (!tokens || !token_size) {
-        fprintf(stderr, "CONFIG ERROR [%lu]: Internal error, please report!\n", line);
+        fprintf(stderr, "CONFIG ERROR [line:%lu]: Internal error, please report!\n", line);
         return 1;
     }
 
     if (tokens[0].type != TOKEN_STRING) {
-        fprintf(stderr, "CONFIG ERROR [%lu]: Wrong first token, expected a string\n", line);
+        fprintf(stderr, "CONFIG ERROR [line:%lu]: Wrong first token, expected a string\n", line);
         return 1;
     }
 
@@ -624,7 +624,7 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
         }
     }
     if (!syntax->token) {
-        fprintf(stderr, "CONFIG ERROR [%lu]: Unknown configuration option: ", line);
+        fprintf(stderr, "CONFIG ERROR [line:%lu]: Unknown configuration option: ", line);
         fwrite(tokens[0].token, tokens[0].length, 1, stderr);
         fprintf(stderr, "\n");
         return 1;
@@ -633,28 +633,28 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
     for (type = syntax->syntax, i = 1; *type != TOKEN_END && i < token_size; i++) {
         if (*type == TOKEN_STRINGS) {
             if (tokens[i].type != TOKEN_STRING) {
-                fprintf(stderr, "CONFIG ERROR [%lu:%lu]: Wrong token for argument %lu, expected a string\n", line, i, i);
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Wrong token for argument %lu, expected a string\n", line, i);
                 return 1;
             }
             continue;
         }
         if (*type == TOKEN_NUMBERS) {
             if (tokens[i].type != TOKEN_NUMBER) {
-                fprintf(stderr, "CONFIG ERROR [%lu:%lu]: Wrong token for argument %lu, expected a number\n", line, i, i);
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Wrong token for argument %lu, expected a number\n", line, i);
                 return 1;
             }
             continue;
         }
         if (*type == TOKEN_ANY) {
             if (tokens[i].type != TOKEN_STRING && tokens[i].type != TOKEN_NUMBER) {
-                fprintf(stderr, "CONFIG ERROR [%lu:%lu]: Wrong token for argument %lu, expected a string or number\n", line, i, i);
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Wrong token for argument %lu, expected a string or number\n", line, i);
                 return 1;
             }
             continue;
         }
 
         if (tokens[i].type != *type) {
-            fprintf(stderr, "CONFIG ERROR [%lu:%lu]: Wrong token for argument %lu", line, i, i);
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: Wrong token for argument %lu", line, i);
             if (*type == TOKEN_STRING) {
                 fprintf(stderr, ", expected a string\n");
             }
@@ -674,10 +674,10 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
 
         if (ret < 0) {
             char errbuf[512];
-            fprintf(stderr, "CONFIG ERROR [%lu]: %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         }
         if (ret > 0) {
-            fprintf(stderr, "CONFIG ERROR [%lu]: Unable to configure ", line);
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: Unable to configure ", line);
             fwrite(tokens[0].token, tokens[0].length, 1, stderr);
             fprintf(stderr, "\n");
         }
@@ -689,11 +689,12 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
 
 int parse_conf(const char* file) {
     FILE* fp;
-    char buffer[4096];
+    char* buffer = 0;
+    size_t bufsize = 0;
     char* buf;
     size_t s, i, line = 0;
     conf_token_t tokens[PARSE_MAX_ARGS];
-    int ret;
+    int ret, ret2;
 
     if (!file) {
         return 1;
@@ -702,13 +703,13 @@ int parse_conf(const char* file) {
     if (!(fp = fopen(file, "r"))) {
         return 1;
     }
-    while (fgets(buffer, sizeof(buffer), fp)) {
+    while ((ret2 = getline(&buffer, &bufsize, fp)) > 0) {
         memset(tokens, 0, sizeof(conf_token_t) * PARSE_MAX_ARGS);
         line++;
         /*
          * Go to the first non white-space character
          */
-        for (ret = PARSE_CONF_OK, buf = buffer, s = sizeof(buffer); *buf && s; buf++, s--) {
+        for (ret = PARSE_CONF_OK, buf = buffer, s = bufsize; *buf && s; buf++, s--) {
             if (*buf != ' ' && *buf != '\t') {
                 if (*buf == '\n' || *buf == '\t') {
                     ret = PARSE_CONF_EMPTY;
@@ -739,12 +740,14 @@ int parse_conf(const char* file) {
             continue;
         }
         else if (ret == PARSE_CONF_OK) {
-            fprintf(stderr, "CONFIG ERROR [%lu]: Too many arguments", line);
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: Too many arguments", line);
+            free(buffer);
             fclose(fp);
             return 1;
         }
         else if (ret != PARSE_CONF_LAST) {
-            fprintf(stderr, "CONFIG ERROR [%lu]: Invalid syntax", line);
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: Invalid syntax", line);
+            free(buffer);
             fclose(fp);
             return 1;
         }
@@ -753,10 +756,16 @@ int parse_conf(const char* file) {
          * Configure using the tokens
          */
         if (parse_conf_tokens(tokens, i, line)) {
+            free(buffer);
             fclose(fp);
             return 1;
         }
     }
+    if (ret2 < 0) {
+        char errbuf[512];
+        fprintf(stderr, "CONFIG ERROR [line:%lu]: getline(): %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    }
+    free(buffer);
     fclose(fp);
 
     return 0;
