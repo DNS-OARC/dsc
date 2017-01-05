@@ -44,7 +44,11 @@ AM_PROG_CC_C_O
 AC_PROG_INSTALL
 
 # pcap thread
-AX_PCAP_THREAD
+AC_ARG_ENABLE(threads,
+    [AS_HELP_STRING([--enable-threads],
+        [enable the usage of threads (default disabled)])],
+    [AX_PCAP_THREAD],
+    [AX_PCAP_THREAD_PCAP])
 
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
