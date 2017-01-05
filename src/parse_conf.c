@@ -762,8 +762,16 @@ int parse_conf(const char* file) {
         }
     }
     if (ret2 < 0) {
+        long pos;
         char errbuf[512];
-        fprintf(stderr, "CONFIG ERROR [line:%lu]: getline(): %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+
+        pos = ftell(fp);
+        if (fseek(fp, 0, SEEK_END)) {
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: fseek(): %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+        }
+        else if (ftell(fp) < pos) {
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: getline(): %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+        }
     }
     free(buffer);
     fclose(fp);
