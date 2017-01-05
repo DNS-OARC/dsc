@@ -689,7 +689,8 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
 
 int parse_conf(const char* file) {
     FILE* fp;
-    char buffer[4096];
+    char* buffer = 0;
+    size_t bufsize = 0;
     char* buf;
     size_t s, i, line = 0;
     conf_token_t tokens[PARSE_MAX_ARGS];
@@ -702,13 +703,13 @@ int parse_conf(const char* file) {
     if (!(fp = fopen(file, "r"))) {
         return 1;
     }
-    while (fgets(buffer, sizeof(buffer), fp)) {
+    while (getline(&buffer, &bufsize, fp) > 0) {
         memset(tokens, 0, sizeof(conf_token_t) * PARSE_MAX_ARGS);
         line++;
         /*
          * Go to the first non white-space character
          */
-        for (ret = PARSE_CONF_OK, buf = buffer, s = sizeof(buffer); *buf && s; buf++, s--) {
+        for (ret = PARSE_CONF_OK, buf = buffer, s = bufsize; *buf && s; buf++, s--) {
             if (*buf != ' ' && *buf != '\t') {
                 if (*buf == '\n' || *buf == '\t') {
                     ret = PARSE_CONF_EMPTY;
@@ -740,11 +741,13 @@ int parse_conf(const char* file) {
         }
         else if (ret == PARSE_CONF_OK) {
             fprintf(stderr, "CONFIG ERROR [%lu]: Too many arguments", line);
+            free(buffer);
             fclose(fp);
             return 1;
         }
         else if (ret != PARSE_CONF_LAST) {
             fprintf(stderr, "CONFIG ERROR [%lu]: Invalid syntax", line);
+            free(buffer);
             fclose(fp);
             return 1;
         }
@@ -753,10 +756,12 @@ int parse_conf(const char* file) {
          * Configure using the tokens
          */
         if (parse_conf_tokens(tokens, i, line)) {
+            free(buffer);
             fclose(fp);
             return 1;
         }
     }
+    free(buffer);
     fclose(fp);
 
     return 0;
