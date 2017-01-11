@@ -68,12 +68,13 @@ char * geoip_asn_v4_dat = NULL;
 int geoip_asn_v4_options = 0;
 char * geoip_asn_v6_dat = NULL;
 int geoip_asn_v6_options = 0;
+int pcap_buffer_size = 0;
 
 int
 open_interface(const char *interface)
 {
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
-    Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag);
+    Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag, pcap_buffer_size);
     return 1;
 }
 
@@ -133,7 +134,7 @@ dataset_cmpfunc(const void *a, const void *b)
 }
 
 int
-set_statistics_interval (const char *s)
+set_statistics_interval(const char *s)
 {
     dsyslogf(LOG_INFO, "Setting statistics interval to: %s", s);
     statistics_interval = strtoull(s, NULL, 10);
@@ -305,4 +306,16 @@ set_geoip_asn_v6_dat(const char * dat, int options)
 
     dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
+}
+
+int
+set_pcap_buffer_size(const char *s)
+{
+    dsyslogf(LOG_INFO, "Setting pcap buffer size to: %s", s);
+    pcap_buffer_size = atoi(s);
+    if (pcap_buffer_size < 0) {
+        dsyslog(LOG_ERR, "pcap_buffer_size can not be negative");
+        return 0;
+    }
+    return 1;
 }

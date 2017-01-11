@@ -46,6 +46,15 @@ pid_file "@DSC_PID_FILE@";
 #  use this to see only DNS *queries*
 #bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
+# pcap_buffer_size
+#
+#  Set the buffer size (in bytes) for pcap, increasing this may help
+#  if you see dropped packets by the kernel but increasing it too much
+#  may have other side effects
+#
+#  NOTE: pcap_buffer_size must GO BEFORE interface
+#pcap_buffer_size 4194304;
+
 # interface
 #
 #  specifies a network interface to sniff packets from or a pcap

@@ -39,7 +39,7 @@
 #ifndef __dsc_pcap_h
 #define __dsc_pcap_h
 
-void Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads);
+void Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads, int buffer_size);
 int Pcap_run();
 void Pcap_stop(void);
 void Pcap_close(void);

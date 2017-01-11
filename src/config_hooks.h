@@ -42,7 +42,7 @@ int set_bpf_program(const char *s);
 int add_local_address(const char *s, const char *m);
 int set_run_dir(const char *dir);
 int set_pid_file(const char *s);
-int set_statistics_interval (const char *s);
+int set_statistics_interval(const char *s);
 int add_dataset(const char *name, const char *layer_ignored, const char *firstname, const char *firstindexer, const char *secondname, const char *secondindexer, const char *filtername, dataset_opt opts);
 int set_bpf_vlan_tag_byte_order(const char *which);
 int set_match_vlan(const char *s);
@@ -53,5 +53,6 @@ int set_geoip_v4_dat(const char * dat, int options);
 int set_geoip_v6_dat(const char * dat, int options);
 int set_geoip_asn_v4_dat(const char * dat, int options);
 int set_geoip_asn_v6_dat(const char * dat, int options);
+int set_pcap_buffer_size(const char *s);
 
 #endif /* __dsc_config_hooks_h */
