@@ -513,6 +513,20 @@ int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_pcap_buffer_size(const conf_token_t* tokens) {
+    char* pcap_buffer_size = strndup(tokens[1].token, tokens[1].length);
+    int ret;
+
+    if (!pcap_buffer_size) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_pcap_buffer_size(pcap_buffer_size);
+    free(pcap_buffer_size);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     {
         "interface",
@@ -598,6 +612,11 @@ static conf_token_syntax_t _syntax[] = {
         "geoip_asn_v6_dat",
         parse_conf_geoip_asn_v6_dat,
         { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
+    },
+    {
+        "pcap_buffer_size",
+        parse_conf_pcap_buffer_size,
+        { TOKEN_NUMBER, TOKEN_END }
     },
 
     { 0, 0, { TOKEN_END } }

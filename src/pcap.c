@@ -798,7 +798,7 @@ void _callback(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* pkt
 }
 
 void
-Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads)
+Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads, int buffer_size)
 {
     char errbuf[512];
     struct stat sb;
@@ -833,6 +833,10 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
         }
         if ((err = pcap_thread_set_callback(&pcap_thread, _callback))) {
             dsyslogf(LOG_ERR, "unable to set pcap callback: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if (buffer_size > 0 && (err = pcap_thread_set_buffer_size(&pcap_thread, buffer_size))) {
+            dsyslogf(LOG_ERR, "unable to set pcap buffer size: %s", pcap_thread_strerr(err));
             exit(1);
         }
     }

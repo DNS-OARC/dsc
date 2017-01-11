@@ -98,6 +98,18 @@ makes only one pass through
 the configuration file and the BPF filter is set when the
 interface is initialized.
 .TP
+\fBpcap_buffer_size\fR NUMBER;
+Set the buffer size (in bytes) for pcap, increasing this may help
+if you see dropped packets by the kernel but increasing it too much
+may have other side effects.
+
+Note that this directive must go before the \fBinterface\fR
+directive because
+.I dsc
+makes only one pass through
+the configuration file and the pcap buffer size is set when the
+interface is initialized.
+.TP
 \fBinterface\fR IFACE | FILE ;
 The interface name to sniff packets from or a pcap file to
 read packets from.   You may specify multiple interfaces.
@@ -675,6 +687,7 @@ pid_file "/run/dsc.pid";
 #
 #bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
+#pcap_buffer_size 4194304;
 interface eth0;
 
 dataset qtype dns All:null Qtype:qtype queries-only;
