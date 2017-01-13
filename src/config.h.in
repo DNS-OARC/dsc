@@ -55,6 +55,9 @@
 /* Define to 1 if you have the <netinet/ip_compat.h> header file. */
 #undef HAVE_NETINET_IP_COMPAT_H
 
+/* Define to 1 if you have the `pcap_activate' function. */
+#undef HAVE_PCAP_ACTIVATE
+
 /* Define to 1 if you have the `pcap_create' function. */
 #undef HAVE_PCAP_CREATE
 
