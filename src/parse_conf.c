@@ -527,6 +527,11 @@ int parse_conf_pcap_buffer_size(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_no_wait_interval(const conf_token_t* tokens) {
+    set_no_wait_interval();
+    return 0;
+}
+
 static conf_token_syntax_t _syntax[] = {
     {
         "interface",
@@ -617,6 +622,11 @@ static conf_token_syntax_t _syntax[] = {
         "pcap_buffer_size",
         parse_conf_pcap_buffer_size,
         { TOKEN_NUMBER, TOKEN_END }
+    },
+    {
+        "no_wait_interval",
+        parse_conf_no_wait_interval,
+        { TOKEN_END }
     },
 
     { 0, 0, { TOKEN_END } }

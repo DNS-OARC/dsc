@@ -141,6 +141,13 @@ packets belonging to these VLANs are analyzed.
 \fBstatistics_interval\fR SECONDS ;
 Specify how often \fBdsc\fR should write statistics, default to 60 seconds.
 .TP
+\fBno_wait_interval\fR ;
+Do not wait on interval sync to start capturing, normally DSC will
+sleep for time() % statistics_interval to align with the minute
+(as was the default interval before) but now if you change the interval
+to more then a minute you can use with option to begin capture right
+away.
+.TP
 \fBoutput_format\fR FORMAT ;
 Specify the output format, can be give multiple times to output in
 more then one format.  Default output format is XML, see section
@@ -727,6 +734,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 
 #statistics_interval 60;
+#no_wait_interval;
 output_format XML;
 #output_format JSON;
 

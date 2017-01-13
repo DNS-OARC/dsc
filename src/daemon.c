@@ -95,6 +95,7 @@ extern int output_format_xml;
 extern int output_format_json;
 extern int dump_reports_on_exit;
 extern uint64_t statistics_interval;
+extern int no_wait_interval;
 
 void
 daemonize(void)
@@ -497,7 +498,7 @@ main(int argc, char *argv[])
             dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     }
 
-    if (!debug_flag && 0 == n_pcap_offline) {
+    if (!debug_flag && 0 == n_pcap_offline && !no_wait_interval) {
         dsyslogf(LOG_INFO, "Sleeping for %ld seconds", statistics_interval - (int) (time(NULL) % statistics_interval));
         sleep(statistics_interval - (time(NULL) % statistics_interval));
     }

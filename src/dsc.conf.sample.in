@@ -130,6 +130,16 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #statistics_interval 60;
 
+# no_wait_interval
+#
+#  Do not wait on interval sync to start capturing, normally DSC will
+#  sleep for time() % statistics_interval to align with the minute
+#  (as was the default interval before) but now if you change the interval
+#  to more then a minute you can use with option to begin capture right
+#  away.
+#
+#no_wait_interval;
+
 # output_format
 #
 #   Specify the output format, can be give multiple times to output in more then
