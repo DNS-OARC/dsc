@@ -71,6 +71,7 @@
 #include "syslog_debug.h"
 #include "parse_conf.h"
 #include "compat.h"
+#include "pcap-thread/pcap_thread.h"
 
 char *progname = NULL;
 char *pid_file_name = NULL;
@@ -96,6 +97,7 @@ extern int output_format_json;
 extern int dump_reports_on_exit;
 extern uint64_t statistics_interval;
 extern int no_wait_interval;
+extern pcap_thread_t pcap_thread;
 
 void
 daemonize(void)
@@ -364,6 +366,7 @@ main(int argc, char *argv[])
 #if HAVE_PTHREAD
     pthread_t sigthread;
 #endif
+    int err;
 
     progname = xstrdup(strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -413,6 +416,8 @@ main(int argc, char *argv[])
     if (!threads_flag)
         dsyslog(LOG_INFO, "disabling the usage of threads");
 
+    pcap_thread_set_activate_mode(&pcap_thread, PCAP_THREAD_ACTIVATE_MODE_DELAYED);
+
     dns_message_init();
     if (parse_conf(argv[0])) {
         return 1;
@@ -444,7 +449,6 @@ main(int argc, char *argv[])
 #if HAVE_PTHREAD
     if (threads_flag) {
         sigset_t set;
-        int err;
 
         sigfillset(&set);
         if ((err = pthread_sigmask(SIG_BLOCK, &set, 0))) {
@@ -502,6 +506,12 @@ main(int argc, char *argv[])
         dsyslogf(LOG_INFO, "Sleeping for %ld seconds", statistics_interval - (int) (time(NULL) % statistics_interval));
         sleep(statistics_interval - (time(NULL) % statistics_interval));
     }
+
+    if ((err = pcap_thread_activate(&pcap_thread))) {
+        dsyslogf(LOG_ERR, "unable to activate pcap thread: %s", pcap_thread_strerr(err));
+        exit(1);
+    }
+
     dsyslog(LOG_INFO, "Running");
 
     do {
