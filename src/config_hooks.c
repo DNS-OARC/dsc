@@ -69,6 +69,7 @@ int geoip_asn_v4_options = 0;
 char * geoip_asn_v6_dat = NULL;
 int geoip_asn_v6_options = 0;
 int pcap_buffer_size = 0;
+int no_wait_interval = 0;
 
 int
 open_interface(const char *interface)
@@ -318,4 +319,12 @@ set_pcap_buffer_size(const char *s)
         return 0;
     }
     return 1;
+}
+
+void
+set_no_wait_interval(void)
+{
+    dsyslog(LOG_INFO, "not waiting on interval sync to start");
+
+    no_wait_interval = 1;
 }
