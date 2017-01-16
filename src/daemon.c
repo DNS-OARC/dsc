@@ -368,7 +368,6 @@ main(int argc, char *argv[])
 #endif
     int err;
     struct timeval now;
-    size_t usec_adjust;
 
     progname = xstrdup(strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -531,43 +530,19 @@ main(int argc, char *argv[])
     dsyslog(LOG_INFO, "Running");
 
     do {
-        usec_adjust = 0;
-
         useArena();                /* Initialize a memory arena for data collection. */
-        if (break_start.tv_sec > 0) {
+        if (debug_flag && break_start.tv_sec > 0) {
             gettimeofday(&now, NULL);
-            /* TODO: Remove before release */
-            dsyslogf(LOG_INFO, "break start %lu.%lu, now %lu.%lu", break_start.tv_sec, break_start.tv_usec, now.tv_sec, now.tv_usec);
-
-            if (now.tv_sec == break_start.tv_sec) {
-                if (break_start.tv_usec < now.tv_usec)
-                    usec_adjust = now.tv_usec - break_start.tv_usec;
-                else if (break_start.tv_usec > now.tv_usec)
-                    dsyslog(LOG_INFO, "Time shift detected, not adjusting for inter-run processing");
-            }
-            else if (now.tv_sec > break_start.tv_sec) {
-                usec_adjust = now.tv_sec - break_start.tv_sec;
-                if (usec_adjust > 1) {
-                    dsyslogf(LOG_WARNING, "Large time shift detected, >%lu seconds, not adjusting for inter-run processing", usec_adjust);
-                    usec_adjust = 0;
-                }
-                else {
-                    usec_adjust = 1000000 - break_start.tv_usec + now.tv_usec;
-                    if (usec_adjust > 950000) {
-                        dsyslogf(LOG_INFO, "Inter-run processing is taking too long, %lu useconds, limiting adjustment", usec_adjust);
-                        usec_adjust = 950000;
-                    }
-                }
-            }
-            else
-                dsyslog(LOG_INFO, "Time shift detected, not adjusting for inter-run processing");
+            dsyslogf(LOG_INFO, "inter-run processing delay: %ld ms",
+                (now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec));
         }
 
         /* Indicate we might have reports to dump on exit */
         have_reports = 1;
 
-        result = Pcap_run(usec_adjust);
-        gettimeofday(&break_start, NULL);
+        result = Pcap_run();
+        if (debug_flag)
+            gettimeofday(&break_start, NULL);
 
         if (0 == fork()) {
             struct sigaction action;
