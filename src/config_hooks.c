@@ -84,6 +84,8 @@ set_bpf_program(const char *s)
 {
     extern char *bpf_program_str;
     dsyslogf(LOG_INFO, "BPF program is: %s", s);
+    if (bpf_program_str)
+        xfree(bpf_program_str);
     bpf_program_str = xstrdup(s);
     if (NULL == bpf_program_str)
         return 0;
@@ -116,6 +118,8 @@ set_pid_file(const char *s)
 {
     extern char *pid_file_name;
     dsyslogf(LOG_INFO, "PID file is: %s", s);
+    if (pid_file_name)
+        xfree(pid_file_name);
     pid_file_name = xstrdup(s);
     if (NULL == pid_file_name)
         return 0;
@@ -255,7 +259,9 @@ set_geoip_v4_dat(const char * dat, int options)
     char errbuf[512];
 
     geoip_v4_options = options;
-    if ( (geoip_v4_dat = strdup(dat)) ) {
+    if (geoip_v4_dat)
+        xfree(geoip_v4_dat);
+    if ( (geoip_v4_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP v4 dat %s %d", geoip_v4_dat, geoip_v4_options);
         return 1;
     }
@@ -270,7 +276,9 @@ set_geoip_v6_dat(const char * dat, int options)
     char errbuf[512];
 
     geoip_v6_options = options;
-    if ( (geoip_v6_dat = strdup(dat)) ) {
+    if (geoip_v6_dat)
+        xfree(geoip_v6_dat);
+    if ( (geoip_v6_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP v6 dat %s %d", geoip_v6_dat, geoip_v6_options);
         return 1;
     }
@@ -285,7 +293,9 @@ set_geoip_asn_v4_dat(const char * dat, int options)
     char errbuf[512];
 
     geoip_asn_v4_options = options;
-    if ( (geoip_asn_v4_dat = strdup(dat)) ) {
+    if (geoip_asn_v4_dat)
+        xfree(geoip_asn_v4_dat);
+    if ( (geoip_asn_v4_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP ASN v4 dat %s %d", geoip_asn_v4_dat, geoip_asn_v4_options);
         return 1;
     }
@@ -300,7 +310,9 @@ set_geoip_asn_v6_dat(const char * dat, int options)
     char errbuf[512];
 
     geoip_asn_v6_options = options;
-    if ( (geoip_asn_v6_dat = strdup(dat)) ) {
+    if (geoip_asn_v6_dat)
+        xfree(geoip_asn_v6_dat);
+    if ( (geoip_asn_v6_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP ASN v6 dat %s %d", geoip_asn_v6_dat, geoip_asn_v6_options);
         return 1;
     }
