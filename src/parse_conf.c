@@ -703,7 +703,7 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
 
         if (ret < 0) {
             char errbuf[512];
-            fprintf(stderr, "CONFIG ERROR [line:%lu]: %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: %s\n", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         }
         if (ret > 0) {
             fprintf(stderr, "CONFIG ERROR [line:%lu]: Unable to configure ", line);
@@ -769,13 +769,27 @@ int parse_conf(const char* file) {
             continue;
         }
         else if (ret == PARSE_CONF_OK) {
-            fprintf(stderr, "CONFIG ERROR [line:%lu]: Too many arguments", line);
+            if (i > 0 && tokens[0].type == TOKEN_STRING) {
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Too many arguments for ", line);
+                fwrite(tokens[0].token, tokens[0].length, 1, stderr);
+                fprintf(stderr, " at line %lu\n", line);
+            }
+            else {
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Too many arguments at line %lu\n", line, line);
+            }
             free(buffer);
             fclose(fp);
             return 1;
         }
         else if (ret != PARSE_CONF_LAST) {
-            fprintf(stderr, "CONFIG ERROR [line:%lu]: Invalid syntax", line);
+            if (i > 0 && tokens[0].type == TOKEN_STRING) {
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Invalid syntax for ", line);
+                fwrite(tokens[0].token, tokens[0].length, 1, stderr);
+                fprintf(stderr, " at line %lu\n", line);
+            }
+            else {
+                fprintf(stderr, "CONFIG ERROR [line:%lu]: Invalid syntax at line %lu\n", line, line);
+            }
             free(buffer);
             fclose(fp);
             return 1;
@@ -796,10 +810,10 @@ int parse_conf(const char* file) {
 
         pos = ftell(fp);
         if (fseek(fp, 0, SEEK_END)) {
-            fprintf(stderr, "CONFIG ERROR [line:%lu]: fseek(): %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: fseek(): %s\n", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         }
         else if (ftell(fp) < pos) {
-            fprintf(stderr, "CONFIG ERROR [line:%lu]: getline(): %s", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+            fprintf(stderr, "CONFIG ERROR [line:%lu]: getline(): %s\n", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         }
     }
     free(buffer);
