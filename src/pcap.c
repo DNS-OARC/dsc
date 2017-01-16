@@ -931,7 +931,7 @@ void _stats(u_char* user, const struct pcap_stat* stats, const char* name, int d
 }
 
 int
-Pcap_run(void)
+Pcap_run(const size_t usec_adjust)
 {
     int i, err;
     extern uint64_t statistics_interval;
@@ -1011,7 +1011,47 @@ Pcap_run(void)
         gettimeofday(&last_ts, NULL);
         finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
         finish_ts.tv_usec = 0;
-        timedrun.tv_sec = finish_ts.tv_sec - start_ts.tv_sec;
+
+        /*
+         * Calculate timed run, add a second to start_ts because we wait
+         * the remaining useconds
+         */
+        if ((start_ts.tv_sec + 1) % statistics_interval)
+            timedrun.tv_sec = statistics_interval - ((start_ts.tv_sec + 1) % statistics_interval);
+        else
+            timedrun.tv_sec = 0;
+        if (start_ts.tv_usec < 1000000)
+            timedrun.tv_usec = 1000000 - start_ts.tv_usec;
+        else
+            timedrun.tv_usec = 0;
+
+        /* TODO: Remove before release */
+        dsyslogf(LOG_INFO, "Timed run for %lu.%lu seconds", timedrun.tv_sec, timedrun.tv_usec);
+
+        /*
+         * Adjust for inter-run processing time
+         */
+        if (usec_adjust < 1000000) {
+            if (timedrun.tv_usec < usec_adjust) {
+                if (timedrun.tv_sec) {
+                    timedrun.tv_sec--;
+                    timedrun.tv_usec = 1000000 - (usec_adjust - timedrun.tv_usec);
+                }
+                else {
+                    timedrun.tv_sec = 0;
+                    timedrun.tv_usec = 0;
+                }
+            }
+            else
+                timedrun.tv_usec -= usec_adjust;
+
+            /* TODO: Remove before release */
+            dsyslogf(LOG_INFO, "Adjusted to %lu.%lu seconds", timedrun.tv_sec, timedrun.tv_usec);
+        }
+        else {
+            dsyslogf(LOG_ERR, "Adjustment invalid, %lu larger then 999999 useconds", usec_adjust);
+        }
+
         if ((err = pcap_thread_set_timedrun(&pcap_thread, timedrun))) {
             dsyslogf(LOG_ERR, "unable to set pcap thread timed run: %s", pcap_thread_strerr(err));
             exit(1);
