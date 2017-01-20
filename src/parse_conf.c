@@ -740,7 +740,7 @@ int parse_conf(const char* file) {
          */
         for (ret = PARSE_CONF_OK, buf = buffer, s = bufsize; *buf && s; buf++, s--) {
             if (*buf != ' ' && *buf != '\t') {
-                if (*buf == '\n' || *buf == '\t') {
+                if (*buf == '\n' || *buf == '\r') {
                     ret = PARSE_CONF_EMPTY;
                 }
                 break;
