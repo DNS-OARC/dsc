@@ -43,6 +43,11 @@ contains defaults for the program
 Each line is a configuration option and may have arguments in the form
 .IR "option value;" .
 Comment lines must have a hash sign (#) in the first column.
+
+Since
+.B dsc(1)
+version 2.2.0, a configuration line may not be divided with CR/LF and
+quoted characters are not understood (\\quote).
 .SH CONFIGURATION
 .TP
 \fBlocal_address\fR IP [ MASK / BITS ];
