@@ -532,6 +532,20 @@ int parse_conf_no_wait_interval(const conf_token_t* tokens) {
     return 0;
 }
 
+int parse_conf_pcap_thread_timeout(const conf_token_t* tokens) {
+    char* timeout = strndup(tokens[1].token, tokens[1].length);
+    int ret;
+
+    if (!timeout) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_pt_timeout(timeout);
+    free(timeout);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     {
         "interface",
@@ -627,6 +641,11 @@ static conf_token_syntax_t _syntax[] = {
         "no_wait_interval",
         parse_conf_no_wait_interval,
         { TOKEN_END }
+    },
+    {
+        "pcap_thread_timeout",
+        parse_conf_pcap_thread_timeout,
+        { TOKEN_NUMBER, TOKEN_END }
     },
 
     { 0, 0, { TOKEN_END } }

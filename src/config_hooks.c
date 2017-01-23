@@ -70,6 +70,7 @@ char * geoip_asn_v6_dat = NULL;
 int geoip_asn_v6_options = 0;
 int pcap_buffer_size = 0;
 int no_wait_interval = 0;
+int pt_timeout = 0;
 
 int
 open_interface(const char *interface)
@@ -339,4 +340,16 @@ set_no_wait_interval(void)
     dsyslog(LOG_INFO, "not waiting on interval sync to start");
 
     no_wait_interval = 1;
+}
+
+int
+set_pt_timeout(const char *s)
+{
+    dsyslogf(LOG_INFO, "Setting pcap-thread timeout to: %s", s);
+    pt_timeout = atoi(s);
+    if (pt_timeout < 0) {
+        dsyslog(LOG_ERR, "pcap-thread timeout can not be negative");
+        return 0;
+    }
+    return 1;
 }

@@ -55,6 +55,13 @@ pid_file "@DSC_PID_FILE@";
 #  NOTE: pcap_buffer_size must GO BEFORE interface
 #pcap_buffer_size 4194304;
 
+# pcap_thread_timeout
+#
+#  Set the internal timeout pcap-thread uses when waiting for packets.
+#
+#  NOTE: pcap_thread_timeout must GO BEFORE interface
+#pcap_thread_timeout 50;
+
 # interface
 #
 #  specifies a network interface to sniff packets from or a pcap
