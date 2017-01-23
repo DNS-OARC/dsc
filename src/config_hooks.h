@@ -55,5 +55,6 @@ int set_geoip_asn_v4_dat(const char * dat, int options);
 int set_geoip_asn_v6_dat(const char * dat, int options);
 int set_pcap_buffer_size(const char *s);
 void set_no_wait_interval(void);
+int set_pt_timeout(const char *s);
 
 #endif /* __dsc_config_hooks_h */

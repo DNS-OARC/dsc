@@ -804,6 +804,7 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
     struct stat sb;
     struct _interface *i;
     int err;
+    extern int pt_timeout;
 
     if (interfaces == NULL) {
         interfaces = xcalloc(MAX_N_INTERFACES, sizeof(*interfaces));
@@ -837,6 +838,10 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
         }
         if (buffer_size > 0 && (err = pcap_thread_set_buffer_size(&pcap_thread, buffer_size))) {
             dsyslogf(LOG_ERR, "unable to set pcap buffer size: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if (pt_timeout > 0 && (err = pcap_thread_set_timeout(&pcap_thread, pt_timeout))) {
+            dsyslogf(LOG_ERR, "unable to set pcap-thread timeout: %s", pcap_thread_strerr(err));
             exit(1);
         }
     }

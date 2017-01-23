@@ -96,6 +96,16 @@ Maintained by DNS-OARC
 .I https://www.dns-oarc.net/tools/dsc
 .RE
 .LP
+.SH KNOWN ISSUES
+This program and/or components uses
+.I select(2)
+to wait for packets and there may be an internal delay within that
+call during startup that results in missed packets. As a workaround, set
+.I pcap_thread_timeout
+( see
+.I dsc.conf(5)
+) to a relevant millisecond timeout with regards to the packets per second
+received.
 .SH BUGS
 For issues and feature requests please use:
 .LP
