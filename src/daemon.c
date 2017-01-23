@@ -526,6 +526,12 @@ main(int argc, char *argv[])
         dsyslogf(LOG_ERR, "unable to activate pcap thread: %s", pcap_thread_strerr(err));
         exit(1);
     }
+    if (pcap_thread_filter_errno(&pcap_thread)) {
+        dsyslogf(LOG_NOTICE, "detected non-fatal error during pcap activation, filters may run in userland [%d]: %s",
+            pcap_thread_filter_errno(&pcap_thread),
+            dsc_strerror(pcap_thread_filter_errno(&pcap_thread), errbuf, sizeof(errbuf))
+        );
+    }
 
     dsyslog(LOG_INFO, "Running");
 
