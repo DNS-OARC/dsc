@@ -1,3 +1,95 @@
+2017-01-
+
+    Release 2.4.0
+
+    Since there have been a few major issues with the threaded capturing code
+    it is now default disabled and have to be enabled with a configure option
+    to use: `./configure --enable-threads ...`
+
+    A lot of work has been done to ensure stability and correct capturing,
+    as of now `dsc` is continuously running on the testing platforms with
+    simulated traffic and tests are performance every 5-15 minutes:
+
+      https://dev.dns-oarc.net/jenkins/view/dsctest/
+
+    With the rewrite of the config parser to C it was missed that Hapy allowed
+    CR/LF within the values of the options.  Changing the C parser to allow
+    it is a bit of work and having CR/LF within the value may lead to other
+    issues so it is now documented that CR/LF are not allowed in config option
+    values.
+
+    Fixes:
+    - The `-T` flag was just controlling pcap-thread usage of threads, it now
+      controls all usage of threads including how signals are caught.
+    - Fix program name, was incorrectly set so it would be reported as `/dsc`.
+    - Use thread safe functions (_r).
+    - Handle very long config lines by not having a static buffer, instead
+      let `getline()` allocate as needed.
+    - Use new activation in pcap-thread to activate the capturing of pcaps
+      after the initial interval sync have been done during start-up.
+    - Use factions of second for start-up interval sync and interval wait.
+    - Fix memory leaks if config options was specified more then once.
+    - Use new absolute timed run in pcap-thread to more exactly end capturing
+      at the interval.
+    - Fix config parsing, was checking for tab when should look for line feed.
+    - Exit correctly during pcap-thread run to honor `dump_reports_on_exit`.
+    - Use 100ms as default pcap-thread timeout, was 1s before but the old code
+      used 250ms.
+    - Various enhancements to logging of errors.
+
+    New config options/features:
+    - `pcap_buffer_size` can be used to increase the capture buffer within
+      pcap-thread/libpcap, this can help mitigate dropped packets by the
+      kernel during interval breaks.
+    - `no_wait_interval` will skip the interval sync that happens during
+      start-up and start capturing directly, the end of the interval will
+      still be the modulus of the interval.
+    - `pcap_thread_timeout` can be used to change the internal timeout use
+      in pcap-thread to wait for packets (default 100ms).
+    - Log non-fatal errors from pcap-thread w.r.t. setting the filter which
+      can indicate that the filter is running in userland because lack of
+      support or that it is too large for the kernel.
+
+    Special thanks to:
+    - Anand Buddhdev, RIPE NCC
+    - Klaus Darilion, NIC.AT
+    - Vincent Charrade, Nameshield
+
+    Commits:
+
+    ee59572 Fix #111, fix #116: Update pcap-thread to v2.0.0, remove debug
+            code
+    64befef Update copyright year
+    40a1fb4 Fix #139: Use 100ms as default pcap-thread timeout
+    2a07185 Fix #137: Graceful exit on signal during run
+    f1b3ec3 Issue #116: Try and make select issue more clear
+    950ea96 Fix #133: Return from `Pcap_run()` on signal/errors
+    667cc91 Issue #116: Add config option pcap_thread_timeout
+    3c9e073 Notice if non-fatal errors was detected during activation
+    4ea8f54 Fix #108: Document that CR/LF are not allowed within configuration
+            line
+    9fda332 Check for LF and not tab
+    15a1dc0 Use pcap-thread timed run to interface
+    1e98f8b Fix potential memory leaks if config options specified more then
+            once
+    a9b38e9 Add missing LF and indicate what config option was wrong if
+            possible
+    f8a2821 Use fractions of seconds for both start up interval sync and
+            timed run, always adjust for inter-run processing delay
+    f47069a Fix #121: Update to pcap-thread latest develop
+    fc13d73 Issue #116: Feature for not waiting on the interval sync
+    c832337 Fix #122: Update pcap-thread to v1.2.3 for fix in timed run
+    4739111 Add `pcap_buffer_size` config option
+    7d9bf90 Update pcap-thread to v1.2.2
+    ef43335 Make threads optional and default disabled
+    c2399cf getline() returns error on eof, don't report error if we are
+    5c671e6 Clarify config error message and report `getline()` error
+    8bd6a67 Fix #114: Handle very long lines
+    47b1e1a Use _r thread safe functions when possible
+    0f5d883 Update daemon.c
+    f18e3ea Update doc, -T now disables all usage of threads
+    57aacbe Honor the -T flag when installing signal handlers
+
 2016-12-22 Jerry Lundström
 
     Release 2.3.0
