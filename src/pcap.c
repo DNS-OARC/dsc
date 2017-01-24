@@ -957,13 +957,13 @@ Pcap_run(void)
 
             if ((err = pcap_thread_next_reset(&pcap_thread))) {
                 dsyslogf(LOG_ERR, "unable to reset pcap thread next: %s", pcap_thread_strerr(err));
-                exit(1);
+                return 0;
             }
             for (i = 0; i < n_pcap_offline; i++) {
                 if ((err = pcap_thread_next(&pcap_thread))) {
                      if (err != PCAP_THREAD_EPCAP) {
                         dsyslogf(LOG_ERR, "unable to do pcap thread next: %s", pcap_thread_strerr(err));
-                        exit(1);
+                        return 0;
                      }
                      continue;
                 }
@@ -995,7 +995,7 @@ Pcap_run(void)
             }
             else if (err) {
                 dsyslogf(LOG_ERR, "unable to do pcap thread next: %s", pcap_thread_strerr(err));
-                exit(1);
+                return 0;
             }
             else {
                 i = 0;
@@ -1017,7 +1017,7 @@ Pcap_run(void)
         finish_ts.tv_usec = 0;
         if ((err = pcap_thread_set_timedrun_to(&pcap_thread, finish_ts))) {
             dsyslogf(LOG_ERR, "unable to set pcap thread timed run: %s", pcap_thread_strerr(err));
-            exit(1);
+            return 0;
         }
 
         /* TODO: Remove before release */
@@ -1040,7 +1040,7 @@ Pcap_run(void)
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
-            exit(1);
+            return 0;
         }
 
         /* TODO: Remove before release */
@@ -1059,7 +1059,7 @@ Pcap_run(void)
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
-            exit(1);
+            return 0;
         }
 
         if (sig_while_processing)
