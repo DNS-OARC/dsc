@@ -70,7 +70,7 @@ char * geoip_asn_v6_dat = NULL;
 int geoip_asn_v6_options = 0;
 int pcap_buffer_size = 0;
 int no_wait_interval = 0;
-int pt_timeout = 0;
+int pt_timeout = 100;
 
 int
 open_interface(const char *interface)

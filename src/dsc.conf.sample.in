@@ -57,10 +57,11 @@ pid_file "@DSC_PID_FILE@";
 
 # pcap_thread_timeout
 #
-#  Set the internal timeout pcap-thread uses when waiting for packets.
+#  Set the internal timeout pcap-thread uses when waiting for packets,
+#  the default is 100 ms.
 #
 #  NOTE: pcap_thread_timeout must GO BEFORE interface
-#pcap_thread_timeout 50;
+#pcap_thread_timeout 100;
 
 # interface
 #
