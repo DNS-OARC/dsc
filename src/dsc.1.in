@@ -104,8 +104,10 @@ call during startup that results in missed packets. As a workaround, set
 .I pcap_thread_timeout
 ( see
 .I dsc.conf(5)
-) to a relevant millisecond timeout with regards to the packets per second
-received.
+) to a relevant millisecond timeout with regards to the queries per second
+(QPS) received. For example if your receiving 10 QPS then you have 20 packets
+per second (PPS) and if spread out equally over a second you have a packet
+per 50 ms which you can use as timeout value.
 .SH BUGS
 For issues and feature requests please use:
 .LP
