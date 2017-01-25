@@ -116,7 +116,8 @@ the configuration file and the pcap buffer size is set when the
 interface is initialized.
 .TP
 \fBpcap_thread_timeout\fR MILLISECONDS;
-Set the internal timeout pcap-thread uses when waiting for packets.
+Set the internal timeout pcap-thread uses when waiting for packets, the
+default is 100 ms.
 
 Note that this directive must go before the \fBinterface\fR
 directive.
@@ -706,7 +707,7 @@ pid_file "/run/dsc.pid";
 #bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
 #pcap_buffer_size 4194304;
-#pcap_thread_timeout 50;
+#pcap_thread_timeout 100;
 interface eth0;
 
 dataset qtype dns All:null Qtype:qtype queries-only;
