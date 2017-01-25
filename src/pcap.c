@@ -1024,23 +1024,28 @@ Pcap_run(void)
         dsyslogf(LOG_INFO, "Timed run set to %lu.%lu, now %lu.%lu", finish_ts.tv_sec, finish_ts.tv_usec, start_ts.tv_sec, start_ts.tv_usec);
 
         if ((err = pcap_thread_run(&pcap_thread))) {
-            dsyslogf(LOG_ERR, "unable to pcap thread run: %s", pcap_thread_strerr(err));
-            if (err == PCAP_THREAD_EPCAP) {
-                dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
-                    pcap_thread_status(&pcap_thread),
-                    pcap_statustostr(pcap_thread_status(&pcap_thread)),
-                    pcap_thread_errbuf(&pcap_thread)
-                );
+            if (err == PCAP_THREAD_ERRNO && errno == EINTR && sig_while_processing) {
+                dsyslog(LOG_INFO, "pcap thread run interruped by signal");
             }
-            else if (err == PCAP_THREAD_ERRNO) {
-                char errbuf[512];
-                dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
-                    errno,
-                    dsc_strerror(errno, errbuf, sizeof(errbuf)),
-                    pcap_thread_errbuf(&pcap_thread)
-                );
+            else {
+                dsyslogf(LOG_ERR, "unable to pcap thread run: %s", pcap_thread_strerr(err));
+                if (err == PCAP_THREAD_EPCAP) {
+                    dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
+                        pcap_thread_status(&pcap_thread),
+                        pcap_statustostr(pcap_thread_status(&pcap_thread)),
+                        pcap_thread_errbuf(&pcap_thread)
+                    );
+                }
+                else if (err == PCAP_THREAD_ERRNO) {
+                    char errbuf[512];
+                    dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
+                        errno,
+                        dsc_strerror(errno, errbuf, sizeof(errbuf)),
+                        pcap_thread_errbuf(&pcap_thread)
+                    );
+                }
+                return 0;
             }
-            return 0;
         }
 
         /* TODO: Remove before release */
@@ -1049,6 +1054,9 @@ Pcap_run(void)
             gettimeofday(&now, 0);
             dsyslogf(LOG_INFO, "Ran to %lu.%lu", now.tv_sec, now.tv_usec);
         }
+
+        if (sig_while_processing)
+            finish_ts = last_ts;
 
         if ((err = pcap_thread_stats(&pcap_thread, _stats, 0))) {
             dsyslogf(LOG_ERR, "unable to get pcap thread stats: %s", pcap_thread_strerr(err));
@@ -1061,9 +1069,6 @@ Pcap_run(void)
             }
             return 0;
         }
-
-        if (sig_while_processing)
-            finish_ts = last_ts;
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
     return 1;
