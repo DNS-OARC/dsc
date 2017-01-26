@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright (c) 2016, OARC, Inc.
+# Copyright (c) 2016-2017, OARC, Inc.
 # Copyright (c) 2007, The Measurement Factory, Inc.
 # Copyright (c) 2007, Internet Systems Consortium, Inc.
 # All rights reserved.
