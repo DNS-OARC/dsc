@@ -1,4 +1,4 @@
-.\" Copyright (c) 2016, OARC, Inc.
+.\" Copyright (c) 2016-2017, OARC, Inc.
 .\" Copyright (c) 2007, The Measurement Factory, Inc.
 .\" Copyright (c) 2007, Internet Systems Consortium, Inc.
 .\" All rights reserved.
@@ -43,6 +43,11 @@ contains defaults for the program
 Each line is a configuration option and may have arguments in the form
 .IR "option value;" .
 Comment lines must have a hash sign (#) in the first column.
+
+Since
+.B dsc(1)
+version 2.2.0, a configuration line may not be divided with CR/LF and
+quoted characters are not understood (\\quote).
 .SH CONFIGURATION
 .TP
 \fBlocal_address\fR IP [ MASK / BITS ];
@@ -98,6 +103,25 @@ makes only one pass through
 the configuration file and the BPF filter is set when the
 interface is initialized.
 .TP
+\fBpcap_buffer_size\fR NUMBER;
+Set the buffer size (in bytes) for pcap, increasing this may help
+if you see dropped packets by the kernel but increasing it too much
+may have other side effects.
+
+Note that this directive must go before the \fBinterface\fR
+directive because
+.I dsc
+makes only one pass through
+the configuration file and the pcap buffer size is set when the
+interface is initialized.
+.TP
+\fBpcap_thread_timeout\fR MILLISECONDS;
+Set the internal timeout pcap-thread uses when waiting for packets, the
+default is 100 ms.
+
+Note that this directive must go before the \fBinterface\fR
+directive.
+.TP
 \fBinterface\fR IFACE | FILE ;
 The interface name to sniff packets from or a pcap file to
 read packets from.   You may specify multiple interfaces.
@@ -128,6 +152,13 @@ packets belonging to these VLANs are analyzed.
 .TP
 \fBstatistics_interval\fR SECONDS ;
 Specify how often \fBdsc\fR should write statistics, default to 60 seconds.
+.TP
+\fBno_wait_interval\fR ;
+Do not wait on interval sync to start capturing, normally DSC will
+sleep for time() % statistics_interval to align with the minute
+(as was the default interval before) but now if you change the interval
+to more then a minute you can use with option to begin capture right
+away.
 .TP
 \fBoutput_format\fR FORMAT ;
 Specify the output format, can be give multiple times to output in
@@ -675,6 +706,8 @@ pid_file "/run/dsc.pid";
 #
 #bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
+#pcap_buffer_size 4194304;
+#pcap_thread_timeout 100;
 interface eth0;
 
 dataset qtype dns All:null Qtype:qtype queries-only;
@@ -714,6 +747,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 
 #statistics_interval 60;
+#no_wait_interval;
 output_format XML;
 #output_format JSON;
 

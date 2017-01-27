@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -38,6 +38,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <netdb.h>
+#include <string.h>
 
 #include "dns_message.h"
 #include "md_array.h"
@@ -61,6 +62,12 @@ int
 ip_proto_iterator(char **label)
 {
     static char label_buf[20];
+#if __OpenBSD__
+    struct protoent_data pdata;
+#else
+    char buf[1024];
+#endif
+    struct protoent proto;
     struct protoent *p;
     if (NULL == label) {
         next_iter = 0;
@@ -68,7 +75,13 @@ ip_proto_iterator(char **label)
     }
     if (next_iter > largest)
         return -1;
-    p = getprotobynumber(next_iter);
+#if __OpenBSD__
+    memset(&pdata, 0, sizeof(struct protoent_data));
+    getprotobynumber_r(next_iter, &proto, &pdata);
+    p = &proto;
+#else
+    getprotobynumber_r(next_iter, &proto, buf, sizeof(buf), &p);
+#endif
     if (p)
         *label = p->p_name;
     else

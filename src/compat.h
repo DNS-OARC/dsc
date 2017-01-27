@@ -34,10 +34,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_transport_index_h
-#define __dsc_transport_index_h
+#ifndef __dsc_compat_h
+#define __dsc_compat_h
 
-int transport_indexer(const void *);
-int transport_iterator(char **label);
+#include <stddef.h>
 
-#endif /* __dsc_transport_index_h */
+const char* dsc_strerror(int errnum, char* buf, size_t buflen);
+
+#endif /* __dsc_compat_h */

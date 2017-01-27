@@ -1,4 +1,4 @@
-.\" Copyright (c) 2016, OARC, Inc.
+.\" Copyright (c) 2016-2017, OARC, Inc.
 .\" Copyright (c) 2007, The Measurement Factory, Inc.
 .\" Copyright (c) 2007, Internet Systems Consortium, Inc.
 .\" All rights reserved.
@@ -71,7 +71,7 @@ Enable monitor mode on interfaces.
 Enable immediate mode on interfaces.
 .TP
 .B \-T
-Disable usage of threads in pcap thread.
+Disable the usage of threads.
 .TP
 .B \-v
 Print version and exit.
@@ -96,6 +96,19 @@ Maintained by DNS-OARC
 .I https://www.dns-oarc.net/tools/dsc
 .RE
 .LP
+.SH KNOWN ISSUES
+This program and/or components uses
+.I select(2)
+to wait for packets and there may be an internal delay within that
+call during startup that results in missed packets. As a workaround, set
+.I pcap_thread_timeout
+( see
+.I dsc.conf(5)
+) to a relevant millisecond timeout with regards to the queries per second
+(QPS) received. For example if your receiving 10 QPS then you have 20 packets
+per second (PPS) and if spread out equally over a second you have a packet
+per 50 ms which you can use as timeout value. Since version 2.4.0 the
+default is 100 ms.
 .SH BUGS
 For issues and feature requests please use:
 .LP

@@ -34,10 +34,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_transport_index_h
-#define __dsc_transport_index_h
+#include "config.h"
 
-int transport_indexer(const void *);
-int transport_iterator(char **label);
+#include "compat.h"
 
-#endif /* __dsc_transport_index_h */
+#include <string.h>
+#include <errno.h>
+
+const char* dsc_strerror(int errnum, char* buf, size_t buflen) {
+    if (!buf || buflen < 2) {
+        return "dsc_strerror() invalid arguments";
+    }
+
+    memset(buf, 0, buflen);
+
+#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+    /* XSI-compliant version */
+    {
+        int ret = strerror_r(errnum, buf, buflen);
+        if (ret > 0) {
+            (void)strerror_r(ret, buf, buflen);
+        }
+        else {
+            (void)strerror_r(errno, buf, buflen);
+        }
+    }
+#else
+    /* GNU-specific version */
+    buf = strerror_r(errnum, buf, buflen);
+#endif
+
+    return buf;
+}

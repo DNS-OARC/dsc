@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -50,42 +50,47 @@
 #endif
 #include "xmalloc.h"
 #include "syslog_debug.h"
+#include "compat.h"
 
 /********** xmalloc **********/
 
 void *
 xmalloc(size_t size)
 {
+    char errbuf[512];
     void *p = malloc(size);
     if (NULL == p)
-        dsyslogf(LOG_CRIT, "malloc: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "malloc: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return p;
 }
 
 void *
 xcalloc(size_t number, size_t size)
 {
+    char errbuf[512];
     void *p = calloc(number, size);
     if (NULL == p)
-        dsyslogf(LOG_CRIT, "calloc: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "calloc: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return p;
 }
 
 void *
 xrealloc(void *p, size_t size)
 {
+    char errbuf[512];
     p = realloc(p, size);
     if (NULL == p)
-        dsyslogf(LOG_CRIT, "realloc: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "realloc: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return p;
 }
 
 char *
 xstrdup(const char *s)
 {
+    char errbuf[512];
     void *p = strdup(s);
     if (NULL == p)
-        dsyslogf(LOG_CRIT, "strdup: %s", strerror(errno));
+        dsyslogf(LOG_CRIT, "strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return p;
 }
 
@@ -115,11 +120,12 @@ Arena *currentArena = NULL;
 static Arena *
 newArena(size_t size)
 {
+    char errbuf[512];
     Arena *arena;
     size = align(size, ALIGNMENT);
     arena = malloc(HEADERSIZE + size);
     if (NULL == arena) {
-        dsyslogf(LOG_CRIT, "amalloc %d: %s", (int) size, strerror(errno));
+        dsyslogf(LOG_CRIT, "amalloc %d: %s", (int) size, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return NULL;
     }
     arena->prevArena = NULL;

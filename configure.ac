@@ -1,4 +1,4 @@
-# Copyright (c) 2016, OARC, Inc.
+# Copyright (c) 2016-2017, OARC, Inc.
 # Copyright (c) 2007, The Measurement Factory, Inc.
 # Copyright (c) 2007, Internet Systems Consortium, Inc.
 # All rights reserved.
@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.3.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.4.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
@@ -44,7 +44,11 @@ AM_PROG_CC_C_O
 AC_PROG_INSTALL
 
 # pcap thread
-AX_PCAP_THREAD
+AC_ARG_ENABLE(threads,
+    [AS_HELP_STRING([--enable-threads],
+        [enable the usage of threads (default disabled)])],
+    [AX_PCAP_THREAD],
+    [AX_PCAP_THREAD_PCAP])
 
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])

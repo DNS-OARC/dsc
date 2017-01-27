@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -77,6 +77,7 @@
 
 #include "config.h"
 #include "pcap-thread/pcap_thread.h"
+#include "compat.h"
 
 #define PCAP_SNAPLEN 65536
 #ifndef ETHER_HDR_LEN
@@ -797,11 +798,13 @@ void _callback(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* pkt
 }
 
 void
-Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads)
+Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads, int buffer_size)
 {
+    char errbuf[512];
     struct stat sb;
     struct _interface *i;
     int err;
+    extern int pt_timeout;
 
     if (interfaces == NULL) {
         interfaces = xcalloc(MAX_N_INTERFACES, sizeof(*interfaces));
@@ -833,6 +836,14 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
             dsyslogf(LOG_ERR, "unable to set pcap callback: %s", pcap_thread_strerr(err));
             exit(1);
         }
+        if (buffer_size > 0 && (err = pcap_thread_set_buffer_size(&pcap_thread, buffer_size))) {
+            dsyslogf(LOG_ERR, "unable to set pcap buffer size: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if (pt_timeout > 0 && (err = pcap_thread_set_timeout(&pcap_thread, pt_timeout))) {
+            dsyslogf(LOG_ERR, "unable to set pcap-thread timeout: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
     }
     assert(interfaces);
     assert(n_interfaces < MAX_N_INTERFACES);
@@ -856,7 +867,7 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
             else if (err == PCAP_THREAD_ERRNO) {
                 dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
                     errno,
-                    strerror(errno),
+                    dsc_strerror(errno, errbuf, sizeof(errbuf)),
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
@@ -878,7 +889,7 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
             else if (err == PCAP_THREAD_ERRNO) {
                 dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
                     errno,
-                    strerror(errno),
+                    dsc_strerror(errno, errbuf, sizeof(errbuf)),
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
@@ -929,7 +940,6 @@ Pcap_run(void)
 {
     int i, err;
     extern uint64_t statistics_interval;
-    struct timeval timedrun = { 0, 0 };
 
     for (i = 0; i < n_interfaces; i++)
         interfaces[i].pkts_captured = 0;
@@ -947,13 +957,13 @@ Pcap_run(void)
 
             if ((err = pcap_thread_next_reset(&pcap_thread))) {
                 dsyslogf(LOG_ERR, "unable to reset pcap thread next: %s", pcap_thread_strerr(err));
-                exit(1);
+                return 0;
             }
             for (i = 0; i < n_pcap_offline; i++) {
                 if ((err = pcap_thread_next(&pcap_thread))) {
                      if (err != PCAP_THREAD_EPCAP) {
                         dsyslogf(LOG_ERR, "unable to do pcap thread next: %s", pcap_thread_strerr(err));
-                        exit(1);
+                        return 0;
                      }
                      continue;
                 }
@@ -985,7 +995,7 @@ Pcap_run(void)
             }
             else if (err) {
                 dsyslogf(LOG_ERR, "unable to do pcap thread next: %s", pcap_thread_strerr(err));
-                exit(1);
+                return 0;
             }
             else {
                 i = 0;
@@ -1005,30 +1015,38 @@ Pcap_run(void)
         gettimeofday(&last_ts, NULL);
         finish_ts.tv_sec = ((start_ts.tv_sec / statistics_interval) + 1) * statistics_interval;
         finish_ts.tv_usec = 0;
-        timedrun.tv_sec = finish_ts.tv_sec - start_ts.tv_sec;
-        if ((err = pcap_thread_set_timedrun(&pcap_thread, timedrun))) {
+        if ((err = pcap_thread_set_timedrun_to(&pcap_thread, finish_ts))) {
             dsyslogf(LOG_ERR, "unable to set pcap thread timed run: %s", pcap_thread_strerr(err));
-            exit(1);
+            return 0;
         }
 
         if ((err = pcap_thread_run(&pcap_thread))) {
-            dsyslogf(LOG_ERR, "unable to pcap thread run: %s", pcap_thread_strerr(err));
-            if (err == PCAP_THREAD_EPCAP) {
-                dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
-                    pcap_thread_status(&pcap_thread),
-                    pcap_statustostr(pcap_thread_status(&pcap_thread)),
-                    pcap_thread_errbuf(&pcap_thread)
-                );
+            if (err == PCAP_THREAD_ERRNO && errno == EINTR && sig_while_processing) {
+                dsyslog(LOG_INFO, "pcap thread run interruped by signal");
             }
-            else if (err == PCAP_THREAD_ERRNO) {
-                dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
-                    errno,
-                    strerror(errno),
-                    pcap_thread_errbuf(&pcap_thread)
-                );
+            else {
+                dsyslogf(LOG_ERR, "unable to pcap thread run: %s", pcap_thread_strerr(err));
+                if (err == PCAP_THREAD_EPCAP) {
+                    dsyslogf(LOG_ERR, "libpcap error [%d]: %s (%s)",
+                        pcap_thread_status(&pcap_thread),
+                        pcap_statustostr(pcap_thread_status(&pcap_thread)),
+                        pcap_thread_errbuf(&pcap_thread)
+                    );
+                }
+                else if (err == PCAP_THREAD_ERRNO) {
+                    char errbuf[512];
+                    dsyslogf(LOG_ERR, "system error [%d]: %s (%s)\n",
+                        errno,
+                        dsc_strerror(errno, errbuf, sizeof(errbuf)),
+                        pcap_thread_errbuf(&pcap_thread)
+                    );
+                }
+                return 0;
             }
-            exit(1);
         }
+
+        if (sig_while_processing)
+            finish_ts = last_ts;
 
         if ((err = pcap_thread_stats(&pcap_thread, _stats, 0))) {
             dsyslogf(LOG_ERR, "unable to get pcap thread stats: %s", pcap_thread_strerr(err));
@@ -1039,11 +1057,8 @@ Pcap_run(void)
                     pcap_thread_errbuf(&pcap_thread)
                 );
             }
-            exit(1);
+            return 0;
         }
-
-        if (sig_while_processing)
-            finish_ts = last_ts;
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
     return 1;

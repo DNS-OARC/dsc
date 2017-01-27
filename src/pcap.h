@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -39,7 +39,7 @@
 #ifndef __dsc_pcap_h
 #define __dsc_pcap_h
 
-void Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads);
+void Pcap_init(const char *device, int promisc, int monitor, int immediate, int threads, int buffer_size);
 int Pcap_run();
 void Pcap_stop(void);
 void Pcap_close(void);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -70,6 +70,8 @@
 #include "pcap.h"
 #include "syslog_debug.h"
 #include "parse_conf.h"
+#include "compat.h"
+#include "pcap-thread/pcap_thread.h"
 
 char *progname = NULL;
 char *pid_file_name = NULL;
@@ -94,20 +96,23 @@ extern int output_format_xml;
 extern int output_format_json;
 extern int dump_reports_on_exit;
 extern uint64_t statistics_interval;
+extern int no_wait_interval;
+extern pcap_thread_t pcap_thread;
 
 void
 daemonize(void)
 {
+    char errbuf[512];
     int fd;
     pid_t pid;
     if ((pid = fork()) < 0) {
-        dsyslogf(LOG_ERR, "fork failed: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "fork failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(1);
     }
     if (pid > 0)
         exit(0);
     if (setsid() < 0)
-        dsyslogf(LOG_ERR, "setsid failed: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "setsid failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     closelog();
 #ifdef TIOCNOTTY
     if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
@@ -117,7 +122,7 @@ daemonize(void)
 #endif
     fd = open("/dev/null", O_RDWR);
     if (fd < 0) {
-        dsyslogf(LOG_ERR, "/dev/null: %s\n", strerror(errno));
+        dsyslogf(LOG_ERR, "/dev/null: %s\n", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     } else {
         dup2(fd, 0);
         dup2(fd, 1);
@@ -130,6 +135,7 @@ daemonize(void)
 void
 write_pid_file(void)
 {
+    char errbuf[512];
     FILE *fp;
     int fd, flags;
     struct flock lock;
@@ -142,7 +148,7 @@ write_pid_file(void)
      */
 
     if ((fd = open(pid_file_name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-        dsyslogf(LOG_ERR, "unable to open PID file %s: %s", pid_file_name, strerror(errno));
+        dsyslogf(LOG_ERR, "unable to open PID file %s: %s", pid_file_name, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -151,14 +157,14 @@ write_pid_file(void)
      */
 
     if ((flags = fcntl(fd, F_GETFD)) == -1) {
-        dsyslogf(LOG_ERR, "unable to get PID file flags: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to get PID file flags: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
     flags |= FD_CLOEXEC;
 
     if (fcntl(fd, F_SETFD, flags) == 1) {
-        dsyslogf(LOG_ERR, "unable to set PID file flags: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to set PID file flags: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -177,7 +183,7 @@ write_pid_file(void)
             exit(3);
         }
 
-        dsyslogf(LOG_ERR, "unable to lock PID file: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to lock PID file: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -186,7 +192,7 @@ write_pid_file(void)
      */
 
     if (ftruncate(fd, 0) == -1) {
-        dsyslogf(LOG_ERR, "unable to truncate PID file: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to truncate PID file: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 
@@ -194,7 +200,7 @@ write_pid_file(void)
 
     fp = fdopen(fd, "w");
     if (!fp || fprintf(fp, "%d\n", getpid()) < 1 || fflush(fp)) {
-        dsyslogf(LOG_ERR, "unable to write to PID file: %s", strerror(errno));
+        dsyslogf(LOG_ERR, "unable to write to PID file: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(2);
     }
 }
@@ -229,7 +235,7 @@ usage(void)
         "\t-p\tDon't put interface in promiscuous mode.\n"
         "\t-m\tEnable monitor mode on interfaces.\n"
         "\t-i\tEnable immediate mode on interfaces.\n"
-        "\t-T\tDisable usage of threads in pcap thread.\n"
+        "\t-T\tDisable the usage of threads.\n"
         "\t-v\tPrint version and exit.\n"
     );
     exit(1);
@@ -245,6 +251,7 @@ version(void)
 static int
 dump_report(md_array_printer * printer)
 {
+    char errbuf[512];
     int fd;
     FILE *fp;
     char fname[128];
@@ -258,12 +265,12 @@ dump_report(md_array_printer * printer)
     snprintf(tname, 128, "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
-        dsyslogf(LOG_ERR, "%s: %s", tname, strerror(errno));
+        dsyslogf(LOG_ERR, "%s: %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return 1;
     }
     fp = fdopen(fd, "w");
     if (NULL == fp) {
-        dsyslogf(LOG_ERR, "%s: %s", tname, strerror(errno));
+        dsyslogf(LOG_ERR, "%s: %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         close(fd);
         return 1;
     }
@@ -286,7 +293,7 @@ dump_report(md_array_printer * printer)
     dfprintf(0, "renaming to %s", fname);
 
     if (rename(tname, fname)) {
-        dsyslogf(LOG_ERR, "unable to move report from %s to %s: %s", tname, fname, strerror(errno));
+        dsyslogf(LOG_ERR, "unable to move report from %s to %s: %s", tname, fname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
     }
     return 0;
 }
@@ -352,17 +359,19 @@ sig_thread(void * arg) {
 int
 main(int argc, char *argv[])
 {
+    char errbuf[512];
     int x;
     int result;
     struct timeval break_start = { 0, 0 };
 #if HAVE_PTHREAD
     pthread_t sigthread;
 #endif
+    int err;
+    struct timeval now;
 
-    progname = xstrdup(strrchr(argv[0], '/') ? strchr(argv[0], '/') + 1 : argv[0]);
+    progname = xstrdup(strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
         return 1;
-    srandom(time(NULL));
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
     while ((x = getopt(argc, argv, "fpdvmiT")) != -1) {
@@ -406,7 +415,9 @@ main(int argc, char *argv[])
     if (immediate_flag)
         dsyslog(LOG_INFO, "enabling interface immediate mode");
     if (!threads_flag)
-        dsyslog(LOG_INFO, "disabling usage of threads in pcap thread");
+        dsyslog(LOG_INFO, "disabling the usage of threads");
+
+    pcap_thread_set_activate_mode(&pcap_thread, PCAP_THREAD_ACTIVATE_MODE_DELAYED);
 
     dns_message_init();
     if (parse_conf(argv[0])) {
@@ -437,13 +448,12 @@ main(int argc, char *argv[])
      */
 
 #if HAVE_PTHREAD
-    {
+    if (threads_flag) {
         sigset_t set;
-        int err;
 
         sigfillset(&set);
         if ((err = pthread_sigmask(SIG_BLOCK, &set, 0))) {
-            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", strerror(err));
+            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", dsc_strerror(err, errbuf, sizeof(errbuf)));
             exit(1);
         }
 
@@ -454,17 +464,17 @@ main(int argc, char *argv[])
             sigaddset(&set, SIGINT);
 
         if ((err = pthread_create(&sigthread, 0, &sig_thread, (void*)&set))) {
-            dsyslogf(LOG_ERR, "Unable to start signal thread: %s", strerror(err));
+            dsyslogf(LOG_ERR, "Unable to start signal thread: %s", dsc_strerror(err, errbuf, sizeof(errbuf)));
             exit(1);
         }
     }
-#else
-
-    /*
-     * Handle signal without pthreads
-     */
-
+    else
+#endif
     {
+        /*
+         * Handle signal without pthreads
+         */
+
         sigset_t set;
         struct sigaction action;
 
@@ -475,7 +485,7 @@ main(int argc, char *argv[])
             sigdelset(&set, SIGINT);
 
         if (sigprocmask(SIG_BLOCK, &set, 0))
-            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to set signal mask: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
 
         memset(&action, 0, sizeof(action));
         sigfillset(&action.sa_mask);
@@ -486,24 +496,48 @@ main(int argc, char *argv[])
             action.sa_handler = sig_exit;
 
         if (sigaction(SIGTERM, &action, NULL))
-            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         if (sigaction(SIGQUIT, &action, NULL))
-            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
-            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     }
-#endif
 
-    if (!debug_flag && 0 == n_pcap_offline) {
-        dsyslogf(LOG_INFO, "Sleeping for %ld seconds", statistics_interval - (int) (time(NULL) % statistics_interval));
-        sleep(statistics_interval - (time(NULL) % statistics_interval));
+    if (!debug_flag && 0 == n_pcap_offline && !no_wait_interval) {
+        struct timespec nano;
+
+        gettimeofday(&now, NULL);
+
+        if ((now.tv_sec + 1) % statistics_interval)
+            nano.tv_sec = statistics_interval - ((now.tv_sec + 1) % statistics_interval);
+        else
+            nano.tv_sec = 0;
+
+        if (now.tv_usec > 1000000)
+            nano.tv_nsec = 0;
+        else
+            nano.tv_nsec = (1000000 - now.tv_usec) * 1000;
+
+        dsyslogf(LOG_INFO, "Sleeping for %lu.%lu seconds", nano.tv_sec, nano.tv_nsec);
+        nanosleep(&nano, NULL);
     }
+
+    if ((err = pcap_thread_activate(&pcap_thread))) {
+        dsyslogf(LOG_ERR, "unable to activate pcap thread: %s", pcap_thread_strerr(err));
+        exit(1);
+    }
+    if (pcap_thread_filter_errno(&pcap_thread)) {
+        dsyslogf(LOG_NOTICE, "detected non-fatal error during pcap activation, filters may run in userland [%d]: %s",
+            pcap_thread_filter_errno(&pcap_thread),
+            dsc_strerror(pcap_thread_filter_errno(&pcap_thread), errbuf, sizeof(errbuf))
+        );
+    }
+
     dsyslog(LOG_INFO, "Running");
 
     do {
         useArena();                /* Initialize a memory arena for data collection. */
         if (debug_flag && break_start.tv_sec > 0) {
-            struct timeval now;
             gettimeofday(&now, NULL);
             dsyslogf(LOG_INFO, "inter-run processing delay: %ld ms",
                 (now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec));
@@ -517,6 +551,38 @@ main(int argc, char *argv[])
             gettimeofday(&break_start, NULL);
 
         if (0 == fork()) {
+            struct sigaction action;
+
+            /*
+             * Remove the blocking of signals
+             */
+
+#if HAVE_PTHREAD
+            if (threads_flag) {
+                sigset_t set;
+
+                /*
+                 * Reset the signal process mask since the signal thread
+                 * will not make the fork
+                 */
+
+                sigemptyset(&set);
+                sigaddset(&set, SIGTERM);
+                sigaddset(&set, SIGQUIT);
+                sigaddset(&set, SIGINT);
+
+                sigprocmask(SIG_UNBLOCK, &set, 0);
+            }
+#endif
+
+            memset(&action, 0, sizeof(action));
+            sigfillset(&action.sa_mask);
+            action.sa_handler = SIG_DFL;
+
+            sigaction(SIGTERM, &action, NULL);
+            sigaction(SIGQUIT, &action, NULL);
+            sigaction(SIGINT, &action, NULL);
+
             dump_reports();
             _exit(0);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -123,6 +123,7 @@ a_for_root(const dns_message * m)
 static int
 rfc1918_ptr(const dns_message * m)
 {
+    char *tok = 0;
     char *t;
     char q[128];
     unsigned int i = 0;
@@ -133,7 +134,7 @@ rfc1918_ptr(const dns_message * m)
     if (NULL == (t = strstr(q, ".in-addr.arpa")))
         return 0;
     *t = '\0';
-    for (t = strtok(q, "."); t; t = strtok(NULL, ".")) {
+    for (t = strtok_r(q, ".", &tok); t; t = strtok_r(NULL, ".", &tok)) {
         i >>= 8;
         i |= ((atoi(t) & 0xff) << 24);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, OARC, Inc.
+ * Copyright (c) 2016-2017, OARC, Inc.
  * Copyright (c) 2007, The Measurement Factory, Inc.
  * Copyright (c) 2007, Internet Systems Consortium, Inc.
  * All rights reserved.
@@ -47,6 +47,7 @@
 #include "syslog_debug.h"
 #include "hashtbl.h"
 #include "pcap.h"
+#include "compat.h"
 
 extern int promisc_flag;
 extern int monitor_flag;
@@ -67,12 +68,15 @@ char * geoip_asn_v4_dat = NULL;
 int geoip_asn_v4_options = 0;
 char * geoip_asn_v6_dat = NULL;
 int geoip_asn_v6_options = 0;
+int pcap_buffer_size = 0;
+int no_wait_interval = 0;
+int pt_timeout = 100;
 
 int
 open_interface(const char *interface)
 {
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
-    Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag);
+    Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag, pcap_buffer_size);
     return 1;
 }
 
@@ -81,6 +85,8 @@ set_bpf_program(const char *s)
 {
     extern char *bpf_program_str;
     dsyslogf(LOG_INFO, "BPF program is: %s", s);
+    if (bpf_program_str)
+        xfree(bpf_program_str);
     bpf_program_str = xstrdup(s);
     if (NULL == bpf_program_str)
         return 0;
@@ -100,8 +106,9 @@ set_run_dir(const char *dir)
 {
     dsyslogf(LOG_INFO, "setting current directory to %s", dir);
     if (chdir(dir) < 0) {
+        char errbuf[512];
         perror(dir);
-        dsyslogf(LOG_ERR, "chdir: %s: %s", dir, strerror(errno));
+        dsyslogf(LOG_ERR, "chdir: %s: %s", dir, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return 0;
     }
     return 1;
@@ -112,6 +119,8 @@ set_pid_file(const char *s)
 {
     extern char *pid_file_name;
     dsyslogf(LOG_INFO, "PID file is: %s", s);
+    if (pid_file_name)
+        xfree(pid_file_name);
     pid_file_name = xstrdup(s);
     if (NULL == pid_file_name)
         return 0;
@@ -131,12 +140,13 @@ dataset_cmpfunc(const void *a, const void *b)
 }
 
 int
-set_statistics_interval (const char *s)
+set_statistics_interval(const char *s)
 {
     dsyslogf(LOG_INFO, "Setting statistics interval to: %s", s);
     statistics_interval = strtoull(s, NULL, 10);
     if (statistics_interval == ULLONG_MAX) {
-        dsyslogf(LOG_ERR, "strtoull: %s", strerror(errno));
+        char errbuf[512];
+        dsyslogf(LOG_ERR, "strtoull: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         return 0;
     }
     if (!statistics_interval) {
@@ -247,51 +257,99 @@ set_dump_reports_on_exit(void)
 int
 set_geoip_v4_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_v4_options = options;
-    if ( (geoip_v4_dat = strdup(dat)) ) {
+    if (geoip_v4_dat)
+        xfree(geoip_v4_dat);
+    if ( (geoip_v4_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP v4 dat %s %d", geoip_v4_dat, geoip_v4_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP v4 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP v4 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 
 int
 set_geoip_v6_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_v6_options = options;
-    if ( (geoip_v6_dat = strdup(dat)) ) {
+    if (geoip_v6_dat)
+        xfree(geoip_v6_dat);
+    if ( (geoip_v6_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP v6 dat %s %d", geoip_v6_dat, geoip_v6_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP v6 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP v6 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 
 int
 set_geoip_asn_v4_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_asn_v4_options = options;
-    if ( (geoip_asn_v4_dat = strdup(dat)) ) {
+    if (geoip_asn_v4_dat)
+        xfree(geoip_asn_v4_dat);
+    if ( (geoip_asn_v4_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP ASN v4 dat %s %d", geoip_asn_v4_dat, geoip_asn_v4_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v4 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v4 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 
 int
 set_geoip_asn_v6_dat(const char * dat, int options)
 {
+    char errbuf[512];
+
     geoip_asn_v6_options = options;
-    if ( (geoip_asn_v6_dat = strdup(dat)) ) {
+    if (geoip_asn_v6_dat)
+        xfree(geoip_asn_v6_dat);
+    if ( (geoip_asn_v6_dat = xstrdup(dat)) ) {
         dsyslogf(LOG_INFO, "GeoIP ASN v6 dat %s %d", geoip_asn_v6_dat, geoip_asn_v6_options);
         return 1;
     }
 
-    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", strerror(errno));
+    dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
+}
+
+int
+set_pcap_buffer_size(const char *s)
+{
+    dsyslogf(LOG_INFO, "Setting pcap buffer size to: %s", s);
+    pcap_buffer_size = atoi(s);
+    if (pcap_buffer_size < 0) {
+        dsyslog(LOG_ERR, "pcap_buffer_size can not be negative");
+        return 0;
+    }
+    return 1;
+}
+
+void
+set_no_wait_interval(void)
+{
+    dsyslog(LOG_INFO, "not waiting on interval sync to start");
+
+    no_wait_interval = 1;
+}
+
+int
+set_pt_timeout(const char *s)
+{
+    dsyslogf(LOG_INFO, "Setting pcap-thread timeout to: %s", s);
+    pt_timeout = atoi(s);
+    if (pt_timeout < 0) {
+        dsyslog(LOG_ERR, "pcap-thread timeout can not be negative");
+        return 0;
+    }
+    return 1;
 }
