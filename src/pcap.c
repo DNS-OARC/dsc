@@ -1020,9 +1020,6 @@ Pcap_run(void)
             return 0;
         }
 
-        /* TODO: Remove before release */
-        dsyslogf(LOG_INFO, "Timed run set to %lu.%lu, now %lu.%lu", finish_ts.tv_sec, finish_ts.tv_usec, start_ts.tv_sec, start_ts.tv_usec);
-
         if ((err = pcap_thread_run(&pcap_thread))) {
             if (err == PCAP_THREAD_ERRNO && errno == EINTR && sig_while_processing) {
                 dsyslog(LOG_INFO, "pcap thread run interruped by signal");
@@ -1046,13 +1043,6 @@ Pcap_run(void)
                 }
                 return 0;
             }
-        }
-
-        /* TODO: Remove before release */
-        {
-            struct timeval now = { 0, 0 };
-            gettimeofday(&now, 0);
-            dsyslogf(LOG_INFO, "Ran to %lu.%lu", now.tv_sec, now.tv_usec);
         }
 
         if (sig_while_processing)
