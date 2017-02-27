@@ -167,6 +167,7 @@ pcap_udp_handler(const struct udphdr *udp, int len, void *udata)
 #define MAX_TCP_WINDOW_SIZE (0xFFFF << 14)
 #define MAX_TCP_STATE 65535
 #define MAX_TCP_IDLE 60                /* tcpstate is tossed if idle for this many seconds */
+#define MAX_FRAG_IDLE 60 /* keep fragments in pcap_layers for this many seconds */
 
 /* These numbers define the sizes of small arrays which are simpler to work
  * with than dynamically allocated lists. */
@@ -1061,6 +1062,7 @@ Pcap_run(void)
         }
     }
     tcpList_remove_older_than(last_ts.tv_sec - MAX_TCP_IDLE);
+    pcap_layers_clear_fragments(time(NULL) - MAX_FRAG_IDLE);
     return 1;
 }
 
