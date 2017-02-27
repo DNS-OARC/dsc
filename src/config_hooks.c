@@ -164,7 +164,7 @@ add_dataset(const char *name, const char *layer_ignored,
     char * dup;
 
     if ( !dataset_hash ) {
-        if ( !(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, afree, afree)) ) {
+        if ( !(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, xfree, xfree)) ) {
             dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
             return 0;
         }
@@ -181,7 +181,7 @@ add_dataset(const char *name, const char *layer_ignored,
     }
 
     if ( hash_add(dup, dup, dataset_hash) ) {
-        afree(dup);
+        xfree(dup);
         dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
         return 0;
     }
