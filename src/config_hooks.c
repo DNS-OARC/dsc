@@ -71,6 +71,7 @@ int geoip_asn_v6_options = 0;
 int pcap_buffer_size = 0;
 int no_wait_interval = 0;
 int pt_timeout = 100;
+int drop_ip_fragments = 0;
 
 int
 open_interface(const char *interface)
@@ -352,4 +353,12 @@ set_pt_timeout(const char *s)
         return 0;
     }
     return 1;
+}
+
+void
+set_drop_ip_fragments(void)
+{
+    dsyslog(LOG_INFO, "dropping ip fragments");
+
+    drop_ip_fragments = 1;
 }

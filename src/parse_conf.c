@@ -546,6 +546,11 @@ int parse_conf_pcap_thread_timeout(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_drop_ip_fragments(const conf_token_t* tokens) {
+    set_drop_ip_fragments();
+    return 0;
+}
+
 static conf_token_syntax_t _syntax[] = {
     {
         "interface",
@@ -646,6 +651,11 @@ static conf_token_syntax_t _syntax[] = {
         "pcap_thread_timeout",
         parse_conf_pcap_thread_timeout,
         { TOKEN_NUMBER, TOKEN_END }
+    },
+    {
+        "drop_ip_fragments",
+        parse_conf_drop_ip_fragments,
+        { TOKEN_END }
     },
 
     { 0, 0, { TOKEN_END } }

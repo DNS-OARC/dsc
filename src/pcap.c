@@ -899,11 +899,12 @@ Pcap_init(const char *device, int promisc, int monitor, int immediate, int threa
     }
 
     if (0 == n_interfaces) {
+        extern int drop_ip_fragments;
         /*
          * Initialize pcap_layers library and specifiy IP fragment reassembly
          * Datalink type is handled in callback
          */
-        pcap_layers_init(DLT_EN10MB, 1);
+        pcap_layers_init(DLT_EN10MB, drop_ip_fragments ? 0 : 1);
         if (n_vlan_ids)
             callback_vlan = pcap_match_vlan;
         callback_ipv4 = pcap_ipv4_handler;

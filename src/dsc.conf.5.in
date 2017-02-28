@@ -50,7 +50,7 @@ version 2.2.0, a configuration line may not be divided with CR/LF and
 quoted characters are not understood (\\quote).
 .SH CONFIGURATION
 .TP
-\fBlocal_address\fR IP [ MASK / BITS ];
+\fBlocal_address\fR IP [ MASK / BITS ] ;
 Specifies the DNS server's local IP address with an optional mask/bits
 for local networks.  It is used to determine the direction of an IP packet:
 sending, receiving, or other.  You may specify multiple local addresses
@@ -103,7 +103,7 @@ makes only one pass through
 the configuration file and the BPF filter is set when the
 interface is initialized.
 .TP
-\fBpcap_buffer_size\fR NUMBER;
+\fBpcap_buffer_size\fR NUMBER ;
 Set the buffer size (in bytes) for pcap, increasing this may help
 if you see dropped packets by the kernel but increasing it too much
 may have other side effects.
@@ -115,9 +115,15 @@ makes only one pass through
 the configuration file and the pcap buffer size is set when the
 interface is initialized.
 .TP
-\fBpcap_thread_timeout\fR MILLISECONDS;
+\fBpcap_thread_timeout\fR MILLISECONDS ;
 Set the internal timeout pcap-thread uses when waiting for packets, the
 default is 100 ms.
+
+Note that this directive must go before the \fBinterface\fR
+directive.
+.TP
+\fBdrop_ip_fragments\fR ;
+Drop all packets that are fragments.
 
 Note that this directive must go before the \fBinterface\fR
 directive.
@@ -708,6 +714,7 @@ pid_file "/run/dsc.pid";
 
 #pcap_buffer_size 4194304;
 #pcap_thread_timeout 100;
+#drop_ip_fragments;
 interface eth0;
 
 dataset qtype dns All:null Qtype:qtype queries-only;
