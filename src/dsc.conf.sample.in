@@ -63,6 +63,13 @@ pid_file "@DSC_PID_FILE@";
 #  NOTE: pcap_thread_timeout must GO BEFORE interface
 #pcap_thread_timeout 100;
 
+# drop_ip_fragments
+#
+#  Drop all packets that are fragments
+#
+#  NOTE: drop_ip_fragments must GO BEFORE interface
+#drop_ip_fragments;
+
 # interface
 #
 #  specifies a network interface to sniff packets from or a pcap
