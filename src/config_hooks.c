@@ -71,6 +71,7 @@ int geoip_asn_v6_options = 0;
 int pcap_buffer_size = 0;
 int no_wait_interval = 0;
 int pt_timeout = 100;
+int drop_ip_fragments = 0;
 
 int
 open_interface(const char *interface)
@@ -164,7 +165,7 @@ add_dataset(const char *name, const char *layer_ignored,
     char * dup;
 
     if ( !dataset_hash ) {
-        if ( !(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, afree, afree)) ) {
+        if ( !(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, xfree, xfree)) ) {
             dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
             return 0;
         }
@@ -181,7 +182,7 @@ add_dataset(const char *name, const char *layer_ignored,
     }
 
     if ( hash_add(dup, dup, dataset_hash) ) {
-        afree(dup);
+        xfree(dup);
         dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
         return 0;
     }
@@ -352,4 +353,12 @@ set_pt_timeout(const char *s)
         return 0;
     }
     return 1;
+}
+
+void
+set_drop_ip_fragments(void)
+{
+    dsyslog(LOG_INFO, "dropping ip fragments");
+
+    drop_ip_fragments = 1;
 }

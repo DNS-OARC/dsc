@@ -148,7 +148,7 @@ int
 asn_indexer(const void *vp)
 {
     const dns_message *m = vp;
-    char *asn;
+    const char *asn;
     asnobj *obj;
 
     if (m->malformed)
