@@ -1,3 +1,28 @@
+2017-03-02 Jerry Lundström
+
+    Release 2.5.0
+
+    Resolved memory leaks within the IP fragment reassembly code that was
+    reported by Klaus Darilion (NIC.AT) and added config option to control
+    some parts of the fragment handling.
+
+    Fixes:
+    - Add `pcap_layers_clear_fragments()` to remove old fragments after
+      `MAX_FRAG_IDLE` (60 seconds)
+    - Use correct alloc/free functions for dataset hash
+    - Fix spacing in dsc.conf(5) man-page
+
+    New config option:
+    - `drop_ip_fragments` will disable IP fragmentation reassembling and
+      drop any IP packet that is a fragment (even the first)
+
+    Commits:
+
+    eaee6c0 Drop IP fragments
+    3ebb687 Issue #146: Fix leak in fragment handling
+    9a5e377 Use correct alloc/free
+    35f663c Fix #107: add const
+
 2017-01-27 Jerry Lundström
 
     Release 2.4.0
