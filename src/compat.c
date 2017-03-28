@@ -48,7 +48,7 @@ const char* dsc_strerror(int errnum, char* buf, size_t buflen) {
 
     memset(buf, 0, buflen);
 
-#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+#if __FreeBSD__ || __OpenBSD__ || ( (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE )
     /* XSI-compliant version */
     {
         int ret = strerror_r(errnum, buf, buflen);
