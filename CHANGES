@@ -1,3 +1,17 @@
+2017-03-29 Jerry Lundström
+
+    Release 2.5.1
+
+    Various compatibility issues and a possible runtime bug, related to
+    pcap-thread, fixed.
+
+    Commits:
+
+    5ed03e3 Compat for OS X
+    8605759 Fix compiler warnings
+    5fbad26 Update pcap-thread to v2.1.2
+    47ed110 Update pcap-thread to v2.1.1
+
 2017-03-02 Jerry Lundström
 
     Release 2.5.0

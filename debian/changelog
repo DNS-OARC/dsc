@@ -1,3 +1,19 @@
+dsc (2.5.1-1~unstable+1) unstable; urgency=low
+
+  * Release 2.5.1
+
+    Various compatibility issues and a possible runtime bug, related to
+    pcap-thread, fixed.
+
+    Commits:
+
+    5ed03e3 Compat for OS X
+    8605759 Fix compiler warnings
+    5fbad26 Update pcap-thread to v2.1.2
+    47ed110 Update pcap-thread to v2.1.1
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Wed, 29 Mar 2017 13:54:12 +0200
+
 dsc (2.5.0-1~unstable+1) unstable; urgency=low
 
   * Release 2.5.0

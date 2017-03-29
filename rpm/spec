@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.5.0
+Version:        2.5.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 
@@ -55,6 +55,15 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Mar 29 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.5.1-1
+- Release 2.5.1
+  * Various compatibility issues and a possible runtime bug, related to
+    pcap-thread, fixed.
+  * Commits:
+    5ed03e3 Compat for OS X
+    8605759 Fix compiler warnings
+    5fbad26 Update pcap-thread to v2.1.2
+    47ed110 Update pcap-thread to v2.1.1
 * Thu Mar 02 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.5.0-1
 - Release 2.5.0
   * Resolved memory leaks within the IP fragment reassembly code that was
