@@ -518,7 +518,7 @@ main(int argc, char *argv[])
         else
             nano.tv_nsec = (1000000 - now.tv_usec) * 1000;
 
-        dsyslogf(LOG_INFO, "Sleeping for %lu.%lu seconds", nano.tv_sec, nano.tv_nsec);
+        dsyslogf(LOG_INFO, "Sleeping for %ld.%ld seconds", (long)nano.tv_sec, nano.tv_nsec);
         nanosleep(&nano, NULL);
     }
 
@@ -539,8 +539,8 @@ main(int argc, char *argv[])
         useArena();                /* Initialize a memory arena for data collection. */
         if (debug_flag && break_start.tv_sec > 0) {
             gettimeofday(&now, NULL);
-            dsyslogf(LOG_INFO, "inter-run processing delay: %ld ms",
-                (now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec));
+            dsyslogf(LOG_INFO, "inter-run processing delay: %lld ms",
+                (long long int)((now.tv_usec - break_start.tv_usec) / 1000 + 1000 * (now.tv_sec - break_start.tv_sec)));
         }
 
         /* Indicate we might have reports to dump on exit */
