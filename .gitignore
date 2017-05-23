@@ -29,3 +29,7 @@ test-driver
 config.h
 config.h.in~
 .pc
+build/
+config.h.in
+dsc-[0-9]*tar*
+src/test/*.dist
