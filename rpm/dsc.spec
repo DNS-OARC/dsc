@@ -2,6 +2,7 @@ Name:           dsc
 Version:        2.5.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
+Group:          Productivity/Networking/DNS/Utilities
 
 License:        BSD-3-Clause
 URL:            https://www.dns-oarc.net/oarc/data/dsc
