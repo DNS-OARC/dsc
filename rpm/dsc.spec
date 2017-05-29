@@ -83,7 +83,7 @@ rm -rf $RPM_BUILD_ROOT
     3ebb687 Issue #146: Fix leak in fragment handling
     9a5e377 Use correct alloc/free
     35f663c Fix #107: add const
-* Mon Jan 27 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.4.0-1
+* Fri Jan 27 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.4.0-1
 - Release 2.4.0
   * Since there have been a few major issues with the threaded capturing code
     it is now default disabled and have to be enabled with a configure option
