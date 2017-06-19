@@ -136,12 +136,15 @@ cip_net_v4_mask_set(const char *mask)
     dsyslogf(LOG_INFO, "change v4 mask to %s", mask);
     return inXaddr_pton(mask, &v4mask);
 }
+
 int
 cip_net_v6_mask_set(const char *mask)
 {
 #if USE_IPV6
     dsyslogf(LOG_INFO, "change v6 mask to %s", mask);
     return inXaddr_pton(mask, &v6mask);
+#else
+    return 1;
 #endif
 }
 

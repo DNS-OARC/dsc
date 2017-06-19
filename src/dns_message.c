@@ -271,6 +271,7 @@ servfail_filter(const void *vp, const void *ctx)
     const dns_message *m = vp;
     return m->rcode == 2;
 }
+
 static indexer_t indexers[] = {
     {"client", cip_indexer, cip_iterator, cip_reset},
     {"server", sip_indexer, sip_iterator, sip_reset},

@@ -50,6 +50,7 @@
 #include "dns_message.h"
 #include "syslog_debug.h"
 #include "compat.h"
+#include "client_ip_net_index.h"
 
 #define PARSE_CONF_EINVAL   -2
 #define PARSE_CONF_ERROR    -1
@@ -557,6 +558,7 @@ int parse_conf_drop_ip_fragments(const conf_token_t* tokens) {
 int parse_conf_client_v4_mask(const conf_token_t* tokens) {
     char* mask = strndup(tokens[1].token, tokens[1].length);
     int ret;
+
     if (!mask) {
         errno = ENOMEM;
         return -1;
@@ -566,6 +568,7 @@ int parse_conf_client_v4_mask(const conf_token_t* tokens) {
     free(mask);
     return ret == 1 ? 0 : 1;
 }
+
 int parse_conf_client_v6_mask(const conf_token_t* tokens) {
     char* mask = strndup(tokens[1].token, tokens[1].length);
     int ret;
@@ -574,7 +577,7 @@ int parse_conf_client_v6_mask(const conf_token_t* tokens) {
         errno = ENOMEM;
         return -1;
     }
-    
+
     ret = cip_net_v6_mask_set(mask);
     free(mask);
     return ret == 1 ? 0 : 1;

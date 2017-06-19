@@ -30,4 +30,7 @@ EXTRA_DIST = $(TESTS) \
     pid.conf \
     pid.pcap \
     statinter.conf \
-    statinter2.conf
+    statinter2.conf \
+    cnetmask.conf \
+    cnetmask2.conf \
+    cnetmask3.conf
