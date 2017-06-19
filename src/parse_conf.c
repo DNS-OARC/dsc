@@ -554,6 +554,32 @@ int parse_conf_drop_ip_fragments(const conf_token_t* tokens) {
     return 0;
 }
 
+int parse_conf_client_v4_mask(const conf_token_t* tokens) {
+    char* mask = strndup(tokens[1].token, tokens[1].length);
+    int ret;
+    if (!mask) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = cip_net_v4_mask_set(mask);
+    free(mask);
+    return ret == 1 ? 0 : 1;
+}
+int parse_conf_client_v6_mask(const conf_token_t* tokens) {
+    char* mask = strndup(tokens[1].token, tokens[1].length);
+    int ret;
+
+    if (!mask) {
+        errno = ENOMEM;
+        return -1;
+    }
+    
+    ret = cip_net_v6_mask_set(mask);
+    free(mask);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     {
         "interface",
@@ -659,6 +685,16 @@ static conf_token_syntax_t _syntax[] = {
         "drop_ip_fragments",
         parse_conf_drop_ip_fragments,
         { TOKEN_END }
+    },
+    {
+        "client_v4_mask",
+        parse_conf_client_v4_mask,
+        { TOKEN_STRING, TOKEN_END }
+    },
+    {
+        "client_v6_mask",
+        parse_conf_client_v6_mask,
+        { TOKEN_STRING, TOKEN_END }
     },
 
     { 0, 0, { TOKEN_END } }

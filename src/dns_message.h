@@ -79,6 +79,7 @@ struct _dns_message
     unsigned int rd:1;                /* set if RECUSION DESIRED bit is set */
     unsigned int aa:1;                /* set if AUTHORITATIVE ANSWER bit is set */
     unsigned int tc:1;                /* set if TRUNCATED RESPONSE bit is set */
+    unsigned int ad:1;
     struct
     {
         unsigned int found:1;        /* set if we found an OPT RR */

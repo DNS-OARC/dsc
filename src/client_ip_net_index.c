@@ -42,6 +42,7 @@
 #include "dns_message.h"
 #include "md_array.h"
 #include "hashtbl.h"
+#include "syslog_debug.h"
 
 static hashfunc ipnet_hashfunc;
 static hashkeycmp ipnet_cmpfunc;
@@ -126,6 +127,21 @@ cip_net_indexer_init(void)
     inXaddr_pton("255.255.255.0", &v4mask);
 #if USE_IPV6
     inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
+#endif
+}
+
+int
+cip_net_v4_mask_set(const char *mask)
+{
+    dsyslogf(LOG_INFO, "change v4 mask to %s", mask);
+    return inXaddr_pton(mask, &v4mask);
+}
+int
+cip_net_v6_mask_set(const char *mask)
+{
+#if USE_IPV6
+    dsyslogf(LOG_INFO, "change v6 mask to %s", mask);
+    return inXaddr_pton(mask, &v6mask);
 #endif
 }
 

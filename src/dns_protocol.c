@@ -206,14 +206,19 @@ dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
         m.server_ip_addr = m.tm->src_ip_addr;
     }
 
-#if 0
-    tc = (us >> 9) & 0x01;
-    ra = (us >> 7) & 0x01;
-#endif
     m.opcode = (us >> 11) & 0x0F;
-    m.rd = (us >> 8) & 0x01;
     m.aa = (us >> 10) & 0x01;
     m.tc = (us >> 9) & 0x01;
+    m.rd = (us >> 8) & 0x01;
+#if 0
+    ra = (us >> 7) & 0x01;
+    z  = (us >> 6) & 0x01;
+#endif
+    m.ad = (us >> 5) & 0x01;
+#if 0
+    cd = (us >> 4) & 0x01;
+#endif
+
     m.rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
