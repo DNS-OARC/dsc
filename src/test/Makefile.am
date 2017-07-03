@@ -33,4 +33,6 @@ EXTRA_DIST = $(TESTS) \
     statinter2.conf \
     cnetmask.conf \
     cnetmask2.conf \
-    cnetmask3.conf
+    cnetmask3.conf \
+    parseconf.conf \
+    parseconf2.conf

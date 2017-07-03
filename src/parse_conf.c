@@ -117,14 +117,17 @@ int parse_conf_token(char** conf, size_t* length, conf_token_t* token) {
     for (; **conf && length; (*conf)++, (*length)--) {
         if (quoted && **conf == '"') {
             end = 1;
+            quoted = 0;
             continue;
         }
         else if ((!quoted || end) && (**conf == ' ' || **conf == '\t' || **conf == ';')) {
-            if (**conf == ';') {
+            while (length && (**conf == ' ' || **conf == '\t')) {
                 (*conf)++;
+                (*length)--;
+            }
+            if (**conf == ';') {
                 return PARSE_CONF_LAST;
             }
-            (*conf)++;
             return PARSE_CONF_OK;
         }
         else if (end || **conf == '\n' || **conf == '\r' || !**conf) {
