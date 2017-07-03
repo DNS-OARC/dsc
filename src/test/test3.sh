@@ -5,3 +5,5 @@
 ../dsc -f "$srcdir/cnetmask.conf"
 ! ../dsc -f "$srcdir/cnetmask2.conf"
 ! ../dsc -f "$srcdir/cnetmask3.conf"
+! ../dsc -f "$srcdir/parseconf.conf"
+../dsc -f "$srcdir/parseconf2.conf"
