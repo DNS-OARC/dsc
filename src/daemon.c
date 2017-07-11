@@ -419,6 +419,7 @@ main(int argc, char *argv[])
 
     pcap_thread_set_activate_mode(&pcap_thread, PCAP_THREAD_ACTIVATE_MODE_DELAYED);
 
+    cip_net_indexer_init();
     dns_message_init();
     if (parse_conf(argv[0])) {
         return 1;
@@ -427,7 +428,6 @@ main(int argc, char *argv[])
     country_indexer_init();
     asn_indexer_init();
 #endif
-    cip_net_indexer_init();
     if ( !output_format_xml && !output_format_json ) {
         output_format_xml = 1;
     }

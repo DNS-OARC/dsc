@@ -126,6 +126,12 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #   dataset for monitoring an authoritative nameserver for DNS reflection attack
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 
+# dataset for servfail response for dnssec validation fail.
+#dataset servfail_qname dns ALL:null Qname:qname servfail-only,replies-only;
+
+# dataset for successful validation.
+#dataset ad_qname dns ALL:null Qname:qname authentic-data-only,replies-only;
+
 # bpf_vlan_tag_byte_order
 #
 #  Set this to 'host' on FreeBSD-4 where the VLAN id that we
@@ -184,3 +190,11 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";
 #geoip_asn_v4_dat "/usr/share/GeoIP/GeoIPASNum.dat" MEMORY_CACHE;
 #geoip_asn_v6_dat "/usr/share/GeoIP/GeoIPASNumv6.dat" MEMORY_CACHE;
+
+# Client Subnet Mask
+#
+#   Set the IPv4/IPv6 client subnet mask which is used for the
+#   ClientSubnet indexer.
+#
+#client_v4_mask 255.255.255.0;
+#client_v6_mask ffff:ffff:ffff:ffff:ffff:ffff:0000:0000;

@@ -191,6 +191,12 @@ GEOIP for options.
 \fBgeoip_asn_v6_dat\fR " FILE " [ OPTION ... ] ;
 Specify the GeoIP dat file to open for IPv6 AS number lookup, see section
 GEOIP for options.
+.TP
+\fBclient_v4_mask\fR NETMASK ;
+Set the IPv4 MASK for client_subnet INDEXERS.
+.TP
+\fBclient_v6_mask\fR NETMASK ;
+Set the IPv6 MASK for client_subnet INDEXERS.
 .SH DATASETS
 A \fBdataset\fR is a 2-D array of counters.  For example, you
 might have a dataset with \*(lqQuery Type\*(rq along one dimension and
@@ -468,7 +474,7 @@ Count only DNS query messages.  A query is a DNS message
 where the QR bit is set to 0.
 .TP
 \fBreplies-only\fR
-Count only DNS response messages.  A query is a DNS message
+Count only DNS response messages.  A response is a DNS message
 where the QR bit is set to 1.
 .TP
 \fBnxdomains-only\fR
@@ -496,6 +502,12 @@ and \fIversion.bind\fR queries.
 .TP
 \fBpriming-query\fR
 Count only DNS messages where the query type is NS and QNAME is \*(lq.\*(rq.
+.TP
+\fBservfail-only\fR
+Count only SERVFAIL responses.
+.TP
+\fBauthentic-data-only\fR
+Count only DNS messages with the AD bit is set.
 .SH "QNAME FILTERS"
 Defines a custom QNAME-based filter for DNS messages.  If you
 refer to this named filter on a dataset line, then only queries
@@ -743,15 +755,11 @@ dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 #dataset third_ld_vs_rcode dns Rcode:rcode ThirdLD:third_ld replies-only max-cells=50;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
-
-# Datasets for collecting data on priming queries at root nameservers
-#
 #dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
 #dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
-
-# Dataset for monitoring an authoritative nameserver for DNS reflection attack
-#
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
+#dataset servfail_qname dns ALL:null Qname:qname servfail-only,replies-only;
+#dataset ad_qname dns ALL:null Qname:qname authentic-data-only,replies-only;
 
 #statistics_interval 60;
 #no_wait_interval;
@@ -762,6 +770,9 @@ output_format XML;
 #geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";
 #geoip_asn_v4_dat "/usr/share/GeoIP/GeoIPASNum.dat" MEMORY_CACHE;
 #geoip_asn_v6_dat "/usr/share/GeoIP/GeoIPASNumv6.dat" MEMORY_CACHE;
+
+#client_v4_mask 255.255.255.0;
+#client_v6_mask ffff:ffff:ffff:ffff:ffff:ffff:0000:0000;
 .fi
 .SH FILES
 @etcdir@/dsc.conf

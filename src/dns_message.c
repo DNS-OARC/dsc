@@ -176,6 +176,13 @@ nxdomains_only_filter(const void *vp, const void *ctx)
 }
 
 static int
+ad_filter(const void *vp, const void *ctx)
+{
+    const dns_message *m = vp;
+    return m->ad;
+}
+
+static int
 popular_qtypes_filter(const void *vp, const void *ctx)
 {
     const dns_message *m = vp;
@@ -256,6 +263,13 @@ qname_filter(const void *vp, const void *ctx)
     const regex_t *r = ctx;
     const dns_message *m = vp;
     return (0 == regexec(r, m->qname, 0, NULL, 0));
+}
+
+static int
+servfail_filter(const void *vp, const void *ctx)
+{
+    const dns_message *m = vp;
+    return m->rcode == 2;
 }
 
 static indexer_t indexers[] = {
@@ -487,4 +501,6 @@ dns_message_init(void)
     fl = md_array_filter_list_append(fl, md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
 }
