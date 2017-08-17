@@ -43,11 +43,10 @@
 #include "md_array.h"
 static int largest = 0;
 
-int
-qnamelen_indexer(const void *vp)
+int qnamelen_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int i = strlen(m->qname);
+    const dns_message* m = vp;
+    int                i = strlen(m->qname);
     if (m->malformed)
         return -1;
     if (i >= MAX_QNAME_SZ)
@@ -59,8 +58,7 @@ qnamelen_indexer(const void *vp)
 
 static int next_iter;
 
-int
-qnamelen_iterator(char **label)
+int qnamelen_iterator(char** label)
 {
     static char label_buf[10];
     if (NULL == label) {
@@ -74,8 +72,7 @@ qnamelen_iterator(char **label)
     return next_iter++;
 }
 
-void
-qnamelen_reset()
+void qnamelen_reset()
 {
     largest = 0;
 }

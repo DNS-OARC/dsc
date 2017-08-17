@@ -50,10 +50,9 @@
 
 #define LARGEST 2
 
-int
-transport_indexer(const void *vp)
+int transport_indexer(const void* vp)
 {
-    const dns_message *dns = vp;
+    const dns_message* dns = vp;
     if (IPPROTO_UDP == dns->tm->proto)
         return 0;
     if (IPPROTO_TCP == dns->tm->proto)
@@ -63,8 +62,7 @@ transport_indexer(const void *vp)
 
 static int next_iter = 0;
 
-int
-transport_iterator(char **label)
+int transport_iterator(char** label)
 {
     if (NULL == label) {
         next_iter = 0;

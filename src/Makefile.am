@@ -17,7 +17,7 @@ etcdir = $(sysconfdir)/dsc
 etc_DATA = dsc.conf.sample
 
 bin_PROGRAMS = dsc
-dsc_SOURCES = base64.c \
+dsc_SOURCES = ext/base64.c \
     generic_counter.c \
     pcap_layers/pcap_layers.c \
     pcap.c \
@@ -58,7 +58,7 @@ dsc_SOURCES = base64.c \
     dns_source_port_index.c \
     config_hooks.c \
     hashtbl.c \
-    lookup3.c \
+    ext/lookup3.c \
     xmalloc.c \
     inX_addr.c \
     pcap-thread/pcap_thread.c \

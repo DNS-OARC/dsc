@@ -43,10 +43,9 @@
 #include "md_array.h"
 static int largest = 0;
 
-int
-msglen_indexer(const void *vp)
+int msglen_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->msglen > largest)
         largest = m->msglen;
     return m->msglen;
@@ -54,8 +53,7 @@ msglen_indexer(const void *vp)
 
 static int next_iter;
 
-int
-msglen_iterator(char **label)
+int msglen_iterator(char** label)
 {
     static char label_buf[10];
     if (NULL == label) {
@@ -69,8 +67,7 @@ msglen_iterator(char **label)
     return next_iter++;
 }
 
-void
-msglen_reset()
+void msglen_reset()
 {
     largest = 0;
 }

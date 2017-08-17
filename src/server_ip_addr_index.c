@@ -45,20 +45,19 @@
 #include "hashtbl.h"
 
 #define MAX_ARRAY_SZ 65536
-static hashtbl *theHash = NULL;
-static int next_idx = 0;
+static hashtbl* theHash  = NULL;
+static int      next_idx = 0;
 
 typedef struct
 {
     inX_addr addr;
-    int index;
+    int      index;
 } ipaddrobj;
 
-int
-sip_indexer(const void *vp)
+int sip_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    ipaddrobj *obj;
+    const dns_message* m = vp;
+    ipaddrobj*         obj;
     if (m->malformed)
         return -1;
     if (NULL == theHash) {
@@ -71,7 +70,7 @@ sip_indexer(const void *vp)
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
         return -1;
-    obj->addr = m->server_ip_addr;
+    obj->addr  = m->server_ip_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
         afree(obj);
@@ -81,10 +80,9 @@ sip_indexer(const void *vp)
     return obj->index;
 }
 
-int
-sip_iterator(char **label)
+int sip_iterator(char** label)
 {
-    ipaddrobj *obj;
+    ipaddrobj*  obj;
     static char label_buf[128];
     if (0 == next_idx)
         return -1;
@@ -99,9 +97,8 @@ sip_iterator(char **label)
     return obj->index;
 }
 
-void
-sip_reset()
+void sip_reset()
 {
-    theHash = NULL;
+    theHash  = NULL;
     next_idx = 0;
 }

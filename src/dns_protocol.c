@@ -55,36 +55,36 @@
 #define RFC1035_MAXLABELSZ 63
 
 static int
-rfc1035NameUnpack(const u_char * buf, size_t sz, off_t * off, char *name, int ns)
+rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* name, int ns)
 {
-    off_t no = 0;
+    off_t         no = 0;
     unsigned char c;
-    size_t len;
-    static int loop_detect = 0;
+    size_t        len;
+    static int    loop_detect = 0;
     if (loop_detect > 2)
-        return 4;                /* compression loop */
+        return 4; /* compression loop */
     if (ns <= 0)
-        return 4;                /* probably compression loop */
+        return 4; /* probably compression loop */
     do {
         if ((*off) >= sz)
             break;
         c = *(buf + (*off));
         if (c > 191) {
             /* blasted compression */
-            int rc;
+            int            rc;
             unsigned short s;
-            off_t ptr;
+            off_t          ptr;
             s = nptohs(buf + (*off));
             (*off) += sizeof(s);
             /* Sanity check */
             if ((*off) >= sz)
-                return 1;        /* message too short */
+                return 1; /* message too short */
             ptr = s & 0x3FFF;
             /* Make sure the pointer is inside this message */
             if (ptr >= sz)
-                return 2;        /* bad compression ptr */
+                return 2; /* bad compression ptr */
             if (ptr < DNS_MSG_HDR_SZ)
-                return 2;        /* bad compression ptr */
+                return 2; /* bad compression ptr */
             loop_detect++;
             rc = rfc1035NameUnpack(buf, sz, &ptr, name + no, ns - no);
             loop_detect--;
@@ -93,19 +93,19 @@ rfc1035NameUnpack(const u_char * buf, size_t sz, off_t * off, char *name, int ns
             /*
              * "(The 10 and 01 combinations are reserved for future use.)"
              */
-            return 3;                /* reserved label/compression flags */
+            return 3; /* reserved label/compression flags */
             break;
         } else {
             (*off)++;
-            len = (size_t) c;
+            len = (size_t)c;
             if (len == 0)
                 break;
             if (len > (ns - 1))
                 len = ns - 1;
             if ((*off) + len > sz)
-                return 4;        /* message is too short */
+                return 4; /* message is too short */
             if (no + len + 1 > ns)
-                return 5;        /* qname would overflow name buffer */
+                return 5; /* qname would overflow name buffer */
             memcpy(name + no, buf + (*off), len);
             (*off) += len;
             no += len;
@@ -120,10 +120,10 @@ rfc1035NameUnpack(const u_char * buf, size_t sz, off_t * off, char *name, int ns
 }
 
 static off_t
-grok_question(const u_char * buf, int len, off_t offset, char *qname, unsigned short *qtype, unsigned short *qclass)
+grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned short* qtype, unsigned short* qclass)
 {
-    char *t;
-    int x;
+    char* t;
+    int   x;
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
     if (0 != x)
         return 0;
@@ -138,33 +138,33 @@ grok_question(const u_char * buf, int len, off_t offset, char *qname, unsigned s
         *t = tolower(*t);
     if (offset + 4 > len)
         return 0;
-    *qtype = nptohs(buf + offset);
+    *qtype  = nptohs(buf + offset);
     *qclass = nptohs(buf + offset + 2);
     offset += 4;
     return offset;
 }
 
 static off_t
-grok_additional_for_opt_rr(const u_char * buf, int len, off_t offset, dns_message * m)
+grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
 {
-    int x;
+    int            x;
     unsigned short sometype;
     unsigned short someclass;
     unsigned short us;
-    char somename[MAX_QNAME_SZ];
+    char           somename[MAX_QNAME_SZ];
     x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
     if (0 != x)
         return 0;
     if (offset + 10 > len)
         return 0;
-    sometype = nptohs(buf + offset);
+    sometype  = nptohs(buf + offset);
     someclass = nptohs(buf + offset + 2);
     if (sometype == T_OPT) {
-        m->edns.found = 1;
+        m->edns.found  = 1;
         m->edns.bufsiz = someclass;
         memcpy(&m->edns.version, buf + offset + 5, 1);
-        us = nptohs(buf + offset + 6);
-        m->edns.DO = (us >> 15) & 0x01;        /* RFC 3225 */
+        us         = nptohs(buf + offset + 6);
+        m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
     }
     /* get rdlength */
     us = nptohs(buf + offset + 8);
@@ -175,13 +175,12 @@ grok_additional_for_opt_rr(const u_char * buf, int len, off_t offset, dns_messag
     return offset;
 }
 
-void
-dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
+void dns_protocol_handler(const u_char* buf, uint16_t len, void* udata)
 {
-    transport_message *tm = udata;
-    unsigned short us;
-    off_t offset;
-    int qdcount;
+    transport_message* tm = udata;
+    unsigned short     us;
+    off_t              offset;
+    int                qdcount;
     /* int ancount; */
     /* int nscount; */
     int arcount;
@@ -189,27 +188,27 @@ dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
     dns_message m;
 
     memset(&m, 0, sizeof(dns_message));
-    m.tm = tm;
+    m.tm     = tm;
     m.msglen = len;
 
     if (len < DNS_MSG_HDR_SZ) {
         m.malformed = 1;
         return;
     }
-    us = nptohs(buf + 2);
+    us   = nptohs(buf + 2);
     m.qr = (us >> 15) & 0x01;
-    if (0 == m.qr) {                /* query */
+    if (0 == m.qr) { /* query */
         m.client_ip_addr = m.tm->src_ip_addr;
         m.server_ip_addr = m.tm->dst_ip_addr;
-    } else {                        /* reply */
+    } else { /* reply */
         m.client_ip_addr = m.tm->dst_ip_addr;
         m.server_ip_addr = m.tm->src_ip_addr;
     }
 
     m.opcode = (us >> 11) & 0x0F;
-    m.aa = (us >> 10) & 0x01;
-    m.tc = (us >> 9) & 0x01;
-    m.rd = (us >> 8) & 0x01;
+    m.aa     = (us >> 10) & 0x01;
+    m.tc     = (us >> 9) & 0x01;
+    m.rd     = (us >> 8) & 0x01;
     /* m.ra = (us >> 7) & 0x01; */
     /* m.z  = (us >> 6) & 0x01; */
     m.ad = (us >> 5) & 0x01;
@@ -242,8 +241,8 @@ dns_protocol_handler(const u_char * buf, uint16_t len, void *udata)
      * Gobble up subsequent questions, if any
      */
     while (qdcount > 0 && offset < len) {
-        off_t new_offset;
-        char t_qname[MAX_QNAME_SZ];
+        off_t          new_offset;
+        char           t_qname[MAX_QNAME_SZ];
         unsigned short t_qtype;
         unsigned short t_qclass;
         new_offset = grok_question(buf, len, offset, t_qname, &t_qtype, &t_qclass);

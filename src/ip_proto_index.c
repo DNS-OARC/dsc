@@ -45,12 +45,11 @@
 
 static int largest = 0;
 
-int
-ip_proto_indexer(const void *vp)
+int ip_proto_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    const transport_message *tm = m->tm;
-    int i = (int) tm->proto;
+    const dns_message*       m  = vp;
+    const transport_message* tm = m->tm;
+    int                      i  = (int)tm->proto;
     if (i > largest)
         largest = i;
     return i;
@@ -58,8 +57,7 @@ ip_proto_indexer(const void *vp)
 
 static int next_iter = 0;
 
-int
-ip_proto_iterator(char **label)
+int ip_proto_iterator(char** label)
 {
     static char label_buf[20];
 #if __OpenBSD__
@@ -67,8 +65,8 @@ ip_proto_iterator(char **label)
 #else
     char buf[1024];
 #endif
-    struct protoent proto;
-    struct protoent *p;
+    struct protoent  proto;
+    struct protoent* p;
     if (NULL == label) {
         next_iter = 0;
         return largest + 1;
@@ -89,8 +87,7 @@ ip_proto_iterator(char **label)
     return next_iter++;
 }
 
-void
-ip_proto_reset()
+void ip_proto_reset()
 {
     largest = 0;
 }

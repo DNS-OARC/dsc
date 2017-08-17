@@ -44,25 +44,23 @@
 
 int edns_bufsiz_max = 0;
 
-int
-edns_bufsiz_indexer(const void *vp)
+int edns_bufsiz_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int index;
+    const dns_message* m = vp;
+    int                index;
     if (m->malformed)
         return -1;
     if (0 == m->edns.found)
         return 0;
-    index = (int) (m->edns.bufsiz >> 9) + 1;
+    index = (int)(m->edns.bufsiz >> 9) + 1;
     if (index > edns_bufsiz_max)
         edns_bufsiz_max = index;
     return index;
 }
 
-int
-edns_bufsiz_iterator(char **label)
+int edns_bufsiz_iterator(char** label)
 {
-    static int next_iter = 0;
+    static int  next_iter = 0;
     static char buf[20];
     if (NULL == label) {
         next_iter = 0;

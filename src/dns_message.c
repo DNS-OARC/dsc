@@ -53,7 +53,6 @@
 #define T_A6 38
 #endif
 
-
 #include "config.h"
 #include "xmalloc.h"
 #include "dns_message.h"
@@ -92,15 +91,15 @@
 
 #include "syslog_debug.h"
 
-extern int debug_flag;
-static md_array_list *Arrays = NULL;
-static filter_list *DNSFilters = NULL;
+extern int            debug_flag;
+static md_array_list* Arrays     = NULL;
+static filter_list*   DNSFilters = NULL;
 
-static const char *
-printable_dnsname(const char *name)
+static const char*
+printable_dnsname(const char* name)
 {
     static char buf[MAX_QNAME_SZ];
-    int i;
+    int         i;
 
     for (i = 0; i < sizeof(buf) - 1; name++) {
         if (!*name)
@@ -110,8 +109,8 @@ printable_dnsname(const char *name)
             i++;
         } else {
             if (i + 3 > MAX_QNAME_SZ - 1)
-                break;                /* expanded character would overflow buffer */
-            sprintf(buf + i, "%%%02x", (unsigned char) *name);
+                break; /* expanded character would overflow buffer */
+            sprintf(buf + i, "%%%02x", (unsigned char)*name);
             i += 3;
         }
     }
@@ -119,8 +118,7 @@ printable_dnsname(const char *name)
     return buf;
 }
 
-void
-dns_message_print(dns_message * m)
+void dns_message_print(dns_message* m)
 {
     char buf[128];
     inXaddr_ntop(&m->client_ip_addr, buf, 128);
@@ -140,13 +138,12 @@ dns_message_print(dns_message * m)
 }
 
 #if DROP_RECV_RESPOSNE
-extern int ip_is_local(const inX_addr *);
+extern int ip_is_local(const inX_addr*);
 #endif
 
-void
-dns_message_handle(dns_message * m)
+void dns_message_handle(dns_message* m)
 {
-    md_array_list *a;
+    md_array_list* a;
     if (debug_flag > 1)
         dns_message_print(m);
 #if DROP_RECV_RESPOSNE
@@ -162,30 +159,30 @@ dns_message_handle(dns_message * m)
 }
 
 static int
-queries_only_filter(const void *vp, const void *ctx)
+queries_only_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return m->qr ? 0 : 1;
 }
 
 static int
-nxdomains_only_filter(const void *vp, const void *ctx)
+nxdomains_only_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return m->rcode == 3;
 }
 
 static int
-ad_filter(const void *vp, const void *ctx)
+ad_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return m->ad;
 }
 
 static int
-popular_qtypes_filter(const void *vp, const void *ctx)
+popular_qtypes_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     switch (m->qtype) {
     case 1:
     case 2:
@@ -205,9 +202,9 @@ popular_qtypes_filter(const void *vp, const void *ctx)
 }
 
 static int
-aaaa_or_a6_filter(const void *vp, const void *ctx)
+aaaa_or_a6_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     switch (m->qtype) {
     case T_AAAA:
     case T_A6:
@@ -219,30 +216,30 @@ aaaa_or_a6_filter(const void *vp, const void *ctx)
 }
 
 static int
-idn_qname_filter(const void *vp, const void *ctx)
+idn_qname_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return (0 == strncmp(m->qname, "xn--", 4));
 }
 
 static int
-root_servers_net_filter(const void *vp, const void *ctx)
+root_servers_net_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return (0 == strcmp(m->qname + 1, ".root-servers.net"));
 }
 
 static int
-chaos_class_filter(const void *vp, const void *ctx)
+chaos_class_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return m->qclass == C_CHAOS;
 }
 
 static int
-priming_query_filter(const void *vp, const void *ctx)
+priming_query_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->qtype != T_NS)
         return 0;
     if (0 != strcmp(m->qname, "."))
@@ -251,72 +248,74 @@ priming_query_filter(const void *vp, const void *ctx)
 }
 
 static int
-replies_only_filter(const void *vp, const void *ctx)
+replies_only_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return m->qr ? 1 : 0;
 }
 
 static int
-qname_filter(const void *vp, const void *ctx)
+qname_filter(const void* vp, const void* ctx)
 {
-    const regex_t *r = ctx;
-    const dns_message *m = vp;
+    const regex_t*     r = ctx;
+    const dns_message* m = vp;
     return (0 == regexec(r, m->qname, 0, NULL, 0));
 }
 
 static int
-servfail_filter(const void *vp, const void *ctx)
+servfail_filter(const void* vp, const void* ctx)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     return m->rcode == 2;
 }
 
 static indexer_t indexers[] = {
-    {"client", cip_indexer, cip_iterator, cip_reset},
-    {"server", sip_indexer, sip_iterator, sip_reset},
+    { "client", cip_indexer, cip_iterator, cip_reset },
+    { "server", sip_indexer, sip_iterator, sip_reset },
 #if HAVE_LIBGEOIP
-    {"country", country_indexer, country_iterator, country_reset},
-    {"asn", asn_indexer, asn_iterator, asn_reset},
+    { "country", country_indexer, country_iterator, country_reset },
+    { "asn", asn_indexer, asn_iterator, asn_reset },
 #endif
-    {"client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset},
-    {"null", null_indexer, null_iterator, NULL},
-    {"qclass", qclass_indexer, qclass_iterator, qclass_reset},
-    {"qnamelen", qnamelen_indexer, qnamelen_iterator, qnamelen_reset},
-    {"qname", qname_indexer, qname_iterator, qname_reset},
-    {"second_ld", second_ld_indexer, second_ld_iterator, second_ld_reset},
-    {"third_ld", third_ld_indexer, third_ld_iterator, third_ld_reset},
-    {"msglen", msglen_indexer, msglen_iterator, msglen_reset},
-    {"qtype", qtype_indexer, qtype_iterator, qtype_reset},
-    {"rcode", rcode_indexer, rcode_iterator, rcode_reset},
-    {"tld", tld_indexer, tld_iterator, tld_reset},
-    {"certain_qnames", certain_qnames_indexer, certain_qnames_iterator, NULL},
-    {"query_classification", query_classification_indexer, query_classification_iterator, NULL},
-    {"idn_qname", idn_qname_indexer, idn_qname_iterator, NULL},
-    {"edns_version", edns_version_indexer, edns_version_iterator, NULL},
-    {"edns_bufsiz", edns_bufsiz_indexer, edns_bufsiz_iterator, NULL},
-    {"do_bit", do_bit_indexer, do_bit_iterator, NULL},
-    {"rd_bit", rd_bit_indexer, rd_bit_iterator, NULL},
-    {"tc_bit", tc_bit_indexer, tc_bit_iterator, NULL},
-    {"opcode", opcode_indexer, opcode_iterator, opcode_reset},
-    {"transport", transport_indexer, transport_iterator, NULL},
-    {"dns_ip_version", dns_ip_version_indexer, dns_ip_version_iterator, dns_ip_version_reset},
-    {"dns_source_port", dns_source_port_indexer, dns_source_port_iterator, dns_source_port_reset},
-    {"dns_sport_range", dns_sport_range_indexer, dns_sport_range_iterator, dns_sport_range_reset},
-    {"qr_aa_bits", qr_aa_bits_indexer, qr_aa_bits_iterator, NULL,},
+    { "client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset },
+    { "null", null_indexer, null_iterator, NULL },
+    { "qclass", qclass_indexer, qclass_iterator, qclass_reset },
+    { "qnamelen", qnamelen_indexer, qnamelen_iterator, qnamelen_reset },
+    { "qname", qname_indexer, qname_iterator, qname_reset },
+    { "second_ld", second_ld_indexer, second_ld_iterator, second_ld_reset },
+    { "third_ld", third_ld_indexer, third_ld_iterator, third_ld_reset },
+    { "msglen", msglen_indexer, msglen_iterator, msglen_reset },
+    { "qtype", qtype_indexer, qtype_iterator, qtype_reset },
+    { "rcode", rcode_indexer, rcode_iterator, rcode_reset },
+    { "tld", tld_indexer, tld_iterator, tld_reset },
+    { "certain_qnames", certain_qnames_indexer, certain_qnames_iterator, NULL },
+    { "query_classification", query_classification_indexer, query_classification_iterator, NULL },
+    { "idn_qname", idn_qname_indexer, idn_qname_iterator, NULL },
+    { "edns_version", edns_version_indexer, edns_version_iterator, NULL },
+    { "edns_bufsiz", edns_bufsiz_indexer, edns_bufsiz_iterator, NULL },
+    { "do_bit", do_bit_indexer, do_bit_iterator, NULL },
+    { "rd_bit", rd_bit_indexer, rd_bit_iterator, NULL },
+    { "tc_bit", tc_bit_indexer, tc_bit_iterator, NULL },
+    { "opcode", opcode_indexer, opcode_iterator, opcode_reset },
+    { "transport", transport_indexer, transport_iterator, NULL },
+    { "dns_ip_version", dns_ip_version_indexer, dns_ip_version_iterator, dns_ip_version_reset },
+    { "dns_source_port", dns_source_port_indexer, dns_source_port_iterator, dns_source_port_reset },
+    { "dns_sport_range", dns_sport_range_indexer, dns_sport_range_iterator, dns_sport_range_reset },
+    {
+        "qr_aa_bits", qr_aa_bits_indexer, qr_aa_bits_iterator, NULL,
+    },
 
     /* these used to be "IP" indexers */
 
-    {"ip_direction", ip_direction_indexer, ip_direction_iterator, NULL},
-    {"ip_proto", ip_proto_indexer, ip_proto_iterator, ip_proto_reset},
-    {"ip_version", ip_version_indexer, ip_version_iterator, ip_version_reset},
-    {NULL, NULL, NULL, NULL}
+    { "ip_direction", ip_direction_indexer, ip_direction_iterator, NULL },
+    { "ip_proto", ip_proto_indexer, ip_proto_iterator, ip_proto_reset },
+    { "ip_version", ip_version_indexer, ip_version_iterator, ip_version_reset },
+    { NULL, NULL, NULL, NULL }
 };
 
-static indexer_t *
-dns_message_find_indexer(const char *in)
+static indexer_t*
+dns_message_find_indexer(const char* in)
 {
-    indexer_t *indexer;
+    indexer_t* indexer;
     for (indexer = indexers; indexer->name; indexer++) {
         if (0 == strcmp(in, indexer->name))
             return indexer;
@@ -326,12 +325,12 @@ dns_message_find_indexer(const char *in)
 }
 
 static int
-dns_message_find_filters(const char *fn, filter_list ** fl)
+dns_message_find_filters(const char* fn, filter_list** fl)
 {
-    char *tok = 0;
-    char *t;
-    char *copy = xstrdup(fn);
-    filter_list *f;
+    char*        tok = 0;
+    char*        t;
+    char*        copy = xstrdup(fn);
+    filter_list* f;
     if (NULL == copy)
         return 0;
     for (t = strtok_r(copy, ",", &tok); t; t = strtok_r(NULL, ",", &tok)) {
@@ -353,15 +352,14 @@ dns_message_find_filters(const char *fn, filter_list ** fl)
     return 1;
 }
 
-int
-add_qname_filter(const char *name, const char *pat)
+int add_qname_filter(const char* name, const char* pat)
 {
-    filter_list **fl = &DNSFilters;
-    regex_t *r;
-    int x;
+    filter_list** fl = &DNSFilters;
+    regex_t*      r;
+    int           x;
     while ((*fl))
         fl = &((*fl)->next);
-    r = xcalloc(1, sizeof(*r));
+    r      = xcalloc(1, sizeof(*r));
     if (NULL == r) {
         dsyslogf(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
         return 0;
@@ -375,13 +373,12 @@ add_qname_filter(const char *name, const char *pat)
     return 1;
 }
 
-int
-dns_message_add_array(const char *name, const char *fn, const char *fi,
-    const char *sn, const char *si, const char *f, dataset_opt opts)
+int dns_message_add_array(const char* name, const char* fn, const char* fi,
+    const char* sn, const char* si, const char* f, dataset_opt opts)
 {
-    filter_list *filters = NULL;
-    indexer_t *indexer1, *indexer2;
-    md_array_list *a;
+    filter_list*   filters = NULL;
+    indexer_t *    indexer1, *indexer2;
+    md_array_list* a;
 
     if (NULL == (indexer1 = dns_message_find_indexer(fi)))
         return 0;
@@ -404,23 +401,21 @@ dns_message_add_array(const char *name, const char *fn, const char *fi,
     a->theArray->opts = opts;
     assert(a->theArray);
     a->next = Arrays;
-    Arrays = a;
+    Arrays  = a;
     return 1;
 }
 
-void
-dns_message_report(FILE *fp, md_array_printer *printer)
+void dns_message_report(FILE* fp, md_array_printer* printer)
 {
-    md_array_list *a;
+    md_array_list* a;
     for (a = Arrays; a; a = a->next) {
         md_array_print(a->theArray, printer, fp);
     }
 }
 
-void
-dns_message_clear_arrays(void)
+void dns_message_clear_arrays(void)
 {
-    md_array_list *a;
+    md_array_list* a;
     for (a = Arrays; a; a = a->next)
         md_array_clear(a->theArray);
 }
@@ -452,13 +447,13 @@ dns_message_clear_arrays(void)
  *        assert(0 == strcmp(QnameToNld("a.b..c..d", 2), "c..d"));
  *        assert(0 == strcmp(QnameToNld("a.b................c..d", 3), "b................c..d"));
  */
-const char *
-dns_message_QnameToNld(const char *qname, int nld)
+const char*
+dns_message_QnameToNld(const char* qname, int nld)
 {
-    const char *e = qname + strlen(qname) - 1;
-    const char *t;
-    int dotcount = 0;
-    int state = 0;                /* 0 = not in dots, 1 = in dots */
+    const char* e = qname + strlen(qname) - 1;
+    const char* t;
+    int         dotcount = 0;
+    int         state    = 0; /* 0 = not in dots, 1 = in dots */
     while (*e == '.' && e > qname)
         e--;
     t = e;
@@ -479,28 +474,26 @@ dns_message_QnameToNld(const char *qname, int nld)
     return t;
 }
 
-const char *
-dns_message_tld(dns_message * m)
+const char*
+dns_message_tld(dns_message* m)
 {
     if (NULL == m->tld)
         m->tld = dns_message_QnameToNld(m->qname, 1);
     return m->tld;
 }
 
-
-void
-dns_message_init(void)
+void dns_message_init(void)
 {
-    filter_list **fl = &DNSFilters;
-    fl = md_array_filter_list_append(fl, md_array_create_filter("queries-only", queries_only_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("replies-only", replies_only_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("nxdomains-only", nxdomains_only_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("idn-only", idn_qname_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
-    fl = md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
+    filter_list** fl = &DNSFilters;
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("queries-only", queries_only_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("replies-only", replies_only_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("nxdomains-only", nxdomains_only_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("idn-only", idn_qname_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
+    fl               = md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
 }

@@ -52,12 +52,12 @@
 #include "compat.h"
 #include "client_ip_net_index.h"
 
-#define PARSE_CONF_EINVAL   -2
-#define PARSE_CONF_ERROR    -1
-#define PARSE_CONF_OK       0
-#define PARSE_CONF_LAST     1
-#define PARSE_CONF_COMMENT  2
-#define PARSE_CONF_EMPTY    3
+#define PARSE_CONF_EINVAL -2
+#define PARSE_CONF_ERROR -1
+#define PARSE_CONF_OK 0
+#define PARSE_CONF_LAST 1
+#define PARSE_CONF_COMMENT 2
+#define PARSE_CONF_EMPTY 3
 
 #define PARSE_MAX_ARGS 64
 
@@ -73,19 +73,20 @@ enum conf_token_type {
 
 typedef struct conf_token conf_token_t;
 struct conf_token {
-    conf_token_type_t   type;
-    const char*         token;
-    size_t              length;
+    conf_token_type_t type;
+    const char*       token;
+    size_t            length;
 };
 
 typedef struct conf_token_syntax conf_token_syntax_t;
 struct conf_token_syntax {
-    const char*             token;
-    int                     (*parse)(const conf_token_t* tokens);
+    const char* token;
+    int (*parse)(const conf_token_t* tokens);
     const conf_token_type_t syntax[PARSE_MAX_ARGS];
 };
 
-int parse_conf_token(char** conf, size_t* length, conf_token_t* token) {
+int parse_conf_token(char** conf, size_t* length, conf_token_t* token)
+{
     int quoted = 0, end = 0;
 
     if (!conf || !*conf || !length || !token) {
@@ -106,21 +107,19 @@ int parse_conf_token(char** conf, size_t* length, conf_token_t* token) {
         (*conf)++;
         (*length)--;
         token->type = TOKEN_STRING;
-    }
-    else {
+    } else {
         token->type = TOKEN_NUMBER;
     }
 
-    token->token = *conf;
+    token->token  = *conf;
     token->length = 0;
 
     for (; **conf && length; (*conf)++, (*length)--) {
         if (quoted && **conf == '"') {
-            end = 1;
+            end    = 1;
             quoted = 0;
             continue;
-        }
-        else if ((!quoted || end) && (**conf == ' ' || **conf == '\t' || **conf == ';')) {
+        } else if ((!quoted || end) && (**conf == ' ' || **conf == '\t' || **conf == ';')) {
             while (length && (**conf == ' ' || **conf == '\t')) {
                 (*conf)++;
                 (*length)--;
@@ -129,8 +128,7 @@ int parse_conf_token(char** conf, size_t* length, conf_token_t* token) {
                 return PARSE_CONF_LAST;
             }
             return PARSE_CONF_OK;
-        }
-        else if (end || **conf == '\n' || **conf == '\r' || !**conf) {
+        } else if (end || **conf == '\n' || **conf == '\r' || !**conf) {
             return PARSE_CONF_ERROR;
         }
 
@@ -144,9 +142,10 @@ int parse_conf_token(char** conf, size_t* length, conf_token_t* token) {
     return PARSE_CONF_ERROR;
 }
 
-int parse_conf_interface(const conf_token_t* tokens) {
+int parse_conf_interface(const conf_token_t* tokens)
+{
     char* interface = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!interface) {
         errno = ENOMEM;
@@ -158,9 +157,10 @@ int parse_conf_interface(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_run_dir(const conf_token_t* tokens) {
+int parse_conf_run_dir(const conf_token_t* tokens)
+{
     char* run_dir = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!run_dir) {
         errno = ENOMEM;
@@ -172,9 +172,10 @@ int parse_conf_run_dir(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_minfree_bytes(const conf_token_t* tokens) {
+int parse_conf_minfree_bytes(const conf_token_t* tokens)
+{
     char* minfree_bytes = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!minfree_bytes) {
         errno = ENOMEM;
@@ -186,9 +187,10 @@ int parse_conf_minfree_bytes(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_pid_file(const conf_token_t* tokens) {
+int parse_conf_pid_file(const conf_token_t* tokens)
+{
     char* pid_file = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!pid_file) {
         errno = ENOMEM;
@@ -200,9 +202,10 @@ int parse_conf_pid_file(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_statistics_interval(const conf_token_t* tokens) {
+int parse_conf_statistics_interval(const conf_token_t* tokens)
+{
     char* statistics_interval = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!statistics_interval) {
         errno = ENOMEM;
@@ -214,10 +217,11 @@ int parse_conf_statistics_interval(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_local_address(const conf_token_t* tokens) {
+int parse_conf_local_address(const conf_token_t* tokens)
+{
     char* local_address = strndup(tokens[1].token, tokens[1].length);
-    char* local_mask = 0;
-    int ret;
+    char* local_mask    = 0;
+    int   ret;
 
     if (!local_address) {
         errno = ENOMEM;
@@ -235,9 +239,10 @@ int parse_conf_local_address(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_bpf_program(const conf_token_t* tokens) {
+int parse_conf_bpf_program(const conf_token_t* tokens)
+{
     char* bpf_program = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!bpf_program) {
         errno = ENOMEM;
@@ -249,17 +254,18 @@ int parse_conf_bpf_program(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_dataset(const conf_token_t* tokens) {
-    char* name = strndup(tokens[1].token, tokens[1].length);
-    char* layer = strndup(tokens[2].token, tokens[2].length);
-    char* dim1_name = strndup(tokens[3].token, tokens[3].length);
-    char* dim1_indexer;
-    char* dim2_name = strndup(tokens[4].token, tokens[4].length);
-    char* dim2_indexer;
-    char* filter = strndup(tokens[5].token, tokens[5].length);
-    int ret;
+int parse_conf_dataset(const conf_token_t* tokens)
+{
+    char*       name      = strndup(tokens[1].token, tokens[1].length);
+    char*       layer     = strndup(tokens[2].token, tokens[2].length);
+    char*       dim1_name = strndup(tokens[3].token, tokens[3].length);
+    char*       dim1_indexer;
+    char*       dim2_name = strndup(tokens[4].token, tokens[4].length);
+    char*       dim2_indexer;
+    char*       filter = strndup(tokens[5].token, tokens[5].length);
+    int         ret;
     dataset_opt opts;
-    size_t i;
+    size_t      i;
 
     if (!name || !layer || !dim1_name || !dim2_name || !filter) {
         free(name);
@@ -271,8 +277,8 @@ int parse_conf_dataset(const conf_token_t* tokens) {
         return -1;
     }
 
-    opts.min_count = 0;	// min cell count to report
-    opts.max_cells = 0;	// max 2nd dim cells to print
+    opts.min_count = 0; // min cell count to report
+    opts.max_cells = 0; // max 2nd dim cells to print
 
     for (i = 6; tokens[i].type != TOKEN_END; i++) {
         char* opt = strndup(tokens[i].token, tokens[i].length);
@@ -281,25 +287,20 @@ int parse_conf_dataset(const conf_token_t* tokens) {
 
         if (!opt) {
             errno = ENOMEM;
-            ret = -1;
-        }
-        else if (!(arg = strchr(opt, '='))) {
+            ret   = -1;
+        } else if (!(arg = strchr(opt, '='))) {
             ret = 1;
-        }
-        else {
+        } else {
             *arg = 0;
             arg++;
 
             if (!*arg) {
                 ret = 1;
-            }
-            else if (!strcmp(opt, "min-count")) {
+            } else if (!strcmp(opt, "min-count")) {
                 opts.min_count = atoi(arg);
-            }
-            else if (!strcmp(opt, "max-cells")) {
+            } else if (!strcmp(opt, "max-cells")) {
                 opts.max_cells = atoi(arg);
-            }
-            else {
+            } else {
                 ret = 1;
             }
         }
@@ -316,11 +317,9 @@ int parse_conf_dataset(const conf_token_t* tokens) {
     }
 
     if (!(dim1_indexer = strchr(dim1_name, ':'))
-        || !(dim2_indexer = strchr(dim2_name, ':')))
-    {
+        || !(dim2_indexer = strchr(dim2_name, ':'))) {
         ret = 1;
-    }
-    else {
+    } else {
         *dim1_indexer = *dim2_indexer = 0;
         dim1_indexer++;
         dim2_indexer++;
@@ -334,9 +333,10 @@ int parse_conf_dataset(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_bpf_vlan_tag_byte_order(const conf_token_t* tokens) {
+int parse_conf_bpf_vlan_tag_byte_order(const conf_token_t* tokens)
+{
     char* bpf_vlan_tag_byte_order = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!bpf_vlan_tag_byte_order) {
         errno = ENOMEM;
@@ -348,9 +348,10 @@ int parse_conf_bpf_vlan_tag_byte_order(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_output_format(const conf_token_t* tokens) {
+int parse_conf_output_format(const conf_token_t* tokens)
+{
     char* output_format = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!output_format) {
         errno = ENOMEM;
@@ -362,8 +363,9 @@ int parse_conf_output_format(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_match_vlan(const conf_token_t* tokens) {
-    int ret = 0;
+int parse_conf_match_vlan(const conf_token_t* tokens)
+{
+    int    ret = 0;
     size_t i;
 
     for (i = 1; tokens[i].type != TOKEN_END; i++) {
@@ -384,10 +386,11 @@ int parse_conf_match_vlan(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_qname_filter(const conf_token_t* tokens) {
+int parse_conf_qname_filter(const conf_token_t* tokens)
+{
     char* name = strndup(tokens[1].token, tokens[1].length);
-    char* re = strndup(tokens[2].token, tokens[2].length);
-    int ret;
+    char* re   = strndup(tokens[2].token, tokens[2].length);
+    int   ret;
 
     if (!name || !re) {
         free(name);
@@ -402,32 +405,29 @@ int parse_conf_qname_filter(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_dump_reports_on_exit(const conf_token_t* tokens) {
+int parse_conf_dump_reports_on_exit(const conf_token_t* tokens)
+{
     set_dump_reports_on_exit();
     return 0;
 }
 
 #if HAVE_LIBGEOIP
-int parse_conf_geoip_options(const conf_token_t* tokens, int* options) {
+int parse_conf_geoip_options(const conf_token_t* tokens, int* options)
+{
     size_t i;
 
     for (i = 2; tokens[i].type != TOKEN_END; i++) {
         if (!strncmp(tokens[i].token, "STANDARD", tokens[i].length)) {
             *options |= GEOIP_STANDARD;
-        }
-        else if (!strncmp(tokens[i].token, "MEMORY_CACHE", tokens[i].length)) {
+        } else if (!strncmp(tokens[i].token, "MEMORY_CACHE", tokens[i].length)) {
             *options |= GEOIP_MEMORY_CACHE;
-        }
-        else if (!strncmp(tokens[i].token, "CHECK_CACHE", tokens[i].length)) {
+        } else if (!strncmp(tokens[i].token, "CHECK_CACHE", tokens[i].length)) {
             *options |= GEOIP_CHECK_CACHE;
-        }
-        else if (!strncmp(tokens[i].token, "INDEX_CACHE", tokens[i].length)) {
+        } else if (!strncmp(tokens[i].token, "INDEX_CACHE", tokens[i].length)) {
             *options |= GEOIP_INDEX_CACHE;
-        }
-        else if (!strncmp(tokens[i].token, "MMAP_CACHE", tokens[i].length)) {
+        } else if (!strncmp(tokens[i].token, "MMAP_CACHE", tokens[i].length)) {
             *options |= GEOIP_MMAP_CACHE;
-        }
-        else {
+        } else {
             return 1;
         }
     }
@@ -436,9 +436,10 @@ int parse_conf_geoip_options(const conf_token_t* tokens, int* options) {
 }
 #endif
 
-int parse_conf_geoip_v4_dat(const conf_token_t* tokens) {
+int parse_conf_geoip_v4_dat(const conf_token_t* tokens)
+{
     char* geoip_v4_dat = strndup(tokens[1].token, tokens[1].length);
-    int ret, options = 0;
+    int   ret, options = 0;
 
     if (!geoip_v4_dat) {
         errno = ENOMEM;
@@ -457,9 +458,10 @@ int parse_conf_geoip_v4_dat(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_geoip_v6_dat(const conf_token_t* tokens) {
+int parse_conf_geoip_v6_dat(const conf_token_t* tokens)
+{
     char* geoip_v6_dat = strndup(tokens[1].token, tokens[1].length);
-    int ret, options = 0;
+    int   ret, options = 0;
 
     if (!geoip_v6_dat) {
         errno = ENOMEM;
@@ -478,9 +480,10 @@ int parse_conf_geoip_v6_dat(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_geoip_asn_v4_dat(const conf_token_t* tokens) {
+int parse_conf_geoip_asn_v4_dat(const conf_token_t* tokens)
+{
     char* geoip_asn_v4_dat = strndup(tokens[1].token, tokens[1].length);
-    int ret, options = 0;
+    int   ret, options = 0;
 
     if (!geoip_asn_v4_dat) {
         errno = ENOMEM;
@@ -499,9 +502,10 @@ int parse_conf_geoip_asn_v4_dat(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens) {
+int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens)
+{
     char* geoip_asn_v6_dat = strndup(tokens[1].token, tokens[1].length);
-    int ret, options = 0;
+    int   ret, options = 0;
 
     if (!geoip_asn_v6_dat) {
         errno = ENOMEM;
@@ -520,9 +524,10 @@ int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_pcap_buffer_size(const conf_token_t* tokens) {
+int parse_conf_pcap_buffer_size(const conf_token_t* tokens)
+{
     char* pcap_buffer_size = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!pcap_buffer_size) {
         errno = ENOMEM;
@@ -534,14 +539,16 @@ int parse_conf_pcap_buffer_size(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_no_wait_interval(const conf_token_t* tokens) {
+int parse_conf_no_wait_interval(const conf_token_t* tokens)
+{
     set_no_wait_interval();
     return 0;
 }
 
-int parse_conf_pcap_thread_timeout(const conf_token_t* tokens) {
+int parse_conf_pcap_thread_timeout(const conf_token_t* tokens)
+{
     char* timeout = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!timeout) {
         errno = ENOMEM;
@@ -553,14 +560,16 @@ int parse_conf_pcap_thread_timeout(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_drop_ip_fragments(const conf_token_t* tokens) {
+int parse_conf_drop_ip_fragments(const conf_token_t* tokens)
+{
     set_drop_ip_fragments();
     return 0;
 }
 
-int parse_conf_client_v4_mask(const conf_token_t* tokens) {
+int parse_conf_client_v4_mask(const conf_token_t* tokens)
+{
     char* mask = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!mask) {
         errno = ENOMEM;
@@ -572,9 +581,10 @@ int parse_conf_client_v4_mask(const conf_token_t* tokens) {
     return ret == 1 ? 0 : 1;
 }
 
-int parse_conf_client_v6_mask(const conf_token_t* tokens) {
+int parse_conf_client_v6_mask(const conf_token_t* tokens)
+{
     char* mask = strndup(tokens[1].token, tokens[1].length);
-    int ret;
+    int   ret;
 
     if (!mask) {
         errno = ENOMEM;
@@ -587,129 +597,84 @@ int parse_conf_client_v6_mask(const conf_token_t* tokens) {
 }
 
 static conf_token_syntax_t _syntax[] = {
-    {
-        "interface",
+    { "interface",
         parse_conf_interface,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "run_dir",
+        { TOKEN_STRING, TOKEN_END } },
+    { "run_dir",
         parse_conf_run_dir,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "minfree_bytes",
+        { TOKEN_STRING, TOKEN_END } },
+    { "minfree_bytes",
         parse_conf_minfree_bytes,
-        { TOKEN_NUMBER, TOKEN_END }
-    },
-    {
-        "pid_file",
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "pid_file",
         parse_conf_pid_file,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "statistics_interval",
+        { TOKEN_STRING, TOKEN_END } },
+    { "statistics_interval",
         parse_conf_statistics_interval,
-        { TOKEN_NUMBER, TOKEN_END }
-    },
-    {
-        "local_address",
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "local_address",
         parse_conf_local_address,
-        { TOKEN_STRING, TOKEN_ANY, TOKEN_END }
-    },
-    {
-        "bpf_program",
+        { TOKEN_STRING, TOKEN_ANY, TOKEN_END } },
+    { "bpf_program",
         parse_conf_bpf_program,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "dataset",
+        { TOKEN_STRING, TOKEN_END } },
+    { "dataset",
         parse_conf_dataset,
-        { TOKEN_STRING, TOKEN_STRING, TOKEN_STRING, TOKEN_STRING, TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
-    },
-    {
-        "bpf_vlan_tag_byte_order",
+        { TOKEN_STRING, TOKEN_STRING, TOKEN_STRING, TOKEN_STRING, TOKEN_STRING, TOKEN_STRINGS, TOKEN_END } },
+    { "bpf_vlan_tag_byte_order",
         parse_conf_bpf_vlan_tag_byte_order,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "output_format",
+        { TOKEN_STRING, TOKEN_END } },
+    { "output_format",
         parse_conf_output_format,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "match_vlan",
+        { TOKEN_STRING, TOKEN_END } },
+    { "match_vlan",
         parse_conf_match_vlan,
-        { TOKEN_NUMBER, TOKEN_NUMBERS, TOKEN_END }
-    },
-    {
-        "qname_filter",
+        { TOKEN_NUMBER, TOKEN_NUMBERS, TOKEN_END } },
+    { "qname_filter",
         parse_conf_qname_filter,
-        { TOKEN_STRING, TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "dump_reports_on_exit",
+        { TOKEN_STRING, TOKEN_STRING, TOKEN_END } },
+    { "dump_reports_on_exit",
         parse_conf_dump_reports_on_exit,
-        { TOKEN_END }
-    },
-    {
-        "geoip_v4_dat",
+        { TOKEN_END } },
+    { "geoip_v4_dat",
         parse_conf_geoip_v4_dat,
-        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
-    },
-    {
-        "geoip_v6_dat",
+        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END } },
+    { "geoip_v6_dat",
         parse_conf_geoip_v6_dat,
-        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
-    },
-    {
-        "geoip_asn_v4_dat",
+        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END } },
+    { "geoip_asn_v4_dat",
         parse_conf_geoip_asn_v4_dat,
-        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
-    },
-    {
-        "geoip_asn_v6_dat",
+        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END } },
+    { "geoip_asn_v6_dat",
         parse_conf_geoip_asn_v6_dat,
-        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END }
-    },
-    {
-        "pcap_buffer_size",
+        { TOKEN_STRING, TOKEN_STRINGS, TOKEN_END } },
+    { "pcap_buffer_size",
         parse_conf_pcap_buffer_size,
-        { TOKEN_NUMBER, TOKEN_END }
-    },
-    {
-        "no_wait_interval",
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "no_wait_interval",
         parse_conf_no_wait_interval,
-        { TOKEN_END }
-    },
-    {
-        "pcap_thread_timeout",
+        { TOKEN_END } },
+    { "pcap_thread_timeout",
         parse_conf_pcap_thread_timeout,
-        { TOKEN_NUMBER, TOKEN_END }
-    },
-    {
-        "drop_ip_fragments",
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "drop_ip_fragments",
         parse_conf_drop_ip_fragments,
-        { TOKEN_END }
-    },
-    {
-        "client_v4_mask",
+        { TOKEN_END } },
+    { "client_v4_mask",
         parse_conf_client_v4_mask,
-        { TOKEN_STRING, TOKEN_END }
-    },
-    {
-        "client_v6_mask",
+        { TOKEN_STRING, TOKEN_END } },
+    { "client_v6_mask",
         parse_conf_client_v6_mask,
-        { TOKEN_STRING, TOKEN_END }
-    },
+        { TOKEN_STRING, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }
 };
 
-int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line) {
+int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line)
+{
     const conf_token_syntax_t* syntax;
     const conf_token_type_t*   type;
-    size_t i;
+    size_t                     i;
 
     if (!tokens || !token_size) {
         fprintf(stderr, "CONFIG ERROR [line:%lu]: Internal error, please report!\n", line);
@@ -760,11 +725,9 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
             fprintf(stderr, "CONFIG ERROR [line:%lu]: Wrong token for argument %lu", line, i);
             if (*type == TOKEN_STRING) {
                 fprintf(stderr, ", expected a string\n");
-            }
-            else if (*type == TOKEN_NUMBER) {
+            } else if (*type == TOKEN_NUMBER) {
                 fprintf(stderr, ", expected a number\n");
-            }
-            else {
+            } else {
                 fprintf(stderr, "\n");
             }
             return 1;
@@ -790,14 +753,15 @@ int parse_conf_tokens(const conf_token_t* tokens, size_t token_size, size_t line
     return 0;
 }
 
-int parse_conf(const char* file) {
-    FILE* fp;
-    char* buffer = 0;
-    size_t bufsize = 0;
-    char* buf;
-    size_t s, i, line = 0;
+int parse_conf(const char* file)
+{
+    FILE*        fp;
+    char*        buffer  = 0;
+    size_t       bufsize = 0;
+    char*        buf;
+    size_t       s, i, line = 0;
     conf_token_t tokens[PARSE_MAX_ARGS];
-    int ret, ret2;
+    int          ret, ret2;
 
     if (!file) {
         return 1;
@@ -838,30 +802,25 @@ int parse_conf(const char* file) {
                  */
                 continue;
             }
-        }
-        else if (ret == PARSE_CONF_EMPTY) {
+        } else if (ret == PARSE_CONF_EMPTY) {
             continue;
-        }
-        else if (ret == PARSE_CONF_OK) {
+        } else if (ret == PARSE_CONF_OK) {
             if (i > 0 && tokens[0].type == TOKEN_STRING) {
                 fprintf(stderr, "CONFIG ERROR [line:%lu]: Too many arguments for ", line);
                 fwrite(tokens[0].token, tokens[0].length, 1, stderr);
                 fprintf(stderr, " at line %lu\n", line);
-            }
-            else {
+            } else {
                 fprintf(stderr, "CONFIG ERROR [line:%lu]: Too many arguments at line %lu\n", line, line);
             }
             free(buffer);
             fclose(fp);
             return 1;
-        }
-        else if (ret != PARSE_CONF_LAST) {
+        } else if (ret != PARSE_CONF_LAST) {
             if (i > 0 && tokens[0].type == TOKEN_STRING) {
                 fprintf(stderr, "CONFIG ERROR [line:%lu]: Invalid syntax for ", line);
                 fwrite(tokens[0].token, tokens[0].length, 1, stderr);
                 fprintf(stderr, " at line %lu\n", line);
-            }
-            else {
+            } else {
                 fprintf(stderr, "CONFIG ERROR [line:%lu]: Invalid syntax at line %lu\n", line, line);
             }
             free(buffer);
@@ -885,8 +844,7 @@ int parse_conf(const char* file) {
         pos = ftell(fp);
         if (fseek(fp, 0, SEEK_END)) {
             fprintf(stderr, "CONFIG ERROR [line:%lu]: fseek(): %s\n", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
-        }
-        else if (ftell(fp) < pos) {
+        } else if (ftell(fp) < pos) {
             fprintf(stderr, "CONFIG ERROR [line:%lu]: getline(): %s\n", line, dsc_strerror(errno, errbuf, sizeof(errbuf)));
         }
     }

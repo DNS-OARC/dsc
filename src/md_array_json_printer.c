@@ -45,20 +45,20 @@
 #include "base64.h"
 #include "xmalloc.h"
 
-static const char *d1_type_s;        /* XXX barf */
-static const char *d2_type_s;        /* XXX barf */
+static const char* d1_type_s; /* XXX barf */
+static const char* d2_type_s; /* XXX barf */
 
-static int array_comma = 0;
-static int data_comma = 0;
+static int array_comma   = 0;
+static int data_comma    = 0;
 static int element_comma = 0;
 
 static void
-start_array(void *pr_data, const char *name)
+start_array(void* pr_data, const char* name)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     assert(fp);
 
-    if ( array_comma )
+    if (array_comma)
         fprintf(fp, ",\n");
     else
         array_comma = 1;
@@ -70,40 +70,41 @@ start_array(void *pr_data, const char *name)
 }
 
 static void
-finish_array(void *pr_data)
+finish_array(void* pr_data)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
 
     data_comma = 0;
     fprintf(fp, "}");
 }
 
 static void
-d1_type(void *pr_data, const char *t)
+d1_type(void* pr_data, const char* t)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
 
     fprintf(fp, " \"%s\"", t);
     d1_type_s = t;
 }
 
 static void
-d2_type(void *pr_data, const char *t)
+d2_type(void* pr_data, const char* t)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
 
     fprintf(fp, ", \"%s\" ],\n", t);
     d2_type_s = t;
 }
 
-static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" "0123456789._-:";
+static const char* entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                                  "0123456789._-:";
 
 static void
-d1_begin(void *pr_data, char *l)
+d1_begin(void* pr_data, char* l)
 {
-    FILE *fp = pr_data;
-    int ll = strlen(l);
-    char *e = NULL;
+    FILE* fp = pr_data;
+    int   ll = strlen(l);
+    char* e  = NULL;
 
     if (strspn(l, entity_chars) != ll) {
         int x = base64_encode(l, ll, &e);
@@ -111,7 +112,7 @@ d1_begin(void *pr_data, char *l)
         l = e;
     }
 
-    if ( data_comma )
+    if (data_comma)
         fprintf(fp, ",\n");
     else
         data_comma = 1;
@@ -120,7 +121,7 @@ d1_begin(void *pr_data, char *l)
 
     fprintf(fp, "    {\n");
     fprintf(fp, "      \"%s\": \"%s\",\n", d1_type_s, l);
-    if ( e )
+    if (e)
         fprintf(fp, "      \"base64\": true,\n");
     fprintf(fp, "      \"%s\": [", d2_type_s);
 
@@ -129,11 +130,11 @@ d1_begin(void *pr_data, char *l)
 }
 
 static void
-print_element(void *pr_data, char *l, int val)
+print_element(void* pr_data, char* l, int val)
 {
-    FILE *fp = pr_data;
-    int ll = strlen(l);
-    char *e = NULL;
+    FILE* fp = pr_data;
+    int   ll = strlen(l);
+    char* e  = NULL;
 
     if (strspn(l, entity_chars) != ll) {
         int x = base64_encode(l, ll, &e);
@@ -141,7 +142,7 @@ print_element(void *pr_data, char *l, int val)
         l = e;
     }
 
-    if ( element_comma )
+    if (element_comma)
         fprintf(fp, ",\n");
     else {
         fprintf(fp, "\n");
@@ -149,7 +150,7 @@ print_element(void *pr_data, char *l, int val)
     }
 
     fprintf(fp, "        { \"val\": \"%s\"", l);
-    if ( e )
+    if (e)
         fprintf(fp, ", \"base64\": true");
     fprintf(fp, ", \"count\": %d }", val);
 
@@ -158,30 +159,30 @@ print_element(void *pr_data, char *l, int val)
 }
 
 static void
-d1_end(void *pr_data, char *l)
+d1_end(void* pr_data, char* l)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
 
-    if ( element_comma )
+    if (element_comma)
         fprintf(fp, "\n      ");
 
     fprintf(fp, "]\n    }");
 }
 
 static void
-start_data(void *pr_data)
+start_data(void* pr_data)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
 
     fprintf(fp, "  \"data\": [\n");
 }
 
 static void
-finish_data(void *pr_data)
+finish_data(void* pr_data)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
 
-    if ( data_comma )
+    if (data_comma)
         fprintf(fp, "\n");
 
     fprintf(fp, "  ]\n");

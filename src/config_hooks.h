@@ -37,25 +37,25 @@
 
 #include "dataset_opt.h"
 
-int open_interface(const char *interface);
-int set_bpf_program(const char *s);
-int add_local_address(const char *s, const char *m);
-int set_run_dir(const char *dir);
-int set_pid_file(const char *s);
-int set_statistics_interval(const char *s);
-int add_dataset(const char *name, const char *layer_ignored, const char *firstname, const char *firstindexer, const char *secondname, const char *secondindexer, const char *filtername, dataset_opt opts);
-int set_bpf_vlan_tag_byte_order(const char *which);
-int set_match_vlan(const char *s);
-int set_minfree_bytes(const char *s);
-int set_output_format(const char *output_format);
+int open_interface(const char* interface);
+int set_bpf_program(const char* s);
+int add_local_address(const char* s, const char* m);
+int set_run_dir(const char* dir);
+int set_pid_file(const char* s);
+int set_statistics_interval(const char* s);
+int add_dataset(const char* name, const char* layer_ignored, const char* firstname, const char* firstindexer, const char* secondname, const char* secondindexer, const char* filtername, dataset_opt opts);
+int set_bpf_vlan_tag_byte_order(const char* which);
+int set_match_vlan(const char* s);
+int set_minfree_bytes(const char* s);
+int set_output_format(const char* output_format);
 void set_dump_reports_on_exit(void);
-int set_geoip_v4_dat(const char * dat, int options);
-int set_geoip_v6_dat(const char * dat, int options);
-int set_geoip_asn_v4_dat(const char * dat, int options);
-int set_geoip_asn_v6_dat(const char * dat, int options);
-int set_pcap_buffer_size(const char *s);
+int set_geoip_v4_dat(const char* dat, int options);
+int set_geoip_v6_dat(const char* dat, int options);
+int set_geoip_asn_v4_dat(const char* dat, int options);
+int set_geoip_asn_v6_dat(const char* dat, int options);
+int set_pcap_buffer_size(const char* s);
 void set_no_wait_interval(void);
-int set_pt_timeout(const char *s);
+int set_pt_timeout(const char* s);
 void set_drop_ip_fragments(void);
 
 #endif /* __dsc_config_hooks_h */

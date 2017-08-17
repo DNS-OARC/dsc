@@ -43,13 +43,12 @@
 
 #define MAX_RCODE_IDX 16
 static unsigned short idx_to_rcode[MAX_RCODE_IDX];
-static int next_idx = 0;
+static int            next_idx = 0;
 
-int
-rcode_indexer(const void *vp)
+int rcode_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int i;
+    const dns_message* m = vp;
+    int                i;
     if (m->malformed)
         return -1;
     for (i = 0; i < next_idx; i++) {
@@ -64,8 +63,7 @@ rcode_indexer(const void *vp)
 
 static int next_iter;
 
-int
-rcode_iterator(char **label)
+int rcode_iterator(char** label)
 {
     static char label_buf[32];
     if (0 == next_idx)
@@ -82,8 +80,7 @@ rcode_iterator(char **label)
     return next_iter++;
 }
 
-void
-rcode_reset()
+void rcode_reset()
 {
     next_idx = 0;
 }

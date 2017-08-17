@@ -42,17 +42,15 @@
 #include "dns_message.h"
 #include "md_array.h"
 
-int
-qr_aa_bits_indexer(const void *vp)
+int qr_aa_bits_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return m->qr + (m->aa << 1);
 }
 
-int
-qr_aa_bits_iterator(char **label)
+int qr_aa_bits_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {
