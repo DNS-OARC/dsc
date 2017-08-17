@@ -46,17 +46,16 @@
 /* dns_source_port_indexer */
 /* Indexes the source port of DNS messages */
 
-static unsigned int f_index[65536];
+static unsigned int   f_index[65536];
 static unsigned short r_index[65536];
-static unsigned int largest = 0;
+static unsigned int   largest = 0;
 
-int
-dns_source_port_indexer(const void *vp)
+int dns_source_port_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    unsigned short p = m->tm->src_port;
+    const dns_message* m = vp;
+    unsigned short     p = m->tm->src_port;
     if (0 == f_index[p]) {
-        f_index[p] = ++largest;
+        f_index[p]       = ++largest;
         r_index[largest] = p;
     }
     return f_index[p];
@@ -64,8 +63,7 @@ dns_source_port_indexer(const void *vp)
 
 static int next_iter = 0;
 
-int
-dns_source_port_iterator(char **label)
+int dns_source_port_iterator(char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -78,34 +76,30 @@ dns_source_port_iterator(char **label)
     return next_iter;
 }
 
-void
-dns_source_port_reset(void)
+void dns_source_port_reset(void)
 {
     memset(f_index, 0, sizeof f_index);
     memset(r_index, 0, sizeof r_index);
     largest = 0;
 }
 
-
 /* dns_sport_range_indexer */
 /* Indexes the "range" of a TCP/UDP source port of DNS messages */
 /* "Range" is defined as port/1024. */
 
-static int range_largest = 0;
+static int range_largest   = 0;
 static int range_next_iter = 0;
 
-int
-dns_sport_range_indexer(const void *vp)
+int dns_sport_range_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int r = (int) m->tm->src_port >> 10;
+    const dns_message* m = vp;
+    int                r = (int)m->tm->src_port >> 10;
     if (r > range_largest)
         range_largest = r;
     return r;
 }
 
-int
-dns_sport_range_iterator(char **label)
+int dns_sport_range_iterator(char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -118,8 +112,7 @@ dns_sport_range_iterator(char **label)
     return ++range_next_iter;
 }
 
-void
-dns_sport_range_reset(void)
+void dns_sport_range_reset(void)
 {
     range_largest = 0;
 }

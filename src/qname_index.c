@@ -46,94 +46,84 @@
 
 typedef struct
 {
-    int next_idx;
-    hashtbl *hash;
+    int      next_idx;
+    hashtbl* hash;
 } levelobj;
 
-static hashfunc name_hashfunc;
+static hashfunc   name_hashfunc;
 static hashkeycmp name_cmpfunc;
-static int name_indexer(const char *, levelobj *);
-static int name_iterator(char **, levelobj *);
-static void name_reset(levelobj *);
+static int        name_indexer(const char*, levelobj*);
+static int        name_iterator(char**, levelobj*);
+static void       name_reset(levelobj*);
 
 #define MAX_ARRAY_SZ 65536
 
-static levelobj Full = { 0, NULL };
+static levelobj Full   = { 0, NULL };
 static levelobj Second = { 0, NULL };
-static levelobj Third = { 0, NULL };
+static levelobj Third  = { 0, NULL };
 
 typedef struct
 {
-    char *name;
-    int index;
+    char* name;
+    int   index;
 } nameobj;
-
 
 /* ==== QNAME ============================================================= */
 
-int
-qname_indexer(const void *vp)
+int qname_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return name_indexer(m->qname, &Full);
 }
 
-int
-qname_iterator(char **label)
+int qname_iterator(char** label)
 {
     return name_iterator(label, &Full);
 }
 
-void
-qname_reset()
+void qname_reset()
 {
     name_reset(&Full);
 }
 
 /* ==== SECOND LEVEL DOMAIN =============================================== */
 
-int
-second_ld_indexer(const void *vp)
+int second_ld_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return name_indexer(dns_message_QnameToNld(m->qname, 2), &Second);
 }
 
-int
-second_ld_iterator(char **label)
+int second_ld_iterator(char** label)
 {
     return name_iterator(label, &Second);
 }
 
-void
-second_ld_reset()
+void second_ld_reset()
 {
     name_reset(&Second);
 }
 
 /* ==== QNAME ============================================================= */
 
-int
-third_ld_indexer(const void *vp)
+int third_ld_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return name_indexer(dns_message_QnameToNld(m->qname, 3), &Third);
 }
 
-int
-third_ld_iterator(char **label)
+int third_ld_iterator(char** label)
 {
     return name_iterator(label, &Third);
 }
 
-void
-third_ld_reset()
+void third_ld_reset()
 {
     name_reset(&Third);
 }
@@ -141,9 +131,9 @@ third_ld_reset()
 /* ======================================================================== */
 
 static int
-name_indexer(const char *theName, levelobj * theLevel)
+name_indexer(const char* theName, levelobj* theLevel)
 {
-    nameobj *obj;
+    nameobj* obj;
     if (NULL == theLevel->hash) {
         theLevel->hash = hash_create(MAX_ARRAY_SZ, name_hashfunc, name_cmpfunc, 1, afree, afree);
         if (NULL == theLevel->hash)
@@ -170,9 +160,9 @@ name_indexer(const char *theName, levelobj * theLevel)
 }
 
 static int
-name_iterator(char **label, levelobj * theLevel)
+name_iterator(char** label, levelobj* theLevel)
 {
-    nameobj *obj;
+    nameobj*    obj;
     static char label_buf[MAX_QNAME_SZ];
     if (0 == theLevel->next_idx)
         return -1;
@@ -188,20 +178,20 @@ name_iterator(char **label, levelobj * theLevel)
 }
 
 static void
-name_reset(levelobj * theLevel)
+name_reset(levelobj* theLevel)
 {
-    theLevel->hash = NULL;
+    theLevel->hash     = NULL;
     theLevel->next_idx = 0;
 }
 
 static unsigned int
-name_hashfunc(const void *key)
+name_hashfunc(const void* key)
 {
     return hashendian(key, strlen(key), 0);
 }
 
 static int
-name_cmpfunc(const void *a, const void *b)
+name_cmpfunc(const void* a, const void* b)
 {
     return strcasecmp(a, b);
 }

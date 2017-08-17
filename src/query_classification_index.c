@@ -43,7 +43,7 @@
 
 /* OpenBSD does not have nameser_compat.h */
 #ifdef __OpenBSD__
-#define C_NONE          254
+#define C_NONE 254
 #else
 #include <arpa/nameser_compat.h>
 #endif
@@ -55,8 +55,7 @@
 #include "dns_message.h"
 #include "md_array.h"
 
-enum
-{
+enum {
     CLASS_OK,
     CLASS_NONAUTH_TLD,
     CLASS_ROOT_SERVERS_NET,
@@ -70,13 +69,13 @@ enum
     CLASS_MALFORMED
 };
 
-static const char *KnownTLDS[];
+static const char* KnownTLDS[];
 
 static int
-nonauth_tld(const dns_message * m)
+nonauth_tld(const dns_message* m)
 {
     unsigned int i;
-    const char *tld = dns_message_tld((dns_message *) m);
+    const char*  tld = dns_message_tld((dns_message*)m);
     for (i = 0; KnownTLDS[i]; i++)
         if (0 == strcmp(KnownTLDS[i], tld))
             return 0;
@@ -84,7 +83,7 @@ nonauth_tld(const dns_message * m)
 }
 
 static int
-root_servers_net(const dns_message * m)
+root_servers_net(const dns_message* m)
 {
     if (0 == strcmp(m->qname + strlen(m->qname) - 16, "root-servers.net"))
         return CLASS_ROOT_SERVERS_NET;
@@ -92,7 +91,7 @@ root_servers_net(const dns_message * m)
 }
 
 static int
-localhost(const dns_message * m)
+localhost(const dns_message* m)
 {
     if (0 == strcmp(m->qname + strlen(m->qname) - 9, "localhost"))
         return CLASS_LOCALHOST;
@@ -100,7 +99,7 @@ localhost(const dns_message * m)
 }
 
 static int
-a_for_a(const dns_message * m)
+a_for_a(const dns_message* m)
 {
     struct in_addr a;
     if (m->qtype != T_A)
@@ -111,7 +110,7 @@ a_for_a(const dns_message * m)
 }
 
 static int
-a_for_root(const dns_message * m)
+a_for_root(const dns_message* m)
 {
     if (m->qtype != T_A)
         return 0;
@@ -121,11 +120,11 @@ a_for_root(const dns_message * m)
 }
 
 static int
-rfc1918_ptr(const dns_message * m)
+rfc1918_ptr(const dns_message* m)
 {
-    char *tok = 0;
-    char *t;
-    char q[128];
+    char*        tok = 0;
+    char*        t;
+    char         q[128];
     unsigned int i = 0;
     if (m->qtype != T_PTR)
         return 0;
@@ -138,17 +137,17 @@ rfc1918_ptr(const dns_message * m)
         i >>= 8;
         i |= ((atoi(t) & 0xff) << 24);
     }
-    if ((i & 0xff000000) == 0x0a000000)        /* 10.0.0.0/8 */
+    if ((i & 0xff000000) == 0x0a000000) /* 10.0.0.0/8 */
         return CLASS_RFC1918_PTR;
-    if ((i & 0xfff00000) == 0xac100000)        /* 172.16.0.0/12 */
+    if ((i & 0xfff00000) == 0xac100000) /* 172.16.0.0/12 */
         return CLASS_RFC1918_PTR;
-    if ((i & 0xffff0000) == 0xc0a80000)        /* 192.168.0.0/16 */
+    if ((i & 0xffff0000) == 0xc0a80000) /* 192.168.0.0/16 */
         return CLASS_RFC1918_PTR;
     return 0;
 }
 
 static int
-funny_qclass(const dns_message * m)
+funny_qclass(const dns_message* m)
 {
     switch (m->qclass) {
     case C_IN:
@@ -166,7 +165,7 @@ funny_qclass(const dns_message * m)
 }
 
 static int
-funny_qtype(const dns_message * m)
+funny_qtype(const dns_message* m)
 {
     switch (m->qclass) {
     case T_A:
@@ -221,7 +220,7 @@ funny_qtype(const dns_message * m)
 }
 
 static int
-src_port_zero(const dns_message * m)
+src_port_zero(const dns_message* m)
 {
     if (0 == m->tm->src_port)
         return CLASS_SRC_PORT_ZERO;
@@ -229,18 +228,17 @@ src_port_zero(const dns_message * m)
 }
 
 static int
-malformed(const dns_message * m)
+malformed(const dns_message* m)
 {
     if (m->malformed)
         return CLASS_MALFORMED;
     return 0;
 }
 
-int
-query_classification_indexer(const void *vp)
+int query_classification_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int x;
+    const dns_message* m = vp;
+    int                x;
     if ((x = malformed(m)))
         return x;
     if ((x = src_port_zero(m)))
@@ -264,8 +262,7 @@ query_classification_indexer(const void *vp)
     return CLASS_OK;
 }
 
-int
-query_classification_iterator(char **label)
+int query_classification_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {
@@ -299,7 +296,7 @@ query_classification_iterator(char **label)
     return next_iter++;
 }
 
-static const char *KnownTLDS[] = {
+static const char* KnownTLDS[] = {
     "com",
     "net",
     "arpa",

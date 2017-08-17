@@ -45,10 +45,9 @@
 #define TC_BIT_CLR 0
 #define TC_BIT_SET 1
 
-int
-tc_bit_indexer(const void *vp)
+int tc_bit_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (m->tc)
@@ -56,8 +55,7 @@ tc_bit_indexer(const void *vp)
     return TC_BIT_CLR;
 }
 
-int
-tc_bit_iterator(char **label)
+int tc_bit_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

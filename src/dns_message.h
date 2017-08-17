@@ -53,56 +53,55 @@
 typedef struct
 {
     struct timeval ts;
-    inX_addr src_ip_addr;
-    inX_addr dst_ip_addr;
+    inX_addr       src_ip_addr;
+    inX_addr       dst_ip_addr;
     unsigned short src_port;
     unsigned short dst_port;
-    unsigned char ip_version;
-    unsigned char proto;
+    unsigned char  ip_version;
+    unsigned char  proto;
 } transport_message;
 
 typedef struct _dns_message dns_message;
-struct _dns_message
-{
-    transport_message *tm;
-    inX_addr client_ip_addr;
-    inX_addr server_ip_addr;
-    unsigned short qtype;
-    unsigned short qclass;
-    unsigned short msglen;
-    char qname[MAX_QNAME_SZ];
-    const char *tld;
-    unsigned char opcode;
-    unsigned char rcode;
-    unsigned int malformed:1;
-    unsigned int qr:1;
-    unsigned int rd:1;                /* set if RECUSION DESIRED bit is set */
-    unsigned int aa:1;                /* set if AUTHORITATIVE ANSWER bit is set */
-    unsigned int tc:1;                /* set if TRUNCATED RESPONSE bit is set */
-    unsigned int ad:1;                /* set if AUTHENTIC DATA bit is set */
+struct _dns_message {
+    transport_message* tm;
+    inX_addr           client_ip_addr;
+    inX_addr           server_ip_addr;
+    unsigned short     qtype;
+    unsigned short     qclass;
+    unsigned short     msglen;
+    char               qname[MAX_QNAME_SZ];
+    const char*        tld;
+    unsigned char      opcode;
+    unsigned char      rcode;
+    unsigned int       malformed : 1;
+    unsigned int       qr : 1;
+    unsigned int       rd : 1; /* set if RECUSION DESIRED bit is set */
+    unsigned int       aa : 1; /* set if AUTHORITATIVE ANSWER bit is set */
+    unsigned int       tc : 1; /* set if TRUNCATED RESPONSE bit is set */
+    unsigned int       ad : 1; /* set if AUTHENTIC DATA bit is set */
     struct
     {
-        unsigned int found:1;        /* set if we found an OPT RR */
-        unsigned int DO:1;        /* set if DNSSEC DO bit is set */
-        unsigned char version;        /* version field from OPT RR */
-        unsigned short bufsiz;        /* class field from OPT RR */
+        unsigned int   found : 1; /* set if we found an OPT RR */
+        unsigned int   DO : 1; /* set if DNSSEC DO bit is set */
+        unsigned char  version; /* version field from OPT RR */
+        unsigned short bufsiz; /* class field from OPT RR */
     } edns;
     /* ... */
 };
 
-void dns_message_report(FILE *, md_array_printer *);
-int dns_message_add_array(const char *, const char *, const char *, const char *, const char *, const char *,
+void dns_message_report(FILE*, md_array_printer*);
+int  dns_message_add_array(const char*, const char*, const char*, const char*, const char*, const char*,
     dataset_opt);
-const char *dns_message_QnameToNld(const char *, int);
-const char *dns_message_tld(dns_message * m);
+const char* dns_message_QnameToNld(const char*, int);
+const char* dns_message_tld(dns_message* m);
 void dns_message_init(void);
 void dns_message_clear_arrays(void);
-void dns_message_handle(dns_message *);
+void dns_message_handle(dns_message*);
 
-int add_qname_filter(const char *name, const char *re);
+int add_qname_filter(const char* name, const char* re);
 
 #ifndef T_OPT
-#define T_OPT 41                /* OPT pseudo-RR, RFC2761 */
+#define T_OPT 41 /* OPT pseudo-RR, RFC2761 */
 #endif
 
 #ifndef T_AAAA

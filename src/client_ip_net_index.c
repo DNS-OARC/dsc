@@ -44,29 +44,28 @@
 #include "hashtbl.h"
 #include "syslog_debug.h"
 
-static hashfunc ipnet_hashfunc;
+static hashfunc   ipnet_hashfunc;
 static hashkeycmp ipnet_cmpfunc;
-static inX_addr v4mask;
+static inX_addr   v4mask;
 #if USE_IPV6
 static inX_addr v6mask;
 #endif
 
 #define MAX_ARRAY_SZ 65536
-static hashtbl *theHash = NULL;
-static int next_idx = 0;
+static hashtbl* theHash  = NULL;
+static int      next_idx = 0;
 
 typedef struct
 {
     inX_addr addr;
-    int index;
+    int      index;
 } ipnetobj;
 
-int
-cip_net_indexer(const void *vp)
+int cip_net_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    ipnetobj *obj;
-    inX_addr masked_addr;
+    const dns_message* m = vp;
+    ipnetobj*          obj;
+    inX_addr           masked_addr;
     if (m->malformed)
         return -1;
     if (NULL == theHash) {
@@ -85,7 +84,7 @@ cip_net_indexer(const void *vp)
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
         return -1;
-    obj->addr = masked_addr;
+    obj->addr  = masked_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
         afree(obj);
@@ -95,10 +94,9 @@ cip_net_indexer(const void *vp)
     return obj->index;
 }
 
-int
-cip_net_iterator(char **label)
+int cip_net_iterator(char** label)
 {
-    ipnetobj *obj;
+    ipnetobj*   obj;
     static char label_buf[128];
     if (0 == next_idx)
         return -1;
@@ -113,15 +111,13 @@ cip_net_iterator(char **label)
     return obj->index;
 }
 
-void
-cip_net_reset()
+void cip_net_reset()
 {
-    theHash = NULL;
+    theHash  = NULL;
     next_idx = 0;
 }
 
-void
-cip_net_indexer_init(void)
+void cip_net_indexer_init(void)
 {
     /* XXXDPW */
     inXaddr_pton("255.255.255.0", &v4mask);
@@ -130,15 +126,13 @@ cip_net_indexer_init(void)
 #endif
 }
 
-int
-cip_net_v4_mask_set(const char *mask)
+int cip_net_v4_mask_set(const char* mask)
 {
     dsyslogf(LOG_INFO, "change v4 mask to %s", mask);
     return inXaddr_pton(mask, &v4mask);
 }
 
-int
-cip_net_v6_mask_set(const char *mask)
+int cip_net_v6_mask_set(const char* mask)
 {
 #if USE_IPV6
     dsyslogf(LOG_INFO, "change v6 mask to %s", mask);
@@ -149,16 +143,16 @@ cip_net_v6_mask_set(const char *mask)
 }
 
 static unsigned int
-ipnet_hashfunc(const void *key)
+ipnet_hashfunc(const void* key)
 {
-    const inX_addr *a = key;
+    const inX_addr* a = key;
     return inXaddr_hash(a);
 }
 
 static int
-ipnet_cmpfunc(const void *a, const void *b)
+ipnet_cmpfunc(const void* a, const void* b)
 {
-    const inX_addr *a1 = a;
-    const inX_addr *a2 = b;
+    const inX_addr* a1 = a;
+    const inX_addr* a2 = b;
     return inXaddr_cmp(a1, a2);
 }

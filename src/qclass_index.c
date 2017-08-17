@@ -42,13 +42,12 @@
 #include "md_array.h"
 
 static unsigned short idx_to_qclass[65536];
-static int next_idx = 0;
+static int            next_idx = 0;
 
-int
-qclass_indexer(const void *vp)
+int qclass_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int i;
+    const dns_message* m = vp;
+    int                i;
     if (m->malformed)
         return -1;
     for (i = 0; i < next_idx; i++) {
@@ -62,8 +61,7 @@ qclass_indexer(const void *vp)
 
 static int next_iter;
 
-int
-qclass_iterator(char **label)
+int qclass_iterator(char** label)
 {
     static char label_buf[32];
     if (0 == next_idx)
@@ -80,8 +78,7 @@ qclass_iterator(char **label)
     return next_iter++;
 }
 
-void
-qclass_reset()
+void qclass_reset()
 {
     next_idx = 0;
 }

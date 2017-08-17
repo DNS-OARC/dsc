@@ -45,10 +45,9 @@
 #define DO_BIT_CLR 0
 #define DO_BIT_SET 1
 
-int
-do_bit_indexer(const void *vp)
+int do_bit_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (m->edns.found && m->edns.DO)
@@ -56,8 +55,7 @@ do_bit_indexer(const void *vp)
     return DO_BIT_CLR;
 }
 
-int
-do_bit_iterator(char **label)
+int do_bit_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

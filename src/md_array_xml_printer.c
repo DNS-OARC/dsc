@@ -45,15 +45,15 @@
 #include "base64.h"
 #include "xmalloc.h"
 
-static const char *d1_type_s;        /* XXX barf */
-static const char *d2_type_s;        /* XXX barf */
+static const char* d1_type_s; /* XXX barf */
+static const char* d2_type_s; /* XXX barf */
 
-static const char *b64 = " base64=\"1\"";
+static const char* b64 = " base64=\"1\"";
 
 static void
-start_array(void *pr_data, const char *name)
+start_array(void* pr_data, const char* name)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     assert(fp);
     fprintf(fp, "<array");
     fprintf(fp, " name=\"%s\"", name);
@@ -64,36 +64,37 @@ start_array(void *pr_data, const char *name)
 }
 
 static void
-finish_array(void *pr_data)
+finish_array(void* pr_data)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     fprintf(fp, "</array>\n");
 }
 
 static void
-d1_type(void *pr_data, const char *t)
+d1_type(void* pr_data, const char* t)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     fprintf(fp, "  <dimension number=\"1\" type=\"%s\"/>\n", t);
     d1_type_s = t;
 }
 
 static void
-d2_type(void *pr_data, const char *t)
+d2_type(void* pr_data, const char* t)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     fprintf(fp, "  <dimension number=\"2\" type=\"%s\"/>\n", t);
     d2_type_s = t;
 }
 
-static const char *entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" "0123456789._-:";
+static const char* entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                                  "0123456789._-:";
 
 static void
-d1_begin(void *pr_data, char *l)
+d1_begin(void* pr_data, char* l)
 {
-    FILE *fp = pr_data;
-    int ll = strlen(l);
-    char *e = NULL;
+    FILE* fp = pr_data;
+    int   ll = strlen(l);
+    char* e  = NULL;
     if (strspn(l, entity_chars) != ll) {
         int x = base64_encode(l, ll, &e);
         assert(x);
@@ -105,11 +106,11 @@ d1_begin(void *pr_data, char *l)
 }
 
 static void
-print_element(void *pr_data, char *l, int val)
+print_element(void* pr_data, char* l, int val)
 {
-    FILE *fp = pr_data;
-    int ll = strlen(l);
-    char *e = NULL;
+    FILE* fp = pr_data;
+    int   ll = strlen(l);
+    char* e  = NULL;
     if (strspn(l, entity_chars) != ll) {
         int x = base64_encode(l, ll, &e);
         assert(x);
@@ -124,23 +125,23 @@ print_element(void *pr_data, char *l, int val)
 }
 
 static void
-d1_end(void *pr_data, char *l)
+d1_end(void* pr_data, char* l)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     fprintf(fp, "    </%s>\n", d1_type_s);
 }
 
 static void
-start_data(void *pr_data)
+start_data(void* pr_data)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     fprintf(fp, "  <data>\n");
 }
 
 static void
-finish_data(void *pr_data)
+finish_data(void* pr_data)
 {
-    FILE *fp = pr_data;
+    FILE* fp = pr_data;
     fprintf(fp, "  </data>\n");
 }
 

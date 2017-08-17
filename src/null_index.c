@@ -37,15 +37,12 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int
-null_indexer(const void *vp)
+int null_indexer(const void* vp)
 {
     return 0;
 }
 
-
-int
-null_iterator(char **label)
+int null_iterator(char** label)
 {
     static int state = 0;
     if (NULL == label) {

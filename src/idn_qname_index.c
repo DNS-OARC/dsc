@@ -45,10 +45,9 @@
 #define QNAME_NORMAL 0
 #define QNAME_IDN 1
 
-int
-idn_qname_indexer(const void *vp)
+int idn_qname_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (0 == strncmp(m->qname, "xn--", 4))
@@ -56,8 +55,7 @@ idn_qname_indexer(const void *vp)
     return QNAME_NORMAL;
 }
 
-int
-idn_qname_iterator(char **label)
+int idn_qname_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

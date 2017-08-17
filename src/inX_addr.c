@@ -45,16 +45,15 @@
 static unsigned char v4_in_v6_prefix[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF };
 
 static int
-is_v4_in_v6(const struct in6_addr *addr)
+is_v4_in_v6(const struct in6_addr* addr)
 {
     return (0 == memcmp(addr, v4_in_v6_prefix, 12));
 }
 
-
-const char *
-inXaddr_ntop(const inX_addr * a, char *buf, socklen_t len)
+const char*
+inXaddr_ntop(const inX_addr* a, char* buf, socklen_t len)
 {
-    const char *p;
+    const char* p;
     if (!is_v4_in_v6(&a->in6))
         p = inet_ntop(AF_INET6, &a->in6, buf, len);
     else
@@ -64,8 +63,7 @@ inXaddr_ntop(const inX_addr * a, char *buf, socklen_t len)
     return "[unprintable]";
 }
 
-int
-inXaddr_pton(const char *buf, inX_addr * a)
+int inXaddr_pton(const char* buf, inX_addr* a)
 {
     if (strchr(buf, ':'))
         return inet_pton(AF_INET6, buf, a);
@@ -74,7 +72,7 @@ inXaddr_pton(const char *buf, inX_addr * a)
 }
 
 unsigned int
-inXaddr_hash(const inX_addr * a)
+inXaddr_hash(const inX_addr* a)
 {
     unsigned int lowest32;
 
@@ -90,8 +88,7 @@ inXaddr_hash(const inX_addr * a)
     return ntohl(a->_.pad0.s_addr);
 }
 
-int
-inXaddr_cmp(const inX_addr * a, const inX_addr * b)
+int inXaddr_cmp(const inX_addr* a, const inX_addr* b)
 {
     if (ntohl(a->_.in4.s_addr) < ntohl(b->_.in4.s_addr))
         return -1;
@@ -115,7 +112,7 @@ inXaddr_cmp(const inX_addr * a, const inX_addr * b)
 }
 
 inX_addr
-inXaddr_mask(const inX_addr * a, const inX_addr * mask)
+inXaddr_mask(const inX_addr* a, const inX_addr* mask)
 {
     inX_addr masked;
     masked._.in4.s_addr = a->_.in4.s_addr & mask->_.in4.s_addr;
@@ -131,16 +128,14 @@ inXaddr_mask(const inX_addr * a, const inX_addr * mask)
     return masked;
 }
 
-int
-inXaddr_version(const inX_addr * a)
+int inXaddr_version(const inX_addr* a)
 {
     if (!is_v4_in_v6(&a->in6))
         return 6;
     return 4;
 }
 
-int
-inXaddr_assign_v4(inX_addr * dst, const struct in_addr *src)
+int inXaddr_assign_v4(inX_addr* dst, const struct in_addr* src)
 {
     memcpy(dst, v4_in_v6_prefix, 12);
     /* memcpy() instead of struct assignment in case src is not aligned */
@@ -148,8 +143,7 @@ inXaddr_assign_v4(inX_addr * dst, const struct in_addr *src)
     return 0;
 }
 
-int
-inXaddr_assign_v6(inX_addr * dst, const struct in6_addr *src)
+int inXaddr_assign_v6(inX_addr* dst, const struct in6_addr* src)
 {
     /* memcpy() instead of struct assignment in case src is not aligned */
     memcpy(&dst->in6, src, sizeof(*src));

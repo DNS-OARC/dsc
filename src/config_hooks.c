@@ -53,38 +53,36 @@ extern int promisc_flag;
 extern int monitor_flag;
 extern int immediate_flag;
 extern int threads_flag;
-uint64_t minfree_bytes = 0;
-int output_format_xml = 0;
-int output_format_json = 0;
+uint64_t   minfree_bytes      = 0;
+int        output_format_xml  = 0;
+int        output_format_json = 0;
 #define MAX_HASH_SIZE 512
-static hashtbl * dataset_hash = NULL;
-uint64_t statistics_interval = 60; /* default interval in seconds*/
-int dump_reports_on_exit = 0;
-char * geoip_v4_dat = NULL;
-int geoip_v4_options = 0;
-char * geoip_v6_dat = NULL;
-int geoip_v6_options = 0;
-char * geoip_asn_v4_dat = NULL;
-int geoip_asn_v4_options = 0;
-char * geoip_asn_v6_dat = NULL;
-int geoip_asn_v6_options = 0;
-int pcap_buffer_size = 0;
-int no_wait_interval = 0;
-int pt_timeout = 100;
-int drop_ip_fragments = 0;
+static hashtbl* dataset_hash         = NULL;
+uint64_t        statistics_interval  = 60; /* default interval in seconds*/
+int             dump_reports_on_exit = 0;
+char*           geoip_v4_dat         = NULL;
+int             geoip_v4_options     = 0;
+char*           geoip_v6_dat         = NULL;
+int             geoip_v6_options     = 0;
+char*           geoip_asn_v4_dat     = NULL;
+int             geoip_asn_v4_options = 0;
+char*           geoip_asn_v6_dat     = NULL;
+int             geoip_asn_v6_options = 0;
+int             pcap_buffer_size     = 0;
+int             no_wait_interval     = 0;
+int             pt_timeout           = 100;
+int             drop_ip_fragments    = 0;
 
-int
-open_interface(const char *interface)
+int open_interface(const char* interface)
 {
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
     Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag, pcap_buffer_size);
     return 1;
 }
 
-int
-set_bpf_program(const char *s)
+int set_bpf_program(const char* s)
 {
-    extern char *bpf_program_str;
+    extern char* bpf_program_str;
     dsyslogf(LOG_INFO, "BPF program is: %s", s);
     if (bpf_program_str)
         xfree(bpf_program_str);
@@ -94,16 +92,14 @@ set_bpf_program(const char *s)
     return 1;
 }
 
-int
-add_local_address(const char *s, const char *m)
+int add_local_address(const char* s, const char* m)
 {
-    extern int ip_local_address(const char *, const char *);
+    extern int ip_local_address(const char*, const char*);
     dsyslogf(LOG_INFO, "adding local address %s%s%s", s, m ? " mask " : "", m ? m : "");
     return ip_local_address(s, m);
 }
 
-int
-set_run_dir(const char *dir)
+int set_run_dir(const char* dir)
 {
     dsyslogf(LOG_INFO, "setting current directory to %s", dir);
     if (chdir(dir) < 0) {
@@ -115,10 +111,9 @@ set_run_dir(const char *dir)
     return 1;
 }
 
-int
-set_pid_file(const char *s)
+int set_pid_file(const char* s)
 {
-    extern char *pid_file_name;
+    extern char* pid_file_name;
     dsyslogf(LOG_INFO, "PID file is: %s", s);
     if (pid_file_name)
         xfree(pid_file_name);
@@ -129,19 +124,18 @@ set_pid_file(const char *s)
 }
 
 static unsigned int
-dataset_hashfunc(const void *key)
+dataset_hashfunc(const void* key)
 {
     return hashendian(key, strlen(key), 0);
 }
 
 static int
-dataset_cmpfunc(const void *a, const void *b)
+dataset_cmpfunc(const void* a, const void* b)
 {
     return strcasecmp(a, b);
 }
 
-int
-set_statistics_interval(const char *s)
+int set_statistics_interval(const char* s)
 {
     dsyslogf(LOG_INFO, "Setting statistics interval to: %s", s);
     statistics_interval = strtoull(s, NULL, 10);
@@ -157,31 +151,30 @@ set_statistics_interval(const char *s)
     return 1;
 }
 
-int
-add_dataset(const char *name, const char *layer_ignored,
-    const char *firstname, const char *firstindexer,
-    const char *secondname, const char *secondindexer, const char *filtername, dataset_opt opts)
+int add_dataset(const char* name, const char* layer_ignored,
+    const char* firstname, const char* firstindexer,
+    const char* secondname, const char* secondindexer, const char* filtername, dataset_opt opts)
 {
-    char * dup;
+    char* dup;
 
-    if ( !dataset_hash ) {
-        if ( !(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, xfree, xfree)) ) {
+    if (!dataset_hash) {
+        if (!(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, xfree, xfree))) {
             dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
             return 0;
         }
     }
 
-    if ( hash_find(name, dataset_hash) ) {
+    if (hash_find(name, dataset_hash)) {
         dsyslogf(LOG_ERR, "unable to create dataset %s: already exists", name);
         return 0;
     }
 
-    if ( !(dup = xstrdup(name)) ) {
+    if (!(dup = xstrdup(name))) {
         dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
         return 0;
     }
 
-    if ( hash_add(dup, dup, dataset_hash) ) {
+    if (hash_add(dup, dup, dataset_hash)) {
         xfree(dup);
         dsyslogf(LOG_ERR, "unable to create dataset %s due to internal error", name);
         return 0;
@@ -191,8 +184,7 @@ add_dataset(const char *name, const char *layer_ignored,
     return dns_message_add_array(name, firstname, firstindexer, secondname, secondindexer, filtername, opts);
 }
 
-int
-set_bpf_vlan_tag_byte_order(const char *which)
+int set_bpf_vlan_tag_byte_order(const char* which)
 {
     extern int vlan_tag_needs_byte_conversion;
     dsyslogf(LOG_INFO, "bpf_vlan_tag_byte_order is %s", which);
@@ -208,11 +200,10 @@ set_bpf_vlan_tag_byte_order(const char *which)
     return 0;
 }
 
-int
-set_match_vlan(const char *s)
+int set_match_vlan(const char* s)
 {
     extern void pcap_set_match_vlan(int);
-    int i;
+    int         i;
     dsyslogf(LOG_INFO, "match_vlan %s", s);
     i = atoi(s);
     if (0 == i && 0 != strcmp(s, "0"))
@@ -221,24 +212,21 @@ set_match_vlan(const char *s)
     return 1;
 }
 
-int
-set_minfree_bytes(const char *s)
+int set_minfree_bytes(const char* s)
 {
     dsyslogf(LOG_INFO, "minfree_bytes %s", s);
     minfree_bytes = strtoull(s, NULL, 10);
     return 1;
 }
 
-int
-set_output_format(const char *output_format)
+int set_output_format(const char* output_format)
 {
     dsyslogf(LOG_INFO, "output_format %s", output_format);
 
-    if ( !strcmp(output_format, "XML") ) {
+    if (!strcmp(output_format, "XML")) {
         output_format_xml = 1;
         return 1;
-    }
-    else if ( !strcmp(output_format, "JSON") ) {
+    } else if (!strcmp(output_format, "JSON")) {
         output_format_json = 1;
         return 1;
     }
@@ -247,23 +235,21 @@ set_output_format(const char *output_format)
     return 0;
 }
 
-void
-set_dump_reports_on_exit(void)
+void set_dump_reports_on_exit(void)
 {
     dsyslog(LOG_INFO, "dump_reports_on_exit");
 
     dump_reports_on_exit = 1;
 }
 
-int
-set_geoip_v4_dat(const char * dat, int options)
+int set_geoip_v4_dat(const char* dat, int options)
 {
     char errbuf[512];
 
     geoip_v4_options = options;
     if (geoip_v4_dat)
         xfree(geoip_v4_dat);
-    if ( (geoip_v4_dat = xstrdup(dat)) ) {
+    if ((geoip_v4_dat = xstrdup(dat))) {
         dsyslogf(LOG_INFO, "GeoIP v4 dat %s %d", geoip_v4_dat, geoip_v4_options);
         return 1;
     }
@@ -272,15 +258,14 @@ set_geoip_v4_dat(const char * dat, int options)
     return 0;
 }
 
-int
-set_geoip_v6_dat(const char * dat, int options)
+int set_geoip_v6_dat(const char* dat, int options)
 {
     char errbuf[512];
 
     geoip_v6_options = options;
     if (geoip_v6_dat)
         xfree(geoip_v6_dat);
-    if ( (geoip_v6_dat = xstrdup(dat)) ) {
+    if ((geoip_v6_dat = xstrdup(dat))) {
         dsyslogf(LOG_INFO, "GeoIP v6 dat %s %d", geoip_v6_dat, geoip_v6_options);
         return 1;
     }
@@ -289,15 +274,14 @@ set_geoip_v6_dat(const char * dat, int options)
     return 0;
 }
 
-int
-set_geoip_asn_v4_dat(const char * dat, int options)
+int set_geoip_asn_v4_dat(const char* dat, int options)
 {
     char errbuf[512];
 
     geoip_asn_v4_options = options;
     if (geoip_asn_v4_dat)
         xfree(geoip_asn_v4_dat);
-    if ( (geoip_asn_v4_dat = xstrdup(dat)) ) {
+    if ((geoip_asn_v4_dat = xstrdup(dat))) {
         dsyslogf(LOG_INFO, "GeoIP ASN v4 dat %s %d", geoip_asn_v4_dat, geoip_asn_v4_options);
         return 1;
     }
@@ -306,15 +290,14 @@ set_geoip_asn_v4_dat(const char * dat, int options)
     return 0;
 }
 
-int
-set_geoip_asn_v6_dat(const char * dat, int options)
+int set_geoip_asn_v6_dat(const char* dat, int options)
 {
     char errbuf[512];
 
     geoip_asn_v6_options = options;
     if (geoip_asn_v6_dat)
         xfree(geoip_asn_v6_dat);
-    if ( (geoip_asn_v6_dat = xstrdup(dat)) ) {
+    if ((geoip_asn_v6_dat = xstrdup(dat))) {
         dsyslogf(LOG_INFO, "GeoIP ASN v6 dat %s %d", geoip_asn_v6_dat, geoip_asn_v6_options);
         return 1;
     }
@@ -323,8 +306,7 @@ set_geoip_asn_v6_dat(const char * dat, int options)
     return 0;
 }
 
-int
-set_pcap_buffer_size(const char *s)
+int set_pcap_buffer_size(const char* s)
 {
     dsyslogf(LOG_INFO, "Setting pcap buffer size to: %s", s);
     pcap_buffer_size = atoi(s);
@@ -335,16 +317,14 @@ set_pcap_buffer_size(const char *s)
     return 1;
 }
 
-void
-set_no_wait_interval(void)
+void set_no_wait_interval(void)
 {
     dsyslog(LOG_INFO, "not waiting on interval sync to start");
 
     no_wait_interval = 1;
 }
 
-int
-set_pt_timeout(const char *s)
+int set_pt_timeout(const char* s)
 {
     dsyslogf(LOG_INFO, "Setting pcap-thread timeout to: %s", s);
     pt_timeout = atoi(s);
@@ -355,8 +335,7 @@ set_pt_timeout(const char *s)
     return 1;
 }
 
-void
-set_drop_ip_fragments(void)
+void set_drop_ip_fragments(void)
 {
     dsyslog(LOG_INFO, "dropping ip fragments");
 

@@ -51,41 +51,41 @@
 #include "hashtbl.h"
 #include "syslog_debug.h"
 
-extern int debug_flag;
-extern char * geoip_asn_v4_dat;
-extern int geoip_asn_v4_options;
-extern char * geoip_asn_v6_dat;
-extern int geoip_asn_v6_options;
-static hashfunc asn_hashfunc;
+extern int        debug_flag;
+extern char*      geoip_asn_v4_dat;
+extern int        geoip_asn_v4_options;
+extern char*      geoip_asn_v6_dat;
+extern int        geoip_asn_v6_options;
+static hashfunc   asn_hashfunc;
 static hashkeycmp asn_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
-static hashtbl *theHash = NULL;
-static int next_idx = 0;
-static GeoIP *geoip = NULL;
-static GeoIP *geoip6 = NULL;
-static char ipstr[81];
-static char *nodb = "NODB";
-static char *unknown = "??";
-static char *unknown_v4 = "?4";
-static char *unknown_v6 = "?6";
-static char *_asn = NULL;
+static hashtbl* theHash  = NULL;
+static int      next_idx = 0;
+static GeoIP*   geoip    = NULL;
+static GeoIP*   geoip6   = NULL;
+static char     ipstr[81];
+static char*    nodb       = "NODB";
+static char*    unknown    = "??";
+static char*    unknown_v4 = "?4";
+static char*    unknown_v6 = "?6";
+static char*    _asn       = NULL;
 
 typedef struct {
-    char *asn;
-    int index;
+    char* asn;
+    int   index;
 } asnobj;
 
-const char *
-asn_get_from_message(dns_message * m)
+const char*
+asn_get_from_message(dns_message* m)
 {
-    transport_message *tm;
-    char *asn;
-    char *truncate;
+    transport_message* tm;
+    char*              asn;
+    char*              truncate;
 
     tm = m->tm;
 
-    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr)-1)) {
+    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr) - 1)) {
         dfprint(0, "asn_index: Error converting IP address");
         return unknown;
     }
@@ -96,17 +96,16 @@ asn_get_from_message(dns_message * m)
         _asn = NULL;
     }
 
-    switch(tm->ip_version) {
+    switch (tm->ip_version) {
     case 4:
         if (geoip) {
             if ((_asn = GeoIP_name_by_addr(geoip, ipstr))) {
                 asn = _asn;
-            }
-            else {
+            } else {
                 asn = unknown_v4;
             }
         } else {
-	        asn = nodb;
+            asn = nodb;
         }
         break;
 
@@ -114,13 +113,12 @@ asn_get_from_message(dns_message * m)
         if (geoip6) {
             if ((_asn = GeoIP_name_by_addr_v6(geoip6, ipstr))) {
                 asn = _asn;
-            }
-            else {
+            } else {
                 asn = unknown_v6;
             }
             break;
         } else {
-	        asn = nodb;
+            asn = nodb;
         }
         break;
 
@@ -144,17 +142,16 @@ asn_get_from_message(dns_message * m)
     return asn;
 }
 
-int
-asn_indexer(const void *vp)
+int asn_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    const char *asn;
-    asnobj *obj;
+    const dns_message* m = vp;
+    const char*        asn;
+    asnobj*            obj;
 
     if (m->malformed)
         return -1;
 
-    asn = asn_get_from_message((dns_message *) m);
+    asn = asn_get_from_message((dns_message*)m);
     if (asn == NULL)
         return -1;
 
@@ -190,10 +187,9 @@ asn_indexer(const void *vp)
     return obj->index;
 }
 
-int
-asn_iterator(char **label)
+int asn_iterator(char** label)
 {
-    asnobj *obj;
+    asnobj*     obj;
     static char label_buf[128];
     if (0 == next_idx)
         return -1;
@@ -209,27 +205,25 @@ asn_iterator(char **label)
     return obj->index;
 }
 
-void
-asn_reset()
+void asn_reset()
 {
-    theHash = NULL;
+    theHash  = NULL;
     next_idx = 0;
 }
 
 static unsigned int
-asn_hashfunc(const void *key)
+asn_hashfunc(const void* key)
 {
     return hashendian(key, strlen(key), 0);
 }
 
 static int
-asn_cmpfunc(const void *a, const void *b)
+asn_cmpfunc(const void* a, const void* b)
 {
     return strcasecmp(a, b);
 }
 
-void
-asn_indexer_init()
+void asn_indexer_init()
 {
     if (geoip_asn_v4_dat) {
         geoip = GeoIP_open(geoip_asn_v4_dat, geoip_asn_v4_options);
@@ -248,8 +242,7 @@ asn_indexer_init()
     memset(ipstr, 0, sizeof(ipstr));
     if (geoip || geoip6) {
         dsyslog(LOG_INFO, "asn_index: Sucessfully initialized GeoIP ASN");
-    }
-    else {
+    } else {
         dsyslog(LOG_INFO, "asn_index: No database loaded for GeoIP ASN");
     }
 }

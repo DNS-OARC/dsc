@@ -46,10 +46,9 @@
 #define QNAME_RSN 1
 #define QNAME_OTHER 2
 
-int
-certain_qnames_indexer(const void *vp)
+int certain_qnames_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (0 == strcmp(m->qname, "localhost"))
@@ -59,8 +58,7 @@ certain_qnames_indexer(const void *vp)
     return QNAME_OTHER;
 }
 
-int
-certain_qnames_iterator(char **label)
+int certain_qnames_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

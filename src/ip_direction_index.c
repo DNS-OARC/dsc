@@ -57,22 +57,21 @@
 
 #define LARGEST 2
 
-struct _foo
-{
-    inX_addr addr;
-    inX_addr mask;
-    struct _foo *next;
+struct _foo {
+    inX_addr     addr;
+    inX_addr     mask;
+    struct _foo* next;
 };
 
-static struct _foo *local_addrs = NULL;
+static struct _foo* local_addrs = NULL;
 
 #ifndef DROP_RECV_RESPONSE
 static
 #endif
     int
-ip_is_local(const inX_addr * a)
+    ip_is_local(const inX_addr* a)
 {
-    struct _foo *t;
+    struct _foo* t;
     for (t = local_addrs; t; t = t->next) {
         inX_addr m = inXaddr_mask(a, &(t->mask));
         if (!inXaddr_cmp(&(t->addr), &m)) {
@@ -82,11 +81,10 @@ ip_is_local(const inX_addr * a)
     return 0;
 }
 
-int
-ip_direction_indexer(const void *vp)
+int ip_direction_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    const transport_message *tm = m->tm;
+    const dns_message*       m  = vp;
+    const transport_message* tm = m->tm;
     if (ip_is_local(&tm->src_ip_addr))
         return 0;
     if (ip_is_local(&tm->dst_ip_addr))
@@ -94,10 +92,9 @@ ip_direction_indexer(const void *vp)
     return LARGEST;
 }
 
-int
-ip_local_address(const char *presentation, const char *mask)
+int ip_local_address(const char* presentation, const char* mask)
 {
-    struct _foo *n = xcalloc(1, sizeof(*n));
+    struct _foo* n = xcalloc(1, sizeof(*n));
     if (NULL == n)
         return 0;
     if (inXaddr_pton(presentation, &n->addr) != 1) {
@@ -109,7 +106,7 @@ ip_local_address(const char *presentation, const char *mask)
     if (mask) {
         if (!strchr(mask, '.') && !strchr(mask, ':')) {
             in_addr_t bit_mask = -1;
-            int bits = atoi(mask);
+            int       bits     = atoi(mask);
 
             if (strchr(presentation, ':')) {
                 if (bits < 0 || bits > 128) {
@@ -121,33 +118,28 @@ ip_local_address(const char *presentation, const char *mask)
                 if (bits > 96) {
                     bit_mask <<= 128 - bits;
                     n->mask._.in4.s_addr = htonl(bit_mask);
-                }
-                else {
+                } else {
                     n->mask._.in4.s_addr = 0;
                     if (bits > 64) {
                         bit_mask <<= 96 - bits;
                         n->mask._.pad2.s_addr = htonl(bit_mask);
-                    }
-                    else {
+                    } else {
                         n->mask._.pad2.s_addr = 0;
                         if (bits > 32) {
                             bit_mask <<= 64 - bits;
                             n->mask._.pad1.s_addr = htonl(bit_mask);
-                        }
-                        else {
+                        } else {
                             n->mask._.pad1.s_addr = 0;
                             if (bits) {
                                 bit_mask <<= 32 - bits;
                                 n->mask._.pad0.s_addr = htonl(bit_mask);
-                            }
-                            else {
+                            } else {
                                 n->mask._.pad0.s_addr = 0;
                             }
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 if (bits < 0 || bits > 32) {
                     dfprintf(0, "yucky IP mask bits %s", mask);
                     xfree(n);
@@ -157,25 +149,22 @@ ip_local_address(const char *presentation, const char *mask)
                 if (bits) {
                     bit_mask <<= 32 - bits;
                     n->mask._.in4.s_addr = htonl(bit_mask);
-                }
-                else {
+                } else {
                     n->mask._.in4.s_addr = 0;
                 }
             }
-        }
-        else if (inXaddr_pton(mask, &n->mask) != 1) {
+        } else if (inXaddr_pton(mask, &n->mask) != 1) {
             dfprintf(0, "yucky IP mask %s", mask);
             xfree(n);
             return 0;
         }
     }
-    n->next = local_addrs;
+    n->next     = local_addrs;
     local_addrs = n;
     return 1;
 }
 
-int
-ip_direction_iterator(char **label)
+int ip_direction_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

@@ -44,11 +44,10 @@
 
 static int largest = 0;
 
-int
-opcode_indexer(const void *vp)
+int opcode_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int i = (int) m->opcode;
+    const dns_message* m = vp;
+    int                i = (int)m->opcode;
     if (m->malformed)
         return -1;
     if (i > largest)
@@ -58,8 +57,7 @@ opcode_indexer(const void *vp)
 
 static int next_iter = 0;
 
-int
-opcode_iterator(char **label)
+int opcode_iterator(char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -72,8 +70,7 @@ opcode_iterator(char **label)
     return next_iter++;
 }
 
-void
-opcode_reset()
+void opcode_reset()
 {
     largest = 0;
 }
