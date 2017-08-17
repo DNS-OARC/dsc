@@ -388,7 +388,8 @@ pcap_handle_tcp_segment(u_char* segment, int len, uint32_t seq, tcpstate_t* tcps
         for (s = 0; s < MAX_TCP_SEGS; s++) {
             if (!tcpstate->segbuf[s])
                 continue;
-            if (tcpstate->segbuf[s]->seq - seq >= 0 && tcpstate->segbuf[s]->seq - seq < dnslen) {
+            /* TODO: seq >= 0 */
+            if (tcpstate->segbuf[s]->seq - seq > 0 && tcpstate->segbuf[s]->seq - seq < dnslen) {
                 tcp_segbuf_t* segbuf = tcpstate->segbuf[s];
                 tcpstate->segbuf[s]  = NULL;
                 dfprintf(1, "pcap_handle_tcp_segment: %s", "message reassembled");
@@ -681,8 +682,16 @@ static int
 pcap_ipv4_handler(const struct ip* ip4, int len, void* udata)
 {
     transport_message* tm = udata;
+#ifdef __FreeBSD__ /* FreeBSD uses packed struct ip */
+    struct in_addr a;
+    memcpy(&a, &ip4->ip_src, sizeof(a));
+    inXaddr_assign_v4(&tm->src_ip_addr, &a);
+    memcpy(&a, &ip4->ip_dst, sizeof(a));
+    inXaddr_assign_v4(&tm->dst_ip_addr, &a);
+#else
     inXaddr_assign_v4(&tm->src_ip_addr, &ip4->ip_src);
     inXaddr_assign_v4(&tm->dst_ip_addr, &ip4->ip_dst);
+#endif
     tm->ip_version = 4;
     return 0;
 }
@@ -691,9 +700,16 @@ static int
 pcap_ipv6_handler(const struct ip6_hdr* ip6, int len, void* udata)
 {
     transport_message* tm = udata;
-    dfprintf(1, "pcap_ipv6_handler: %s", "called");
+#ifdef __FreeBSD__ /* FreeBSD uses packed struct ip6_hdr */
+    struct in6_addr a;
+    memcpy(&a, &ip6->ip6_src, sizeof(a));
+    inXaddr_assign_v6(&tm->src_ip_addr, &a);
+    memcpy(&a, &ip6->ip6_dst, sizeof(a));
+    inXaddr_assign_v6(&tm->dst_ip_addr, &a);
+#else
     inXaddr_assign_v6(&tm->src_ip_addr, &ip6->ip6_src);
     inXaddr_assign_v6(&tm->dst_ip_addr, &ip6->ip6_dst);
+#endif
     tm->ip_version = 6;
     return 0;
 }
