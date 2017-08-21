@@ -1,3 +1,15 @@
+dsc (2.6.1-1~unstable+1) unstable; urgency=low
+
+  * Release 2.6.1
+
+    Compatibility fixes for FreeBSD 11.1+ which is now packing `struct ip`.
+
+    Commits:
+    c0cd375 Handle compile warnings and FreeBSD's packing of structs
+    c528ccb Code formatting and moved external code to own directory
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Mon, 21 Aug 2017 10:30:30 +0200
+
 dsc (2.6.0-1~unstable+1) unstable; urgency=low
 
   * Release 2.6.0

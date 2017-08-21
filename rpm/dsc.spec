@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.6.0
+Version:        2.6.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -56,6 +56,12 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Aug 21 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.6.1-1
+- Release 2.6.1
+    Compatibility fixes for FreeBSD 11.1+ which is now packing `struct ip`.
+  * Commits:
+    c0cd375 Handle compile warnings and FreeBSD's packing of structs
+    c528ccb Code formatting and moved external code to own directory
 * Tue Jul 11 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.6.0-1
 - Release 2.6.0
   * Two new DNS filters and configuration for client subnet netmask has been

@@ -8,6 +8,6 @@ SUBDIRS = src cron
 
 dist_doc_DATA = README.md CHANGES LICENSE UPGRADE.md
 
-EXTRA_DIST = doc ports autogen.sh
+EXTRA_DIST = doc ports autogen.sh .clang-format fmt.sh
 
 test: check
