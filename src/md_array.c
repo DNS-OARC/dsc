@@ -48,26 +48,25 @@
 #include "pcap.h"
 #include "syslog_debug.h"
 
-static void md_array_grow(md_array * a, int i1, int i2);
+static void md_array_grow(md_array* a, int i1, int i2);
 
 static void
-md_array_free(md_array * a)
+md_array_free(md_array* a)
 {
     if (a->name)
-        xfree((char *) a->name);
+        xfree((char*)a->name);
     if (a->d1.type)
-        xfree((char *) a->d1.type);
+        xfree((char*)a->d1.type);
     if (a->d2.type)
-        xfree((char *) a->d2.type);
+        xfree((char*)a->d2.type);
     /* a->array contents were in an arena, so we don't need to free them. */
     xfree(a);
 }
 
-void
-md_array_clear(md_array * a)
+void md_array_clear(md_array* a)
 {
     /* a->array contents were in an arena, so we don't need to free them. */
-    a->array = NULL;
+    a->array       = NULL;
     a->d1.alloc_sz = 0;
     if (a->d1.indexer->reset_fn)
         a->d1.indexer->reset_fn();
@@ -76,11 +75,11 @@ md_array_clear(md_array * a)
         a->d2.indexer->reset_fn();
 }
 
-md_array *
-md_array_create(const char *name, filter_list * fl,
-    const char *type1, indexer_t * idx1, const char *type2, indexer_t * idx2)
+md_array*
+md_array_create(const char* name, filter_list* fl,
+    const char* type1, indexer_t* idx1, const char* type2, indexer_t* idx2)
 {
-    md_array *a = xcalloc(1, sizeof(*a));
+    md_array* a = xcalloc(1, sizeof(*a));
     if (NULL == a)
         return NULL;
     a->name = xstrdup(name);
@@ -89,30 +88,29 @@ md_array_create(const char *name, filter_list * fl,
         return NULL;
     }
     a->filter_list = fl;
-    a->d1.type = xstrdup(type1);
+    a->d1.type     = xstrdup(type1);
     if (a->d1.type == NULL) {
         md_array_free(a);
         return NULL;
     }
-    a->d1.indexer = idx1;
+    a->d1.indexer  = idx1;
     a->d1.alloc_sz = 0;
-    a->d2.type = xstrdup(type2);
+    a->d2.type     = xstrdup(type2);
     if (a->d2.type == NULL) {
         md_array_free(a);
         return NULL;
     }
-    a->d2.indexer = idx2;
+    a->d2.indexer  = idx2;
     a->d2.alloc_sz = 0;
-    a->array = NULL;                /* will be allocated when needed, in an arena. */
+    a->array       = NULL; /* will be allocated when needed, in an arena. */
     return a;
 }
 
-int
-md_array_count(md_array * a, const void *vp)
+int md_array_count(md_array* a, const void* vp)
 {
-    int i1;
-    int i2;
-    filter_list *fl;
+    int          i1;
+    int          i2;
+    filter_list* fl;
 
     for (fl = a->filter_list; fl; fl = fl->next)
         if (0 == fl->filter->func(vp, fl->filter->context))
@@ -131,11 +129,11 @@ md_array_count(md_array * a, const void *vp)
 }
 
 static void
-md_array_grow(md_array * a, int i1, int i2)
+md_array_grow(md_array* a, int i1, int i2)
 {
-    int new_d1_sz, new_d2_sz;
-    struct _md_array_node *d1 = NULL;
-    int *d2 = NULL;
+    int                    new_d1_sz, new_d2_sz;
+    struct _md_array_node* d1 = NULL;
+    int*                   d2 = NULL;
 
     if (i1 < a->d1.alloc_sz && i2 < a->array[i1].alloc_sz)
         return;
@@ -189,7 +187,7 @@ md_array_grow(md_array * a, int i1, int i2)
             dfprintf(0, "grew d1 of %s from %d to %d", a->name, a->d1.alloc_sz, new_d1_sz);
             afree(a->array);
         }
-        a->array = d1;
+        a->array       = d1;
         a->d1.alloc_sz = new_d1_sz;
     }
     if (d2) {
@@ -197,7 +195,7 @@ md_array_grow(md_array * a, int i1, int i2)
             dfprintf(0, "grew d2[%d] of %s from %d to %d", i1, a->name, a->array[i1].alloc_sz, new_d2_sz);
             afree(a->array[i1].array);
         }
-        a->array[i1].array = d2;
+        a->array[i1].array    = d2;
         a->array[i1].alloc_sz = new_d2_sz;
     }
 
@@ -205,30 +203,28 @@ md_array_grow(md_array * a, int i1, int i2)
         a->d2.alloc_sz = new_d2_sz;
 }
 
-struct _foo
-{
-    char *label;
-    int val;
+struct _foo {
+    char* label;
+    int   val;
 };
 
 /*
  * descending sort order (larger to smaller)
  */
 static int
-compare(const void *A, const void *B)
+compare(const void* A, const void* B)
 {
-    const struct _foo *a = A;
-    const struct _foo *b = B;
+    const struct _foo* a = A;
+    const struct _foo* b = B;
     return b->val - a->val;
 }
 
-int
-md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
+int md_array_print(md_array* a, md_array_printer* pr, FILE* fp)
 {
-    char *label1;
-    char *label2;
-    int i1;
-    int i2;
+    char* label1;
+    char* label2;
+    int   i1;
+    int   i2;
 
     a->d1.indexer->iter_fn(NULL);
     pr->start_array(fp, a->name);
@@ -236,20 +232,20 @@ md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
     pr->d2_type(fp, a->d2.type);
     pr->start_data(fp);
     while ((i1 = a->d1.indexer->iter_fn(&label1)) > -1) {
-        int skipped = 0;
-        int skipped_sum = 0;
-        int nvals;
-        int si = 0;
-        struct _foo *sortme = NULL;
+        int          skipped     = 0;
+        int          skipped_sum = 0;
+        int          nvals;
+        int          si     = 0;
+        struct _foo* sortme = NULL;
         if (i1 >= a->d1.alloc_sz)
-            continue;                /* see [1] */
+            continue; /* see [1] */
         pr->d1_begin(fp, label1);
         a->d2.indexer->iter_fn(NULL);
-        nvals = a->d2.alloc_sz;
+        nvals  = a->d2.alloc_sz;
         sortme = xcalloc(nvals, sizeof(*sortme));
         if (NULL == sortme) {
             dsyslogf(LOG_CRIT, "Cant output %s file chunk due to malloc failure!", pr->format);
-            continue;                /* OUCH! */
+            continue; /* OUCH! */
         }
         while ((i2 = a->d2.indexer->iter_fn(&label2)) > -1) {
             int val;
@@ -263,7 +259,7 @@ md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
                 skipped_sum += val;
                 continue;
             }
-            sortme[si].val = val;
+            sortme[si].val   = val;
             sortme[si].label = xstrdup(label2);
             if (NULL == sortme[si].label)
                 break;
@@ -295,7 +291,6 @@ md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
     return 0;
 }
 
-
 /* [1]
  * Its okay (not a bug) for the indexer's index to be larger
  * than the array size.  The indexer may have grown for use in a
@@ -303,9 +298,8 @@ md_array_print(md_array * a, md_array_printer * pr, FILE * fp)
  * particular array so far.
  */
 
-
-filter_list **
-md_array_filter_list_append(filter_list ** fl, FLTR * f)
+filter_list**
+md_array_filter_list_append(filter_list** fl, FLTR* f)
 {
     *fl = xcalloc(1, sizeof(**fl));
     if (NULL == (*fl))
@@ -314,10 +308,9 @@ md_array_filter_list_append(filter_list ** fl, FLTR * f)
     return (&(*fl)->next);
 }
 
-FLTR *
-md_array_create_filter(const char *name, filter_func * func, const void *context)
+FLTR* md_array_create_filter(const char* name, filter_func* func, const void* context)
 {
-    FLTR *f = xcalloc(1, sizeof(*f));
+    FLTR* f = xcalloc(1, sizeof(*f));
     if (NULL == f)
         return NULL;
     f->name = xstrdup(name);
@@ -325,7 +318,7 @@ md_array_create_filter(const char *name, filter_func * func, const void *context
         xfree(f);
         return NULL;
     }
-    f->func = func;
+    f->func    = func;
     f->context = context;
     return f;
 }

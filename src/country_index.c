@@ -50,48 +50,48 @@
 #include "hashtbl.h"
 #include "syslog_debug.h"
 
-extern int debug_flag;
-extern char * geoip_v4_dat;
-extern int geoip_v4_options;
-extern char * geoip_v6_dat;
-extern int geoip_v6_options;
-static hashfunc country_hashfunc;
+extern int        debug_flag;
+extern char*      geoip_v4_dat;
+extern int        geoip_v4_options;
+extern char*      geoip_v6_dat;
+extern int        geoip_v6_options;
+static hashfunc   country_hashfunc;
 static hashkeycmp country_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
-static hashtbl *theHash = NULL;
-static int next_idx = 0;
-static GeoIP *geoip = NULL;
-static GeoIP *geoip6 = NULL;
-static char ipstr[81];
-static char *unknown = "??";
-static char *unknown_v4 = "?4";
-static char *unknown_v6 = "?6";
+static hashtbl* theHash  = NULL;
+static int      next_idx = 0;
+static GeoIP*   geoip    = NULL;
+static GeoIP*   geoip6   = NULL;
+static char     ipstr[81];
+static char*    unknown    = "??";
+static char*    unknown_v4 = "?4";
+static char*    unknown_v6 = "?6";
 
 typedef struct
 {
-    char *country;
-    int index;
+    char* country;
+    int   index;
 } countryobj;
 
-const char *
-country_get_from_message(dns_message * m)
+const char*
+country_get_from_message(dns_message* m)
 {
-    transport_message *tm;
-    const char *cc;
+    transport_message* tm;
+    const char*        cc;
 
     tm = m->tm;
-    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr)-1)) {
+    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr) - 1)) {
         dfprint(0, "country_index: Error converting IP address");
-        return(unknown);
+        return (unknown);
     }
 
     cc = unknown;
 
-    switch(tm->ip_version) {
+    switch (tm->ip_version) {
     case 4:
         if (geoip) {
-            cc = GeoIP_country_code_by_addr(geoip,ipstr);
+            cc = GeoIP_country_code_by_addr(geoip, ipstr);
             if (cc == NULL) {
                 cc = unknown_v4;
             }
@@ -99,7 +99,7 @@ country_get_from_message(dns_message * m)
         break;
     case 6:
         if (geoip6) {
-            cc = GeoIP_country_code_by_addr_v6(geoip6,ipstr);
+            cc = GeoIP_country_code_by_addr_v6(geoip6, ipstr);
             if (cc == NULL) {
                 cc = unknown_v6;
             }
@@ -113,15 +113,14 @@ country_get_from_message(dns_message * m)
     return (cc);
 }
 
-int
-country_indexer(const void *vp)
+int country_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    const char *country;
-    countryobj *obj;
+    const dns_message* m = vp;
+    const char*        country;
+    countryobj*        obj;
     if (m->malformed)
         return -1;
-    country = country_get_from_message((dns_message *) m);
+    country = country_get_from_message((dns_message*)m);
     if (NULL == theHash) {
         theHash = hash_create(MAX_ARRAY_SZ, country_hashfunc, country_cmpfunc, 1, afree, afree);
         if (NULL == theHash)
@@ -147,10 +146,9 @@ country_indexer(const void *vp)
     return obj->index;
 }
 
-int
-country_iterator(char **label)
+int country_iterator(char** label)
 {
-    countryobj *obj;
+    countryobj* obj;
     static char label_buf[MAX_QNAME_SZ];
     if (0 == next_idx)
         return -1;
@@ -166,27 +164,25 @@ country_iterator(char **label)
     return obj->index;
 }
 
-void
-country_reset()
+void country_reset()
 {
-    theHash = NULL;
+    theHash  = NULL;
     next_idx = 0;
 }
 
 static unsigned int
-country_hashfunc(const void *key)
+country_hashfunc(const void* key)
 {
     return hashendian(key, strlen(key), 0);
 }
 
 static int
-country_cmpfunc(const void *a, const void *b)
+country_cmpfunc(const void* a, const void* b)
 {
     return strcasecmp(a, b);
 }
 
-void
-country_indexer_init()
+void country_indexer_init()
 {
     if (geoip_v4_dat) {
         geoip = GeoIP_open(geoip_v4_dat, geoip_v4_options);
@@ -205,8 +201,7 @@ country_indexer_init()
     memset(ipstr, 0, sizeof(ipstr));
     if (geoip || geoip6) {
         dsyslog(LOG_INFO, "country_index: Sucessfully initialized GeoIP");
-    }
-    else {
+    } else {
         dsyslog(LOG_INFO, "country_index: No database loaded for GeoIP");
     }
 }

@@ -44,25 +44,23 @@
 
 int edns_version_max = 0;
 
-int
-edns_version_indexer(const void *vp)
+int edns_version_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int index;
+    const dns_message* m = vp;
+    int                index;
     if (m->malformed)
         return -1;
     if (0 == m->edns.found)
         return 0;
-    index = (int) m->edns.version + 1;
+    index = (int)m->edns.version + 1;
     if (index > edns_version_max)
         edns_version_max = index;
     return index;
 }
 
-int
-edns_version_iterator(char **label)
+int edns_version_iterator(char** label)
 {
-    static int next_iter = 0;
+    static int  next_iter = 0;
     static char buf[12];
     if (NULL == label) {
         next_iter = 0;

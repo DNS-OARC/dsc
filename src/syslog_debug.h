@@ -47,30 +47,37 @@ extern int debug_flag;
  * to stderr.
  */
 
-#define dsyslog(priority, format) \
-    { if (debug_flag) \
-        fprintf(stderr, format "\n"); \
-    else \
-        syslog(priority, format); }
+#define dsyslog(priority, format)         \
+    {                                     \
+        if (debug_flag)                   \
+            fprintf(stderr, format "\n"); \
+        else                              \
+            syslog(priority, format);     \
+    }
 
-#define dsyslogf(priority, format, ...) \
-    { if (debug_flag) \
-        fprintf(stderr, format "\n", __VA_ARGS__); \
-    else \
-        syslog(priority, format, __VA_ARGS__); }
+#define dsyslogf(priority, format, ...)                \
+    {                                                  \
+        if (debug_flag)                                \
+            fprintf(stderr, format "\n", __VA_ARGS__); \
+        else                                           \
+            syslog(priority, format, __VA_ARGS__);     \
+    }
 
 /*
  * This dfprint()/dfprintf() macro won't call syslog(), only fprintf
  * to stderr if debug_flag is on.
  */
 
-#define dfprint(lvl, format, ...) \
-    { if (debug_flag > lvl) \
-        fprintf(stderr, format "\n"); }
+#define dfprint(lvl, format, ...)         \
+    {                                     \
+        if (debug_flag > lvl)             \
+            fprintf(stderr, format "\n"); \
+    }
 
-#define dfprintf(lvl, format, ...) \
-    { if (debug_flag > lvl) \
-        fprintf(stderr, format "\n", __VA_ARGS__); }
-
+#define dfprintf(lvl, format, ...)                     \
+    {                                                  \
+        if (debug_flag > lvl)                          \
+            fprintf(stderr, format "\n", __VA_ARGS__); \
+    }
 
 #endif /* __dsc_syslog_debug_h */

@@ -45,10 +45,9 @@
 #define RD_BIT_CLR 0
 #define RD_BIT_SET 1
 
-int
-rd_bit_indexer(const void *vp)
+int rd_bit_indexer(const void* vp)
 {
-    const dns_message *m = vp;
+    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (m->rd)
@@ -56,8 +55,7 @@ rd_bit_indexer(const void *vp)
     return RD_BIT_CLR;
 }
 
-int
-rd_bit_iterator(char **label)
+int rd_bit_iterator(char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

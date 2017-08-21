@@ -44,12 +44,11 @@
 
 static int largest = 0;
 
-int
-ip_version_indexer(const void *vp)
+int ip_version_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    const transport_message *tm = m->tm;
-    int i = (int) tm->ip_version;
+    const dns_message*       m  = vp;
+    const transport_message* tm = m->tm;
+    int                      i  = (int)tm->ip_version;
     if (i > largest)
         largest = i;
     return i;
@@ -57,8 +56,7 @@ ip_version_indexer(const void *vp)
 
 static int next_iter = 0;
 
-int
-ip_version_iterator(char **label)
+int ip_version_iterator(char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -71,8 +69,7 @@ ip_version_iterator(char **label)
     return next_iter++;
 }
 
-void
-ip_version_reset()
+void ip_version_reset()
 {
     largest = 0;
 }

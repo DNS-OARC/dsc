@@ -17,11 +17,11 @@ Copyright: 2016 Duane Wessels
            2016 The Measurement Factory, Inc.
 License: MIT
 
-Files: src/base64.c
+Files: src/ext/base64.c
 Copyright: 1995-2001 Kungliga Tekniska Högskolan (Royal Institute of Technology, Stockholm, Sweden)
 License: BSD-3-Clause
 
-Files: src/lookup3.c
+Files: src/ext/lookup3.c
 Copyright: 2006 Bob Jenkins
 License: Public Domain
 

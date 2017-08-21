@@ -44,28 +44,27 @@
 #include "md_array.h"
 #include "hashtbl.h"
 
-static hashfunc tld_hashfunc;
+static hashfunc   tld_hashfunc;
 static hashkeycmp tld_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
-static hashtbl *theHash = NULL;
-static int next_idx = 0;
+static hashtbl* theHash  = NULL;
+static int      next_idx = 0;
 
 typedef struct
 {
-    char *tld;
-    int index;
+    char* tld;
+    int   index;
 } tldobj;
 
-int
-tld_indexer(const void *vp)
+int tld_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    const char *tld;
-    tldobj *obj;
+    const dns_message* m = vp;
+    const char*        tld;
+    tldobj*            obj;
     if (m->malformed)
         return -1;
-    tld = dns_message_tld((dns_message *) m);
+    tld = dns_message_tld((dns_message*)m);
     if (NULL == theHash) {
         theHash = hash_create(MAX_ARRAY_SZ, tld_hashfunc, tld_cmpfunc, 1, afree, afree);
         if (NULL == theHash)
@@ -91,10 +90,9 @@ tld_indexer(const void *vp)
     return obj->index;
 }
 
-int
-tld_iterator(char **label)
+int tld_iterator(char** label)
 {
-    tldobj *obj;
+    tldobj*     obj;
     static char label_buf[MAX_QNAME_SZ];
     if (0 == next_idx)
         return -1;
@@ -110,21 +108,20 @@ tld_iterator(char **label)
     return obj->index;
 }
 
-void
-tld_reset()
+void tld_reset()
 {
-    theHash = NULL;
+    theHash  = NULL;
     next_idx = 0;
 }
 
 static unsigned int
-tld_hashfunc(const void *key)
+tld_hashfunc(const void* key)
 {
     return hashendian(key, strlen(key), 0);
 }
 
 static int
-tld_cmpfunc(const void *a, const void *b)
+tld_cmpfunc(const void* a, const void* b)
 {
     return strcasecmp(a, b);
 }

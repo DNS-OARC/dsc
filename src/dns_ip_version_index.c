@@ -47,11 +47,10 @@
 
 static int largest = 0;
 
-int
-dns_ip_version_indexer(const void *vp)
+int dns_ip_version_indexer(const void* vp)
 {
-    const dns_message *m = vp;
-    int i = (int) inXaddr_version(&m->tm->src_ip_addr);
+    const dns_message* m = vp;
+    int                i = (int)inXaddr_version(&m->tm->src_ip_addr);
     if (i > largest)
         largest = i;
     return i;
@@ -59,8 +58,7 @@ dns_ip_version_indexer(const void *vp)
 
 static int next_iter = 0;
 
-int
-dns_ip_version_iterator(char **label)
+int dns_ip_version_iterator(char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -73,8 +71,7 @@ dns_ip_version_iterator(char **label)
     return next_iter++;
 }
 
-void
-dns_ip_version_reset(void)
+void dns_ip_version_reset(void)
 {
     largest = 0;
 }

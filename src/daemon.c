@@ -73,37 +73,36 @@
 #include "compat.h"
 #include "pcap-thread/pcap_thread.h"
 
-char *progname = NULL;
-char *pid_file_name = NULL;
-int promisc_flag = 1;
-int monitor_flag = 0;
-int immediate_flag = 0;
-int threads_flag = 1;
-int debug_flag = 0;
-int nodaemon_flag = 0;
-int have_reports = 0;
+char* progname       = NULL;
+char* pid_file_name  = NULL;
+int   promisc_flag   = 1;
+int   monitor_flag   = 0;
+int   immediate_flag = 0;
+int   threads_flag   = 1;
+int   debug_flag     = 0;
+int   nodaemon_flag  = 0;
+int   have_reports   = 0;
 
 extern void cip_net_indexer_init(void);
 #if HAVE_LIBGEOIP
 extern void country_indexer_init(void);
 extern void asn_indexer_init(void);
 #endif
-extern uint64_t minfree_bytes;
-extern int n_pcap_offline;
+extern uint64_t         minfree_bytes;
+extern int              n_pcap_offline;
 extern md_array_printer xml_printer;
 extern md_array_printer json_printer;
-extern int output_format_xml;
-extern int output_format_json;
-extern int dump_reports_on_exit;
-extern uint64_t statistics_interval;
-extern int no_wait_interval;
-extern pcap_thread_t pcap_thread;
+extern int              output_format_xml;
+extern int              output_format_json;
+extern int              dump_reports_on_exit;
+extern uint64_t         statistics_interval;
+extern int              no_wait_interval;
+extern pcap_thread_t    pcap_thread;
 
-void
-daemonize(void)
+void daemonize(void)
 {
-    char errbuf[512];
-    int fd;
+    char  errbuf[512];
+    int   fd;
     pid_t pid;
     if ((pid = fork()) < 0) {
         dsyslogf(LOG_ERR, "fork failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
@@ -132,12 +131,11 @@ daemonize(void)
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 }
 
-void
-write_pid_file(void)
+void write_pid_file(void)
 {
-    char errbuf[512];
-    FILE *fp;
-    int fd, flags;
+    char         errbuf[512];
+    FILE*        fp;
+    int          fd, flags;
     struct flock lock;
 
     if (!pid_file_name)
@@ -172,10 +170,10 @@ write_pid_file(void)
      * Lock the PID file
      */
 
-    lock.l_type = F_WRLCK;
+    lock.l_type   = F_WRLCK;
     lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
+    lock.l_start  = 0;
+    lock.l_len    = 0;
 
     if (fcntl(fd, F_SETLK, &lock) == -1) {
         if (errno == EACCES || errno == EAGAIN) {
@@ -205,28 +203,26 @@ write_pid_file(void)
     }
 }
 
-int
-disk_is_full(void)
+int disk_is_full(void)
 {
     uint64_t avail_bytes;
 #if HAVE_STATVFS
     struct statvfs s;
     if (statvfs(".", &s) < 0)
-        return 0;                /* assume not */
-    avail_bytes = (uint64_t) s.f_frsize * (uint64_t) s.f_bavail;
+        return 0; /* assume not */
+    avail_bytes = (uint64_t)s.f_frsize * (uint64_t)s.f_bavail;
 #else
     struct statfs s;
     if (statfs(".", &s) < 0)
-        return 0;                /* assume not */
-    avail_bytes = (uint64_t) s.f_bsize * (uint64_t) s.f_bavail;
+        return 0; /* assume not */
+    avail_bytes = (uint64_t)s.f_bsize * (uint64_t)s.f_bavail;
 #endif
     if (avail_bytes < minfree_bytes)
         return 1;
     return 0;
 }
 
-void
-usage(void)
+void usage(void)
 {
     fprintf(stderr, "usage: %s [opts] dsc.conf\n", progname);
     fprintf(stderr,
@@ -236,26 +232,24 @@ usage(void)
         "\t-m\tEnable monitor mode on interfaces.\n"
         "\t-i\tEnable immediate mode on interfaces.\n"
         "\t-T\tDisable the usage of threads.\n"
-        "\t-v\tPrint version and exit.\n"
-    );
+        "\t-v\tPrint version and exit.\n");
     exit(1);
 }
 
-void
-version(void)
+void version(void)
 {
     printf("dsc version " PACKAGE_VERSION "\n");
     exit(0);
 }
 
 static int
-dump_report(md_array_printer * printer)
+dump_report(md_array_printer* printer)
 {
-    char errbuf[512];
-    int fd;
-    FILE *fp;
-    char fname[128];
-    char tname[128];
+    char  errbuf[512];
+    int   fd;
+    FILE* fp;
+    char  fname[128];
+    char  tname[128];
 
     if (disk_is_full()) {
         dsyslogf(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
@@ -303,10 +297,10 @@ dump_reports(void)
 {
     int ret;
 
-    if ( output_format_xml && (ret = dump_report(&xml_printer)) ) {
+    if (output_format_xml && (ret = dump_report(&xml_printer))) {
         return ret;
     }
-    if ( output_format_json && (ret = dump_report(&json_printer)) ) {
+    if (output_format_json && (ret = dump_report(&json_printer))) {
         return ret;
     }
 
@@ -329,18 +323,18 @@ sig_exit_dumping(int signum)
         dsyslogf(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
         sig_while_processing = signum;
         Pcap_stop();
-    }
-    else {
+    } else {
         dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
         exit(0);
     }
 }
 
 #if HAVE_PTHREAD
-static void *
-sig_thread(void * arg) {
-    sigset_t *set = (sigset_t*)arg;
-    int sig, err;
+static void*
+sig_thread(void* arg)
+{
+    sigset_t* set = (sigset_t*)arg;
+    int       sig, err;
 
     if ((err = sigwait(set, &sig))) {
         dsyslogf(LOG_DEBUG, "Error sigwait(): %d", err);
@@ -356,17 +350,16 @@ sig_thread(void * arg) {
 }
 #endif
 
-int
-main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-    char errbuf[512];
-    int x;
-    int result;
+    char           errbuf[512];
+    int            x;
+    int            result;
     struct timeval break_start = { 0, 0 };
 #if HAVE_PTHREAD
     pthread_t sigthread;
 #endif
-    int err;
+    int            err;
     struct timeval now;
 
     progname = xstrdup(strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0]);
@@ -428,7 +421,7 @@ main(int argc, char *argv[])
     country_indexer_init();
     asn_indexer_init();
 #endif
-    if ( !output_format_xml && !output_format_json ) {
+    if (!output_format_xml && !output_format_json) {
         output_format_xml = 1;
     }
 
@@ -443,7 +436,7 @@ main(int argc, char *argv[])
         daemonize();
     write_pid_file();
 
-    /*
+/*
      * Handle signal when using pthreads
      */
 
@@ -467,15 +460,14 @@ main(int argc, char *argv[])
             dsyslogf(LOG_ERR, "Unable to start signal thread: %s", dsc_strerror(err, errbuf, sizeof(errbuf)));
             exit(1);
         }
-    }
-    else
+    } else
 #endif
     {
         /*
          * Handle signal without pthreads
          */
 
-        sigset_t set;
+        sigset_t         set;
         struct sigaction action;
 
         sigfillset(&set);
@@ -529,14 +521,13 @@ main(int argc, char *argv[])
     if (pcap_thread_filter_errno(&pcap_thread)) {
         dsyslogf(LOG_NOTICE, "detected non-fatal error during pcap activation, filters may run in userland [%d]: %s",
             pcap_thread_filter_errno(&pcap_thread),
-            dsc_strerror(pcap_thread_filter_errno(&pcap_thread), errbuf, sizeof(errbuf))
-        );
+            dsc_strerror(pcap_thread_filter_errno(&pcap_thread), errbuf, sizeof(errbuf)));
     }
 
     dsyslog(LOG_INFO, "Running");
 
     do {
-        useArena();                /* Initialize a memory arena for data collection. */
+        useArena(); /* Initialize a memory arena for data collection. */
         if (debug_flag && break_start.tv_sec > 0) {
             gettimeofday(&now, NULL);
             dsyslogf(LOG_INFO, "inter-run processing delay: %lld ms",
@@ -553,7 +544,7 @@ main(int argc, char *argv[])
         if (0 == fork()) {
             struct sigaction action;
 
-            /*
+/*
              * Remove the blocking of signals
              */
 
@@ -601,7 +592,7 @@ main(int argc, char *argv[])
         {
             /* Reap children. (Most recent probably has not exited yet, but
              * older ones should have.) */
-            int cstatus = 0;
+            int   cstatus = 0;
             pid_t pid;
             while ((pid = waitpid(0, &cstatus, WNOHANG)) > 0) {
                 if (WIFSIGNALED(cstatus))
