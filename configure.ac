@@ -63,7 +63,7 @@ AC_CHECK_HEADERS([arpa/nameser_compat.h arpa/inet.h fcntl.h memory.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h stdint.h stdlib.h string.h])
 AC_CHECK_HEADERS([strings.h sys/mount.h sys/param.h sys/socket.h])
 AC_CHECK_HEADERS([sys/statfs.h sys/statvfs.h sys/time.h syslog.h])
-AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h])
+AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h pcap/sll.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
