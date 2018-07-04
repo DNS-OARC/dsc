@@ -742,7 +742,9 @@ void handle_loop(const u_char* pkt, int len, void* userdata);
 void handle_raw(const u_char* pkt, int len, void* userdata);
 #endif
 void handle_ether(const u_char* pkt, int len, void* userdata);
-void handle_linux_sll(const u_char* pkt, int len, void* userdata);
+#ifdef DLT_LINUX_SLL
+void handle_linux_sll(const u_char * pkt, int len, void *userdata);
+#endif
 
 static void
 pcap_handle_packet(u_char* udata, const struct pcap_pkthdr* hdr, const u_char* pkt, const char* name, int dlt)
@@ -781,14 +783,14 @@ pcap_handle_packet(u_char* udata, const struct pcap_pkthdr* hdr, const u_char* p
         handle_datalink = handle_raw;
         break;
 #endif
-    case DLT_NULL:
-        handle_datalink = handle_null;
-        break;
-#ifdef linux
+#ifdef DLT_LINUX_SLL
     case DLT_LINUX_SLL:
         handle_datalink = handle_linux_sll;
         break;
 #endif
+    case DLT_NULL:
+        handle_datalink = handle_null;
+        break;
     default:
         fprintf(stderr, "unsupported data link type %d", dlt);
         exit(1);
