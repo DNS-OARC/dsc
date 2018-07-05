@@ -127,8 +127,10 @@ grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned sh
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
     if (0 != x)
         return 0;
-    if ('\0' == *qname)
-        strcpy(qname, ".");
+    if ('\0' == *qname) {
+        *qname = '.';
+        *(qname + 1) = 0;
+    }
     /* XXX remove special characters from QNAME */
     while ((t = strchr(qname, '\n')))
         *t = ' ';

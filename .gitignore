@@ -33,3 +33,8 @@ build/
 config.h.in
 dsc-[0-9]*tar*
 src/test/*.dist
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4

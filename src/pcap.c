@@ -579,12 +579,13 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
 
     if (debug_flag > 1) {
         char* p = label;
+        *p = 0;
         inXaddr_ntop(&key.src_ip_addr, p, 128);
         p += strlen(p);
-        p += sprintf(p, ":%d ", key.sport);
+        p += snprintf(p, 32, ":%d ", key.sport);
         inXaddr_ntop(&key.dst_ip_addr, p, 128);
         p += strlen(p);
-        p += sprintf(p, ":%d ", key.dport);
+        snprintf(p, 32, ":%d ", key.dport);
         dfprintf(1, "handle_tcp: %s", label);
     }
 
