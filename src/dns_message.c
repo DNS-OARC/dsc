@@ -110,7 +110,7 @@ printable_dnsname(const char* name)
         } else {
             if (i + 3 > MAX_QNAME_SZ - 1)
                 break; /* expanded character would overflow buffer */
-            snprintf(buf + i, i - sizeof(buf) - 1, "%%%02x", (unsigned char)*name);
+            snprintf(buf + i, sizeof(buf) - i - 1, "%%%02x", (unsigned char)*name);
             i += 3;
         }
     }
