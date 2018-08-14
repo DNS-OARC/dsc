@@ -133,3 +133,9 @@ dsc.conf.5: dsc.conf.5.in Makefile
         -e 's,[@]PACKAGE_BUGREPORT[@],$(PACKAGE_BUGREPORT),g' \
         -e 's,[@]etcdir[@],$(etcdir),g' \
         < $(srcdir)/dsc.conf.5.in > dsc.conf.5
+
+dsc.1.html: dsc.1
+	cat dsc.1 | groff -mandoc -Thtml > dsc.1.html
+
+dsc.conf.5.html: dsc.conf.5
+	cat dsc.conf.5 | groff -mandoc -Thtml > dsc.conf.5.html

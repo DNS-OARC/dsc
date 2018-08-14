@@ -328,7 +328,7 @@ pcap_handle_tcp_segment(u_char* segment, int len, uint32_t seq, tcpstate_t* tcps
 
     if (3 == tcpstate->dnslen_bytes_seen_mask) {
         /* We have the dnslen stored now */
-        dnslen = nptohs(tcpstate->dnslen_buf);
+        dnslen = nptohs(tcpstate->dnslen_buf) & 0xffff;
         /*
          * Next we poison the mask to indicate we are in to the message body.
          * If one doesn't remember we're past the then,
@@ -579,12 +579,13 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
 
     if (debug_flag > 1) {
         char* p = label;
+        *p = 0;
         inXaddr_ntop(&key.src_ip_addr, p, 128);
         p += strlen(p);
-        p += sprintf(p, ":%d ", key.sport);
+        p += snprintf(p, 32, ":%d ", key.sport);
         inXaddr_ntop(&key.dst_ip_addr, p, 128);
         p += strlen(p);
-        p += sprintf(p, ":%d ", key.dport);
+        snprintf(p, 32, ":%d ", key.dport);
         dfprintf(1, "handle_tcp: %s", label);
     }
 
@@ -742,6 +743,9 @@ void handle_loop(const u_char* pkt, int len, void* userdata);
 void handle_raw(const u_char* pkt, int len, void* userdata);
 #endif
 void handle_ether(const u_char* pkt, int len, void* userdata);
+#ifdef DLT_LINUX_SLL
+void handle_linux_sll(const u_char * pkt, int len, void *userdata);
+#endif
 
 static void
 pcap_handle_packet(u_char* udata, const struct pcap_pkthdr* hdr, const u_char* pkt, const char* name, int dlt)
@@ -778,6 +782,11 @@ pcap_handle_packet(u_char* udata, const struct pcap_pkthdr* hdr, const u_char* p
 #ifdef DLT_RAW
     case DLT_RAW:
         handle_datalink = handle_raw;
+        break;
+#endif
+#ifdef DLT_LINUX_SLL
+    case DLT_LINUX_SLL:
+        handle_datalink = handle_linux_sll;
         break;
 #endif
     case DLT_NULL:

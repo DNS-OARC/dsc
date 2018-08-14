@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.6.1], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.7.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
@@ -42,6 +42,21 @@ AC_CONFIG_HEADER([src/config.h])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
+
+# Check --enable-warn-all
+AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [AX_CFLAGS_WARN_ALL()])
+
+# Check --with-extra-cflags
+AC_ARG_WITH([extra-cflags], [AS_HELP_STRING([--with-extra-cflags=CFLAGS], [Add extra CFLAGS])], [
+  AC_MSG_NOTICE([appending extra CFLAGS... $withval])
+  AS_VAR_APPEND(CFLAGS, [" $withval"])
+])
+
+# Check --with-extra-ldflags
+AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=CFLAGS], [Add extra LDFLAGS])], [
+  AC_MSG_NOTICE([appending extra LDFLAGS... $withval])
+  AS_VAR_APPEND(LDFLAGS, [" $withval"])
+])
 
 # pcap thread
 AC_ARG_ENABLE(threads,
@@ -63,7 +78,7 @@ AC_CHECK_HEADERS([arpa/nameser_compat.h arpa/inet.h fcntl.h memory.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h stdint.h stdlib.h string.h])
 AC_CHECK_HEADERS([strings.h sys/mount.h sys/param.h sys/socket.h])
 AC_CHECK_HEADERS([sys/statfs.h sys/statvfs.h sys/time.h syslog.h])
-AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h])
+AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h pcap/sll.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

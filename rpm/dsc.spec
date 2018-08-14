@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.6.1
+Version:        2.7.0
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -56,9 +56,25 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Aug 14 2018 Jerry Lundström <lundstrom.jerry@gmail.com> 2.7.0-1
+- Release 2.7.0
+  * Add support for Linux "cooked" capture encapsulation (`DLT_LINUX_SLL`).
+  * Fixes:
+    - `grok_question()`: Remove usage of `strcpy()`
+    - `pcap_tcp_handler()`: Use `snprintf()`
+    - `printable_dnsname()`: Use `snprintf()`
+    - Fix CID 104450, 186871
+  * Commits:
+    41d59ac man-page HTML
+    476d6ed pcap_layers, CID
+    747131b Configure options
+    43c9ad0 DLT_LINUX_SLL
+    8a48667 Support the linux cooked sll frame
+    bd4a94f Fix CID 104450
+- change me
 * Mon Aug 21 2017 Jerry Lundström <lundstrom.jerry@gmail.com> 2.6.1-1
 - Release 2.6.1
-    Compatibility fixes for FreeBSD 11.1+ which is now packing `struct ip`.
+  * Compatibility fixes for FreeBSD 11.1+ which is now packing `struct ip`.
   * Commits:
     c0cd375 Handle compile warnings and FreeBSD's packing of structs
     c528ccb Code formatting and moved external code to own directory

@@ -1,18 +1,22 @@
+addons:
+  apt:
+    update: true
+    packages:
+    - libpcap-dev
+    - libproc-pid-file-perl
+    - libgeoip-dev
 language: c
 compiler:
   - clang
   - gcc
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y libpcap-dev libproc-pid-file-perl libgeoip-dev
 install: ./autogen.sh
 script:
-  - ./configure
+  - ./configure --enable-warn-all
   - make dist
   - tar zxvf *.tar.gz
   - cd dsc-*[0-9]
   - mkdir build
   - cd build
-  - ../configure
+  - ../configure --enable-warn-all
   - make
   - make test
