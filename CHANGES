@@ -1,3 +1,23 @@
+2018-08-14 Jerry Lundström
+
+    Release 2.7.0
+
+    Add support for Linux "cooked" capture encapsulation (`DLT_LINUX_SLL`).
+
+    Fixes:
+    - `grok_question()`: Remove usage of `strcpy()`
+    - `pcap_tcp_handler()`: Use `snprintf()`
+    - `printable_dnsname()`: Use `snprintf()`
+    - Fix CID 104450, 186871
+
+    Commits:
+    41d59ac man-page HTML
+    476d6ed pcap_layers, CID
+    747131b Configure options
+    43c9ad0 DLT_LINUX_SLL
+    8a48667 Support the linux cooked sll frame
+    bd4a94f Fix CID 104450
+
 2017-08-21 Jerry Lundström
 
     Release 2.6.1
