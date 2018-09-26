@@ -5,7 +5,8 @@ SUBDIRS = test
 
 AM_CFLAGS = -I$(srcdir) \
   $(PTHREAD_CFLAGS) \
-  $(libmaxminddb_CFLAGS)
+  $(libmaxminddb_CFLAGS) \
+  $(libdnswire_CFLAGS) $(libuv_CFLAGS)
 
 EXTRA_DIST = dsc.sh dsc.conf.sample.in dsc.1.in dsc.conf.5.in
 
@@ -26,7 +27,8 @@ dsc_SOURCES = asn_index.c certain_qnames_index.c client_index.c \
   transport_index.c xmalloc.c response_time_index.c \
   ext/base64.c ext/lookup3.c \
   pcap_layers/pcap_layers.c \
-  pcap-thread/pcap_thread.c
+  pcap-thread/pcap_thread.c \
+  dnstap.c
 dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   client_subnet_index.h compat.h config_hooks.h country_index.h dataset_opt.h \
   dns_ip_version_index.h dns_message.h dns_protocol.h dns_source_port_index.h \
@@ -38,8 +40,10 @@ dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   rd_bit_index.h server_ip_addr_index.h syslog_debug.h tc_bit_index.h \
   tld_index.h transport_index.h xmalloc.h response_time_index.h \
   pcap_layers/byteorder.h pcap_layers/pcap_layers.h \
-  pcap-thread/pcap_thread.h
-dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS)
+  pcap-thread/pcap_thread.h \
+  dnstap.h input_mode.h
+dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS) \
+  $(libdnswire_LIBS) $(libuv_LIBS)
 man1_MANS = dsc.1
 man5_MANS = dsc.conf.5
 

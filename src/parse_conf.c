@@ -787,6 +787,101 @@ int parse_conf_response_time_bucket_size(const conf_token_t* tokens)
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_dnstap_file(const conf_token_t* tokens)
+{
+    char* file = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!file) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = open_dnstap(dnstap_via_file, file, 0);
+    free(file);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_dnstap_unixsock(const conf_token_t* tokens)
+{
+    char* unixsock = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!unixsock) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = open_dnstap(dnstap_via_unixsock, unixsock, 0);
+    free(unixsock);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_dnstap_tcp(const conf_token_t* tokens)
+{
+    char* host = strndup(tokens[1].token, tokens[1].length);
+    char* port = strndup(tokens[2].token, tokens[2].length);
+    int   ret;
+
+    if (!host || !port) {
+        free(host);
+        free(port);
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = open_dnstap(dnstap_via_tcp, host, port);
+    free(host);
+    free(port);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_dnstap_udp(const conf_token_t* tokens)
+{
+    char* host = strndup(tokens[1].token, tokens[1].length);
+    char* port = strndup(tokens[2].token, tokens[2].length);
+    int   ret;
+
+    if (!host || !port) {
+        free(host);
+        free(port);
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = open_dnstap(dnstap_via_udp, host, port);
+    free(host);
+    free(port);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_dnstap_network(const conf_token_t* tokens)
+{
+    extern char* dnstap_network_ip4;
+    extern char* dnstap_network_ip6;
+    extern int   dnstap_network_port;
+    char*        port = strndup(tokens[3].token, tokens[3].length);
+
+    if (dnstap_network_ip4)
+        free(dnstap_network_ip4);
+    dnstap_network_ip4 = strndup(tokens[1].token, tokens[1].length);
+
+    if (dnstap_network_ip6)
+        free(dnstap_network_ip6);
+    dnstap_network_ip6 = strndup(tokens[2].token, tokens[2].length);
+
+    if (!dnstap_network_ip4 || !dnstap_network_ip6 || !port) {
+        errno = ENOMEM;
+        free(port);
+        return -1;
+    }
+
+    dnstap_network_port = atoi(port);
+    free(port);
+
+    return dnstap_network_port < 0 ? 1 : 0;
+}
+
 static conf_token_syntax_t _syntax[] = {
     { "interface",
         parse_conf_interface,
@@ -890,6 +985,21 @@ static conf_token_syntax_t _syntax[] = {
     { "response_time_bucket_size",
         parse_conf_response_time_bucket_size,
         { TOKEN_NUMBER, TOKEN_END } },
+    { "dnstap_file",
+        parse_conf_dnstap_file,
+        { TOKEN_STRING, TOKEN_END } },
+    { "dnstap_unixsock",
+        parse_conf_dnstap_unixsock,
+        { TOKEN_STRING, TOKEN_END } },
+    { "dnstap_tcp",
+        parse_conf_dnstap_tcp,
+        { TOKEN_STRING, TOKEN_NUMBER, TOKEN_END } },
+    { "dnstap_udp",
+        parse_conf_dnstap_udp,
+        { TOKEN_STRING, TOKEN_NUMBER, TOKEN_END } },
+    { "dnstap_network",
+        parse_conf_dnstap_network,
+        { TOKEN_STRING, TOKEN_STRING, TOKEN_NUMBER, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }
 };

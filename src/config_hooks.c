@@ -44,12 +44,16 @@
 #include "compat.h"
 #include "response_time_index.h"
 
+#include "input_mode.h"
+#include "dnstap.h"
+
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
+extern int input_mode;
 extern int promisc_flag;
 extern int monitor_flag;
 extern int immediate_flag;
@@ -93,8 +97,40 @@ extern void pcap_set_match_vlan(int);
 
 int open_interface(const char* interface)
 {
+    if (input_mode != INPUT_NONE && input_mode != INPUT_PCAP) {
+        dsyslog(LOG_ERR, "input mode already set");
+        return 0;
+    }
+    input_mode = INPUT_PCAP;
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
     Pcap_init(interface, promisc_flag, monitor_flag, immediate_flag, threads_flag, pcap_buffer_size);
+    return 1;
+}
+
+int open_dnstap(enum dnstap_via via, const char* file_or_ip, const char* port)
+{
+    int port_num = -1;
+
+    if (input_mode != INPUT_NONE) {
+        if (input_mode == INPUT_DNSTAP) {
+            dsyslog(LOG_ERR, "only one DNSTAP input can be used at a time");
+        } else {
+            dsyslog(LOG_ERR, "input mode already set");
+        }
+        return 0;
+    }
+    if (port) {
+        port_num = atoi(port);
+        if (port_num < 0 || port_num > 65535) {
+            dsyslog(LOG_ERR, "invalid port for DNSTAP");
+            return 0;
+        }
+        dsyslogf(LOG_INFO, "Opening dnstap %s:%s", file_or_ip, port);
+    } else {
+        dsyslogf(LOG_INFO, "Opening dnstap %s", file_or_ip);
+    }
+    dnstap_init(via, file_or_ip, port_num);
+    input_mode = INPUT_DNSTAP;
     return 1;
 }
 

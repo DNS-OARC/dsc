@@ -66,6 +66,16 @@ AC_ARG_ENABLE(threads,
   [AX_PCAP_THREAD],
   [AX_PCAP_THREAD_PCAP])
 
+# dnstap
+use_dnstap=no
+AC_ARG_ENABLE([dnstap], [AS_HELP_STRING([--enable-dnstap], [DNSTAP input support])], [
+  AC_DEFINE([USE_DNSTAP], [1], [Define to 1 if DNSTAP support is built in.])
+  PKG_CHECK_MODULES([libdnswire], [libdnswire])
+  PKG_CHECK_MODULES([libuv], [libuv])
+  use_dnstap=yes
+])
+AM_CONDITIONAL([USE_DNSTAP], [test x$use_dnstap = xyes])
+
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])

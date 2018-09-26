@@ -91,6 +91,37 @@ pid_file "@DSC_PID_FILE@";
 #interface any;
 #interface /path/to/dump.pcap;
 
+# DNSTAP
+#
+#  specify DNSTAP input from a file, UNIX socket, UDP or TCP connections
+#  (dsc will listen for incoming connections).
+#
+#  This type of input is delivered directly from the DNS software itself
+#  as encapsulated DNS packets as seen or as made by the software.
+#  See https://dnstap.info for more information about DNSTAP.
+#
+#  NOTE:
+#  - Only one DNSTAP input can be specified at a time currently.
+#  - Configuration needs to match that of the DNS software.
+#  - Don't use these values as default values, no default port for DNSTAP!
+#
+#dnstap_file /path/to/file.dnstap;
+#dnstap_unixsock /path/to/unix.sock;
+#dnstap_tcp 127.0.0.1 5353;
+#dnstap_udp 127.0.0.1 5353;
+
+# DNSTAP network information filler
+#
+#  per DNSTAP specification, some information may be not included such as
+#  receiver or sender of DNS. To be able to produce statistics, dsc needs
+#  to know what to put in place when that information is missing.
+#  This is configured by dnstap_network and should be the primary IP
+#  addresses and port of the DNS software.
+#
+#    dnstap_network <IPv4> <IPv6> <port>;
+#
+#dnstap_network 127.0.0.1 ::1 53;
+
 # qname_filter
 #
 #  Defines a custom QNAME-based filter for DNS messages.  If

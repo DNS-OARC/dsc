@@ -23,6 +23,8 @@ BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
 BuildRequires:  pkgconfig
+BuildRequires:  dnswire-devel
+BuildRequires:  libuv-devel
 Requires:       perl
 Requires:       perl(Proc::PID::File)
 

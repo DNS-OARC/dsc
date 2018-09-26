@@ -140,6 +140,46 @@ will include any interfaces the host has but these interfaces will
 not be put into promiscuous mode which may prevent capturing traffic
 that is not directly related to the host.
 .TP
+\fBdnstap_file\fR FILE ;
+.TQ
+\fBdnstap_unixsock\fR FILE ;
+.TQ
+\fBdnstap_tcp\fR IP PORT ;
+.TQ
+\fBdnstap_udp\fR IP PORT ;
+Specify DNSTAP input from a file, UNIX socket, UDP or TCP connections (dsc
+will listen for incoming connections).
+This type of input is delivered directly from the DNS software itself
+as encapsulated DNS packets as seen or as made by the software.
+See
+.UR https://dnstap.info
+https://dnstap.info
+.UE
+for more information about DNSTAP.
+
+NOTE:
+.RS
+.IP -
+Only one DNSTAP input can be specified at a time currently.
+.IP -
+Configuration needs to match that of the DNS software.
+.RE
+.TP
+\fBdnstap_network\fR IPV4 IPV6 PORT ;
+Specify DNSTAP network information.
+
+Per DNSTAP specification, some information may be not included such as
+receiver or sender of DNS.
+To be able to produce statistics,
+.I dsc
+needs to know what to put in place when that information is missing.
+This is configured by
+.I dnstap_network
+and should be the primary IP addresses and port of the DNS software.
+
+Default values are
+.BR "127.0.0.1 ::1 53" .
+.TP
 \fBqname_filter\fR NAME FILTER ;
 This directive allows you to define custom filters to match query names
 in DNS messages.
