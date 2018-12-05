@@ -73,6 +73,9 @@ int             no_wait_interval     = 0;
 int             pt_timeout           = 100;
 int             drop_ip_fragments    = 0;
 
+extern int  ip_local_address(const char*, const char*);
+extern void pcap_set_match_vlan(int);
+
 int open_interface(const char* interface)
 {
     dsyslogf(LOG_INFO, "Opening interface %s", interface);
@@ -94,7 +97,6 @@ int set_bpf_program(const char* s)
 
 int add_local_address(const char* s, const char* m)
 {
-    extern int ip_local_address(const char*, const char*);
     dsyslogf(LOG_INFO, "adding local address %s%s%s", s, m ? " mask " : "", m ? m : "");
     return ip_local_address(s, m);
 }
@@ -202,8 +204,7 @@ int set_bpf_vlan_tag_byte_order(const char* which)
 
 int set_match_vlan(const char* s)
 {
-    extern void pcap_set_match_vlan(int);
-    int         i;
+    int i;
     dsyslogf(LOG_INFO, "match_vlan %s", s);
     i = atoi(s);
     if (0 == i && 0 != strcmp(s, "0"))

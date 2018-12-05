@@ -369,7 +369,7 @@ int add_qname_filter(const char* name, const char* pat)
         regerror(x, r, errbuf, 512);
         dsyslogf(LOG_ERR, "regcomp: %s", errbuf);
     }
-    fl = md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
+    (void)md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
     return 1;
 }
 
@@ -495,5 +495,5 @@ void dns_message_init(void)
     fl               = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
     fl               = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
     fl               = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
+    (void)md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
 }

@@ -11,6 +11,7 @@ URL:            https://www.dns-oarc.net/oarc/data/dsc
 Source0:        %{name}_%{version}.orig.tar.gz
 
 BuildRequires:  libpcap-devel
+BuildRequires:  GeoIP-devel
 BuildRequires:  perl
 BuildRequires:  perl(Proc::PID::File)
 BuildRequires:  autoconf
