@@ -579,7 +579,7 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
 
     if (debug_flag > 1) {
         char* p = label;
-        *p = 0;
+        *p      = 0;
         inXaddr_ntop(&key.src_ip_addr, p, 128);
         p += strlen(p);
         p += snprintf(p, 32, ":%d ", key.sport);
@@ -744,7 +744,7 @@ void handle_raw(const u_char* pkt, int len, void* userdata);
 #endif
 void handle_ether(const u_char* pkt, int len, void* userdata);
 #ifdef DLT_LINUX_SLL
-void handle_linux_sll(const u_char * pkt, int len, void *userdata);
+void handle_linux_sll(const u_char* pkt, int len, void* userdata);
 #endif
 
 static void

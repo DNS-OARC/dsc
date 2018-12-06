@@ -1,0 +1,14 @@
+extraction:
+  cpp:
+    prepare:
+      packages:
+        - build-essential
+        - automake
+        - autoconf
+        - libtool
+        - libpcap-dev
+        - libgeoip-dev
+    configure:
+      command:
+        - ./autogen.sh
+        - ./configure
