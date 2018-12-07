@@ -24,7 +24,7 @@ Mailinglist:
 ## Dependencies
 
 `dsc` requires a couple of libraries beside a normal C compiling
-environment with autoconf, automake and libtool.
+environment with autoconf, automake, libtool and pkgconfig.
 
 `dsc` has a non-optional dependency on the PCAP library and optional
 dependency on the GeoIP library (for the `asn` and `country` indexer).
@@ -68,8 +68,8 @@ make install
 
 If you are building `dsc` from it's Git repository you will first need
 to initiate the Git submodules that exists and later create autoconf/automake
-files, this will require a build environment with autoconf, automake and
-libtool to be installed.
+files, this will require a build environment with autoconf, automake, libtool
+and pkgconfig to be installed.
 
 ```
 git clone https://github.com/DNS-OARC/dsc.git

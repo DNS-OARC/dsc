@@ -6,8 +6,10 @@ extraction:
         - automake
         - autoconf
         - libtool
+        - pkg-config
         - libpcap-dev
         - libgeoip-dev
+        - libmaxminddb-dev
     configure:
       command:
         - ./autogen.sh

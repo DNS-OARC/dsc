@@ -72,6 +72,9 @@
 #include "parse_conf.h"
 #include "compat.h"
 #include "pcap-thread/pcap_thread.h"
+#include "client_ip_net_index.h"
+#include "asn_index.h"
+#include "country_index.h"
 
 char* progname       = NULL;
 char* pid_file_name  = NULL;
@@ -83,11 +86,6 @@ int   debug_flag     = 0;
 int   nodaemon_flag  = 0;
 int   have_reports   = 0;
 
-extern void cip_net_indexer_init(void);
-#if HAVE_LIBGEOIP
-extern void country_indexer_init(void);
-extern void asn_indexer_init(void);
-#endif
 extern uint64_t         minfree_bytes;
 extern int              n_pcap_offline;
 extern md_array_printer xml_printer;
@@ -417,10 +415,8 @@ int main(int argc, char* argv[])
     if (parse_conf(argv[0])) {
         return 1;
     }
-#if HAVE_LIBGEOIP
     country_indexer_init();
     asn_indexer_init();
-#endif
     if (!output_format_xml && !output_format_json) {
         output_format_xml = 1;
     }

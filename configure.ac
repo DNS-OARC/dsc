@@ -42,6 +42,7 @@ AC_CONFIG_HEADER([src/config.h])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
 
 # Check --enable-warn-all
 AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [AX_CFLAGS_WARN_ALL()])
@@ -60,16 +61,17 @@ AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=CFLAGS], [Add
 
 # pcap thread
 AC_ARG_ENABLE(threads,
-    [AS_HELP_STRING([--enable-threads],
-        [enable the usage of threads (default disabled)])],
-    [AX_PCAP_THREAD],
-    [AX_PCAP_THREAD_PCAP])
+  [AS_HELP_STRING([--enable-threads],
+    [enable the usage of threads (default disabled)])],
+  [AX_PCAP_THREAD],
+  [AX_PCAP_THREAD_PCAP])
 
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])
 AC_CHECK_LIB([GeoIP], [GeoIP_open])
+PKG_CHECK_MODULES([libmaxminddb], [libmaxminddb], [AC_DEFINE([HAVE_LIBMAXMINDDB], [1], [Define to 1 if you have libmaxminddb.])], [:])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -79,6 +81,7 @@ AC_CHECK_HEADERS([netdb.h netinet/in.h stdint.h stdlib.h string.h])
 AC_CHECK_HEADERS([strings.h sys/mount.h sys/param.h sys/socket.h])
 AC_CHECK_HEADERS([sys/statfs.h sys/statvfs.h sys/time.h syslog.h])
 AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h pcap/sll.h])
+AC_CHECK_HEADERS([GeoIP.h maxminddb.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -107,27 +110,25 @@ AC_CHECK_FUNCS([strdup strerror strrchr strspn strstr strtoull statvfs])
 
 # pid file
 AC_ARG_WITH(pid-file,
-    [AS_HELP_STRING([--with-pid-file=FILE],
-        [write pid to FILE [/run/dsc.pid]])],
-    [],
-    [with_pid_file=/run/dsc.pid])
+  [AS_HELP_STRING([--with-pid-file=FILE], [write pid to FILE [/run/dsc.pid]])],
+  [],
+  [with_pid_file=/run/dsc.pid])
 
 AC_SUBST([DSC_PID_FILE], [$with_pid_file])
 
 # data dir
 AC_ARG_WITH(data-dir,
-    [AS_HELP_STRING([--with-data-dir=DIR],
-        [use DIR for DSC data [LOCALSTATEDIR/lib/dsc]])],
-    [],
-    [with_data_dir=${localstatedir}/lib/dsc])
+  [AS_HELP_STRING([--with-data-dir=DIR], [use DIR for DSC data [LOCALSTATEDIR/lib/dsc]])],
+  [],
+  [with_data_dir=${localstatedir}/lib/dsc])
 
 AC_SUBST([DSC_DATA_DIR], [$with_data_dir])
 
 # Generate
 AC_CONFIG_FILES([
-    Makefile
-    src/Makefile
-    src/test/Makefile
-    cron/Makefile
+  Makefile
+  src/Makefile
+  src/test/Makefile
+  cron/Makefile
 ])
 AC_OUTPUT

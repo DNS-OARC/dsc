@@ -6,7 +6,8 @@ SUBDIRS = test
 AM_CFLAGS = -I$(srcdir) \
     -Wall \
     -DUSE_IPV6=1 \
-    $(PTHREAD_CFLAGS)
+    $(PTHREAD_CFLAGS) \
+    $(libmaxminddb_CFLAGS)
 
 EXTRA_DIST = dsc.sh \
     dsc.conf.sample.in \
@@ -110,8 +111,9 @@ dist_dsc_SOURCES = base64.h \
     pcap-thread/pcap_thread.h \
     parse_conf.h \
     config_hooks.h \
-    compat.h
-dsc_LDADD = $(PTHREAD_LIBS)
+    compat.h \
+    geoip.h
+dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS)
 man1_MANS = dsc.1
 man5_MANS = dsc.conf.5
 

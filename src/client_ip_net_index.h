@@ -40,6 +40,7 @@
 int cip_net_indexer(const void*);
 int cip_net_iterator(char** label);
 void cip_net_reset(void);
+void cip_net_indexer_init(void);
 int cip_net_v4_mask_set(const char* mask);
 int cip_net_v6_mask_set(const char* mask);
 
