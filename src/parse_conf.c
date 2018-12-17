@@ -40,9 +40,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if HAVE_LIBGEOIP
-#include <GeoIP.h>
-#endif
 #include <errno.h>
 
 #include "parse_conf.h"
@@ -51,6 +48,7 @@
 #include "syslog_debug.h"
 #include "compat.h"
 #include "client_ip_net_index.h"
+#include "geoip.h"
 
 #define PARSE_CONF_EINVAL -2
 #define PARSE_CONF_ERROR -1
@@ -411,7 +409,7 @@ int parse_conf_dump_reports_on_exit(const conf_token_t* tokens)
     return 0;
 }
 
-#if HAVE_LIBGEOIP
+#ifdef HAVE_GEOIP
 int parse_conf_geoip_options(const conf_token_t* tokens, int* options)
 {
     size_t i;
@@ -438,6 +436,7 @@ int parse_conf_geoip_options(const conf_token_t* tokens, int* options)
 
 int parse_conf_geoip_v4_dat(const conf_token_t* tokens)
 {
+#ifdef HAVE_GEOIP
     char* geoip_v4_dat = strndup(tokens[1].token, tokens[1].length);
     int   ret, options = 0;
 
@@ -446,20 +445,23 @@ int parse_conf_geoip_v4_dat(const conf_token_t* tokens)
         return -1;
     }
 
-#if HAVE_LIBGEOIP
     if ((ret = parse_conf_geoip_options(tokens, &options))) {
         free(geoip_v4_dat);
         return ret;
     }
-#endif
 
     ret = set_geoip_v4_dat(geoip_v4_dat, options);
     free(geoip_v4_dat);
     return ret == 1 ? 0 : 1;
+#else
+    fprintf(stderr, "GeoIP support not built in!\n");
+    return 1;
+#endif
 }
 
 int parse_conf_geoip_v6_dat(const conf_token_t* tokens)
 {
+#ifdef HAVE_GEOIP
     char* geoip_v6_dat = strndup(tokens[1].token, tokens[1].length);
     int   ret, options = 0;
 
@@ -468,20 +470,23 @@ int parse_conf_geoip_v6_dat(const conf_token_t* tokens)
         return -1;
     }
 
-#if HAVE_LIBGEOIP
     if ((ret = parse_conf_geoip_options(tokens, &options))) {
         free(geoip_v6_dat);
         return ret;
     }
-#endif
 
     ret = set_geoip_v6_dat(geoip_v6_dat, options);
     free(geoip_v6_dat);
     return ret == 1 ? 0 : 1;
+#else
+    fprintf(stderr, "GeoIP support not built in!\n");
+    return 1;
+#endif
 }
 
 int parse_conf_geoip_asn_v4_dat(const conf_token_t* tokens)
 {
+#ifdef HAVE_GEOIP
     char* geoip_asn_v4_dat = strndup(tokens[1].token, tokens[1].length);
     int   ret, options = 0;
 
@@ -490,20 +495,23 @@ int parse_conf_geoip_asn_v4_dat(const conf_token_t* tokens)
         return -1;
     }
 
-#if HAVE_LIBGEOIP
     if ((ret = parse_conf_geoip_options(tokens, &options))) {
         free(geoip_asn_v4_dat);
         return ret;
     }
-#endif
 
     ret = set_geoip_asn_v4_dat(geoip_asn_v4_dat, options);
     free(geoip_asn_v4_dat);
     return ret == 1 ? 0 : 1;
+#else
+    fprintf(stderr, "GeoIP support not built in!\n");
+    return 1;
+#endif
 }
 
 int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens)
 {
+#ifdef HAVE_GEOIP
     char* geoip_asn_v6_dat = strndup(tokens[1].token, tokens[1].length);
     int   ret, options = 0;
 
@@ -512,16 +520,96 @@ int parse_conf_geoip_asn_v6_dat(const conf_token_t* tokens)
         return -1;
     }
 
-#if HAVE_LIBGEOIP
     if ((ret = parse_conf_geoip_options(tokens, &options))) {
         free(geoip_asn_v6_dat);
         return ret;
     }
-#endif
 
     ret = set_geoip_asn_v6_dat(geoip_asn_v6_dat, options);
     free(geoip_asn_v6_dat);
     return ret == 1 ? 0 : 1;
+#else
+    fprintf(stderr, "GeoIP support not built in!\n");
+    return 1;
+#endif
+}
+
+int parse_conf_asn_indexer_backend(const conf_token_t* tokens)
+{
+    if (!strncmp(tokens[1].token, "geoip", tokens[1].length)) {
+#ifdef HAVE_GEOIP
+        return set_asn_indexer_backend(geoip_backend_libgeoip) == 1 ? 0 : 1;
+#else
+        fprintf(stderr, "GeoIP support not built in!\n");
+#endif
+    } else if (!strncmp(tokens[1].token, "maxminddb", tokens[1].length)) {
+#ifdef HAVE_MAXMINDDB
+        return set_asn_indexer_backend(geoip_backend_libmaxminddb) == 1 ? 0 : 1;
+#else
+        fprintf(stderr, "MaxMind DB support not built in!\n");
+#endif
+    }
+
+    return 1;
+}
+
+int parse_conf_country_indexer_backend(const conf_token_t* tokens)
+{
+    if (!strncmp(tokens[1].token, "geoip", tokens[1].length)) {
+#ifdef HAVE_GEOIP
+        return set_country_indexer_backend(geoip_backend_libgeoip) == 1 ? 0 : 1;
+#else
+        fprintf(stderr, "GeoIP support not built in!\n");
+#endif
+    } else if (!strncmp(tokens[1].token, "maxminddb", tokens[1].length)) {
+#ifdef HAVE_MAXMINDDB
+        return set_country_indexer_backend(geoip_backend_libmaxminddb) == 1 ? 0 : 1;
+#else
+        fprintf(stderr, "MaxMind DB support not built in!\n");
+#endif
+    }
+
+    return 1;
+}
+
+int parse_conf_maxminddb_asn(const conf_token_t* tokens)
+{
+#ifdef HAVE_MAXMINDDB
+    char* maxminddb_asn = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!maxminddb_asn) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_maxminddb_asn(maxminddb_asn);
+    free(maxminddb_asn);
+    return ret == 1 ? 0 : 1;
+#else
+    fprintf(stderr, "MaxMind DB support not built in!\n");
+    return 1;
+#endif
+}
+
+int parse_conf_maxminddb_country(const conf_token_t* tokens)
+{
+#ifdef HAVE_MAXMINDDB
+    char* maxminddb_country = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!maxminddb_country) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_maxminddb_country(maxminddb_country);
+    free(maxminddb_country);
+    return ret == 1 ? 0 : 1;
+#else
+    fprintf(stderr, "MaxMind DB support not built in!\n");
+    return 1;
+#endif
 }
 
 int parse_conf_pcap_buffer_size(const conf_token_t* tokens)
@@ -665,6 +753,18 @@ static conf_token_syntax_t _syntax[] = {
         { TOKEN_STRING, TOKEN_END } },
     { "client_v6_mask",
         parse_conf_client_v6_mask,
+        { TOKEN_STRING, TOKEN_END } },
+    { "asn_indexer_backend",
+        parse_conf_asn_indexer_backend,
+        { TOKEN_STRING, TOKEN_END } },
+    { "country_indexer_backend",
+        parse_conf_country_indexer_backend,
+        { TOKEN_STRING, TOKEN_END } },
+    { "maxminddb_asn",
+        parse_conf_maxminddb_asn,
+        { TOKEN_STRING, TOKEN_END } },
+    { "maxminddb_country",
+        parse_conf_maxminddb_country,
         { TOKEN_STRING, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }

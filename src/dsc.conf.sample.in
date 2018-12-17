@@ -191,6 +191,20 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #geoip_asn_v4_dat "/usr/share/GeoIP/GeoIPASNum.dat" MEMORY_CACHE;
 #geoip_asn_v6_dat "/usr/share/GeoIP/GeoIPASNumv6.dat" MEMORY_CACHE;
 
+# ASN/Country Indexer and MaxMind DB
+#
+#   Following configuration controls what backend the ASN and Country indexer
+#   will use and if/what MaxMind database (GeoIP2) files.
+#
+#   Available backends:
+#   - geoip
+#   - maxminddb
+#
+#asn_indexer_backend geoip;
+#country_indexer_backend geoip;
+#maxminddb_asn "/path/to/GeoLite2/ASN.mmdb";
+#maxminddb_country "/path/to/GeoList2/Country.mmdb";
+
 # Client Subnet Mask
 #
 #   Set the IPv4/IPv6 client subnet mask which is used for the

@@ -34,6 +34,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -48,6 +50,7 @@
 #include "hashtbl.h"
 #include "pcap.h"
 #include "compat.h"
+#include "geoip.h"
 
 extern int promisc_flag;
 extern int monitor_flag;
@@ -72,6 +75,20 @@ int             pcap_buffer_size     = 0;
 int             no_wait_interval     = 0;
 int             pt_timeout           = 100;
 int             drop_ip_fragments    = 0;
+#ifdef HAVE_GEOIP
+enum geoip_backend asn_indexer_backend     = geoip_backend_libgeoip;
+enum geoip_backend country_indexer_backend = geoip_backend_libgeoip;
+#else
+#ifdef HAVE_MAXMINDDB
+enum geoip_backend asn_indexer_backend     = geoip_backend_libmaxminddb;
+enum geoip_backend country_indexer_backend = geoip_backend_libmaxminddb;
+#else
+enum geoip_backend asn_indexer_backend     = geoip_backend_none;
+enum geoip_backend country_indexer_backend = geoip_backend_none;
+#endif
+#endif
+char* maxminddb_asn     = NULL;
+char* maxminddb_country = NULL;
 
 extern int  ip_local_address(const char*, const char*);
 extern void pcap_set_match_vlan(int);
@@ -304,6 +321,72 @@ int set_geoip_asn_v6_dat(const char* dat, int options)
     }
 
     dsyslogf(LOG_ERR, "unable to set GeoIP ASN v6 dat, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    return 0;
+}
+
+int set_asn_indexer_backend(enum geoip_backend backend)
+{
+    switch (backend) {
+    case geoip_backend_libgeoip:
+        dsyslog(LOG_INFO, "asn_indexer using GeoIP backend");
+        break;
+    case geoip_backend_libmaxminddb:
+        dsyslog(LOG_INFO, "asn_indexer using MaxMind DB backend");
+        break;
+    default:
+        return 0;
+    }
+
+    asn_indexer_backend = backend;
+
+    return 1;
+}
+
+int set_country_indexer_backend(enum geoip_backend backend)
+{
+    switch (backend) {
+    case geoip_backend_libgeoip:
+        dsyslog(LOG_INFO, "country_indexer using GeoIP backend");
+        break;
+    case geoip_backend_libmaxminddb:
+        dsyslog(LOG_INFO, "country_indexer using MaxMind DB backend");
+        break;
+    default:
+        return 0;
+    }
+
+    country_indexer_backend = backend;
+
+    return 1;
+}
+
+int set_maxminddb_asn(const char* file)
+{
+    char errbuf[512];
+
+    if (maxminddb_asn)
+        xfree(maxminddb_asn);
+    if ((maxminddb_asn = xstrdup(file))) {
+        dsyslogf(LOG_INFO, "Maxmind ASN database %s", maxminddb_asn);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set Maxmind ASN database, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    return 0;
+}
+
+int set_maxminddb_country(const char* file)
+{
+    char errbuf[512];
+
+    if (maxminddb_country)
+        xfree(maxminddb_country);
+    if ((maxminddb_country = xstrdup(file))) {
+        dsyslogf(LOG_INFO, "Maxmind ASN database %s", maxminddb_country);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set Maxmind ASN database, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     return 0;
 }
 

@@ -37,10 +37,9 @@
 #ifndef __dsc_asn_index_h
 #define __dsc_asn_index_h
 
-/* check HAVE_LIBGEOIP before #including this file */
-
 int asn_indexer(const void*);
 int asn_iterator(char** label);
 void asn_reset(void);
+void asn_indexer_init();
 
 #endif /* __dsc_asn_index_h */

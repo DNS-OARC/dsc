@@ -34,6 +34,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -53,16 +55,13 @@
 #define T_A6 38
 #endif
 
-#include "config.h"
 #include "xmalloc.h"
 #include "dns_message.h"
 #include "null_index.h"
 #include "qtype_index.h"
 #include "qclass_index.h"
-#if HAVE_LIBGEOIP
 #include "country_index.h"
 #include "asn_index.h"
-#endif
 #include "tld_index.h"
 #include "rcode_index.h"
 #include "client_ip_addr_index.h"
@@ -272,10 +271,8 @@ servfail_filter(const void* vp, const void* ctx)
 static indexer_t indexers[] = {
     { "client", cip_indexer, cip_iterator, cip_reset },
     { "server", sip_indexer, sip_iterator, sip_reset },
-#if HAVE_LIBGEOIP
     { "country", country_indexer, country_iterator, country_reset },
     { "asn", asn_indexer, asn_iterator, asn_reset },
-#endif
     { "client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset },
     { "null", null_indexer, null_iterator, NULL },
     { "qclass", qclass_indexer, qclass_iterator, qclass_reset },

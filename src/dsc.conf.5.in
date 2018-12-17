@@ -192,6 +192,20 @@ GEOIP for options.
 Specify the GeoIP dat file to open for IPv6 AS number lookup, see section
 GEOIP for options.
 .TP
+\fBasn_indexer_backend\fR BACKEND ;
+Specify what backend to use for the ASN indexer, either "geoip" for GeoIP
+Legacy or "maxminddb" for MaxMind DB (GeoIP2).
+.TP
+\fBcountry_indexer_backend\fR BACKEND ;
+Specify what backend to use for the country indexer, either "geoip" for GeoIP
+Legacy or "maxminddb" for MaxMind DB (GeoIP2).
+.TP
+\fBmaxminddb_asn\fR " FILE " ;
+Specify the MaxMind DB file to use for ASN lookups.
+.TP
+\fBmaxminddb_country\fR " FILE " ;
+Specify the MaxMind DB file to use for country lookups.
+.TP
 \fBclient_v4_mask\fR NETMASK ;
 Set the IPv4 MASK for client_subnet INDEXERS.
 .TP
@@ -770,6 +784,11 @@ output_format XML;
 #geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";
 #geoip_asn_v4_dat "/usr/share/GeoIP/GeoIPASNum.dat" MEMORY_CACHE;
 #geoip_asn_v6_dat "/usr/share/GeoIP/GeoIPASNumv6.dat" MEMORY_CACHE;
+
+#asn_indexer_backend geoip;
+#country_indexer_backend geoip;
+#maxminddb_asn "/path/to/GeoLite2/ASN.mmdb";
+#maxminddb_country "/path/to/GeoList2/Country.mmdb";
 
 #client_v4_mask 255.255.255.0;
 #client_v6_mask ffff:ffff:ffff:ffff:ffff:ffff:0000:0000;
