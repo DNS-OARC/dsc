@@ -34,15 +34,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
+#include "config.h"
 
-int null_indexer(const void* vp)
+#include "null_index.h"
+
+int null_indexer(const dns_message* m)
 {
     return 0;
 }
 
-int null_iterator(char** label)
+int null_iterator(const char** label)
 {
     static int state = 0;
     if (NULL == label) {

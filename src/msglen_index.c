@@ -34,18 +34,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "msglen_index.h"
+
 static int largest = 0;
 
-int msglen_indexer(const void* vp)
+int msglen_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->msglen > largest)
         largest = m->msglen;
     return m->msglen;
@@ -53,7 +49,7 @@ int msglen_indexer(const void* vp)
 
 static int next_iter;
 
-int msglen_iterator(char** label)
+int msglen_iterator(const char** label)
 {
     static char label_buf[10];
     if (NULL == label) {
@@ -62,7 +58,7 @@ int msglen_iterator(char** label)
     }
     if (next_iter > largest)
         return -1;
-    snprintf(label_buf, 10, "%d", next_iter);
+    snprintf(label_buf, sizeof(label_buf), "%d", next_iter);
     *label = label_buf;
     return next_iter++;
 }

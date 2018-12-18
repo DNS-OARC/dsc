@@ -34,22 +34,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include "config.h"
 
+#include "client_subnet_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "md_array.h"
 #include "hashtbl.h"
 #include "syslog_debug.h"
 
 static hashfunc   ipnet_hashfunc;
 static hashkeycmp ipnet_cmpfunc;
 static inX_addr   v4mask;
-#if USE_IPV6
-static inX_addr v6mask;
-#endif
+static inX_addr   v6mask;
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl* theHash  = NULL;
@@ -61,11 +56,12 @@ typedef struct
     int      index;
 } ipnetobj;
 
-int cip_net_indexer(const void* vp)
+int client_subnet_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    ipnetobj*          obj;
-    inX_addr           masked_addr;
+    ipnetobj* obj;
+    inX_addr  masked_addr;
+    inX_addr* client_ip_addr = m->qr ? &m->tm->dst_ip_addr : &m->tm->src_ip_addr;
+
     if (m->malformed)
         return -1;
     if (NULL == theHash) {
@@ -73,12 +69,10 @@ int cip_net_indexer(const void* vp)
         if (NULL == theHash)
             return -1;
     }
-#if USE_IPV6
-    if (6 == inXaddr_version(&m->client_ip_addr))
-        masked_addr = inXaddr_mask(&m->client_ip_addr, &v6mask);
+    if (6 == inXaddr_version(client_ip_addr))
+        masked_addr = inXaddr_mask(client_ip_addr, &v6mask);
     else
-#endif
-        masked_addr = inXaddr_mask(&m->client_ip_addr, &v4mask);
+        masked_addr = inXaddr_mask(client_ip_addr, &v4mask);
     if ((obj = hash_find(&masked_addr, theHash)))
         return obj->index;
     obj = acalloc(1, sizeof(*obj));
@@ -94,7 +88,7 @@ int cip_net_indexer(const void* vp)
     return obj->index;
 }
 
-int cip_net_iterator(char** label)
+int client_subnet_iterator(const char** label)
 {
     ipnetobj*   obj;
     static char label_buf[128];
@@ -111,35 +105,29 @@ int cip_net_iterator(char** label)
     return obj->index;
 }
 
-void cip_net_reset()
+void client_subnet_reset()
 {
     theHash  = NULL;
     next_idx = 0;
 }
 
-void cip_net_indexer_init(void)
+void client_subnet_indexer_init(void)
 {
     /* XXXDPW */
     inXaddr_pton("255.255.255.0", &v4mask);
-#if USE_IPV6
     inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
-#endif
 }
 
-int cip_net_v4_mask_set(const char* mask)
+int client_subnet_v4_mask_set(const char* mask)
 {
     dsyslogf(LOG_INFO, "change v4 mask to %s", mask);
     return inXaddr_pton(mask, &v4mask);
 }
 
-int cip_net_v6_mask_set(const char* mask)
+int client_subnet_v6_mask_set(const char* mask)
 {
-#if USE_IPV6
     dsyslogf(LOG_INFO, "change v6 mask to %s", mask);
     return inXaddr_pton(mask, &v6mask);
-#else
-    return 1;
-#endif
 }
 
 static unsigned int

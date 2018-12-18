@@ -37,18 +37,14 @@
 #ifdef __FreeBSD__
 #define _WITH_GETLINE
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 #include "parse_conf.h"
 #include "config_hooks.h"
 #include "dns_message.h"
-#include "syslog_debug.h"
 #include "compat.h"
-#include "client_ip_net_index.h"
-#include "geoip.h"
+#include "client_subnet_index.h"
+
+#include <errno.h>
 
 #define PARSE_CONF_EINVAL -2
 #define PARSE_CONF_ERROR -1
@@ -664,7 +660,7 @@ int parse_conf_client_v4_mask(const conf_token_t* tokens)
         return -1;
     }
 
-    ret = cip_net_v4_mask_set(mask);
+    ret = client_subnet_v4_mask_set(mask);
     free(mask);
     return ret == 1 ? 0 : 1;
 }
@@ -679,7 +675,7 @@ int parse_conf_client_v6_mask(const conf_token_t* tokens)
         return -1;
     }
 
-    ret = cip_net_v6_mask_set(mask);
+    ret = client_subnet_v6_mask_set(mask);
     free(mask);
     return ret == 1 ? 0 : 1;
 }

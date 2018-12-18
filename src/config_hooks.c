@@ -36,21 +36,16 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <syslog.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <limits.h>
-
+#include "config_hooks.h"
 #include "xmalloc.h"
-#include "dns_message.h"
 #include "syslog_debug.h"
 #include "hashtbl.h"
 #include "pcap.h"
 #include "compat.h"
-#include "geoip.h"
+
+#include <unistd.h>
+#include <errno.h>
+#include <limits.h>
 
 extern int promisc_flag;
 extern int monitor_flag;

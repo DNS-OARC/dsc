@@ -37,8 +37,10 @@
 #ifndef __dsc_country_index_h
 #define __dsc_country_index_h
 
-int country_indexer(const void*);
-int country_iterator(char** label);
+#include "dns_message.h"
+
+int country_indexer(const dns_message*);
+int country_iterator(const char** label);
 void country_reset(void);
 void country_indexer_init();
 

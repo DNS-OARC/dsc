@@ -34,9 +34,69 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_byteorder_h
-#define __dsc_byteorder_h
+#include "config.h"
 
-#include "pcap_layers/byteorder.h"
+#include "client_index.h"
+#include "xmalloc.h"
+#include "hashtbl.h"
+#include "inX_addr.h"
 
-#endif /* __dsc_byteorder_h */
+#define MAX_ARRAY_SZ 65536
+static hashtbl* theHash  = NULL;
+static int      next_idx = 0;
+
+typedef struct
+{
+    inX_addr addr;
+    int      index;
+} ipaddrobj;
+
+int client_indexer(const dns_message* m)
+{
+    ipaddrobj* obj;
+    inX_addr*  client_ip_addr = m->qr ? &m->tm->dst_ip_addr : &m->tm->src_ip_addr;
+
+    if (m->malformed)
+        return -1;
+    if (NULL == theHash) {
+        theHash = hash_create(MAX_ARRAY_SZ, (hashfunc*)inXaddr_hash, (hashkeycmp*)inXaddr_cmp, 1, NULL, afree);
+        if (NULL == theHash)
+            return -1;
+    }
+    if ((obj = hash_find(client_ip_addr, theHash)))
+        return obj->index;
+    obj = acalloc(1, sizeof(*obj));
+    if (NULL == obj)
+        return -1;
+    obj->addr  = *client_ip_addr;
+    obj->index = next_idx;
+    if (0 != hash_add(&obj->addr, obj, theHash)) {
+        afree(obj);
+        return -1;
+    }
+    next_idx++;
+    return obj->index;
+}
+
+int client_iterator(const char** label)
+{
+    ipaddrobj*  obj;
+    static char label_buf[128];
+    if (0 == next_idx)
+        return -1;
+    if (NULL == label) {
+        hash_iter_init(theHash);
+        return next_idx;
+    }
+    if ((obj = hash_iterate(theHash)) == NULL)
+        return -1;
+    inXaddr_ntop(&obj->addr, label_buf, 128);
+    *label = label_buf;
+    return obj->index;
+}
+
+void client_reset()
+{
+    theHash  = NULL;
+    next_idx = 0;
+}

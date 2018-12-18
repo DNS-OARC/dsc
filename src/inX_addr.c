@@ -34,13 +34,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
+#include "config.h"
 
 #include "inX_addr.h"
+
+#include <arpa/inet.h>
+#include <string.h>
+#include <sys/socket.h> // For AF_ on BSDs
 
 static unsigned char v4_in_v6_prefix[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF };
 

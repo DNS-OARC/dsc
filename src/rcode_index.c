@@ -34,21 +34,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "rcode_index.h"
+
+#include <assert.h>
 
 #define MAX_RCODE_IDX 16
 static unsigned short idx_to_rcode[MAX_RCODE_IDX];
 static int            next_idx = 0;
 
-int rcode_indexer(const void* vp)
+int rcode_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                i;
+    int i;
     if (m->malformed)
         return -1;
     for (i = 0; i < next_idx; i++) {
@@ -63,7 +61,7 @@ int rcode_indexer(const void* vp)
 
 static int next_iter;
 
-int rcode_iterator(char** label)
+int rcode_iterator(const char** label)
 {
     static char label_buf[32];
     if (0 == next_idx)
@@ -75,7 +73,7 @@ int rcode_iterator(char** label)
     if (next_iter == next_idx) {
         return -1;
     }
-    snprintf(label_buf, 32, "%d", idx_to_rcode[next_iter]);
+    snprintf(label_buf, sizeof(label_buf), "%d", idx_to_rcode[next_iter]);
     *label = label_buf;
     return next_iter++;
 }

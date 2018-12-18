@@ -34,10 +34,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <syslog.h>
-
 #ifndef __dsc_syslog_debug_h
 #define __dsc_syslog_debug_h
+
+#include <syslog.h>
 
 extern int debug_flag;
 

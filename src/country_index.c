@@ -36,20 +36,18 @@
 
 #include "config.h"
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <netinet/in.h>
-
+#include "country_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "md_array.h"
 #include "hashtbl.h"
 #include "syslog_debug.h"
 #include "geoip.h"
+#ifdef HAVE_MAXMINDDB
 #include "compat.h"
-#include "errno.h"
+#endif
+
+#ifdef HAVE_MAXMINDDB
+#include <errno.h>
+#endif
 
 extern int                debug_flag;
 extern char*              geoip_v4_dat;
@@ -86,10 +84,8 @@ typedef struct
 const char*
 country_get_from_message(dns_message* m)
 {
-    transport_message* tm;
+    transport_message* tm = m->tm;
     const char*        cc = unknown;
-
-    tm = m->tm;
 
     if (country_indexer_backend == geoip_backend_libgeoip) {
         if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr) - 1)) {
@@ -193,11 +189,10 @@ country_get_from_message(dns_message* m)
     return cc;
 }
 
-int country_indexer(const void* vp)
+int country_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    const char*        country;
-    countryobj*        obj;
+    const char* country;
+    countryobj* obj;
     if (m->malformed)
         return -1;
     country = country_get_from_message((dns_message*)m);
@@ -226,7 +221,7 @@ int country_indexer(const void* vp)
     return obj->index;
 }
 
-int country_iterator(char** label)
+int country_iterator(const char** label)
 {
     countryobj* obj;
     static char label_buf[MAX_QNAME_SZ];
@@ -239,7 +234,7 @@ int country_iterator(char** label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
         return -1;
-    snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->country);
+    snprintf(label_buf, sizeof(label_buf), "%s", obj->country);
     *label = label_buf;
     return obj->index;
 }

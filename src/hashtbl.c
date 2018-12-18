@@ -35,14 +35,9 @@
  */
 
 #include "config.h"
-#include <unistd.h>
-#include <stdlib.h>
-#include <assert.h>
-#if HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#include "xmalloc.h"
+
 #include "hashtbl.h"
+#include "xmalloc.h"
 
 hashtbl* hash_create(int N, hashfunc* hasher, hashkeycmp* cmp, int use_arena, hashfree* keyfree, hashfree* datafree)
 {

@@ -36,22 +36,20 @@
 
 #include "config.h"
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <netinet/in.h>
-#include <inttypes.h>
-
+#include "asn_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "md_array.h"
 #include "hashtbl.h"
 #include "syslog_debug.h"
 #include "geoip.h"
+#ifdef HAVE_MAXMINDDB
 #include "compat.h"
-#include "errno.h"
+#endif
+
+#include <string.h>
+#ifdef HAVE_MAXMINDDB
+#include <inttypes.h>
+#include <errno.h>
+#endif
 
 extern int                debug_flag;
 extern char*              geoip_asn_v4_dat;
@@ -89,10 +87,8 @@ typedef struct {
 const char*
 asn_get_from_message(dns_message* m)
 {
-    transport_message* tm;
+    transport_message* tm  = m->tm;
     const char*        asn = unknown;
-
-    tm = m->tm;
 
     if (asn_indexer_backend == geoip_backend_libgeoip) {
         if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr) - 1)) {
@@ -257,11 +253,10 @@ asn_get_from_message(dns_message* m)
     return asn;
 }
 
-int asn_indexer(const void* vp)
+int asn_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    const char*        asn;
-    asnobj*            obj;
+    const char* asn;
+    asnobj*     obj;
 
     if (m->malformed)
         return -1;
@@ -302,7 +297,7 @@ int asn_indexer(const void* vp)
     return obj->index;
 }
 
-int asn_iterator(char** label)
+int asn_iterator(const char** label)
 {
     asnobj*     obj;
     static char label_buf[128];
@@ -315,7 +310,7 @@ int asn_iterator(char** label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
         return -1;
-    snprintf(label_buf, 128, "%s", obj->asn);
+    snprintf(label_buf, sizeof(label_buf), "%s", obj->asn);
     *label = label_buf;
     return obj->index;
 }

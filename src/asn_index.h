@@ -37,8 +37,10 @@
 #ifndef __dsc_asn_index_h
 #define __dsc_asn_index_h
 
-int asn_indexer(const void*);
-int asn_iterator(char** label);
+#include "dns_message.h"
+
+int asn_indexer(const dns_message*);
+int asn_iterator(const char** label);
 void asn_reset(void);
 void asn_indexer_init();
 

@@ -34,20 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <netdb.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "opcode_index.h"
 
 static int largest = 0;
 
-int opcode_indexer(const void* vp)
+int opcode_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                i = (int)m->opcode;
+    int i = (int)m->opcode;
     if (m->malformed)
         return -1;
     if (i > largest)
@@ -57,7 +52,7 @@ int opcode_indexer(const void* vp)
 
 static int next_iter = 0;
 
-int opcode_iterator(char** label)
+int opcode_iterator(const char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -66,7 +61,8 @@ int opcode_iterator(char** label)
     }
     if (next_iter > largest)
         return -1;
-    snprintf(*label = label_buf, 20, "%d", next_iter);
+    snprintf(label_buf, sizeof(label_buf), "%d", next_iter);
+    *label = label_buf;
     return next_iter++;
 }
 

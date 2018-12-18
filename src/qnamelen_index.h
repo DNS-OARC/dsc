@@ -37,8 +37,10 @@
 #ifndef __dsc_qnamelen_index_h
 #define __dsc_qnamelen_index_h
 
-int qnamelen_indexer(const void*);
-int qnamelen_iterator(char** label);
+#include "dns_message.h"
+
+int qnamelen_indexer(const dns_message*);
+int qnamelen_iterator(const char** label);
 void qnamelen_reset(void);
 
 #endif /* __dsc_qnamelen_index_h */

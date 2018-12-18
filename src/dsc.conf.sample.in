@@ -91,7 +91,7 @@ pid_file "@DSC_PID_FILE@";
 
 # datasets
 #
-#  please see the DSC manual for more information.
+#  please see dsc.conf(5) man-page for more information.
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;
 dataset opcode dns All:null Opcode:opcode queries-only;

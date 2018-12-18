@@ -34,23 +34,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "qr_aa_bits_index.h"
 
-int qr_aa_bits_indexer(const void* vp)
+int qr_aa_bits_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return m->qr + (m->aa << 1);
 }
 
-int qr_aa_bits_iterator(char** label)
+int qr_aa_bits_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

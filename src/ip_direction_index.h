@@ -37,7 +37,9 @@
 #ifndef __dsc_ip_direction_index_h
 #define __dsc_ip_direction_index_h
 
-int ip_direction_indexer(const void*);
-int ip_direction_iterator(char** label);
+#include "dns_message.h"
+
+int ip_direction_indexer(const dns_message*);
+int ip_direction_iterator(const char** label);
 
 #endif /* __dsc_ip_direction_index_h */

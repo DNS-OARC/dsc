@@ -36,27 +36,10 @@
 
 #include "config.h"
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <syslog.h>
-#include <ctype.h>
-#include <string.h>
-#include <sys/types.h>
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#endif
-
-#include <sys/types.h>
-#include <regex.h>
-
-#ifndef T_A6
-#define T_A6 38
-#endif
-
-#include "xmalloc.h"
 #include "dns_message.h"
+#include "xmalloc.h"
+#include "syslog_debug.h"
+
 #include "null_index.h"
 #include "qtype_index.h"
 #include "qclass_index.h"
@@ -64,8 +47,8 @@
 #include "asn_index.h"
 #include "tld_index.h"
 #include "rcode_index.h"
-#include "client_ip_addr_index.h"
-#include "client_ip_net_index.h"
+#include "client_index.h"
+#include "client_subnet_index.h"
 #include "server_ip_addr_index.h"
 #include "qnamelen_index.h"
 #include "qname_index.h"
@@ -88,192 +71,21 @@
 #include "ip_proto_index.h"
 #include "ip_version_index.h"
 
-#include "syslog_debug.h"
+#include <assert.h>
+#include <ctype.h>
+#include <string.h>
+#include <regex.h>
 
 extern int            debug_flag;
 static md_array_list* Arrays     = NULL;
 static filter_list*   DNSFilters = NULL;
 
-static const char*
-printable_dnsname(const char* name)
-{
-    static char buf[MAX_QNAME_SZ];
-    int         i;
-
-    for (i = 0; i < sizeof(buf) - 1; name++) {
-        if (!*name)
-            break;
-        if (isgraph(*name)) {
-            buf[i] = *name;
-            i++;
-        } else {
-            if (i + 3 > MAX_QNAME_SZ - 1)
-                break; /* expanded character would overflow buffer */
-            snprintf(buf + i, sizeof(buf) - i - 1, "%%%02x", (unsigned char)*name);
-            i += 3;
-        }
-    }
-    buf[i] = '\0';
-    return buf;
-}
-
-void dns_message_print(dns_message* m)
-{
-    char buf[128];
-    inXaddr_ntop(&m->client_ip_addr, buf, 128);
-    fprintf(stderr, "%15s:%5d", buf, m->tm->src_port);
-    fprintf(stderr, "\t%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" : (m->tm->proto == IPPROTO_TCP) ? "TCP" : "???");
-    fprintf(stderr, "\tQT=%d", m->qtype);
-    fprintf(stderr, "\tQC=%d", m->qclass);
-    fprintf(stderr, "\tlen=%d", m->msglen);
-    fprintf(stderr, "\tqname=%s", printable_dnsname(m->qname));
-    fprintf(stderr, "\ttld=%s", printable_dnsname(dns_message_tld(m)));
-    fprintf(stderr, "\topcode=%d", m->opcode);
-    fprintf(stderr, "\trcode=%d", m->rcode);
-    fprintf(stderr, "\tmalformed=%d", m->malformed);
-    fprintf(stderr, "\tqr=%d", m->qr);
-    fprintf(stderr, "\trd=%d", m->rd);
-    fprintf(stderr, "\n");
-}
-
-#if DROP_RECV_RESPOSNE
-extern int ip_is_local(const inX_addr*);
-#endif
-
-void dns_message_handle(dns_message* m)
-{
-    md_array_list* a;
-    if (debug_flag > 1)
-        dns_message_print(m);
-#if DROP_RECV_RESPOSNE
-    /* ignore RESPONSE sent to a LOCAL address */
-    if (0 != m->qr && ip_is_local(&m->tm->dst_ip_addr))
-        return;
-    /* ignore QUERY sent from a LOCAL address */
-    if (0 == m->qr && ip_is_local(&m->tm->src_ip_addr))
-        return;
-#endif
-    for (a = Arrays; a; a = a->next)
-        md_array_count(a->theArray, m);
-}
-
-static int
-queries_only_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return m->qr ? 0 : 1;
-}
-
-static int
-nxdomains_only_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return m->rcode == 3;
-}
-
-static int
-ad_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return m->ad;
-}
-
-static int
-popular_qtypes_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    switch (m->qtype) {
-    case 1:
-    case 2:
-    case 5:
-    case 6:
-    case 12:
-    case 15:
-    case 28:
-    case 33:
-    case 38:
-    case 255:
-        return 1;
-    default:
-        return 0;
-    }
-    return 0;
-}
-
-static int
-aaaa_or_a6_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    switch (m->qtype) {
-    case T_AAAA:
-    case T_A6:
-        return 1;
-    default:
-        return 0;
-    }
-    return 0;
-}
-
-static int
-idn_qname_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return (0 == strncmp(m->qname, "xn--", 4));
-}
-
-static int
-root_servers_net_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return (0 == strcmp(m->qname + 1, ".root-servers.net"));
-}
-
-static int
-chaos_class_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return m->qclass == C_CHAOS;
-}
-
-static int
-priming_query_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    if (m->qtype != T_NS)
-        return 0;
-    if (0 != strcmp(m->qname, "."))
-        return 0;
-    return 1;
-}
-
-static int
-replies_only_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return m->qr ? 1 : 0;
-}
-
-static int
-qname_filter(const void* vp, const void* ctx)
-{
-    const regex_t*     r = ctx;
-    const dns_message* m = vp;
-    return (0 == regexec(r, m->qname, 0, NULL, 0));
-}
-
-static int
-servfail_filter(const void* vp, const void* ctx)
-{
-    const dns_message* m = vp;
-    return m->rcode == 2;
-}
-
-static indexer_t indexers[] = {
-    { "client", cip_indexer, cip_iterator, cip_reset },
+static indexer indexers[] = {
+    { "client", client_indexer, client_iterator, client_reset },
     { "server", sip_indexer, sip_iterator, sip_reset },
     { "country", country_indexer, country_iterator, country_reset },
     { "asn", asn_indexer, asn_iterator, asn_reset },
-    { "client_subnet", cip_net_indexer, cip_net_iterator, cip_net_reset },
+    { "client_subnet", client_subnet_indexer, client_subnet_iterator, client_subnet_reset },
     { "null", null_indexer, null_iterator, NULL },
     { "qclass", qclass_indexer, qclass_iterator, qclass_reset },
     { "qnamelen", qnamelen_indexer, qnamelen_iterator, qnamelen_reset },
@@ -297,22 +109,151 @@ static indexer_t indexers[] = {
     { "dns_ip_version", dns_ip_version_indexer, dns_ip_version_iterator, dns_ip_version_reset },
     { "dns_source_port", dns_source_port_indexer, dns_source_port_iterator, dns_source_port_reset },
     { "dns_sport_range", dns_sport_range_indexer, dns_sport_range_iterator, dns_sport_range_reset },
-    {
-        "qr_aa_bits", qr_aa_bits_indexer, qr_aa_bits_iterator, NULL,
-    },
-
-    /* these used to be "IP" indexers */
-
+    { "qr_aa_bits", qr_aa_bits_indexer, qr_aa_bits_iterator, NULL },
     { "ip_direction", ip_direction_indexer, ip_direction_iterator, NULL },
     { "ip_proto", ip_proto_indexer, ip_proto_iterator, ip_proto_reset },
     { "ip_version", ip_version_indexer, ip_version_iterator, ip_version_reset },
     { NULL, NULL, NULL, NULL }
 };
 
-static indexer_t*
-dns_message_find_indexer(const char* in)
+/*
+ * Filters
+ */
+
+static int queries_only_filter(const dns_message* m, const void* ctx)
 {
-    indexer_t* indexer;
+    return m->qr ? 0 : 1;
+}
+
+static int nxdomains_only_filter(const dns_message* m, const void* ctx)
+{
+    return m->rcode == 3;
+}
+
+static int ad_filter(const dns_message* m, const void* ctx)
+{
+    return m->ad;
+}
+
+static int popular_qtypes_filter(const dns_message* m, const void* ctx)
+{
+    switch (m->qtype) {
+    case 1:
+    case 2:
+    case 5:
+    case 6:
+    case 12:
+    case 15:
+    case 28:
+    case 33:
+    case 38:
+    case 255:
+        return 1;
+    default:
+        return 0;
+    }
+    return 0;
+}
+
+static int aaaa_or_a6_filter(const dns_message* m, const void* ctx)
+{
+    switch (m->qtype) {
+    case T_AAAA:
+    case T_A6:
+        return 1;
+    default:
+        return 0;
+    }
+    return 0;
+}
+
+static int idn_qname_filter(const dns_message* m, const void* ctx)
+{
+    return !strncmp(m->qname, "xn--", 4);
+}
+
+static int root_servers_net_filter(const dns_message* m, const void* ctx)
+{
+    return !strcmp(m->qname + 1, ".root-servers.net");
+}
+
+static int chaos_class_filter(const dns_message* m, const void* ctx)
+{
+    return m->qclass == C_CHAOS;
+}
+
+static int priming_query_filter(const dns_message* m, const void* ctx)
+{
+    if (m->qtype != T_NS)
+        return 0;
+    if (!strcmp(m->qname, "."))
+        return 0;
+    return 1;
+}
+
+static int replies_only_filter(const dns_message* m, const void* ctx)
+{
+    return m->qr ? 1 : 0;
+}
+
+static int qname_filter(const dns_message* m, const void* ctx)
+{
+    return !regexec((const regex_t*)ctx, m->qname, 0, NULL, 0);
+}
+
+static int servfail_filter(const dns_message* m, const void* ctx)
+{
+    return m->rcode == 2;
+}
+
+/*
+ * Helpers
+ */
+
+static const char* printable_dnsname(const char* name)
+{
+    static char buf[MAX_QNAME_SZ];
+    int         i;
+
+    for (i = 0; i < sizeof(buf) - 1; name++) {
+        if (!*name)
+            break;
+        if (isgraph(*name)) {
+            buf[i] = *name;
+            i++;
+        } else {
+            if (i + 3 > MAX_QNAME_SZ - 1)
+                break; /* expanded character would overflow buffer */
+            snprintf(buf + i, sizeof(buf) - i - 1, "%%%02x", (unsigned char)*name);
+            i += 3;
+        }
+    }
+    buf[i] = '\0';
+    return buf;
+}
+
+static void dns_message_print(dns_message* m)
+{
+    char buf[128];
+    inXaddr_ntop(m->qr ? &m->tm->dst_ip_addr : &m->tm->src_ip_addr, buf, 128);
+    fprintf(stderr, "%15s:%5d", buf, m->qr ? m->tm->dst_port : m->tm->src_port);
+    fprintf(stderr, "\t%s", (m->tm->proto == IPPROTO_UDP) ? "UDP" : (m->tm->proto == IPPROTO_TCP) ? "TCP" : "???");
+    fprintf(stderr, "\tQT=%d", m->qtype);
+    fprintf(stderr, "\tQC=%d", m->qclass);
+    fprintf(stderr, "\tlen=%d", m->msglen);
+    fprintf(stderr, "\tqname=%s", printable_dnsname(m->qname));
+    fprintf(stderr, "\ttld=%s", printable_dnsname(dns_message_tld(m)));
+    fprintf(stderr, "\topcode=%d", m->opcode);
+    fprintf(stderr, "\trcode=%d", m->rcode);
+    fprintf(stderr, "\tmalformed=%d", m->malformed);
+    fprintf(stderr, "\tqr=%d", m->qr);
+    fprintf(stderr, "\trd=%d", m->rd);
+    fprintf(stderr, "\n");
+}
+
+static indexer* dns_message_find_indexer(const char* in)
+{
+    indexer* indexer;
     for (indexer = indexers; indexer->name; indexer++) {
         if (0 == strcmp(in, indexer->name))
             return indexer;
@@ -321,8 +262,7 @@ dns_message_find_indexer(const char* in)
     return NULL;
 }
 
-static int
-dns_message_find_filters(const char* fn, filter_list** fl)
+static int dns_message_find_filters(const char* fn, filter_list** fl)
 {
     char*        tok = 0;
     char*        t;
@@ -349,32 +289,23 @@ dns_message_find_filters(const char* fn, filter_list** fl)
     return 1;
 }
 
-int add_qname_filter(const char* name, const char* pat)
+/*
+ * Public
+ */
+
+void dns_message_handle(dns_message* m)
 {
-    filter_list** fl = &DNSFilters;
-    regex_t*      r;
-    int           x;
-    while ((*fl))
-        fl = &((*fl)->next);
-    r      = xcalloc(1, sizeof(*r));
-    if (NULL == r) {
-        dsyslogf(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
-        return 0;
-    }
-    if (0 != (x = regcomp(r, pat, REG_EXTENDED | REG_ICASE))) {
-        char errbuf[512];
-        regerror(x, r, errbuf, 512);
-        dsyslogf(LOG_ERR, "regcomp: %s", errbuf);
-    }
-    (void)md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
-    return 1;
+    md_array_list* a;
+    if (debug_flag > 1)
+        dns_message_print(m);
+    for (a = Arrays; a; a = a->next)
+        md_array_count(a->theArray, m);
 }
 
-int dns_message_add_array(const char* name, const char* fn, const char* fi,
-    const char* sn, const char* si, const char* f, dataset_opt opts)
+int dns_message_add_array(const char* name, const char* fn, const char* fi, const char* sn, const char* si, const char* f, dataset_opt opts)
 {
     filter_list*   filters = NULL;
-    indexer_t *    indexer1, *indexer2;
+    indexer *      indexer1, *indexer2;
     md_array_list* a;
 
     if (NULL == (indexer1 = dns_message_find_indexer(fi)))
@@ -444,8 +375,7 @@ void dns_message_clear_arrays(void)
  *        assert(0 == strcmp(QnameToNld("a.b..c..d", 2), "c..d"));
  *        assert(0 == strcmp(QnameToNld("a.b................c..d", 3), "b................c..d"));
  */
-const char*
-dns_message_QnameToNld(const char* qname, int nld)
+const char* dns_message_QnameToNld(const char* qname, int nld)
 {
     const char* e = qname + strlen(qname) - 1;
     const char* t;
@@ -471,8 +401,7 @@ dns_message_QnameToNld(const char* qname, int nld)
     return t;
 }
 
-const char*
-dns_message_tld(dns_message* m)
+const char* dns_message_tld(dns_message* m)
 {
     if (NULL == m->tld)
         m->tld = dns_message_QnameToNld(m->qname, 1);
@@ -482,15 +411,37 @@ dns_message_tld(dns_message* m)
 void dns_message_init(void)
 {
     filter_list** fl = &DNSFilters;
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("queries-only", queries_only_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("replies-only", replies_only_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("nxdomains-only", nxdomains_only_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("idn-only", idn_qname_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
-    fl               = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
+
+    fl = md_array_filter_list_append(fl, md_array_create_filter("queries-only", queries_only_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("replies-only", replies_only_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("nxdomains-only", nxdomains_only_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("popular-qtypes", popular_qtypes_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("idn-only", idn_qname_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("aaaa-or-a6-only", aaaa_or_a6_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("root-servers-net-only", root_servers_net_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
     (void)md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
+}
+
+int add_qname_filter(const char* name, const char* pat)
+{
+    filter_list** fl = &DNSFilters;
+    regex_t*      r;
+    int           x;
+    while ((*fl))
+        fl = &((*fl)->next);
+    r      = xcalloc(1, sizeof(*r));
+    if (NULL == r) {
+        dsyslogf(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
+        return 0;
+    }
+    if (0 != (x = regcomp(r, pat, REG_EXTENDED | REG_ICASE))) {
+        char errbuf[512];
+        regerror(x, r, errbuf, 512);
+        dsyslogf(LOG_ERR, "regcomp: %s", errbuf);
+    }
+    (void)md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
+    return 1;
 }

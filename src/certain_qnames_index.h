@@ -37,7 +37,9 @@
 #ifndef __dsc_certain_qnames_index_h
 #define __dsc_certain_qnames_index_h
 
-int certain_qnames_indexer(const void*);
-int certain_qnames_iterator(char** label);
+#include "dns_message.h"
+
+int certain_qnames_indexer(const dns_message*);
+int certain_qnames_iterator(const char** label);
 
 #endif /* __dsc_certain_qnames_index_h */

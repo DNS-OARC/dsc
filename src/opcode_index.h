@@ -37,8 +37,10 @@
 #ifndef __dsc_opcode_index_h
 #define __dsc_opcode_index_h
 
-int opcode_indexer(const void*);
-int opcode_iterator(char** label);
+#include "dns_message.h"
+
+int opcode_indexer(const dns_message*);
+int opcode_iterator(const char** label);
 void opcode_reset(void);
 
 #endif /* __dsc_opcode_index_h */

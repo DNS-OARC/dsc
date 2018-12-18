@@ -37,7 +37,9 @@
 #ifndef __dsc_tc_bit_index_h
 #define __dsc_tc_bit_index_h
 
-int tc_bit_indexer(const void*);
-int tc_bit_iterator(char** label);
+#include "dns_message.h"
+
+int tc_bit_indexer(const dns_message*);
+int tc_bit_iterator(const char** label);
 
 #endif /* __dsc_tc_bit_index_h */

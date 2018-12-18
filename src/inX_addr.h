@@ -37,6 +37,8 @@
 #ifndef __dsc_inX_addr_h
 #define __dsc_inX_addr_h
 
+#include <netinet/in.h>
+
 typedef union {
     struct in6_addr in6;
     struct

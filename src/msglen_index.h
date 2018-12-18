@@ -37,8 +37,10 @@
 #ifndef __dsc_msglen_index_h
 #define __dsc_msglen_index_h
 
-int msglen_indexer(const void*);
-int msglen_iterator(char** label);
+#include "dns_message.h"
+
+int msglen_indexer(const dns_message*);
+int msglen_iterator(const char** label);
 void msglen_reset(void);
 
 #endif /* __dsc_msglen_index_h */

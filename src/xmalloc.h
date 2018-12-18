@@ -37,6 +37,8 @@
 #ifndef __dsc_xmalloc_h
 #define __dsc_xmalloc_h
 
+#include <stddef.h>
+
 /* The xmalloc family of functions syslogs an error if the alloc fails. */
 void* xmalloc(size_t size);
 void* xcalloc(size_t number, size_t size);

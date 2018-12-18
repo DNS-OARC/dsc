@@ -37,7 +37,9 @@
 #ifndef __dsc_query_classification_index_h
 #define __dsc_query_classification_index_h
 
-int query_classification_indexer(const void*);
-int query_classification_iterator(char** label);
+#include "dns_message.h"
+
+int query_classification_indexer(const dns_message*);
+int query_classification_iterator(const char** label);
 
 #endif /* __dsc_query_classification_index_h */

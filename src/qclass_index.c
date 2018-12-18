@@ -34,20 +34,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "qclass_index.h"
 
 static unsigned short idx_to_qclass[65536];
 static int            next_idx = 0;
 
-int qclass_indexer(const void* vp)
+int qclass_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                i;
+    int i;
     if (m->malformed)
         return -1;
     for (i = 0; i < next_idx; i++) {
@@ -61,7 +57,7 @@ int qclass_indexer(const void* vp)
 
 static int next_iter;
 
-int qclass_iterator(char** label)
+int qclass_iterator(const char** label)
 {
     static char label_buf[32];
     if (0 == next_idx)
@@ -73,7 +69,7 @@ int qclass_iterator(char** label)
     if (next_iter == next_idx) {
         return -1;
     }
-    snprintf(label_buf, 32, "%d", idx_to_qclass[next_iter]);
+    snprintf(label_buf, sizeof(label_buf), "%d", idx_to_qclass[next_iter]);
     *label = label_buf;
     return next_iter++;
 }

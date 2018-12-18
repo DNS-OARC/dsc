@@ -36,18 +36,24 @@
 
 #include "config.h"
 
-#include <stdio.h>
+#include "xmalloc.h"
+#include "pcap.h"
+#include "syslog_debug.h"
+#include "parse_conf.h"
+#include "compat.h"
+#include "pcap-thread/pcap_thread.h"
+#include "client_subnet_index.h"
+#include "asn_index.h"
+#include "country_index.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-#include <syslog.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <time.h>
-#include <sys/param.h>
-#include <sys/mount.h>
 #include <sys/stat.h>
 #if HAVE_STATVFS
 #if HAVE_SYS_STATVFS_H
@@ -60,21 +66,20 @@
 #if HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
 #endif
+#ifdef TIME_WITH_SYS_TIME
+#include <sys/time.h>
+#include <time.h>
+#else
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+#endif
 #include <signal.h>
 #if HAVE_PTHREAD
 #include <pthread.h>
 #endif
-
-#include "xmalloc.h"
-#include "dns_message.h"
-#include "pcap.h"
-#include "syslog_debug.h"
-#include "parse_conf.h"
-#include "compat.h"
-#include "pcap-thread/pcap_thread.h"
-#include "client_ip_net_index.h"
-#include "asn_index.h"
-#include "country_index.h"
 
 char* progname       = NULL;
 char* pid_file_name  = NULL;
@@ -253,8 +258,8 @@ dump_report(md_array_printer* printer)
         dsyslogf(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
         return 1;
     }
-    snprintf(fname, 128, "%d.dscdata.%s", Pcap_finish_time(), printer->extension);
-    snprintf(tname, 128, "%s.XXXXXXXXX", fname);
+    snprintf(fname, sizeof(fname), "%d.dscdata.%s", Pcap_finish_time(), printer->extension);
+    snprintf(tname, sizeof(tname), "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
         dsyslogf(LOG_ERR, "%s: %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
@@ -410,7 +415,7 @@ int main(int argc, char* argv[])
 
     pcap_thread_set_activate_mode(&pcap_thread, PCAP_THREAD_ACTIVATE_MODE_DELAYED);
 
-    cip_net_indexer_init();
+    client_subnet_indexer_init();
     dns_message_init();
     if (parse_conf(argv[0])) {
         return 1;
