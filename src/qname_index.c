@@ -34,15 +34,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include "xmalloc.h"
-#include "dns_message.h"
-#include "md_array.h"
+#include "qname_index.h"
 #include "hashtbl.h"
+#include "xmalloc.h"
+
+#include <string.h>
 
 typedef struct
 {
@@ -53,7 +51,7 @@ typedef struct
 static hashfunc   name_hashfunc;
 static hashkeycmp name_cmpfunc;
 static int        name_indexer(const char*, levelobj*);
-static int        name_iterator(char**, levelobj*);
+static int        name_iterator(const char**, levelobj*);
 static void       name_reset(levelobj*);
 
 #define MAX_ARRAY_SZ 65536
@@ -70,15 +68,14 @@ typedef struct
 
 /* ==== QNAME ============================================================= */
 
-int qname_indexer(const void* vp)
+int qname_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return name_indexer(m->qname, &Full);
 }
 
-int qname_iterator(char** label)
+int qname_iterator(const char** label)
 {
     return name_iterator(label, &Full);
 }
@@ -90,15 +87,14 @@ void qname_reset()
 
 /* ==== SECOND LEVEL DOMAIN =============================================== */
 
-int second_ld_indexer(const void* vp)
+int second_ld_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return name_indexer(dns_message_QnameToNld(m->qname, 2), &Second);
 }
 
-int second_ld_iterator(char** label)
+int second_ld_iterator(const char** label)
 {
     return name_iterator(label, &Second);
 }
@@ -110,15 +106,14 @@ void second_ld_reset()
 
 /* ==== QNAME ============================================================= */
 
-int third_ld_indexer(const void* vp)
+int third_ld_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     return name_indexer(dns_message_QnameToNld(m->qname, 3), &Third);
 }
 
-int third_ld_iterator(char** label)
+int third_ld_iterator(const char** label)
 {
     return name_iterator(label, &Third);
 }
@@ -160,7 +155,7 @@ name_indexer(const char* theName, levelobj* theLevel)
 }
 
 static int
-name_iterator(char** label, levelobj* theLevel)
+name_iterator(const char** label, levelobj* theLevel)
 {
     nameobj*    obj;
     static char label_buf[MAX_QNAME_SZ];
@@ -172,7 +167,7 @@ name_iterator(char** label, levelobj* theLevel)
     }
     if ((obj = hash_iterate(theLevel->hash)) == NULL)
         return -1;
-    snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->name);
+    snprintf(label_buf, sizeof(label_buf), "%s", obj->name);
     *label = label_buf;
     return obj->index;
 }

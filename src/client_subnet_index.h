@@ -34,19 +34,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "generic_counter.h"
+#ifndef __dsc_client_subnet_index_h
+#define __dsc_client_subnet_index_h
 
-int gen_cnt_cmp(const void* A, const void* B)
-{
-    const gen_cnt* a = A;
-    const gen_cnt* b = B;
-    if (a->cnt < b->cnt)
-        return 1;
-    if (a->cnt > b->cnt)
-        return -1;
-    if (a->ptr < b->ptr)
-        return 1;
-    if (a->ptr > b->ptr)
-        return -1;
-    return 0;
-}
+#include "dns_message.h"
+
+int client_subnet_indexer(const dns_message*);
+int client_subnet_iterator(const char** label);
+void client_subnet_reset(void);
+void client_subnet_indexer_init(void);
+int client_subnet_v4_mask_set(const char* mask);
+int client_subnet_v6_mask_set(const char* mask);
+
+#endif /* __dsc_client_subnet_index_h */

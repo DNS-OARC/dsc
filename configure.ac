@@ -76,12 +76,14 @@ PKG_CHECK_MODULES([libmaxminddb], [libmaxminddb], [AC_DEFINE([HAVE_LIBMAXMINDDB]
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
 AC_CHECK_HEADERS([arpa/nameser_compat.h arpa/inet.h fcntl.h memory.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h stdint.h stdlib.h string.h])
 AC_CHECK_HEADERS([strings.h sys/mount.h sys/param.h sys/socket.h])
 AC_CHECK_HEADERS([sys/statfs.h sys/statvfs.h sys/time.h syslog.h])
 AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h pcap/sll.h])
 AC_CHECK_HEADERS([GeoIP.h maxminddb.h])
+AC_CHECK_HEADERS([endian.h sys/endian.h machine/endian.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

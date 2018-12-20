@@ -37,6 +37,9 @@
 #ifndef __dsc_hashtbl_h
 #define __dsc_hashtbl_h
 
+#include <stddef.h>
+#include <stdint.h>
+
 typedef struct _hashitem {
     const void*       key;
     void*             data;
@@ -78,12 +81,50 @@ extern uint32_t hashlittle(const void* key, size_t length, uint32_t initval);
 extern uint32_t hashbig(const void* key, size_t length, uint32_t initval);
 extern uint32_t hashword(const uint32_t* k, size_t length, uint32_t initval);
 
-#ifndef BYTE_ORDER
+#ifdef HAVE_ENDIAN_H
+#include <endian.h>
+#endif
+#ifdef HAVE_SYS_ENDIAN_H
+#include <sys/endian.h>
+#endif
+#ifdef HAVE_MACHINE_ENDIAN_H
+#include <machine/endian.h>
+#endif
+
+#ifndef __BYTE_ORDER
+#if defined(BYTE_ORDER)
+#define __BYTE_ORDER BYTE_ORDER
+#elif defined(_BYTE_ORDER)
+#define __BYTE_ORDER _BYTE_ORDER
+#else
+#error "No byte order define, please fix"
+#endif
+#endif
+#ifndef __LITTLE_ENDIAN
+#if defined(LITTLE_ENDIAN)
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
+#elif defined(_LITTLE_ENDIAN)
+#define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#else
+#error "No little endian define, please fix"
+#endif
+#endif
+#ifndef __BIG_ENDIAN
+#if defined(BIG_ENDIAN)
+#define __BIG_ENDIAN BIG_ENDIAN
+#elif defined(_BIG_ENDIAN)
+#define __BIG_ENDIAN _BIG_ENDIAN
+#else
+#error "No big endian define, please fix"
+#endif
+#endif
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 #define hashendian hashlittle
-#elif BYTE_ORDER == BIG_ENDIAN
+#elif __BYTE_ORDER == __BIG_ENDIAN
 #define hashendian hashbig
 #else
-#define hashendian hashlittle
+#error "No byte order define, please fix"
 #endif
 
 #endif /* __dsc_hashtbl_h */

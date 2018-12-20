@@ -34,14 +34,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <netdb.h>
-#include <memory.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "dns_source_port_index.h"
+
+#include <string.h>
 
 /* dns_source_port_indexer */
 /* Indexes the source port of DNS messages */
@@ -50,10 +47,9 @@ static unsigned int   f_index[65536];
 static unsigned short r_index[65536];
 static unsigned int   largest = 0;
 
-int dns_source_port_indexer(const void* vp)
+int dns_source_port_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    unsigned short     p = m->tm->src_port;
+    unsigned short p = m->tm->src_port;
     if (0 == f_index[p]) {
         f_index[p]       = ++largest;
         r_index[largest] = p;
@@ -63,7 +59,7 @@ int dns_source_port_indexer(const void* vp)
 
 static int next_iter = 0;
 
-int dns_source_port_iterator(char** label)
+int dns_source_port_iterator(const char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -72,7 +68,8 @@ int dns_source_port_iterator(char** label)
     }
     if (next_iter > largest)
         return -1;
-    snprintf(*label = label_buf, 20, "%hu", r_index[next_iter++]);
+    snprintf(label_buf, sizeof(label_buf), "%hu", r_index[next_iter++]);
+    *label = label_buf;
     return next_iter;
 }
 
@@ -90,16 +87,15 @@ void dns_source_port_reset(void)
 static int range_largest   = 0;
 static int range_next_iter = 0;
 
-int dns_sport_range_indexer(const void* vp)
+int dns_sport_range_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                r = (int)m->tm->src_port >> 10;
+    int r = (int)m->tm->src_port >> 10;
     if (r > range_largest)
         range_largest = r;
     return r;
 }
 
-int dns_sport_range_iterator(char** label)
+int dns_sport_range_iterator(const char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -108,7 +104,8 @@ int dns_sport_range_iterator(char** label)
     }
     if (range_next_iter > range_largest)
         return -1;
-    snprintf(*label = label_buf, 20, "%d-%d", (range_next_iter << 10), ((range_next_iter + 1) << 10) - 1);
+    snprintf(label_buf, sizeof(label_buf), "%d-%d", (range_next_iter << 10), ((range_next_iter + 1) << 10) - 1);
+    *label = label_buf;
     return ++range_next_iter;
 }
 

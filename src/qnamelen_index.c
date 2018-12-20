@@ -34,19 +34,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
+#include "config.h"
+
+#include "qnamelen_index.h"
+
 #include <string.h>
 
-#include "dns_message.h"
-#include "md_array.h"
 static int largest = 0;
 
-int qnamelen_indexer(const void* vp)
+int qnamelen_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                i = strlen(m->qname);
+    int i = strlen(m->qname);
     if (m->malformed)
         return -1;
     if (i >= MAX_QNAME_SZ)
@@ -58,7 +56,7 @@ int qnamelen_indexer(const void* vp)
 
 static int next_iter;
 
-int qnamelen_iterator(char** label)
+int qnamelen_iterator(const char** label)
 {
     static char label_buf[10];
     if (NULL == label) {
@@ -67,7 +65,7 @@ int qnamelen_iterator(char** label)
     }
     if (next_iter > largest)
         return -1;
-    snprintf(label_buf, 10, "%d", next_iter);
+    snprintf(label_buf, sizeof(label_buf), "%d", next_iter);
     *label = label_buf;
     return next_iter++;
 }

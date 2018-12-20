@@ -37,8 +37,10 @@
 #ifndef __dsc_ip_proto_index_h
 #define __dsc_ip_proto_index_h
 
-int ip_proto_indexer(const void*);
-int ip_proto_iterator(char** label);
+#include "dns_message.h"
+
+int ip_proto_indexer(const dns_message*);
+int ip_proto_iterator(const char** label);
 void ip_proto_reset(void);
 
 #endif /* __dsc_ip_proto_index_h */

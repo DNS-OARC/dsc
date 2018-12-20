@@ -34,26 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
+#include "query_classification_index.h"
+
 #include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <arpa/nameser.h>
-
-/* OpenBSD does not have nameser_compat.h */
-#ifdef __OpenBSD__
-#define C_NONE 254
-#else
-#include <arpa/nameser_compat.h>
-#endif
-
-#ifndef T_A6
-#define T_A6 38
-#endif
-
-#include "dns_message.h"
-#include "md_array.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 enum {
     CLASS_OK,
@@ -235,10 +224,9 @@ malformed(const dns_message* m)
     return 0;
 }
 
-int query_classification_indexer(const void* vp)
+int query_classification_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                x;
+    int x;
     if ((x = malformed(m)))
         return x;
     if ((x = src_port_zero(m)))
@@ -262,7 +250,7 @@ int query_classification_indexer(const void* vp)
     return CLASS_OK;
 }
 
-int query_classification_iterator(char** label)
+int query_classification_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

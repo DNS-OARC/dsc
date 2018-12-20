@@ -37,14 +37,16 @@
 #ifndef __dsc_qname_index_h
 #define __dsc_qname_index_h
 
-int qname_indexer(const void*);
-int qname_iterator(char** label);
+#include "dns_message.h"
+
+int qname_indexer(const dns_message*);
+int qname_iterator(const char** label);
 void qname_reset(void);
-int  second_ld_indexer(const void*);
-int second_ld_iterator(char** label);
+int  second_ld_indexer(const dns_message*);
+int second_ld_iterator(const char** label);
 void second_ld_reset(void);
-int  third_ld_indexer(const void*);
-int third_ld_iterator(char** label);
+int  third_ld_indexer(const dns_message*);
+int third_ld_iterator(const char** label);
 void third_ld_reset(void);
 
 #endif /* __dsc_qname_index_h */

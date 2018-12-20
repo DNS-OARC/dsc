@@ -34,50 +34,23 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/stat.h>
+#include "config.h"
 
-#include <netinet/in.h>
-#include <netinet/ip6.h>
-
-#include <pcap.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
-#include <ctype.h>
-#include <assert.h>
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
-#include <errno.h>
-
-#include <sys/socket.h>
-#include <net/if_arp.h>
-#include <net/if.h>
-#include <netinet/if_ether.h>
-
-#include <netinet/in_systm.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <netinet/tcp.h>
-
-#include <syslog.h>
-#include <stdarg.h>
-
-#include "xmalloc.h"
-#include "dns_message.h"
 #include "pcap.h"
-#include "byteorder.h"
+#include "xmalloc.h"
 #include "syslog_debug.h"
 #include "hashtbl.h"
-#include "pcap_layers.h"
-
-#include "config.h"
+#include "pcap_layers/byteorder.h"
+#include "pcap_layers/pcap_layers.h"
+#include "dns_protocol.h"
 #include "pcap-thread/pcap_thread.h"
 #include "compat.h"
+
+#include <sys/stat.h>
+#include <string.h>
+#include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #define PCAP_SNAPLEN 65536
 #ifndef ETHER_HDR_LEN
@@ -138,7 +111,6 @@ int   n_pcap_offline                 = 0; /* global so daemon.c can use it */
 char* bpf_program_str                = NULL;
 int   vlan_tag_needs_byte_conversion = 1;
 
-extern int dns_protocol_handler(const u_char* buf, int len, void* udata);
 #if 0
 static int debug_count = 20;
 #endif
@@ -566,7 +538,6 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
     uint32_t           seq;
     tcpstate_t*        tcpstate = NULL;
     tcpHashkey_t       key;
-    char               label[384];
 
     tm->src_port = nptohs(&tcp->th_sport);
     tm->dst_port = nptohs(&tcp->th_dport);
@@ -578,15 +549,10 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
     key.dport       = tm->dst_port;
 
     if (debug_flag > 1) {
-        char* p = label;
-        *p      = 0;
-        inXaddr_ntop(&key.src_ip_addr, p, 128);
-        p += strlen(p);
-        p += snprintf(p, 32, ":%d ", key.sport);
-        inXaddr_ntop(&key.dst_ip_addr, p, 128);
-        p += strlen(p);
-        snprintf(p, 32, ":%d ", key.dport);
-        dfprintf(1, "handle_tcp: %s", label);
+        char src[128], dst[128];
+        inXaddr_ntop(&key.src_ip_addr, src, sizeof(src));
+        inXaddr_ntop(&key.dst_ip_addr, dst, sizeof(dst));
+        dfprintf(1, "handle_tcp: %s:%d %s:%d", src, key.sport, dst, key.dport);
     }
 
     if (port53 != key.dport && port53 != key.sport)
@@ -1105,16 +1071,16 @@ void pcap_set_match_vlan(int vlan)
 
 /* ========== PCAP_STAT INDEXER ========== */
 
-int pcap_ifname_iterator(char**);
-int pcap_stat_iterator(char**);
+int pcap_ifname_iterator(const char**);
+int pcap_stat_iterator(const char**);
 
-static indexer_t indexers[] = {
+static indexer indexers[] = {
     { "ifname", NULL, pcap_ifname_iterator, NULL },
     { "pcap_stat", NULL, pcap_stat_iterator, NULL },
     { NULL, NULL, NULL, NULL },
 };
 
-int pcap_ifname_iterator(char** label)
+int pcap_ifname_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {
@@ -1128,7 +1094,7 @@ int pcap_ifname_iterator(char** label)
     return -1;
 }
 
-int pcap_stat_iterator(char** label)
+int pcap_stat_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

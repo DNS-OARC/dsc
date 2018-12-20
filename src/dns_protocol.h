@@ -34,9 +34,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_pcap_layers_h
-#define __dsc_pcap_layers_h
+#ifndef __dsc_dns_protocol_h
+#define __dsc_dns_protocol_h
 
-#include "pcap_layers/pcap_layers.h"
+#include <sys/types.h>
 
-#endif /* __dsc_pcap_layers_h */
+int dns_protocol_handler(const u_char* buf, int len, void* udata);
+
+#endif /* __dsc_dns_protocol_h */

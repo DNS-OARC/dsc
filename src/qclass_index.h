@@ -37,8 +37,10 @@
 #ifndef __dsc_qclass_index_h
 #define __dsc_qclass_index_h
 
-int qclass_indexer(const void*);
-int qclass_iterator(char** label);
+#include "dns_message.h"
+
+int qclass_indexer(const dns_message*);
+int qclass_iterator(const char** label);
 void qclass_reset(void);
 
 #endif /* __dsc_qclass_index_h */

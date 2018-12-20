@@ -34,15 +34,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_client_ip_addr_index_h
-#define __dsc_client_ip_addr_index_h
+#ifndef __dsc_client_index_h
+#define __dsc_client_index_h
 
-int cip_indexer(const void*);
-int cip_iterator(char** label);
-void cip_reset(void);
+#include "dns_message.h"
 
-/* shared between client_ip_addr_index and server_ip_addr_index */
-unsigned int ipaddr_hashfunc(const void* key);
-int ipaddr_cmpfunc(const void* a, const void* b);
+int client_indexer(const dns_message*);
+int client_iterator(const char** label);
+void client_reset(void);
 
-#endif /* __dsc_client_ip_addr_index_h */
+#endif /* __dsc_client_index_h */

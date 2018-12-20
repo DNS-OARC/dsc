@@ -34,10 +34,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "md_array.h"
-
 #ifndef __dsc_pcap_h
 #define __dsc_pcap_h
+
+#include "md_array.h"
+
+#include <stdio.h>
 
 void Pcap_init(const char* device, int promisc, int monitor, int immediate, int threads, int buffer_size);
 int  Pcap_run();

@@ -34,24 +34,31 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
+#ifndef __dsc_dns_message_h
+#define __dsc_dns_message_h
+
+typedef struct transport_message transport_message;
+typedef struct dns_message       dns_message;
 
 #include "inX_addr.h"
 #include "dataset_opt.h"
 #include "md_array.h"
 
-#ifndef __dsc_dns_message_h
-#define __dsc_dns_message_h
+#include <stdio.h>
+#ifdef TIME_WITH_SYS_TIME
+#include <sys/time.h>
+#include <time.h>
+#else
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+#endif
 
 #define MAX_QNAME_SZ 512
 
-typedef struct
-{
+struct transport_message {
     struct timeval ts;
     inX_addr       src_ip_addr;
     inX_addr       dst_ip_addr;
@@ -59,13 +66,10 @@ typedef struct
     unsigned short dst_port;
     unsigned char  ip_version;
     unsigned char  proto;
-} transport_message;
+};
 
-typedef struct _dns_message dns_message;
-struct _dns_message {
+struct dns_message {
     transport_message* tm;
-    inX_addr           client_ip_addr;
-    inX_addr           server_ip_addr;
     unsigned short     qtype;
     unsigned short     qclass;
     unsigned short     msglen;
@@ -86,30 +90,41 @@ struct _dns_message {
         unsigned char  version; /* version field from OPT RR */
         unsigned short bufsiz; /* class field from OPT RR */
     } edns;
-    /* ... */
 };
 
-void dns_message_report(FILE*, md_array_printer*);
-int  dns_message_add_array(const char*, const char*, const char*, const char*, const char*, const char*,
-    dataset_opt);
-const char* dns_message_QnameToNld(const char*, int);
+void dns_message_handle(dns_message* m);
+int dns_message_add_array(const char* name, const char* fn, const char* fi, const char* sn, const char* si, const char* f, dataset_opt opts);
+void dns_message_report(FILE* fp, md_array_printer* printer);
+void        dns_message_clear_arrays(void);
+const char* dns_message_QnameToNld(const char* qname, int nld);
 const char* dns_message_tld(dns_message* m);
 void dns_message_init(void);
-void dns_message_clear_arrays(void);
-void dns_message_handle(dns_message*);
+int add_qname_filter(const char* name, const char* pat);
 
-int add_qname_filter(const char* name, const char* re);
-
-#ifndef T_OPT
-#define T_OPT 41 /* OPT pseudo-RR, RFC2761 */
+#include <arpa/nameser.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
 #endif
+
+/* DNS types that may be missing */
 
 #ifndef T_AAAA
 #define T_AAAA 28
 #endif
+#ifndef T_A6
+#define T_A6 38
+#endif
+#ifndef T_OPT
+#define T_OPT 41 /* OPT pseudo-RR, RFC2761 */
+#endif
+
+/* DNS classes that may be missing */
 
 #ifndef C_CHAOS
 #define C_CHAOS 3
+#endif
+#ifndef C_NONE
+#define C_NONE 254
 #endif
 
 #endif /* __dsc_dns_message_h */
