@@ -211,6 +211,57 @@ Set the IPv4 MASK for client_subnet INDEXERS.
 .TP
 \fBclient_v6_mask\fR NETMASK ;
 Set the IPv6 MASK for client_subnet INDEXERS.
+.TP
+\fBresponse_time_mode\fR MODE ;
+Set the output MODE of the response time indexer:
+.RS
+.TP
+\fBbucket\fR
+Count response time in buckets of microseconds, see \fBresponse_time_bucket_size\fR
+for setting the size of the buckets.
+.TP
+\fBlog10\fR
+Count response time in logarithmic scale with base 10.
+.TP
+\fBlog2\fR
+Count response time in logarithmic scale with base 2.
+.RE
+.TP
+\fBresponse_time_max_queries\fR NUMBER ;
+Set the maximum number of queries to keep track of.
+.TP
+\fBresponse_time_full_mode\fR MODE ;
+If the number of queries tracked exceeds \fBresponse_time_max_queries\fR the
+MODE will control how to handle it:
+.RS
+.TP
+\fBdrop_query\fR
+Drop the incoming query.
+.TP
+\fBdrop_oldest\fR
+Drop the oldest query being tracked and accept the incoming one.
+.RE
+.TP
+\fBresponse_time_max_seconds\fR SECONDS ;
+Set the maximum seconds to keep a query but a query can still be matched to
+a response while being outside this limit, see \fBresponse_time_max_sec_mode\fR
+on how to handle those situations.
+.TP
+\fBresponse_time_max_sec_mode\fR MODE ;
+Control how to handle queries and responses which are match successfully but
+exceeds \fBresponse_time_max_seconds\fR:
+.RS
+.TP
+\fBceil\fR
+The query will be counted as successful but the time it took will be the
+maximum seconds (think ceiling, or ceil()).
+.TP
+\fBtimed_out\fR
+The query will be counted as timed out.
+.RE
+.TP
+\fBresponse_time_bucket_size\fR SIZE ;
+Control the size of bucket (microseconds) in bucket mode.
 .SH DATASETS
 A \fBdataset\fR is a 2-D array of counters.  For example, you
 might have a dataset with \*(lqQuery Type\*(rq along one dimension and
@@ -474,6 +525,19 @@ messages received with each combination of QR,AA bits.  Normally
 the authoritative name server should *receive* only *queries*.  If
 the name server is the target of a DNS reflection attack, it will
 probably receive DNS *responses* which have the QR bit set.
+.TP
+\fBresponse_time\fR
+An indexer to track queries and return the response time in buckets along with
+other state buckets for timeouts, missing queries (received a response but
+have never seen the query), dropped queries (due to memory limitations) and
+internal errors.
+Queries are matched against responses by checking (in this order) the DNS ID,
+the IP version and protocol, client IP, client port, server IP and last server
+port.
+There are a few configuration options to control how response time statistics
+are gathered and handled, please see CONFIGURATION.
+NOTE: Only one instance of this indexer can be used in a dataset, this is due
+to the state to stores and the design of DSC.
 .SH "DNS FILTERS"
 You must specify one or more of the following filters (separated
 by commas) on the \fBdataset\fR line. Note that multiple filters
@@ -769,6 +833,7 @@ dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 #dataset third_ld_vs_rcode dns Rcode:rcode ThirdLD:third_ld replies-only max-cells=50;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
+#dataset response_time dns All:null ResponseTime:response_time;
 #dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
 #dataset priming_responses dns All:null ReplyLen:msglen priming-query,replies-only;
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
@@ -792,6 +857,13 @@ output_format XML;
 
 #client_v4_mask 255.255.255.0;
 #client_v6_mask ffff:ffff:ffff:ffff:ffff:ffff:0000:0000;
+
+#response_time_mode log10;
+#response_time_max_queries 1000000;
+#response_time_full_mode drop_query;
+#response_time_max_seconds 5;
+#response_time_max_sec_mode ceil;
+#response_time_bucket_size 100;
 .fi
 .SH FILES
 @etcdir@/dsc.conf

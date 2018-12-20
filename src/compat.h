@@ -39,6 +39,12 @@
 
 #include <stddef.h>
 
+#ifdef __OpenBSD__
+#define PRItime "%lld.%ld"
+#else
+#define PRItime "%ld.%ld"
+#endif
+
 const char* dsc_strerror(int errnum, char* buf, size_t buflen);
 
 #endif /* __dsc_compat_h */

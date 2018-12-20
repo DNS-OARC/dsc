@@ -111,9 +111,8 @@ void client_subnet_reset()
     next_idx = 0;
 }
 
-void client_subnet_indexer_init(void)
+void client_subnet_init(void)
 {
-    /* XXXDPW */
     inXaddr_pton("255.255.255.0", &v4mask);
     inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
 }

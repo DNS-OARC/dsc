@@ -34,14 +34,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_country_index_h
-#define __dsc_country_index_h
+#ifndef __dsc_response_time_index_h
+#define __dsc_response_time_index_h
 
 #include "dns_message.h"
 
-int country_indexer(const dns_message*);
-int country_iterator(const char** label);
-void country_reset(void);
-void country_init(void);
+enum response_time_mode {
+    response_time_bucket,
+    response_time_log10,
+    response_time_log2
+};
 
-#endif /* __dsc_country_index_h */
+enum response_time_max_sec_mode {
+    response_time_ceil,
+    response_time_timed_out
+};
+
+enum response_time_full_mode {
+    response_time_drop_oldest,
+    response_time_drop_query
+};
+
+int response_time_indexer(const dns_message*);
+int response_time_iterator(const char** label);
+void               response_time_reset(void);
+const dns_message* response_time_flush(enum flush_mode mode);
+
+#endif /* __dsc_response_time_index_h */

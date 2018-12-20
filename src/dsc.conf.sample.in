@@ -118,6 +118,7 @@ dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 #dataset third_ld_vs_rcode dns Rcode:rcode ThirdLD:third_ld replies-only max-cells=50;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
+#dataset response_time dns All:null ResponseTime:response_time;
 
 #  datasets for collecting data on priming queries at root nameservers
 #dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;
@@ -212,3 +213,39 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #
 #client_v4_mask 255.255.255.0;
 #client_v6_mask ffff:ffff:ffff:ffff:ffff:ffff:0000:0000;
+
+# Response Time indexer
+#
+#  These settings are for the response time indexer, it tracks query
+#  to match it with a response and gives statistics about the time it
+#  took to answer the query.
+#
+#  Available statistical output modes:
+#  - bucket
+#  - log10 (default)
+#  - log2
+#
+#response_time_mode log10;
+#response_time_max_queries 1000000;
+#
+#  If the number of queries tracked exceeds max_queries the full_mode
+#  will control how to handle it:
+#  - drop_query: Drop the incoming query.
+#  - drop_oldest: Drop the oldest query being tracked and accept the
+#                 incoming one.
+#
+#response_time_full_mode drop_query;
+#
+#  Set the maximum seconds to keep a query but a query can still be
+#  matched to a response while being outside this limit and therefor
+#  there is a mode on how to handle that situation:
+#  - ceil: The query will be counted as successful but the time it took
+#          will be the maximum seconds (think ceiling, or ceil()).
+#  - timed_out: The query will be counted as timed out.
+#
+#response_time_max_seconds 5;
+#response_time_max_sec_mode ceil;
+#
+#  Control the size of bucket (microseconds) in bucket mode.
+#
+#response_time_bucket_size 100;

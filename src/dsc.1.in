@@ -73,6 +73,9 @@ Enable immediate mode on interfaces.
 .B \-T
 Disable the usage of threads.
 .TP
+.B \-D
+Don't exit after first write when in debug mode.
+.TP
 .B \-v
 Print version and exit.
 .SH FILES

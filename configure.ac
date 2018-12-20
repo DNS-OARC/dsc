@@ -72,6 +72,7 @@ AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])
 AC_CHECK_LIB([GeoIP], [GeoIP_open])
 PKG_CHECK_MODULES([libmaxminddb], [libmaxminddb], [AC_DEFINE([HAVE_LIBMAXMINDDB], [1], [Define to 1 if you have libmaxminddb.])], [:])
+AC_CHECK_LIB([m], [log10])
 
 # Checks for header files.
 AC_HEADER_STDC

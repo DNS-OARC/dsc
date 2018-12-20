@@ -114,7 +114,7 @@ int   vlan_tag_needs_byte_conversion = 1;
 #if 0
 static int debug_count = 20;
 #endif
-static struct timeval last_ts;
+struct timeval        last_ts;
 static struct timeval start_ts;
 static struct timeval finish_ts;
 #define MAX_VLAN_IDS 100
@@ -1075,9 +1075,9 @@ int pcap_ifname_iterator(const char**);
 int pcap_stat_iterator(const char**);
 
 static indexer indexers[] = {
-    { "ifname", NULL, pcap_ifname_iterator, NULL },
-    { "pcap_stat", NULL, pcap_stat_iterator, NULL },
-    { NULL, NULL, NULL, NULL },
+    { "ifname", 0, 0, pcap_ifname_iterator },
+    { "pcap_stat", 0, 0, pcap_stat_iterator },
+    { 0 },
 };
 
 int pcap_ifname_iterator(const char** label)

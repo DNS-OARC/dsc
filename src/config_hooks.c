@@ -165,11 +165,21 @@ int set_statistics_interval(const char* s)
     return 1;
 }
 
+static int response_time_indexer_used = 0;
+
 int add_dataset(const char* name, const char* layer_ignored,
     const char* firstname, const char* firstindexer,
     const char* secondname, const char* secondindexer, const char* filtername, dataset_opt opts)
 {
     char* dup;
+
+    if (!strcmp(firstindexer, "response_time") || !strcmp(secondindexer, "response_time")) {
+        if (response_time_indexer_used) {
+            dsyslogf(LOG_ERR, "unable to create dataset %s: response_time indexer already used, can only be used in one dataset", name);
+            return 0;
+        }
+        response_time_indexer_used = 1;
+    }
 
     if (!dataset_hash) {
         if (!(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, xfree, xfree))) {

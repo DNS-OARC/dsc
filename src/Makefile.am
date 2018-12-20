@@ -23,7 +23,7 @@ dsc_SOURCES = asn_index.c certain_qnames_index.c client_index.c \
   parse_conf.c pcap.c qclass_index.c qname_index.c qnamelen_index.c \
   qr_aa_bits_index.c qtype_index.c query_classification_index.c rcode_index.c \
   rd_bit_index.c server_ip_addr_index.c tc_bit_index.c tld_index.c \
-  transport_index.c xmalloc.c \
+  transport_index.c xmalloc.c response_time_index.c \
   ext/base64.c ext/lookup3.c \
   pcap_layers/pcap_layers.c \
   pcap-thread/pcap_thread.c
@@ -36,7 +36,7 @@ dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   parse_conf.h pcap.h qclass_index.h qname_index.h qnamelen_index.h \
   qr_aa_bits_index.h qtype_index.h query_classification_index.h rcode_index.h \
   rd_bit_index.h server_ip_addr_index.h syslog_debug.h tc_bit_index.h \
-  tld_index.h transport_index.h xmalloc.h \
+  tld_index.h transport_index.h xmalloc.h response_time_index.h \
   pcap_layers/byteorder.h pcap_layers/pcap_layers.h \
   pcap-thread/pcap_thread.h
 dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS)

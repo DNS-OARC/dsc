@@ -333,7 +333,7 @@ asn_cmpfunc(const void* a, const void* b)
     return strcasecmp(a, b);
 }
 
-void asn_indexer_init()
+void asn_init(void)
 {
     switch (asn_indexer_backend) {
     case geoip_backend_libgeoip:

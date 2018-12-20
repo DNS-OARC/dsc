@@ -188,6 +188,7 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
         m.malformed = 1;
         return 0;
     }
+    m.id     = nptohs(buf);
     us       = nptohs(buf + 2);
     m.qr     = (us >> 15) & 0x01;
     m.opcode = (us >> 11) & 0x0F;
