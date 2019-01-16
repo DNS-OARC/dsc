@@ -430,3 +430,16 @@ void set_drop_ip_fragments(void)
 
     drop_ip_fragments = 1;
 }
+
+int set_dns_port(const char* s)
+{
+    int port;
+    dsyslogf(LOG_INFO, "dns_port %s", s);
+    port = atoi(s);
+    if (port < 0 || port > 65535) {
+        dsyslog(LOG_ERR, "invalid dns_port");
+        return 0;
+    }
+    port53 = port;
+    return 1;
+}

@@ -104,8 +104,8 @@ struct _interface {
 #define MAX_N_INTERFACES 10
 static int                n_interfaces = 0;
 static struct _interface* interfaces   = NULL;
-static unsigned short     port53;
-pcap_thread_t             pcap_thread = PCAP_THREAD_T_INIT;
+unsigned short            port53       = 53;
+pcap_thread_t             pcap_thread  = PCAP_THREAD_T_INIT;
 
 int   n_pcap_offline                 = 0; /* global so daemon.c can use it */
 char* bpf_program_str                = NULL;
@@ -836,7 +836,6 @@ void Pcap_init(const char* device, int promisc, int monitor, int immediate, int 
     i         = &interfaces[n_interfaces];
     i->device = strdup(device);
 
-    port53         = 53;
     last_ts.tv_sec = last_ts.tv_usec = 0;
     finish_ts.tv_sec = finish_ts.tv_usec = 0;
 

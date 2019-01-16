@@ -680,6 +680,21 @@ int parse_conf_client_v6_mask(const conf_token_t* tokens)
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_dns_port(const conf_token_t* tokens)
+{
+    char* dns_port = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!dns_port) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_dns_port(dns_port);
+    free(dns_port);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     { "interface",
         parse_conf_interface,
@@ -762,6 +777,9 @@ static conf_token_syntax_t _syntax[] = {
     { "maxminddb_country",
         parse_conf_maxminddb_country,
         { TOKEN_STRING, TOKEN_END } },
+    { "dns_port",
+        parse_conf_dns_port,
+        { TOKEN_NUMBER, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }
 };

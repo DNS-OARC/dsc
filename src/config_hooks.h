@@ -62,5 +62,6 @@ int set_pcap_buffer_size(const char* s);
 void set_no_wait_interval(void);
 int set_pt_timeout(const char* s);
 void set_drop_ip_fragments(void);
+int set_dns_port(const char* s);
 
 #endif /* __dsc_config_hooks_h */
