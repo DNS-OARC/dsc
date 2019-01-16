@@ -218,6 +218,32 @@ int md_array_count(md_array* a, const void* vp)
     return ++a->array[i1].array[i2];
 }
 
+void md_array_flush(md_array* a)
+{
+    const void* vp;
+
+    if (a->d1.indexer->flush_fn)
+        a->d1.indexer->flush_fn(flush_on);
+    if (a->d2.indexer->flush_fn)
+        a->d2.indexer->flush_fn(flush_on);
+
+    if (a->d1.indexer->flush_fn) {
+        while ((vp = a->d1.indexer->flush_fn(flush_get))) {
+            md_array_count(a, vp);
+        }
+    }
+    if (a->d2.indexer->flush_fn) {
+        while ((vp = a->d2.indexer->flush_fn(flush_get))) {
+            md_array_count(a, vp);
+        }
+    }
+
+    if (a->d1.indexer->flush_fn)
+        a->d1.indexer->flush_fn(flush_off);
+    if (a->d2.indexer->flush_fn)
+        a->d2.indexer->flush_fn(flush_off);
+}
+
 int md_array_print(md_array* a, md_array_printer* pr, FILE* fp)
 {
     const char* label1;

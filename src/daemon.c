@@ -42,9 +42,6 @@
 #include "parse_conf.h"
 #include "compat.h"
 #include "pcap-thread/pcap_thread.h"
-#include "client_subnet_index.h"
-#include "asn_index.h"
-#include "country_index.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -235,6 +232,7 @@ void usage(void)
         "\t-m\tEnable monitor mode on interfaces.\n"
         "\t-i\tEnable immediate mode on interfaces.\n"
         "\t-T\tDisable the usage of threads.\n"
+        "\t-D\tDon't exit after first write when in debug mode.\n"
         "\t-v\tPrint version and exit.\n");
     exit(1);
 }
@@ -356,7 +354,7 @@ sig_thread(void* arg)
 int main(int argc, char* argv[])
 {
     char           errbuf[512];
-    int            x;
+    int            x, dont_exit = 0;
     int            result;
     struct timeval break_start = { 0, 0 };
 #if HAVE_PTHREAD
@@ -370,7 +368,7 @@ int main(int argc, char* argv[])
         return 1;
     openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
-    while ((x = getopt(argc, argv, "fpdvmiT")) != -1) {
+    while ((x = getopt(argc, argv, "fpdvmiTD")) != -1) {
         switch (x) {
         case 'f':
             nodaemon_flag = 1;
@@ -390,6 +388,9 @@ int main(int argc, char* argv[])
             break;
         case 'T':
             threads_flag = 0;
+            break;
+        case 'D':
+            dont_exit = 1;
             break;
         case 'v':
             version();
@@ -415,13 +416,11 @@ int main(int argc, char* argv[])
 
     pcap_thread_set_activate_mode(&pcap_thread, PCAP_THREAD_ACTIVATE_MODE_DELAYED);
 
-    client_subnet_indexer_init();
-    dns_message_init();
+    dns_message_filters_init();
     if (parse_conf(argv[0])) {
         return 1;
     }
-    country_indexer_init();
-    asn_indexer_init();
+    dns_message_indexers_init();
     if (!output_format_xml && !output_format_json) {
         output_format_xml = 1;
     }
@@ -542,6 +541,8 @@ int main(int argc, char* argv[])
         if (debug_flag)
             gettimeofday(&break_start, NULL);
 
+        dns_message_flush_arrays();
+
         if (0 == fork()) {
             struct sigaction action;
 
@@ -603,7 +604,7 @@ int main(int argc, char* argv[])
             }
         }
 
-    } while (result > 0 && debug_flag == 0);
+    } while (result > 0 && (debug_flag == 0 || dont_exit));
 
     Pcap_close();
 

@@ -70,6 +70,7 @@ struct transport_message {
 
 struct dns_message {
     transport_message* tm;
+    unsigned short     id;
     unsigned short     qtype;
     unsigned short     qclass;
     unsigned short     msglen;
@@ -94,11 +95,13 @@ struct dns_message {
 
 void dns_message_handle(dns_message* m);
 int dns_message_add_array(const char* name, const char* fn, const char* fi, const char* sn, const char* si, const char* f, dataset_opt opts);
+void dns_message_flush_arrays(void);
 void dns_message_report(FILE* fp, md_array_printer* printer);
 void        dns_message_clear_arrays(void);
 const char* dns_message_QnameToNld(const char* qname, int nld);
 const char* dns_message_tld(dns_message* m);
-void dns_message_init(void);
+void dns_message_filters_init(void);
+void dns_message_indexers_init(void);
 int add_qname_filter(const char* name, const char* pat);
 
 #include <arpa/nameser.h>

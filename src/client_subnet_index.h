@@ -42,7 +42,7 @@
 int client_subnet_indexer(const dns_message*);
 int client_subnet_iterator(const char** label);
 void client_subnet_reset(void);
-void client_subnet_indexer_init(void);
+void client_subnet_init(void);
 int client_subnet_v4_mask_set(const char* mask);
 int client_subnet_v6_mask_set(const char* mask);
 

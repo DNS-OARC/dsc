@@ -42,6 +42,6 @@
 int asn_indexer(const dns_message*);
 int asn_iterator(const char** label);
 void asn_reset(void);
-void asn_indexer_init();
+void asn_init(void);
 
 #endif /* __dsc_asn_index_h */

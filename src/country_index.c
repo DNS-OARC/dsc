@@ -257,7 +257,7 @@ country_cmpfunc(const void* a, const void* b)
     return strcasecmp(a, b);
 }
 
-void country_indexer_init()
+void country_init(void)
 {
     switch (country_indexer_backend) {
     case geoip_backend_libgeoip:

@@ -52,11 +52,19 @@ typedef struct md_array_list    md_array_list;
 
 typedef int (*filter_func)(const dns_message* m, const void* context);
 
+enum flush_mode {
+    flush_on,
+    flush_get,
+    flush_off
+};
+
 struct indexer {
     const char* name;
+    void (*init_fn)(void);
     int (*index_fn)(const dns_message*);
     int (*iter_fn)(const char**);
     void (*reset_fn)(void);
+    const dns_message* (*flush_fn)(enum flush_mode);
 };
 
 struct filter_defn {
@@ -115,9 +123,10 @@ struct md_array_list {
     md_array_list* next;
 };
 
-void      md_array_clear(md_array*);
-int       md_array_count(md_array*, const void*);
 md_array* md_array_create(const char* name, filter_list*, const char*, indexer*, const char*, indexer*);
+void md_array_clear(md_array*);
+int  md_array_count(md_array*, const void*);
+void md_array_flush(md_array* a);
 int md_array_print(md_array* a, md_array_printer* pr, FILE* fp);
 filter_list** md_array_filter_list_append(filter_list** fl, filter_defn* f);
 filter_defn* md_array_create_filter(const char* name, filter_func, const void* context);
