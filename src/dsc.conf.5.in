@@ -103,6 +103,11 @@ makes only one pass through
 the configuration file and the BPF filter is set when the
 interface is initialized.
 .TP
+\fBdns_port\fR NUMBER ;
+.I dsc
+will only parse traffic coming to or leaving the DNS port (default 53),
+this option lets you control which port that is in case it's not standard.
+.TP
 \fBpcap_buffer_size\fR NUMBER ;
 Set the buffer size (in bytes) for pcap, increasing this may help
 if you see dropped packets by the kernel but increasing it too much
@@ -802,6 +807,7 @@ pid_file "/run/dsc.pid";
 #
 #bpf_program "udp dst port 53 and udp[10:2] & 0x8000 = 0";
 
+#dns_port 53;
 #pcap_buffer_size 4194304;
 #pcap_thread_timeout 100;
 #drop_ip_fragments;

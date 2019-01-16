@@ -42,6 +42,7 @@
 #include <stdio.h>
 
 extern struct timeval last_ts;
+extern unsigned short port53;
 
 void Pcap_init(const char* device, int promisc, int monitor, int immediate, int threads, int buffer_size);
 int  Pcap_run();
