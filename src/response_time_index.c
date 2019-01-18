@@ -399,9 +399,9 @@ void response_time_reset()
 
 static struct query* flushed_obj = 0;
 
-const dns_message* response_time_flush(enum flush_mode mode)
+const dns_message* response_time_flush(enum flush_mode fm)
 {
-    switch (mode) {
+    switch (fm) {
     case flush_get:
         if (qfirst && last_ts.tv_sec - qfirst->tm.ts.tv_sec >= max_sec) {
             if (flushed_obj)
