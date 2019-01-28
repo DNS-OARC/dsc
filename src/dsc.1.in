@@ -42,10 +42,11 @@ dsc \- DNS Statistics Collector
 ]
 .I dsc.conf
 .SH DESCRIPTION
-DNS Statistics Collector (\fIdsc\fR) is a tool used for collecting and exploring
-statistics from busy DNS servers.  It can be used in a distributed
-architecture to run collectors on or near nameservers sending their data
-to one or more central presenters for display and archiving.
+DNS Statistics Collector (\fIdsc\fR) is a tool used for collecting and
+exploring statistics from busy DNS servers.
+It can be used in a distributed architecture to run collectors on or
+near nameservers sending their data to one or more central presenters
+for display and archiving.
 
 .I dsc
 will chroot to a directory on startup and output statistics into files in
@@ -56,10 +57,12 @@ their structure and output filenames.
 .SH OPTIONS
 .TP
 .B \-d
-Debug mode.  Exits after first write.
+Debug mode.
+Exits after first write.
 .TP
 .B \-f
-Foreground mode.  Don't become a daemon.
+Foreground mode.
+Don't become a daemon.
 .TP
 .B \-p
 Don't put interface in promiscuous mode.
@@ -102,16 +105,18 @@ Maintained by DNS-OARC
 .SH KNOWN ISSUES
 This program and/or components uses
 .I select(2)
-to wait for packets and there may be an internal delay within that
-call during startup that results in missed packets. As a workaround, set
+to wait for packets and there may be an internal delay within that call
+during startup that results in missed packets.
+As a workaround, set
 .I pcap_thread_timeout
 ( see
 .I dsc.conf(5)
 ) to a relevant millisecond timeout with regards to the queries per second
-(QPS) received. For example if your receiving 10 QPS then you have 20 packets
-per second (PPS) and if spread out equally over a second you have a packet
-per 50 ms which you can use as timeout value. Since version 2.4.0 the
-default is 100 ms.
+(QPS) received.
+For example if your receiving 10 QPS then you have 20 packets per second
+(PPS) and if spread out equally over a second you have a packet per 50 ms
+which you can use as timeout value.
+Since version 2.4.0 the default is 100 ms.
 .SH BUGS
 For issues and feature requests please use:
 .LP

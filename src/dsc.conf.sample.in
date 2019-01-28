@@ -81,8 +81,14 @@ pid_file "@DSC_PID_FILE@";
 #  specifies a network interface to sniff packets from or a pcap
 #  file to read packets from, can specify more than one.
 #
+#  Under Linux (kernel v2.2+) libpcap can use an "any" interface which
+#  will include any interfaces the host has but these interfaces will
+#  not be put into promiscuous mode which may prevent capturing traffic
+#  that is not directly related to the host.
+#
 #interface eth0;
 #interface fxp0;
+#interface any;
 #interface /path/to/dump.pcap;
 
 # qname_filter

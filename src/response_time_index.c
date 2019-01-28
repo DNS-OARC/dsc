@@ -404,6 +404,8 @@ const dns_message* response_time_flush(enum flush_mode fm)
     switch (fm) {
     case flush_get:
         if (qfirst && last_ts.tv_sec - qfirst->tm.ts.tv_sec >= max_sec) {
+            dfprintf(2, "response_time: flush_get old %p, new %p", flushed_obj, qfirst);
+
             if (flushed_obj)
                 xfree(flushed_obj);
 
@@ -411,15 +413,19 @@ const dns_message* response_time_flush(enum flush_mode fm)
             qfirst      = flushed_obj->next;
             if (qfirst)
                 qfirst->prev = 0;
+            if (flushed_obj == qlast)
+                qlast = 0;
             hash_remove(flushed_obj, theHash);
             num_queries--;
             return &flushed_obj->m;
         }
         break;
     case flush_on:
+        dfprintf(2, "response_time: flush_on %p", flushed_obj);
         flushing = 1;
         break;
     case flush_off:
+        dfprintf(2, "response_time: flush_off %p", flushed_obj);
         if (flushed_obj) {
             xfree(flushed_obj);
             flushed_obj = 0;
