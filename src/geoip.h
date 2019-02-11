@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,9 +32,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_pcap_layers_h
-#define __dsc_pcap_layers_h
+#ifndef __dsc_geoip_h
+#define __dsc_geoip_h
 
-#include "pcap_layers/pcap_layers.h"
+#if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
+#define HAVE_GEOIP 1
+#include <GeoIP.h>
+#endif
+#if defined(HAVE_LIBMAXMINDDB) && defined(HAVE_MAXMINDDB_H)
+#define HAVE_MAXMINDDB 1
+#include <maxminddb.h>
+#endif
 
-#endif /* __dsc_pcap_layers_h */
+enum geoip_backend {
+    geoip_backend_none,
+    geoip_backend_libgeoip,
+    geoip_backend_libmaxminddb
+};
+
+#endif /* __dsc_geoip_h */

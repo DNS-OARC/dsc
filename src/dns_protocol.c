@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,28 +34,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unistd.h>
-#include <stdlib.h>
+#include "config.h"
+
+#include "dns_protocol.h"
+#include "dns_message.h"
+#include "pcap_layers/byteorder.h"
+#include "xmalloc.h"
+
 #include <string.h>
-#include <sys/types.h>
-#include <sys/time.h>
 #include <assert.h>
 #include <ctype.h>
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#endif
-#include <syslog.h>
-
-#include "xmalloc.h"
-#include "dns_message.h"
-#include "byteorder.h"
 
 #define DNS_MSG_HDR_SZ 12
 #define RFC1035_MAXLABELSZ 63
 
-static int
-rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* name, int ns)
+static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* name, int ns)
 {
     off_t         no = 0;
     unsigned char c;
@@ -119,8 +112,7 @@ rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* name, int ns)
     return 0;
 }
 
-static off_t
-grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned short* qtype, unsigned short* qclass)
+static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned short* qtype, unsigned short* qclass)
 {
     char* t;
     int   x;
@@ -128,7 +120,7 @@ grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned sh
     if (0 != x)
         return 0;
     if ('\0' == *qname) {
-        *qname = '.';
+        *qname       = '.';
         *(qname + 1) = 0;
     }
     /* XXX remove special characters from QNAME */
@@ -146,8 +138,7 @@ grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned sh
     return offset;
 }
 
-static off_t
-grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
+static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
 {
     int            x;
     unsigned short sometype;
@@ -177,7 +168,7 @@ grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message
     return offset;
 }
 
-void dns_protocol_handler(const u_char* buf, uint16_t len, void* udata)
+int dns_protocol_handler(const u_char* buf, int len, void* udata)
 {
     transport_message* tm = udata;
     unsigned short     us;
@@ -195,18 +186,11 @@ void dns_protocol_handler(const u_char* buf, uint16_t len, void* udata)
 
     if (len < DNS_MSG_HDR_SZ) {
         m.malformed = 1;
-        return;
+        return 0;
     }
-    us   = nptohs(buf + 2);
-    m.qr = (us >> 15) & 0x01;
-    if (0 == m.qr) { /* query */
-        m.client_ip_addr = m.tm->src_ip_addr;
-        m.server_ip_addr = m.tm->dst_ip_addr;
-    } else { /* reply */
-        m.client_ip_addr = m.tm->dst_ip_addr;
-        m.server_ip_addr = m.tm->src_ip_addr;
-    }
-
+    m.id     = nptohs(buf);
+    us       = nptohs(buf + 2);
+    m.qr     = (us >> 15) & 0x01;
     m.opcode = (us >> 11) & 0x0F;
     m.aa     = (us >> 10) & 0x01;
     m.tc     = (us >> 9) & 0x01;
@@ -233,7 +217,7 @@ void dns_protocol_handler(const u_char* buf, uint16_t len, void* udata)
         new_offset = grok_question(buf, len, offset, m.qname, &m.qtype, &m.qclass);
         if (0 == new_offset) {
             m.malformed = 1;
-            return;
+            return 0;
         }
         offset = new_offset;
         qdcount--;
@@ -272,4 +256,5 @@ void dns_protocol_handler(const u_char* buf, uint16_t len, void* udata)
     }
     assert(offset <= len);
     dns_message_handle(&m);
+    return 0;
 }

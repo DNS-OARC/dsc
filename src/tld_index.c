@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
+#include "tld_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "md_array.h"
 #include "hashtbl.h"
+
+#include <string.h>
 
 static hashfunc   tld_hashfunc;
 static hashkeycmp tld_cmpfunc;
@@ -57,11 +55,10 @@ typedef struct
     int   index;
 } tldobj;
 
-int tld_indexer(const void* vp)
+int tld_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    const char*        tld;
-    tldobj*            obj;
+    const char* tld;
+    tldobj*     obj;
     if (m->malformed)
         return -1;
     tld = dns_message_tld((dns_message*)m);
@@ -90,7 +87,7 @@ int tld_indexer(const void* vp)
     return obj->index;
 }
 
-int tld_iterator(char** label)
+int tld_iterator(const char** label)
 {
     tldobj*     obj;
     static char label_buf[MAX_QNAME_SZ];
@@ -103,7 +100,7 @@ int tld_iterator(char** label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
         return -1;
-    snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->tld);
+    snprintf(label_buf, sizeof(label_buf), "%s", obj->tld);
     *label = label_buf;
     return obj->index;
 }

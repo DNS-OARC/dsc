@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include "config.h"
 
+#include "client_subnet_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "client_ip_addr_index.h"
-#include "md_array.h"
 #include "hashtbl.h"
+#include "syslog_debug.h"
+
+static hashfunc   ipnet_hashfunc;
+static hashkeycmp ipnet_cmpfunc;
+static inX_addr   v4mask;
+static inX_addr   v6mask;
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl* theHash  = NULL;
@@ -52,25 +54,31 @@ typedef struct
 {
     inX_addr addr;
     int      index;
-} ipaddrobj;
+} ipnetobj;
 
-int cip_indexer(const void* vp)
+int client_subnet_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    ipaddrobj*         obj;
+    ipnetobj* obj;
+    inX_addr  masked_addr;
+    inX_addr* client_ip_addr = m->qr ? &m->tm->dst_ip_addr : &m->tm->src_ip_addr;
+
     if (m->malformed)
         return -1;
     if (NULL == theHash) {
-        theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc, 1, NULL, afree);
+        theHash = hash_create(MAX_ARRAY_SZ, ipnet_hashfunc, ipnet_cmpfunc, 1, NULL, afree);
         if (NULL == theHash)
             return -1;
     }
-    if ((obj = hash_find(&m->client_ip_addr, theHash)))
+    if (6 == inXaddr_version(client_ip_addr))
+        masked_addr = inXaddr_mask(client_ip_addr, &v6mask);
+    else
+        masked_addr = inXaddr_mask(client_ip_addr, &v4mask);
+    if ((obj = hash_find(&masked_addr, theHash)))
         return obj->index;
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
         return -1;
-    obj->addr  = m->client_ip_addr;
+    obj->addr  = masked_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
         afree(obj);
@@ -80,9 +88,9 @@ int cip_indexer(const void* vp)
     return obj->index;
 }
 
-int cip_iterator(char** label)
+int client_subnet_iterator(const char** label)
 {
-    ipaddrobj*  obj;
+    ipnetobj*   obj;
     static char label_buf[128];
     if (0 == next_idx)
         return -1;
@@ -97,20 +105,39 @@ int cip_iterator(char** label)
     return obj->index;
 }
 
-void cip_reset()
+void client_subnet_reset()
 {
     theHash  = NULL;
     next_idx = 0;
 }
 
-unsigned int
-ipaddr_hashfunc(const void* key)
+void client_subnet_init(void)
+{
+    inXaddr_pton("255.255.255.0", &v4mask);
+    inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
+}
+
+int client_subnet_v4_mask_set(const char* mask)
+{
+    dsyslogf(LOG_INFO, "change v4 mask to %s", mask);
+    return inXaddr_pton(mask, &v4mask);
+}
+
+int client_subnet_v6_mask_set(const char* mask)
+{
+    dsyslogf(LOG_INFO, "change v6 mask to %s", mask);
+    return inXaddr_pton(mask, &v6mask);
+}
+
+static unsigned int
+ipnet_hashfunc(const void* key)
 {
     const inX_addr* a = key;
     return inXaddr_hash(a);
 }
 
-int ipaddr_cmpfunc(const void* a, const void* b)
+static int
+ipnet_cmpfunc(const void* a, const void* b)
 {
     const inX_addr* a1 = a;
     const inX_addr* a2 = b;

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
+#include "config.h"
 
-int null_indexer(const void* vp)
+#include "null_index.h"
+
+int null_indexer(const dns_message* m)
 {
     return 0;
 }
 
-int null_iterator(char** label)
+int null_iterator(const char** label)
 {
     static int state = 0;
     if (NULL == label) {

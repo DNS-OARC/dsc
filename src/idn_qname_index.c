@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "idn_qname_index.h"
+
+#include <string.h>
 
 #define QNAME_NORMAL 0
 #define QNAME_IDN 1
 
-int idn_qname_indexer(const void* vp)
+int idn_qname_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (0 == strncmp(m->qname, "xn--", 4))
@@ -55,7 +52,7 @@ int idn_qname_indexer(const void* vp)
     return QNAME_NORMAL;
 }
 
-int idn_qname_iterator(char** label)
+int idn_qname_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

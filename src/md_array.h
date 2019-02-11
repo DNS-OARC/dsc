@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,90 +34,101 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dataset_opt.h"
-
-#include <stdio.h>
-
 #ifndef __dsc_md_array_h
 #define __dsc_md_array_h
 
-typedef struct _md_array         md_array;
-typedef struct _md_array_printer md_array_printer;
-typedef struct _md_array_list    md_array_list;
-typedef struct _filter_list      filter_list;
-typedef struct _filter_defn      FLTR;
+typedef struct indexer          indexer;
+typedef struct filter_defn      filter_defn;
+typedef struct filter_list      filter_list;
+typedef struct md_array_node    md_array_node;
+typedef struct md_array         md_array;
+typedef struct md_array_printer md_array_printer;
+typedef struct md_array_list    md_array_list;
 
-typedef int(filter_func)(const void* message, const void* context);
+#include "dataset_opt.h"
+#include "dns_message.h"
 
-typedef struct
-{
+#include <stdio.h>
+
+typedef int (*filter_func)(const dns_message* m, const void* context);
+
+enum flush_mode {
+    flush_on,
+    flush_get,
+    flush_off
+};
+
+struct indexer {
     const char* name;
-    int (*index_fn)(const void*);
-    int (*iter_fn)(char**);
+    void (*init_fn)(void);
+    int (*index_fn)(const dns_message*);
+    int (*iter_fn)(const char**);
     void (*reset_fn)(void);
-} indexer_t;
-
-struct _filter_defn {
-    const char*  name;
-    filter_func* func;
-    const void*  context;
+    const dns_message* (*flush_fn)(enum flush_mode);
 };
 
-struct _filter_list {
-    FLTR*                filter;
-    struct _filter_list* next;
+struct filter_defn {
+    const char* name;
+    filter_func func;
+    const void* context;
 };
 
-struct _md_array_node {
+struct filter_list {
+    filter_defn*        filter;
+    struct filter_list* next;
+};
+
+struct md_array_node {
     int  alloc_sz;
     int* array;
 };
 
-struct _md_array {
+struct md_array {
     const char*  name;
     filter_list* filter_list;
     struct
     {
-        indexer_t*  indexer;
+        indexer*    indexer;
         const char* type;
         int         alloc_sz;
     } d1;
     struct
     {
-        indexer_t*  indexer;
+        indexer*    indexer;
         const char* type;
         int         alloc_sz;
     } d2;
-    dataset_opt            opts;
-    struct _md_array_node* array;
+    dataset_opt    opts;
+    md_array_node* array;
 };
 
-struct _md_array_printer {
+struct md_array_printer {
     void (*start_array)(void*, const char*);
     void (*finish_array)(void*);
     void (*d1_type)(void*, const char*);
     void (*d2_type)(void*, const char*);
     void (*start_data)(void*);
     void (*finish_data)(void*);
-    void (*d1_begin)(void*, char*);
-    void (*d1_end)(void*, char*);
-    void (*print_element)(void*, char* label, int);
+    void (*d1_begin)(void*, const char*);
+    void (*d1_end)(void*, const char*);
+    void (*print_element)(void*, const char*, int);
     const char* format;
     const char* start_file;
     const char* end_file;
     const char* extension;
 };
 
-struct _md_array_list {
+struct md_array_list {
     md_array*      theArray;
     md_array_list* next;
 };
 
-void      md_array_clear(md_array*);
-int       md_array_count(md_array*, const void*);
-md_array* md_array_create(const char* name, filter_list*, const char*, indexer_t*, const char*, indexer_t*);
+md_array* md_array_create(const char* name, filter_list*, const char*, indexer*, const char*, indexer*);
+void md_array_clear(md_array*);
+int  md_array_count(md_array*, const void*);
+void md_array_flush(md_array* a);
 int md_array_print(md_array* a, md_array_printer* pr, FILE* fp);
-filter_list** md_array_filter_list_append(filter_list** fl, FLTR* f);
-FLTR* md_array_create_filter(const char* name, filter_func*, const void* context);
+filter_list** md_array_filter_list_append(filter_list** fl, filter_defn* f);
+filter_defn* md_array_create_filter(const char* name, filter_func, const void* context);
 
 #endif /* __dsc_md_array_h */

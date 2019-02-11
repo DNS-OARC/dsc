@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,10 +37,11 @@
 #ifndef __dsc_asn_index_h
 #define __dsc_asn_index_h
 
-/* check HAVE_LIBGEOIP before #including this file */
+#include "dns_message.h"
 
-int asn_indexer(const void*);
-int asn_iterator(char** label);
+int asn_indexer(const dns_message*);
+int asn_iterator(const char** label);
 void asn_reset(void);
+void asn_init(void);
 
 #endif /* __dsc_asn_index_h */

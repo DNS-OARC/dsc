@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,14 +35,9 @@
  */
 
 #include "config.h"
-#include <unistd.h>
-#include <stdlib.h>
-#include <assert.h>
-#if HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#include "xmalloc.h"
+
 #include "hashtbl.h"
+#include "xmalloc.h"
 
 hashtbl* hash_create(int N, hashfunc* hasher, hashkeycmp* cmp, int use_arena, hashfree* keyfree, hashfree* datafree)
 {

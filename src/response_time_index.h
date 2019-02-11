@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_client_ip_addr_index_h
-#define __dsc_client_ip_addr_index_h
+#ifndef __dsc_response_time_index_h
+#define __dsc_response_time_index_h
 
-int cip_indexer(const void*);
-int cip_iterator(char** label);
-void cip_reset(void);
+#include "dns_message.h"
 
-/* shared between client_ip_addr_index and server_ip_addr_index */
-unsigned int ipaddr_hashfunc(const void* key);
-int ipaddr_cmpfunc(const void* a, const void* b);
+enum response_time_mode {
+    response_time_bucket,
+    response_time_log10,
+    response_time_log2
+};
 
-#endif /* __dsc_client_ip_addr_index_h */
+enum response_time_max_sec_mode {
+    response_time_ceil,
+    response_time_timed_out
+};
+
+enum response_time_full_mode {
+    response_time_drop_oldest,
+    response_time_drop_query
+};
+
+int response_time_indexer(const dns_message*);
+int response_time_iterator(const char** label);
+void               response_time_reset(void);
+const dns_message* response_time_flush(enum flush_mode mode);
+
+#endif /* __dsc_response_time_index_h */

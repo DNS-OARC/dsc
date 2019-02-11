@@ -1,3 +1,4 @@
+dist: xenial
 addons:
   apt:
     update: true
@@ -5,6 +6,7 @@ addons:
     - libpcap-dev
     - libproc-pid-file-perl
     - libgeoip-dev
+    - libmaxminddb-dev
 language: c
 compiler:
   - clang

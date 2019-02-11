@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "rd_bit_index.h"
 
 #define RD_BIT_CLR 0
 #define RD_BIT_SET 1
 
-int rd_bit_indexer(const void* vp)
+int rd_bit_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
     if (m->malformed)
         return -1;
     if (m->rd)
@@ -55,7 +50,7 @@ int rd_bit_indexer(const void* vp)
     return RD_BIT_CLR;
 }
 
-int rd_bit_iterator(char** label)
+int rd_bit_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

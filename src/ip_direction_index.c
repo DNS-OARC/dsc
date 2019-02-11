@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,26 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-#if USE_IPV6
-#include <netinet/ip6.h>
-#endif
-
+#include "ip_direction_index.h"
 #include "xmalloc.h"
 #include "inX_addr.h"
-#include "dns_message.h"
-#include "md_array.h"
 #include "syslog_debug.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 #define LARGEST 2
 
@@ -81,9 +70,8 @@ static
     return 0;
 }
 
-int ip_direction_indexer(const void* vp)
+int ip_direction_indexer(const dns_message* m)
 {
-    const dns_message*       m  = vp;
     const transport_message* tm = m->tm;
     if (ip_is_local(&tm->src_ip_addr))
         return 0;
@@ -164,7 +152,7 @@ int ip_local_address(const char* presentation, const char* mask)
     return 1;
 }
 
-int ip_direction_iterator(char** label)
+int ip_direction_iterator(const char** label)
 {
     static int next_iter = 0;
     if (NULL == label) {

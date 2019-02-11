@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,16 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "config.h"
 
-#include "dns_message.h"
 #include "md_array.h"
 #include "pcap.h"
 #include "base64.h"
 #include "xmalloc.h"
+
+#include <string.h>
+#include <assert.h>
 
 static const char* d1_type_s; /* XXX barf */
 static const char* d2_type_s; /* XXX barf */
@@ -90,7 +89,7 @@ static const char* entity_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs
                                   "0123456789._-:";
 
 static void
-d1_begin(void* pr_data, char* l)
+d1_begin(void* pr_data, const char* l)
 {
     FILE* fp = pr_data;
     int   ll = strlen(l);
@@ -106,7 +105,7 @@ d1_begin(void* pr_data, char* l)
 }
 
 static void
-print_element(void* pr_data, char* l, int val)
+print_element(void* pr_data, const char* l, int val)
 {
     FILE* fp = pr_data;
     int   ll = strlen(l);
@@ -125,7 +124,7 @@ print_element(void* pr_data, char* l, int val)
 }
 
 static void
-d1_end(void* pr_data, char* l)
+d1_end(void* pr_data, const char* l)
 {
     FILE* fp = pr_data;
     fprintf(fp, "    </%s>\n", d1_type_s);

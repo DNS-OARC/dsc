@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# Copyright (c) 2016-2017, OARC, Inc.
-# Copyright (c) 2007, The Measurement Factory, Inc.
-# Copyright (c) 2007, Internet Systems Consortium, Inc.
+# Copyright (c) 2008-2019, OARC, Inc.
+# Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+# Copyright (c) 2003-2007, The Measurement Factory, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

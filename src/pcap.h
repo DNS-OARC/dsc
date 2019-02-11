@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "md_array.h"
-
 #ifndef __dsc_pcap_h
 #define __dsc_pcap_h
+
+#include "md_array.h"
+
+#include <stdio.h>
+
+extern struct timeval last_ts;
+extern unsigned short port53;
 
 void Pcap_init(const char* device, int promisc, int monitor, int immediate, int threads, int buffer_size);
 int  Pcap_run();

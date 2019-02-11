@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "edns_bufsiz_index.h"
 
 int edns_bufsiz_max = 0;
 
-int edns_bufsiz_indexer(const void* vp)
+int edns_bufsiz_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    int                index;
+    int index;
     if (m->malformed)
         return -1;
     if (0 == m->edns.found)
@@ -58,7 +53,7 @@ int edns_bufsiz_indexer(const void* vp)
     return index;
 }
 
-int edns_bufsiz_iterator(char** label)
+int edns_bufsiz_iterator(const char** label)
 {
     static int  next_iter = 0;
     static char buf[20];
@@ -71,7 +66,7 @@ int edns_bufsiz_iterator(char** label)
     } else if (0 == next_iter) {
         *label = "None";
     } else {
-        snprintf(buf, 20, "%d-%d", (next_iter - 1) << 9, (next_iter << 9) - 1);
+        snprintf(buf, sizeof(buf), "%d-%d", (next_iter - 1) << 9, (next_iter << 9) - 1);
         *label = buf;
     }
     return next_iter++;

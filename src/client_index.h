@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,9 +34,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_byteorder_h
-#define __dsc_byteorder_h
+#ifndef __dsc_client_index_h
+#define __dsc_client_index_h
 
-#include "pcap_layers/byteorder.h"
+#include "dns_message.h"
 
-#endif /* __dsc_byteorder_h */
+int client_indexer(const dns_message*);
+int client_iterator(const char** label);
+void client_reset(void);
+
+#endif /* __dsc_client_index_h */

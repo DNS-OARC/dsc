@@ -1,6 +1,6 @@
-# Copyright (c) 2016-2017, OARC, Inc.
-# Copyright (c) 2007, The Measurement Factory, Inc.
-# Copyright (c) 2007, Internet Systems Consortium, Inc.
+# Copyright (c) 2008-2019, OARC, Inc.
+# Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+# Copyright (c) 2003-2007, The Measurement Factory, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.7.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.8.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
@@ -42,6 +42,7 @@ AC_CONFIG_HEADER([src/config.h])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
 
 # Check --enable-warn-all
 AC_ARG_ENABLE([warn-all], [AS_HELP_STRING([--enable-warn-all], [Enable all compiler warnings])], [AX_CFLAGS_WARN_ALL()])
@@ -60,25 +61,30 @@ AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=CFLAGS], [Add
 
 # pcap thread
 AC_ARG_ENABLE(threads,
-    [AS_HELP_STRING([--enable-threads],
-        [enable the usage of threads (default disabled)])],
-    [AX_PCAP_THREAD],
-    [AX_PCAP_THREAD_PCAP])
+  [AS_HELP_STRING([--enable-threads],
+    [enable the usage of threads (default disabled)])],
+  [AX_PCAP_THREAD],
+  [AX_PCAP_THREAD_PCAP])
 
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
 AC_CHECK_LIB([socket], [connect])
 AC_CHECK_LIB([GeoIP], [GeoIP_open])
+PKG_CHECK_MODULES([libmaxminddb], [libmaxminddb], [AC_DEFINE([HAVE_LIBMAXMINDDB], [1], [Define to 1 if you have libmaxminddb.])], [:])
+AC_CHECK_LIB([m], [log10])
 
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
 AC_CHECK_HEADERS([arpa/nameser_compat.h arpa/inet.h fcntl.h memory.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h stdint.h stdlib.h string.h])
 AC_CHECK_HEADERS([strings.h sys/mount.h sys/param.h sys/socket.h])
 AC_CHECK_HEADERS([sys/statfs.h sys/statvfs.h sys/time.h syslog.h])
 AC_CHECK_HEADERS([unistd.h netinet/ip_compat.h pcap/sll.h])
+AC_CHECK_HEADERS([GeoIP.h maxminddb.h])
+AC_CHECK_HEADERS([endian.h sys/endian.h machine/endian.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -107,27 +113,25 @@ AC_CHECK_FUNCS([strdup strerror strrchr strspn strstr strtoull statvfs])
 
 # pid file
 AC_ARG_WITH(pid-file,
-    [AS_HELP_STRING([--with-pid-file=FILE],
-        [write pid to FILE [/run/dsc.pid]])],
-    [],
-    [with_pid_file=/run/dsc.pid])
+  [AS_HELP_STRING([--with-pid-file=FILE], [write pid to FILE [/run/dsc.pid]])],
+  [],
+  [with_pid_file=/run/dsc.pid])
 
 AC_SUBST([DSC_PID_FILE], [$with_pid_file])
 
 # data dir
 AC_ARG_WITH(data-dir,
-    [AS_HELP_STRING([--with-data-dir=DIR],
-        [use DIR for DSC data [LOCALSTATEDIR/lib/dsc]])],
-    [],
-    [with_data_dir=${localstatedir}/lib/dsc])
+  [AS_HELP_STRING([--with-data-dir=DIR], [use DIR for DSC data [LOCALSTATEDIR/lib/dsc]])],
+  [],
+  [with_data_dir=${localstatedir}/lib/dsc])
 
 AC_SUBST([DSC_DATA_DIR], [$with_data_dir])
 
 # Generate
 AC_CONFIG_FILES([
-    Makefile
-    src/Makefile
-    src/test/Makefile
-    cron/Makefile
+  Makefile
+  src/Makefile
+  src/test/Makefile
+  cron/Makefile
 ])
 AC_OUTPUT

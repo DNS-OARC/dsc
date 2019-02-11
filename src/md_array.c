@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,24 +34,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
+#include "md_array.h"
+
 #include <stdlib.h>
-#include <unistd.h>
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
-#include <syslog.h>
 
 #include "xmalloc.h"
 #include "dataset_opt.h"
-#include "md_array.h"
 #include "dns_message.h"
 #include "pcap.h"
 #include "syslog_debug.h"
 
-static void md_array_grow(md_array* a, int i1, int i2);
+/*
+ * Private
+ */
 
-static void
-md_array_free(md_array* a)
+struct d2sort {
+    char* label;
+    int   val;
+};
+
+static int d2cmp(const void* a, const void* b)
+{
+    /*
+     * descending sort order (larger to smaller)
+     */
+    return ((struct d2sort*)b)->val - ((struct d2sort*)a)->val;
+}
+
+static void md_array_free(md_array* a)
 {
     if (a->name)
         xfree((char*)a->name);
@@ -63,77 +77,11 @@ md_array_free(md_array* a)
     xfree(a);
 }
 
-void md_array_clear(md_array* a)
+static void md_array_grow(md_array* a, int i1, int i2)
 {
-    /* a->array contents were in an arena, so we don't need to free them. */
-    a->array       = NULL;
-    a->d1.alloc_sz = 0;
-    if (a->d1.indexer->reset_fn)
-        a->d1.indexer->reset_fn();
-    a->d2.alloc_sz = 0;
-    if (a->d2.indexer->reset_fn)
-        a->d2.indexer->reset_fn();
-}
-
-md_array*
-md_array_create(const char* name, filter_list* fl,
-    const char* type1, indexer_t* idx1, const char* type2, indexer_t* idx2)
-{
-    md_array* a = xcalloc(1, sizeof(*a));
-    if (NULL == a)
-        return NULL;
-    a->name = xstrdup(name);
-    if (a->name == NULL) {
-        md_array_free(a);
-        return NULL;
-    }
-    a->filter_list = fl;
-    a->d1.type     = xstrdup(type1);
-    if (a->d1.type == NULL) {
-        md_array_free(a);
-        return NULL;
-    }
-    a->d1.indexer  = idx1;
-    a->d1.alloc_sz = 0;
-    a->d2.type     = xstrdup(type2);
-    if (a->d2.type == NULL) {
-        md_array_free(a);
-        return NULL;
-    }
-    a->d2.indexer  = idx2;
-    a->d2.alloc_sz = 0;
-    a->array       = NULL; /* will be allocated when needed, in an arena. */
-    return a;
-}
-
-int md_array_count(md_array* a, const void* vp)
-{
-    int          i1;
-    int          i2;
-    filter_list* fl;
-
-    for (fl = a->filter_list; fl; fl = fl->next)
-        if (0 == fl->filter->func(vp, fl->filter->context))
-            return -1;
-
-    if ((i1 = a->d1.indexer->index_fn(vp)) < 0)
-        return -1;
-    if ((i2 = a->d2.indexer->index_fn(vp)) < 0)
-        return -1;
-
-    md_array_grow(a, i1, i2);
-
-    assert(i1 < a->d1.alloc_sz);
-    assert(i2 < a->d2.alloc_sz);
-    return ++a->array[i1].array[i2];
-}
-
-static void
-md_array_grow(md_array* a, int i1, int i2)
-{
-    int                    new_d1_sz, new_d2_sz;
-    struct _md_array_node* d1 = NULL;
-    int*                   d2 = NULL;
+    int            new_d1_sz, new_d2_sz;
+    md_array_node* d1 = NULL;
+    int*           d2 = NULL;
 
     if (i1 < a->d1.alloc_sz && i2 < a->array[i1].alloc_sz)
         return;
@@ -203,28 +151,105 @@ md_array_grow(md_array* a, int i1, int i2)
         a->d2.alloc_sz = new_d2_sz;
 }
 
-struct _foo {
-    char* label;
-    int   val;
-};
-
 /*
- * descending sort order (larger to smaller)
+ * Public
  */
-static int
-compare(const void* A, const void* B)
+
+md_array* md_array_create(const char* name, filter_list* fl, const char* type1, indexer* idx1, const char* type2, indexer* idx2)
 {
-    const struct _foo* a = A;
-    const struct _foo* b = B;
-    return b->val - a->val;
+    md_array* a = xcalloc(1, sizeof(*a));
+    if (NULL == a)
+        return NULL;
+    a->name = xstrdup(name);
+    if (a->name == NULL) {
+        md_array_free(a);
+        return NULL;
+    }
+    a->filter_list = fl;
+    a->d1.type     = xstrdup(type1);
+    if (a->d1.type == NULL) {
+        md_array_free(a);
+        return NULL;
+    }
+    a->d1.indexer  = idx1;
+    a->d1.alloc_sz = 0;
+    a->d2.type     = xstrdup(type2);
+    if (a->d2.type == NULL) {
+        md_array_free(a);
+        return NULL;
+    }
+    a->d2.indexer  = idx2;
+    a->d2.alloc_sz = 0;
+    a->array       = NULL; /* will be allocated when needed, in an arena. */
+    return a;
+}
+
+void md_array_clear(md_array* a)
+{
+    /* a->array contents were in an arena, so we don't need to free them. */
+    a->array       = NULL;
+    a->d1.alloc_sz = 0;
+    if (a->d1.indexer->reset_fn)
+        a->d1.indexer->reset_fn();
+    a->d2.alloc_sz = 0;
+    if (a->d2.indexer->reset_fn)
+        a->d2.indexer->reset_fn();
+}
+
+int md_array_count(md_array* a, const void* vp)
+{
+    int          i1;
+    int          i2;
+    filter_list* fl;
+
+    for (fl = a->filter_list; fl; fl = fl->next)
+        if (0 == fl->filter->func(vp, fl->filter->context))
+            return -1;
+
+    if ((i1 = a->d1.indexer->index_fn(vp)) < 0)
+        return -1;
+    if ((i2 = a->d2.indexer->index_fn(vp)) < 0)
+        return -1;
+
+    md_array_grow(a, i1, i2);
+
+    assert(i1 < a->d1.alloc_sz);
+    assert(i2 < a->d2.alloc_sz);
+    return ++a->array[i1].array[i2];
+}
+
+void md_array_flush(md_array* a)
+{
+    const void* vp;
+
+    if (a->d1.indexer->flush_fn)
+        a->d1.indexer->flush_fn(flush_on);
+    if (a->d2.indexer->flush_fn)
+        a->d2.indexer->flush_fn(flush_on);
+
+    if (a->d1.indexer->flush_fn) {
+        while ((vp = a->d1.indexer->flush_fn(flush_get))) {
+            md_array_count(a, vp);
+        }
+    }
+    if (a->d2.indexer->flush_fn) {
+        while ((vp = a->d2.indexer->flush_fn(flush_get))) {
+            md_array_count(a, vp);
+        }
+    }
+
+    if (a->d1.indexer->flush_fn)
+        a->d1.indexer->flush_fn(flush_off);
+    if (a->d2.indexer->flush_fn)
+        a->d2.indexer->flush_fn(flush_off);
 }
 
 int md_array_print(md_array* a, md_array_printer* pr, FILE* fp)
 {
-    char* label1;
-    char* label2;
-    int   i1;
-    int   i2;
+    const char* label1;
+    const char* label2;
+    int         i1;
+    int         i2;
 
     a->d1.indexer->iter_fn(NULL);
     pr->start_array(fp, a->name);
@@ -232,21 +257,31 @@ int md_array_print(md_array* a, md_array_printer* pr, FILE* fp)
     pr->d2_type(fp, a->d2.type);
     pr->start_data(fp);
     while ((i1 = a->d1.indexer->iter_fn(&label1)) > -1) {
-        int          skipped     = 0;
-        int          skipped_sum = 0;
-        int          nvals;
-        int          si     = 0;
-        struct _foo* sortme = NULL;
+        int            skipped     = 0;
+        int            skipped_sum = 0;
+        int            nvals;
+        int            si = 0;
+        struct d2sort* sortme;
+
         if (i1 >= a->d1.alloc_sz)
-            continue; /* see [1] */
+            /*
+             * Its okay (not a bug) for the indexer's index to be larger
+             * than the array size.  The indexer may have grown for use in a
+             * different array, but the filter prevented it from growing this
+             * particular array so far.
+             */
+            continue;
+
         pr->d1_begin(fp, label1);
         a->d2.indexer->iter_fn(NULL);
-        nvals  = a->d2.alloc_sz;
+        nvals = a->d2.alloc_sz;
+
         sortme = xcalloc(nvals, sizeof(*sortme));
         if (NULL == sortme) {
             dsyslogf(LOG_CRIT, "Cant output %s file chunk due to malloc failure!", pr->format);
-            continue; /* OUCH! */
+            continue;
         }
+
         while ((i2 = a->d2.indexer->iter_fn(&label2)) > -1) {
             int val;
             if (i2 >= a->array[i1].alloc_sz)
@@ -267,7 +302,9 @@ int md_array_print(md_array* a, md_array_printer* pr, FILE* fp)
         }
         assert(si <= nvals);
         nvals = si;
-        qsort(sortme, nvals, sizeof(*sortme), compare);
+
+        qsort(sortme, nvals, sizeof(*sortme), d2cmp);
+
         for (si = 0; si < nvals; si++) {
             if (0 == a->opts.max_cells || si < a->opts.max_cells) {
                 pr->print_element(fp, sortme[si].label, sortme[si].val);
@@ -276,30 +313,21 @@ int md_array_print(md_array* a, md_array_printer* pr, FILE* fp)
                 skipped_sum += sortme[si].val;
             }
             xfree(sortme[si].label);
-            sortme[si].label = NULL;
         }
+        xfree(sortme);
+
         if (skipped) {
             pr->print_element(fp, "-:SKIPPED:-", skipped);
             pr->print_element(fp, "-:SKIPPED_SUM:-", skipped_sum);
         }
         pr->d1_end(fp, label1);
-        xfree(sortme);
-        sortme = NULL;
     }
     pr->finish_data(fp);
     pr->finish_array(fp);
     return 0;
 }
 
-/* [1]
- * Its okay (not a bug) for the indexer's index to be larger
- * than the array size.  The indexer may have grown for use in a
- * different array, but the filter prevented it from growing this
- * particular array so far.
- */
-
-filter_list**
-md_array_filter_list_append(filter_list** fl, FLTR* f)
+filter_list** md_array_filter_list_append(filter_list** fl, filter_defn* f)
 {
     *fl = xcalloc(1, sizeof(**fl));
     if (NULL == (*fl))
@@ -308,9 +336,9 @@ md_array_filter_list_append(filter_list** fl, FLTR* f)
     return (&(*fl)->next);
 }
 
-FLTR* md_array_create_filter(const char* name, filter_func* func, const void* context)
+filter_defn* md_array_create_filter(const char* name, filter_func func, const void* context)
 {
-    FLTR* f = xcalloc(1, sizeof(*f));
+    filter_defn* f = xcalloc(1, sizeof(*f));
     if (NULL == f)
         return NULL;
     f->name = xstrdup(name);

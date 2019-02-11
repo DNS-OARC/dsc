@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <syslog.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <limits.h>
+#include "config.h"
 
+#include "config_hooks.h"
 #include "xmalloc.h"
-#include "dns_message.h"
 #include "syslog_debug.h"
 #include "hashtbl.h"
 #include "pcap.h"
 #include "compat.h"
+
+#include <unistd.h>
+#include <errno.h>
+#include <limits.h>
 
 extern int promisc_flag;
 extern int monitor_flag;
@@ -72,6 +70,23 @@ int             pcap_buffer_size     = 0;
 int             no_wait_interval     = 0;
 int             pt_timeout           = 100;
 int             drop_ip_fragments    = 0;
+#ifdef HAVE_GEOIP
+enum geoip_backend asn_indexer_backend     = geoip_backend_libgeoip;
+enum geoip_backend country_indexer_backend = geoip_backend_libgeoip;
+#else
+#ifdef HAVE_MAXMINDDB
+enum geoip_backend asn_indexer_backend     = geoip_backend_libmaxminddb;
+enum geoip_backend country_indexer_backend = geoip_backend_libmaxminddb;
+#else
+enum geoip_backend asn_indexer_backend     = geoip_backend_none;
+enum geoip_backend country_indexer_backend = geoip_backend_none;
+#endif
+#endif
+char* maxminddb_asn     = NULL;
+char* maxminddb_country = NULL;
+
+extern int  ip_local_address(const char*, const char*);
+extern void pcap_set_match_vlan(int);
 
 int open_interface(const char* interface)
 {
@@ -94,7 +109,6 @@ int set_bpf_program(const char* s)
 
 int add_local_address(const char* s, const char* m)
 {
-    extern int ip_local_address(const char*, const char*);
     dsyslogf(LOG_INFO, "adding local address %s%s%s", s, m ? " mask " : "", m ? m : "");
     return ip_local_address(s, m);
 }
@@ -151,11 +165,21 @@ int set_statistics_interval(const char* s)
     return 1;
 }
 
+static int response_time_indexer_used = 0;
+
 int add_dataset(const char* name, const char* layer_ignored,
     const char* firstname, const char* firstindexer,
     const char* secondname, const char* secondindexer, const char* filtername, dataset_opt opts)
 {
     char* dup;
+
+    if (!strcmp(firstindexer, "response_time") || !strcmp(secondindexer, "response_time")) {
+        if (response_time_indexer_used) {
+            dsyslogf(LOG_ERR, "unable to create dataset %s: response_time indexer already used, can only be used in one dataset", name);
+            return 0;
+        }
+        response_time_indexer_used = 1;
+    }
 
     if (!dataset_hash) {
         if (!(dataset_hash = hash_create(MAX_HASH_SIZE, dataset_hashfunc, dataset_cmpfunc, 0, xfree, xfree))) {
@@ -202,8 +226,7 @@ int set_bpf_vlan_tag_byte_order(const char* which)
 
 int set_match_vlan(const char* s)
 {
-    extern void pcap_set_match_vlan(int);
-    int         i;
+    int i;
     dsyslogf(LOG_INFO, "match_vlan %s", s);
     i = atoi(s);
     if (0 == i && 0 != strcmp(s, "0"))
@@ -306,6 +329,72 @@ int set_geoip_asn_v6_dat(const char* dat, int options)
     return 0;
 }
 
+int set_asn_indexer_backend(enum geoip_backend backend)
+{
+    switch (backend) {
+    case geoip_backend_libgeoip:
+        dsyslog(LOG_INFO, "asn_indexer using GeoIP backend");
+        break;
+    case geoip_backend_libmaxminddb:
+        dsyslog(LOG_INFO, "asn_indexer using MaxMind DB backend");
+        break;
+    default:
+        return 0;
+    }
+
+    asn_indexer_backend = backend;
+
+    return 1;
+}
+
+int set_country_indexer_backend(enum geoip_backend backend)
+{
+    switch (backend) {
+    case geoip_backend_libgeoip:
+        dsyslog(LOG_INFO, "country_indexer using GeoIP backend");
+        break;
+    case geoip_backend_libmaxminddb:
+        dsyslog(LOG_INFO, "country_indexer using MaxMind DB backend");
+        break;
+    default:
+        return 0;
+    }
+
+    country_indexer_backend = backend;
+
+    return 1;
+}
+
+int set_maxminddb_asn(const char* file)
+{
+    char errbuf[512];
+
+    if (maxminddb_asn)
+        xfree(maxminddb_asn);
+    if ((maxminddb_asn = xstrdup(file))) {
+        dsyslogf(LOG_INFO, "Maxmind ASN database %s", maxminddb_asn);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set Maxmind ASN database, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    return 0;
+}
+
+int set_maxminddb_country(const char* file)
+{
+    char errbuf[512];
+
+    if (maxminddb_country)
+        xfree(maxminddb_country);
+    if ((maxminddb_country = xstrdup(file))) {
+        dsyslogf(LOG_INFO, "Maxmind ASN database %s", maxminddb_country);
+        return 1;
+    }
+
+    dsyslogf(LOG_ERR, "unable to set Maxmind ASN database, strdup: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    return 0;
+}
+
 int set_pcap_buffer_size(const char* s)
 {
     dsyslogf(LOG_INFO, "Setting pcap buffer size to: %s", s);
@@ -340,4 +429,17 @@ void set_drop_ip_fragments(void)
     dsyslog(LOG_INFO, "dropping ip fragments");
 
     drop_ip_fragments = 1;
+}
+
+int set_dns_port(const char* s)
+{
+    int port;
+    dsyslogf(LOG_INFO, "dns_port %s", s);
+    port = atoi(s);
+    if (port < 0 || port > 65535) {
+        dsyslog(LOG_ERR, "invalid dns_port");
+        return 0;
+    }
+    port53 = port;
+    return 1;
 }

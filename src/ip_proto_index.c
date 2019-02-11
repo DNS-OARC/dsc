@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
+#include "config.h"
+
+#include "ip_proto_index.h"
+
 #include <netdb.h>
 #include <string.h>
 
-#include "dns_message.h"
-#include "md_array.h"
-
 static int largest = 0;
 
-int ip_proto_indexer(const void* vp)
+int ip_proto_indexer(const dns_message* m)
 {
-    const dns_message*       m  = vp;
     const transport_message* tm = m->tm;
     int                      i  = (int)tm->proto;
     if (i > largest)
@@ -57,7 +54,7 @@ int ip_proto_indexer(const void* vp)
 
 static int next_iter = 0;
 
-int ip_proto_iterator(char** label)
+int ip_proto_iterator(const char** label)
 {
     static char label_buf[20];
 #if __OpenBSD__
@@ -82,8 +79,10 @@ int ip_proto_iterator(char** label)
 #endif
     if (p)
         *label = p->p_name;
-    else
-        snprintf(*label = label_buf, 20, "p%d", next_iter);
+    else {
+        snprintf(label_buf, sizeof(label_buf), "p%d", next_iter);
+        *label = label_buf;
+    }
     return next_iter++;
 }
 

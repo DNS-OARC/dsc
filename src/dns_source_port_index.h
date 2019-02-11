@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,12 +37,14 @@
 #ifndef __dsc_dns_source_port_index_h
 #define __dsc_dns_source_port_index_h
 
-int dns_source_port_indexer(const void*);
-int dns_source_port_iterator(char** label);
+#include "dns_message.h"
+
+int dns_source_port_indexer(const dns_message*);
+int dns_source_port_iterator(const char** label);
 void dns_source_port_reset(void);
 
-int dns_sport_range_indexer(const void*);
-int dns_sport_range_iterator(char** label);
+int dns_sport_range_indexer(const dns_message*);
+int dns_sport_range_iterator(const char** label);
 void dns_sport_range_reset(void);
 
 #endif /* __dsc_dns_source_port_index_h */

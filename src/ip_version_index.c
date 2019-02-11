@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,19 +34,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <netdb.h>
+#include "config.h"
 
-#include "dns_message.h"
-#include "md_array.h"
+#include "ip_version_index.h"
 
 static int largest = 0;
 
-int ip_version_indexer(const void* vp)
+int ip_version_indexer(const dns_message* m)
 {
-    const dns_message*       m  = vp;
     const transport_message* tm = m->tm;
     int                      i  = (int)tm->ip_version;
     if (i > largest)
@@ -56,7 +51,7 @@ int ip_version_indexer(const void* vp)
 
 static int next_iter = 0;
 
-int ip_version_iterator(char** label)
+int ip_version_iterator(const char** label)
 {
     static char label_buf[20];
     if (NULL == label) {
@@ -65,7 +60,8 @@ int ip_version_iterator(char** label)
     }
     if (next_iter > largest)
         return -1;
-    snprintf(*label = label_buf, 20, "IPv%d", next_iter);
+    snprintf(label_buf, sizeof(label_buf), "IPv%d", next_iter);
+    *label = label_buf;
     return next_iter++;
 }
 

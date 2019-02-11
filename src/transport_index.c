@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <netdb.h>
+#include "config.h"
+
+#include "transport_index.h"
 
 /*
  * This is very similar to transport_index, but this
@@ -45,24 +44,22 @@
  * all IP packets.
  */
 
-#include "dns_message.h"
 #include "md_array.h"
 
 #define LARGEST 2
 
-int transport_indexer(const void* vp)
+int transport_indexer(const dns_message* m)
 {
-    const dns_message* dns = vp;
-    if (IPPROTO_UDP == dns->tm->proto)
+    if (IPPROTO_UDP == m->tm->proto)
         return 0;
-    if (IPPROTO_TCP == dns->tm->proto)
+    if (IPPROTO_TCP == m->tm->proto)
         return 1;
     return LARGEST;
 }
 
 static int next_iter = 0;
 
-int transport_iterator(char** label)
+int transport_iterator(const char** label)
 {
     if (NULL == label) {
         next_iter = 0;

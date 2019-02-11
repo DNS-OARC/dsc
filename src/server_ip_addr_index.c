@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include "config.h"
 
+#include "server_ip_addr_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "client_ip_addr_index.h"
-#include "md_array.h"
 #include "hashtbl.h"
+#include "inX_addr.h"
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl* theHash  = NULL;
@@ -54,23 +51,24 @@ typedef struct
     int      index;
 } ipaddrobj;
 
-int sip_indexer(const void* vp)
+int sip_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    ipaddrobj*         obj;
+    ipaddrobj* obj;
+    inX_addr*  server_ip_addr = m->qr ? &m->tm->src_ip_addr : &m->tm->dst_ip_addr;
+
     if (m->malformed)
         return -1;
     if (NULL == theHash) {
-        theHash = hash_create(MAX_ARRAY_SZ, ipaddr_hashfunc, ipaddr_cmpfunc, 1, NULL, afree);
+        theHash = hash_create(MAX_ARRAY_SZ, (hashfunc*)inXaddr_hash, (hashkeycmp*)inXaddr_cmp, 1, NULL, afree);
         if (NULL == theHash)
             return -1;
     }
-    if ((obj = hash_find(&m->server_ip_addr, theHash)))
+    if ((obj = hash_find(server_ip_addr, theHash)))
         return obj->index;
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
         return -1;
-    obj->addr  = m->server_ip_addr;
+    obj->addr  = *server_ip_addr;
     obj->index = next_idx;
     if (0 != hash_add(&obj->addr, obj, theHash)) {
         afree(obj);
@@ -80,7 +78,7 @@ int sip_indexer(const void* vp)
     return obj->index;
 }
 
-int sip_iterator(char** label)
+int sip_iterator(const char** label)
 {
     ipaddrobj*  obj;
     static char label_buf[128];

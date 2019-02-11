@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,9 @@
 #ifndef __dsc_rd_bit_index_h
 #define __dsc_rd_bit_index_h
 
-int rd_bit_indexer(const void*);
-int rd_bit_iterator(char** label);
+#include "dns_message.h"
+
+int rd_bit_indexer(const dns_message*);
+int rd_bit_iterator(const char** label);
 
 #endif /* __dsc_rd_bit_index_h */

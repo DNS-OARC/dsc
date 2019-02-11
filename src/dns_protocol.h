@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,13 +34,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_client_ip_net_index_h
-#define __dsc_client_ip_net_index_h
+#ifndef __dsc_dns_protocol_h
+#define __dsc_dns_protocol_h
 
-int cip_net_indexer(const void*);
-int cip_net_iterator(char** label);
-void cip_net_reset(void);
-int cip_net_v4_mask_set(const char* mask);
-int cip_net_v6_mask_set(const char* mask);
+#include <sys/types.h>
 
-#endif /* __dsc_client_ip_net_index_h */
+int dns_protocol_handler(const u_char* buf, int len, void* udata);
+
+#endif /* __dsc_dns_protocol_h */

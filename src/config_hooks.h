@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #define __dsc_config_hooks_h
 
 #include "dataset_opt.h"
+#include "geoip.h"
 
 int open_interface(const char* interface);
 int set_bpf_program(const char* s);
@@ -53,9 +54,14 @@ int set_geoip_v4_dat(const char* dat, int options);
 int set_geoip_v6_dat(const char* dat, int options);
 int set_geoip_asn_v4_dat(const char* dat, int options);
 int set_geoip_asn_v6_dat(const char* dat, int options);
+int set_asn_indexer_backend(enum geoip_backend backend);
+int set_country_indexer_backend(enum geoip_backend backend);
+int set_maxminddb_asn(const char* file);
+int set_maxminddb_country(const char* file);
 int set_pcap_buffer_size(const char* s);
 void set_no_wait_interval(void);
 int set_pt_timeout(const char* s);
 void set_drop_ip_fragments(void);
+int set_dns_port(const char* s);
 
 #endif /* __dsc_config_hooks_h */

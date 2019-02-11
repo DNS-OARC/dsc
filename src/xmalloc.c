@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,22 +35,15 @@
  */
 
 #include "config.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <memory.h>
-#include <errno.h>
-#include <syslog.h>
-#if defined(__SVR4) && defined(__sun)
-#include <string.h>
-#include <strings.h>
-#endif
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
+
 #include "xmalloc.h"
 #include "syslog_debug.h"
 #include "compat.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
 /********** xmalloc **********/
 
@@ -99,8 +92,8 @@ void xfree(void* p)
 
 typedef struct arena {
     struct arena* prevArena;
-    u_char*       end;
-    u_char*       nextAlloc;
+    char*         end;
+    char*         nextAlloc;
 } Arena;
 
 Arena* currentArena = NULL;
@@ -122,7 +115,7 @@ newArena(size_t size)
         return NULL;
     }
     arena->prevArena = NULL;
-    arena->nextAlloc = (u_char*)arena + HEADERSIZE;
+    arena->nextAlloc = (char*)arena + HEADERSIZE;
     arena->end       = arena->nextAlloc + size;
     return arena;
 }

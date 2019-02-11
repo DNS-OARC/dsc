@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016-2017, OARC, Inc.
- * Copyright (c) 2007, The Measurement Factory, Inc.
- * Copyright (c) 2007, Internet Systems Consortium, Inc.
+ * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+ * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,37 +36,44 @@
 
 #include "config.h"
 
-#if HAVE_LIBGEOIP
-
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <GeoIP.h>
-
+#include "country_index.h"
 #include "xmalloc.h"
-#include "dns_message.h"
-#include "md_array.h"
 #include "hashtbl.h"
 #include "syslog_debug.h"
+#include "geoip.h"
+#ifdef HAVE_MAXMINDDB
+#include "compat.h"
+#endif
 
-extern int        debug_flag;
-extern char*      geoip_v4_dat;
-extern int        geoip_v4_options;
-extern char*      geoip_v6_dat;
-extern int        geoip_v6_options;
-static hashfunc   country_hashfunc;
-static hashkeycmp country_cmpfunc;
+#ifdef HAVE_MAXMINDDB
+#include <errno.h>
+#endif
+
+extern int                debug_flag;
+extern char*              geoip_v4_dat;
+extern int                geoip_v4_options;
+extern char*              geoip_v6_dat;
+extern int                geoip_v6_options;
+extern enum geoip_backend country_indexer_backend;
+extern char*              maxminddb_country;
+static hashfunc           country_hashfunc;
+static hashkeycmp         country_cmpfunc;
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl* theHash  = NULL;
 static int      next_idx = 0;
-static GeoIP*   geoip    = NULL;
-static GeoIP*   geoip6   = NULL;
-static char     ipstr[81];
-static char*    unknown    = "??";
-static char*    unknown_v4 = "?4";
-static char*    unknown_v6 = "?6";
+#ifdef HAVE_GEOIP
+static GeoIP* geoip  = NULL;
+static GeoIP* geoip6 = NULL;
+#endif
+#ifdef HAVE_MAXMINDDB
+static MMDB_s mmdb;
+static char   _mmcountry[32];
+#endif
+static char  ipstr[81];
+static char* unknown    = "??";
+static char* unknown_v4 = "?4";
+static char* unknown_v6 = "?6";
 
 typedef struct
 {
@@ -77,47 +84,115 @@ typedef struct
 const char*
 country_get_from_message(dns_message* m)
 {
-    transport_message* tm;
-    const char*        cc;
+    transport_message* tm = m->tm;
+    const char*        cc = unknown;
 
-    tm = m->tm;
-    if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr) - 1)) {
-        dfprint(0, "country_index: Error converting IP address");
-        return (unknown);
+    if (country_indexer_backend == geoip_backend_libgeoip) {
+        if (!inXaddr_ntop(&tm->src_ip_addr, ipstr, sizeof(ipstr) - 1)) {
+            dfprint(0, "country_index: Error converting IP address");
+            return (unknown);
+        }
     }
-
-    cc = unknown;
 
     switch (tm->ip_version) {
     case 4:
-        if (geoip) {
-            cc = GeoIP_country_code_by_addr(geoip, ipstr);
-            if (cc == NULL) {
-                cc = unknown_v4;
+        switch (country_indexer_backend) {
+        case geoip_backend_libgeoip:
+#ifdef HAVE_GEOIP
+            if (geoip) {
+                cc = GeoIP_country_code_by_addr(geoip, ipstr);
+                if (cc == NULL) {
+                    cc = unknown_v4;
+                }
             }
+#endif
+            break;
+        case geoip_backend_libmaxminddb: {
+#ifdef HAVE_MAXMINDDB
+            struct sockaddr_in   s;
+            int                  ret;
+            MMDB_lookup_result_s r;
+
+            s.sin_family = AF_INET;
+            s.sin_addr   = tm->src_ip_addr._.in4;
+
+            r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
+            if (ret == MMDB_SUCCESS && r.found_entry) {
+                MMDB_entry_data_s entry_data;
+
+                if (MMDB_get_value(&r.entry, &entry_data, "country", "iso_code", 0) == MMDB_SUCCESS
+                    && entry_data.type == MMDB_DATA_TYPE_UTF8_STRING) {
+                    size_t len = entry_data.data_size > (sizeof(_mmcountry) - 1) ? (sizeof(_mmcountry) - 1) : entry_data.data_size;
+                    memcpy(_mmcountry, entry_data.utf8_string, len);
+                    _mmcountry[len] = 0;
+                    cc              = _mmcountry;
+                    break;
+                }
+            }
+            cc = unknown_v4;
+#endif
+            break;
+        }
+        default:
+            break;
         }
         break;
+
     case 6:
-        if (geoip6) {
-            cc = GeoIP_country_code_by_addr_v6(geoip6, ipstr);
-            if (cc == NULL) {
-                cc = unknown_v6;
+        switch (country_indexer_backend) {
+        case geoip_backend_libgeoip:
+#ifdef HAVE_GEOIP
+            if (geoip6) {
+                cc = GeoIP_country_code_by_addr_v6(geoip6, ipstr);
+                if (cc == NULL) {
+                    cc = unknown_v6;
+                }
             }
+#endif
+            break;
+        case geoip_backend_libmaxminddb: {
+#ifdef HAVE_MAXMINDDB
+            struct sockaddr_in6  s;
+            int                  ret;
+            MMDB_lookup_result_s r;
+
+            s.sin6_family = AF_INET;
+            s.sin6_addr   = tm->src_ip_addr.in6;
+
+            r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
+            if (ret == MMDB_SUCCESS && r.found_entry) {
+                MMDB_entry_data_s entry_data;
+
+                if (MMDB_get_value(&r.entry, &entry_data, "country", "iso_code", 0) == MMDB_SUCCESS
+                    && entry_data.type == MMDB_DATA_TYPE_UTF8_STRING) {
+                    size_t len = entry_data.data_size > (sizeof(_mmcountry) - 1) ? (sizeof(_mmcountry) - 1) : entry_data.data_size;
+                    memcpy(_mmcountry, entry_data.utf8_string, len);
+                    _mmcountry[len] = 0;
+                    cc              = _mmcountry;
+                    break;
+                }
+            }
+            cc = unknown_v6;
+#endif
+            break;
+        }
+        default:
+            break;
         }
         break;
+
     default:
         break;
     }
 
     dfprintf(1, "country_index: country code: %s", cc);
-    return (cc);
+    return cc;
 }
 
-int country_indexer(const void* vp)
+int country_indexer(const dns_message* m)
 {
-    const dns_message* m = vp;
-    const char*        country;
-    countryobj*        obj;
+    const char* country;
+    countryobj* obj;
     if (m->malformed)
         return -1;
     country = country_get_from_message((dns_message*)m);
@@ -146,7 +221,7 @@ int country_indexer(const void* vp)
     return obj->index;
 }
 
-int country_iterator(char** label)
+int country_iterator(const char** label)
 {
     countryobj* obj;
     static char label_buf[MAX_QNAME_SZ];
@@ -159,7 +234,7 @@ int country_iterator(char** label)
     }
     if ((obj = hash_iterate(theHash)) == NULL)
         return -1;
-    snprintf(label_buf, MAX_QNAME_SZ, "%s", obj->country);
+    snprintf(label_buf, sizeof(label_buf), "%s", obj->country);
     *label = label_buf;
     return obj->index;
 }
@@ -182,28 +257,55 @@ country_cmpfunc(const void* a, const void* b)
     return strcasecmp(a, b);
 }
 
-void country_indexer_init()
+void country_init(void)
 {
-    if (geoip_v4_dat) {
-        geoip = GeoIP_open(geoip_v4_dat, geoip_v4_options);
-        if (geoip == NULL) {
-            dsyslog(LOG_ERR, "country_index: Error opening IPv4 Country DB. Make sure libgeoip's GeoIP.dat file is available");
+    switch (country_indexer_backend) {
+    case geoip_backend_libgeoip:
+#ifdef HAVE_GEOIP
+        if (geoip_v4_dat) {
+            geoip = GeoIP_open(geoip_v4_dat, geoip_v4_options);
+            if (geoip == NULL) {
+                dsyslog(LOG_ERR, "country_index: Error opening IPv4 Country DB. Make sure libgeoip's GeoIP.dat file is available");
+                exit(1);
+            }
+        }
+        if (geoip_v6_dat) {
+            geoip6 = GeoIP_open(geoip_v6_dat, geoip_v6_options);
+            if (geoip6 == NULL) {
+                dsyslog(LOG_ERR, "country_index: Error opening IPv6 Country DB. Make sure libgeoip's GeoIPv6.dat file is available");
+                exit(1);
+            }
+        }
+        memset(ipstr, 0, sizeof(ipstr));
+        if (geoip || geoip6) {
+            dsyslog(LOG_INFO, "country_index: Sucessfully initialized GeoIP");
+        } else {
+            dsyslog(LOG_INFO, "country_index: No database loaded for GeoIP");
+        }
+#endif
+        break;
+    case geoip_backend_libmaxminddb: {
+#ifdef HAVE_MAXMINDDB
+        int  ret;
+        char errbuf[512];
+
+        if (!maxminddb_country) {
+            dsyslog(LOG_ERR, "country_index: Error no MaxMind ASN DB configured");
             exit(1);
         }
-    }
-    if (geoip_v6_dat) {
-        geoip6 = GeoIP_open(geoip_v6_dat, geoip_v6_options);
-        if (geoip6 == NULL) {
-            dsyslog(LOG_ERR, "country_index: Error opening IPv6 Country DB. Make sure libgeoip's GeoIPv6.dat file is available");
+        ret = MMDB_open(maxminddb_country, 0, &mmdb);
+        if (ret == MMDB_IO_ERROR) {
+            dsyslogf(LOG_ERR, "country_index: Error opening MaxMind ASN DB, IO error: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+            exit(1);
+        } else if (ret != MMDB_SUCCESS) {
+            dsyslogf(LOG_ERR, "country_index: Error opening MaxMind ASN DB: %s", MMDB_strerror(ret));
             exit(1);
         }
+        dsyslog(LOG_INFO, "country_index: Sucessfully initialized MaxMind ASN DB");
+#endif
+        break;
     }
-    memset(ipstr, 0, sizeof(ipstr));
-    if (geoip || geoip6) {
-        dsyslog(LOG_INFO, "country_index: Sucessfully initialized GeoIP");
-    } else {
-        dsyslog(LOG_INFO, "country_index: No database loaded for GeoIP");
+    default:
+        break;
     }
 }
-
-#endif
