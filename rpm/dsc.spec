@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.7.0
+Version:        2.8.0
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -11,8 +11,12 @@ URL:            https://www.dns-oarc.net/oarc/data/dsc
 Source0:        %{name}_%{version}.orig.tar.gz
 
 BuildRequires:  libpcap-devel
+%if 0%{?sle_version}
+BuildRequires:  GeoIP-devel
+%else
 BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel
+%endif
 BuildRequires:  perl
 BuildRequires:  perl(Proc::PID::File)
 BuildRequires:  autoconf
@@ -59,6 +63,60 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Feb 11 2019 Jerry Lundström <lundstrom.jerry@gmail.com> 2.8.0-1
+- Release 2.8.0
+  * This release brings an new indexer `response_time` (funded by NIC.AT!),
+    support for MaxMind DB (GeoIP2) and an option to set the DNS port.
+  * The new indexer `response_time` can track queries and report the time
+    it took to receive the response in buckets of microseconds or in
+    logarithmic scales (see `response_time_mode`). It will also report
+    timeouts, missing queries (received a response but have never seen the
+    query), dropped queries (due to memory limitations) and internal errors.
+  * Here is an example output of log10 mode:
+    <array name="response_time" dimensions="2" start_time="1478727151"
+        stop_time="1478727180">
+      <dimension number="1" type="All"/>
+      <dimension number="2" type="ResponseTime"/>
+      <data>
+        <All val="ALL">
+          <ResponseTime val="100000-1000000" count="77"/>
+          <ResponseTime val="10000-100000" count="42"/>
+          <ResponseTime val="1000-10000" count="3"/>
+          <ResponseTime val="missing_queries" count="1"/>
+        </All>
+      </data>
+    </array>
+  * New configuration options:
+    - `asn_indexer_backend`: Control what backend to use for the ASN indexer
+    - `country_indexer_backend`: Control what backend to use for the
+      country indexer
+    - `maxminddb_asn`: Specify database for ASN lookups using MaxMind DB
+    - `maxminddb_country`: Specify database for country lookups using
+      MaxMind DB
+    - `dns_port`: Control the DNS port
+    - `response_time_mode: Set the output mode of the response time indexer
+    - `response_time_bucket_size`: The size of bucket (microseconds)
+    - Following options exists to control internal aspects of `response_time`
+      indexer, see man-page for more information:
+      - `response_time_max_queries`
+      - `response_time_full_mode`
+      - `response_time_max_seconds`
+      - `response_time_max_sec_mode`
+  * Fixes:
+    - Add LGTM and fix alerts
+    - Update `pcap_layers` with fixes for `scan-build` warnings
+    - Fix port in debug output of DNS message, was showing server port
+      on responses
+  * Commits:
+    f38a655 License
+    48cd44e Man-page, interface any, response time
+    8b9345f LGTM Alert
+    e57a013 DNS port
+    38aa018 Response time statistics
+    7a60d53 Cleanup
+    5c45ce2 Copyright
+    0dc8a3c MaxMind DB (GeoIP2)
+    473387b LGTM, README, packages, scan-build
 * Tue Aug 14 2018 Jerry Lundström <lundstrom.jerry@gmail.com> 2.7.0-1
 - Release 2.7.0
   * Add support for Linux "cooked" capture encapsulation (`DLT_LINUX_SLL`).
