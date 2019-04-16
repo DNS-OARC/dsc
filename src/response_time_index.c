@@ -71,6 +71,36 @@ static struct query *                  qfirst = 0, *qlast = 0;
 static int                             max_iter = INTERNAL_ERROR, next_iter, flushing = 0;
 static enum response_time_full_mode    full_mode = response_time_drop_query;
 
+void response_time_set_mode(enum response_time_mode m)
+{
+    mode = m;
+}
+
+void response_time_set_max_sec(time_t s)
+{
+    max_sec = s;
+}
+
+void response_time_set_max_sec_mode(enum response_time_max_sec_mode m)
+{
+    max_sec_mode = m;
+}
+
+void response_time_set_bucket_size(unsigned int s)
+{
+    bucket_size = s;
+}
+
+void response_time_set_max_queries(size_t q)
+{
+    max_queries = q;
+}
+
+void response_time_set_full_mode(enum response_time_full_mode m)
+{
+    full_mode = m;
+}
+
 static unsigned int _hash(const struct query* q)
 {
     if (q->m.qr)

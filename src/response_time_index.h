@@ -55,6 +55,13 @@ enum response_time_full_mode {
     response_time_drop_query
 };
 
+void response_time_set_mode(enum response_time_mode m);
+void response_time_set_max_sec(time_t s);
+void response_time_set_max_sec_mode(enum response_time_max_sec_mode m);
+void response_time_set_bucket_size(unsigned int s);
+void response_time_set_max_queries(size_t q);
+void response_time_set_full_mode(enum response_time_full_mode m);
+
 int response_time_indexer(const dns_message*);
 int response_time_iterator(const char** label);
 void               response_time_reset(void);

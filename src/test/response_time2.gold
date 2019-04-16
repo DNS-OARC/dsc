@@ -1,0 +1,21 @@
+<dscdata>
+<array name="pcap_stats" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="ifname"/>
+  <dimension number="2" type="pcap_stat"/>
+  <data>
+    <ifname val="Li8xNDU4MDQ0NjU3LnBjYXAuZGlzdA==" base64="1">
+      <pcap_stat val="pkts_captured" count="8"/>
+    </ifname>
+  </data>
+</array>
+<array name="response_time" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="ResponseTime"/>
+  <data>
+    <All val="ALL">
+      <ResponseTime val="8192-16384" count="3"/>
+      <ResponseTime val="1024-2048" count="1"/>
+    </All>
+  </data>
+</array>
+</dscdata>
