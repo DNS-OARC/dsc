@@ -42,6 +42,7 @@
 #include "hashtbl.h"
 #include "pcap.h"
 #include "compat.h"
+#include "response_time_index.h"
 
 #include <unistd.h>
 #include <errno.h>
@@ -441,5 +442,85 @@ int set_dns_port(const char* s)
         return 0;
     }
     port53 = port;
+    return 1;
+}
+
+int set_response_time_mode(const char* s)
+{
+    if (!strcmp(s, "bucket")) {
+        response_time_set_mode(response_time_bucket);
+    } else if (!strcmp(s, "log10")) {
+        response_time_set_mode(response_time_log10);
+    } else if (!strcmp(s, "log2")) {
+        response_time_set_mode(response_time_log2);
+    } else {
+        dsyslogf(LOG_ERR, "invalid response time mode %s", s);
+        return 0;
+    }
+    dsyslogf(LOG_INFO, "set response time mode to %s", s);
+    return 1;
+}
+
+int set_response_time_max_queries(const char* s)
+{
+    int max_queries = atoi(s);
+    if (max_queries < 1) {
+        dsyslogf(LOG_ERR, "invalid response time max queries %s", s);
+        return 0;
+    }
+    response_time_set_max_queries(max_queries);
+    dsyslogf(LOG_INFO, "set response time max queries to %d", max_queries);
+    return 1;
+}
+
+int set_response_time_full_mode(const char* s)
+{
+    if (!strcmp(s, "drop_query")) {
+        response_time_set_full_mode(response_time_drop_query);
+    } else if (!strcmp(s, "drop_oldest")) {
+        response_time_set_full_mode(response_time_drop_oldest);
+    } else {
+        dsyslogf(LOG_ERR, "invalid response time full mode %s", s);
+        return 0;
+    }
+    dsyslogf(LOG_INFO, "set response time full mode to %s", s);
+    return 1;
+}
+
+int set_response_time_max_seconds(const char* s)
+{
+    int max_seconds = atoi(s);
+    if (max_seconds < 1) {
+        dsyslogf(LOG_ERR, "invalid response time max seconds %s", s);
+        return 0;
+    }
+    response_time_set_max_sec(max_seconds);
+    dsyslogf(LOG_INFO, "set response time max seconds to %d", max_seconds);
+    return 1;
+}
+
+int set_response_time_max_sec_mode(const char* s)
+{
+    if (!strcmp(s, "ceil")) {
+        response_time_set_max_sec_mode(response_time_ceil);
+    } else if (!strcmp(s, "timed_out")) {
+        response_time_set_max_sec_mode(response_time_timed_out);
+    } else {
+        dsyslogf(LOG_ERR, "invalid response time max sec mode %s", s);
+        return 0;
+    }
+    dsyslogf(LOG_INFO, "set response time max sec mode to %s", s);
+    return 1;
+}
+
+int set_response_time_bucket_size(const char* s)
+{
+    int bucket_size = atoi(s);
+    if (bucket_size < 1) {
+        dsyslogf(LOG_ERR, "invalid response time bucket size %s", s);
+        return 0;
+    }
+    response_time_set_bucket_size(bucket_size);
+    dsyslogf(LOG_INFO, "set response time bucket size to %d", bucket_size);
     return 1;
 }
