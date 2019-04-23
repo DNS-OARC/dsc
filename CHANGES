@@ -1,3 +1,18 @@
+2019-04-23 Jerry Lundström
+
+    Release 2.8.1
+
+    Added all missing config options for the response time indexer:
+    - `response_time_mode`
+    - `response_time_bucket_size`
+    - `response_time_max_queries`
+    - `response_time_full_mode`
+    - `response_time_max_seconds`
+    - `response_time_max_sec_mode`
+
+    Commits:
+    36f0280 Response time config
+
 2019-02-11 Jerry Lundström
 
     Release 2.8.0
@@ -35,7 +50,7 @@
     - `maxminddb_country`: Specify database for country lookups using
       MaxMind DB
     - `dns_port`: Control the DNS port
-    - `response_time_mode: Set the output mode of the response time indexer
+    - `response_time_mode`: Set the output mode of the response time indexer
     - `response_time_bucket_size`: The size of bucket (microseconds)
     - Following options exists to control internal aspects of `response_time`
       indexer, see man-page for more information:
