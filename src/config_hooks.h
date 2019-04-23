@@ -63,5 +63,11 @@ void set_no_wait_interval(void);
 int set_pt_timeout(const char* s);
 void set_drop_ip_fragments(void);
 int set_dns_port(const char* s);
+int set_response_time_mode(const char* s);
+int set_response_time_max_queries(const char* s);
+int set_response_time_full_mode(const char* s);
+int set_response_time_max_seconds(const char* s);
+int set_response_time_max_sec_mode(const char* s);
+int set_response_time_bucket_size(const char* s);
 
 #endif /* __dsc_config_hooks_h */

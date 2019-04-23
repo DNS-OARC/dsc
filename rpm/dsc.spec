@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.8.0
+Version:        2.8.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -63,6 +63,17 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Apr 23 2019 Jerry Lundström <lundstrom.jerry@gmail.com> 2.8.1-1
+- Release 2.8.1
+  * Added all missing config options for the response time indexer:
+    - `response_time_mode`
+    - `response_time_bucket_size`
+    - `response_time_max_queries`
+    - `response_time_full_mode`
+    - `response_time_max_seconds`
+    - `response_time_max_sec_mode`
+  * Commits:
+    36f0280 Response time config
 * Mon Feb 11 2019 Jerry Lundström <lundstrom.jerry@gmail.com> 2.8.0-1
 - Release 2.8.0
   * This release brings an new indexer `response_time` (funded by NIC.AT!),
@@ -94,7 +105,7 @@ rm -rf $RPM_BUILD_ROOT
     - `maxminddb_country`: Specify database for country lookups using
       MaxMind DB
     - `dns_port`: Control the DNS port
-    - `response_time_mode: Set the output mode of the response time indexer
+    - `response_time_mode`: Set the output mode of the response time indexer
     - `response_time_bucket_size`: The size of bucket (microseconds)
     - Following options exists to control internal aspects of `response_time`
       indexer, see man-page for more information:

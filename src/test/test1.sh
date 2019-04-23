@@ -1,5 +1,7 @@
 #!/bin/sh -xe
 
+rm -f 1458044657.dscdata.json
+
 ../dsc "$srcdir/1458044657.conf"
 
 test -f 1458044657.dscdata.json || sleep 1

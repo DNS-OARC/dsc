@@ -695,6 +695,96 @@ int parse_conf_dns_port(const conf_token_t* tokens)
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_response_time_mode(const conf_token_t* tokens)
+{
+    char* s = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!s) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_response_time_mode(s);
+    free(s);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_response_time_max_queries(const conf_token_t* tokens)
+{
+    char* s = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!s) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_response_time_max_queries(s);
+    free(s);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_response_time_full_mode(const conf_token_t* tokens)
+{
+    char* s = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!s) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_response_time_full_mode(s);
+    free(s);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_response_time_max_seconds(const conf_token_t* tokens)
+{
+    char* s = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!s) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_response_time_max_seconds(s);
+    free(s);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_response_time_max_sec_mode(const conf_token_t* tokens)
+{
+    char* s = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!s) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_response_time_max_sec_mode(s);
+    free(s);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_response_time_bucket_size(const conf_token_t* tokens)
+{
+    char* s = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!s) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_response_time_bucket_size(s);
+    free(s);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     { "interface",
         parse_conf_interface,
@@ -779,6 +869,24 @@ static conf_token_syntax_t _syntax[] = {
         { TOKEN_STRING, TOKEN_END } },
     { "dns_port",
         parse_conf_dns_port,
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "response_time_mode",
+        parse_conf_response_time_mode,
+        { TOKEN_STRING, TOKEN_END } },
+    { "response_time_max_queries",
+        parse_conf_response_time_max_queries,
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "response_time_full_mode",
+        parse_conf_response_time_full_mode,
+        { TOKEN_STRING, TOKEN_END } },
+    { "response_time_max_seconds",
+        parse_conf_response_time_max_seconds,
+        { TOKEN_NUMBER, TOKEN_END } },
+    { "response_time_max_sec_mode",
+        parse_conf_response_time_max_sec_mode,
+        { TOKEN_STRING, TOKEN_END } },
+    { "response_time_bucket_size",
+        parse_conf_response_time_bucket_size,
         { TOKEN_NUMBER, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }
