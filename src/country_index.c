@@ -48,6 +48,8 @@
 #ifdef HAVE_MAXMINDDB
 #include <errno.h>
 #endif
+#include <string.h>
+#include <strings.h>
 
 extern int                debug_flag;
 extern char*              geoip_v4_dat;

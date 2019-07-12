@@ -47,6 +47,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern int promisc_flag;
 extern int monitor_flag;

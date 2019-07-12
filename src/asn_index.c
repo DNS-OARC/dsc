@@ -45,6 +45,7 @@
 #include "compat.h"
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_MAXMINDDB
 #include <inttypes.h>
