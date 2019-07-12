@@ -45,6 +45,8 @@
 #include "client_subnet_index.h"
 
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define PARSE_CONF_EINVAL -2
 #define PARSE_CONF_ERROR -1

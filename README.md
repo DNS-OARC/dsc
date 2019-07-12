@@ -64,6 +64,9 @@ make
 make install
 ```
 
+NOTE: If building fails on FreeBSD/OpenBSD, try adding these configure
+options: `--with-extra-cflags="-I /usr/local/include" --with-extra-ldflags="-L/usr/local/lib"`.
+
 ## Building from Git repository
 
 If you are building `dsc` from it's Git repository you will first need
@@ -80,6 +83,9 @@ git submodule update --init
 make
 make install
 ```
+
+NOTE: If building fails on FreeBSD/OpenBSD, try adding these configure
+options: `--with-extra-cflags="-I /usr/local/include" --with-extra-ldflags="-L/usr/local/lib"`.
 
 ## Puppet
 
