@@ -250,7 +250,7 @@ dump_report(md_array_printer* printer)
     int   fd;
     FILE* fp;
     char  fname[128];
-    char  tname[128];
+    char  tname[256];
 
     if (disk_is_full()) {
         dsyslogf(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
