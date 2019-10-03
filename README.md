@@ -54,7 +54,8 @@ OpenBSD since the bundled version is an older and modified version.
 
 ## Building from source tarball
 
-The source tarball from DNS-OARC comes prepared with `configure`:
+The [source tarball from DNS-OARC](https://www.dns-oarc.net/dsc/download)
+comes prepared with `configure`:
 
 ```
 tar zxvf dsc-version.tar.gz
