@@ -43,6 +43,9 @@
 #include "compat.h"
 #include "pcap-thread/pcap_thread.h"
 
+#include "input_mode.h"
+#include "dnstap.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -87,6 +90,7 @@ int   threads_flag   = 1;
 int   debug_flag     = 0;
 int   nodaemon_flag  = 0;
 int   have_reports   = 0;
+int   input_mode     = INPUT_NONE;
 
 extern uint64_t         minfree_bytes;
 extern int              n_pcap_offline;
@@ -256,7 +260,10 @@ dump_report(md_array_printer* printer)
         dsyslogf(LOG_NOTICE, "Not enough free disk space to write %s files", printer->format);
         return 1;
     }
-    snprintf(fname, sizeof(fname), "%d.dscdata.%s", Pcap_finish_time(), printer->extension);
+    if (input_mode == INPUT_DNSTAP)
+        snprintf(fname, sizeof(fname), "%d.dscdata.%s", dnstap_finish_time(), printer->extension);
+    else
+        snprintf(fname, sizeof(fname), "%d.dscdata.%s", Pcap_finish_time(), printer->extension);
     snprintf(tname, sizeof(tname), "%s.XXXXXXXXX", fname);
     fd = mkstemp(tname);
     if (fd < 0) {
@@ -323,7 +330,16 @@ sig_exit_dumping(int signum)
     if (have_reports) {
         dsyslogf(LOG_INFO, "Received signal %d while dumping reports, exiting later", signum);
         sig_while_processing = signum;
-        Pcap_stop();
+        switch (input_mode) {
+        case INPUT_PCAP:
+            Pcap_stop();
+            break;
+        case INPUT_DNSTAP:
+            dnstap_stop();
+            break;
+        default:
+            break;
+        }
     } else {
         dsyslogf(LOG_INFO, "Received signal %d, exiting", signum);
         exit(0);
@@ -351,6 +367,9 @@ sig_thread(void* arg)
 }
 #endif
 
+typedef int (*run_func)(void);
+typedef void (*close_func)(void);
+
 int main(int argc, char* argv[])
 {
     char           errbuf[512];
@@ -362,6 +381,8 @@ int main(int argc, char* argv[])
 #endif
     int            err;
     struct timeval now;
+    run_func       runf;
+    close_func     closef;
 
     progname = xstrdup(strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0]);
     if (NULL == progname)
@@ -514,14 +535,27 @@ int main(int argc, char* argv[])
         nanosleep(&nano, NULL);
     }
 
-    if ((err = pcap_thread_activate(&pcap_thread))) {
-        dsyslogf(LOG_ERR, "unable to activate pcap thread: %s", pcap_thread_strerr(err));
+    switch (input_mode) {
+    case INPUT_PCAP:
+        if ((err = pcap_thread_activate(&pcap_thread))) {
+            dsyslogf(LOG_ERR, "unable to activate pcap thread: %s", pcap_thread_strerr(err));
+            exit(1);
+        }
+        if (pcap_thread_filter_errno(&pcap_thread)) {
+            dsyslogf(LOG_NOTICE, "detected non-fatal error during pcap activation, filters may run in userland [%d]: %s",
+                pcap_thread_filter_errno(&pcap_thread),
+                dsc_strerror(pcap_thread_filter_errno(&pcap_thread), errbuf, sizeof(errbuf)));
+        }
+        runf   = Pcap_run;
+        closef = Pcap_close;
+        break;
+    case INPUT_DNSTAP:
+        runf   = dnstap_run;
+        closef = dnstap_close;
+        break;
+    default:
+        dsyslog(LOG_ERR, "No input in config");
         exit(1);
-    }
-    if (pcap_thread_filter_errno(&pcap_thread)) {
-        dsyslogf(LOG_NOTICE, "detected non-fatal error during pcap activation, filters may run in userland [%d]: %s",
-            pcap_thread_filter_errno(&pcap_thread),
-            dsc_strerror(pcap_thread_filter_errno(&pcap_thread), errbuf, sizeof(errbuf)));
     }
 
     dsyslog(LOG_INFO, "Running");
@@ -537,7 +571,7 @@ int main(int argc, char* argv[])
         /* Indicate we might have reports to dump on exit */
         have_reports = 1;
 
-        result = Pcap_run();
+        result = runf();
         if (debug_flag)
             gettimeofday(&break_start, NULL);
 
@@ -606,7 +640,7 @@ int main(int argc, char* argv[])
 
     } while (result > 0 && (debug_flag == 0 || dont_exit));
 
-    Pcap_close();
+    closef();
 
     return 0;
 }
