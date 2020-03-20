@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2008-2020, OARC, Inc.
  * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
  * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
@@ -40,6 +40,10 @@
 #include "pcap.h"
 #include "base64.h"
 #include "xmalloc.h"
+#include "input_mode.h"
+#include "dnstap.h"
+
+extern int input_mode;
 
 #include <string.h>
 #include <assert.h>
@@ -57,8 +61,13 @@ start_array(void* pr_data, const char* name)
     fprintf(fp, "<array");
     fprintf(fp, " name=\"%s\"", name);
     fprintf(fp, " dimensions=\"%d\"", 2);
-    fprintf(fp, " start_time=\"%d\"", Pcap_start_time());
-    fprintf(fp, " stop_time=\"%d\"", Pcap_finish_time());
+    if (input_mode == INPUT_DNSTAP) {
+        fprintf(fp, " start_time=\"%d\"", dnstap_start_time());
+        fprintf(fp, " stop_time=\"%d\"", dnstap_finish_time());
+    } else {
+        fprintf(fp, " start_time=\"%d\"", Pcap_start_time());
+        fprintf(fp, " stop_time=\"%d\"", Pcap_finish_time());
+    }
     fprintf(fp, ">\n");
 }
 

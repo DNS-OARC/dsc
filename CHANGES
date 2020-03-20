@@ -1,3 +1,34 @@
+2020-03-20 Jerry Lundström
+
+    Release 2.9.0
+
+    This release adds support for receiving DNS messages over DNSTAP along
+    with documentation updates and eliminated compiler warnings.
+
+    To enable DNSTAP support, install dependencies (check `README.md`) and
+    run configure with `--enable-dnstap`.
+
+    New configuration options:
+    - `dnstap_file`: specify input from DNSTAP file
+    - `dnstap_unixsock`: specify DNSTAP input from UNIX socket
+    - `dnstap_tcp`: specify DNSTAP input from TCP connections (dsc listens)
+    - `dnstap_udp`: specify DNSTAP input from UDP connections (dsc listens)
+    - `dnstap_network`: specify network information in place of missing DNSTAP attributes
+
+    Other changes:
+    - Add documentation about extra configure options that might be needed for FreeBSD/OpenBSD
+    - Fix compile warnings on FreeBSD 11.2
+    - Fix compile warning `snprintf()` truncation
+    - Packaging updates
+
+    Commits:
+    60e6950 DNSTAP
+    af0417b README
+    1f1b489 COPR, spec
+    435e136 Package
+    3f24feb FreeBSD 11 compatibility
+    563b986 Funding
+
 2019-04-23 Jerry Lundström
 
     Release 2.8.1

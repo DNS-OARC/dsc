@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2008-2020, OARC, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,15 @@
 #include "dataset_opt.h"
 #include "geoip.h"
 
+enum dnstap_via {
+    dnstap_via_file,
+    dnstap_via_unixsock,
+    dnstap_via_tcp,
+    dnstap_via_udp,
+};
+
 int open_interface(const char* interface);
+int open_dnstap(enum dnstap_via via, const char* file_or_ip, const char* port);
 int set_bpf_program(const char* s);
 int add_local_address(const char* s, const char* m);
 int set_run_dir(const char* dir);

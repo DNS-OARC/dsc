@@ -52,9 +52,25 @@ pkg_add p5-Proc-PID-File
 NOTE: It is recommended to install the PCAP library from source/ports on
 OpenBSD since the bundled version is an older and modified version.
 
+### DNSTAP support
+
+To enable DNSTAP support, first install the necessary dependencies and
+then run `configure` with `--enable-dnstap`.
+
+- Debian/Ubuntu: `apt-get install -y libdnswire-dev libuv1-dev`
+- CentOS: `yum install -y dnswire-devel libuv-devel`
+- FreeBSD: `pkg install -y libuv`
+- OpenBSD: `pkg_add libuv`
+
+`dnswire` packages for Debian, Ubuntu and CentOS exists at
+[https://dev.dns-oarc.net/packages/](https://dev.dns-oarc.net/packages/),
+for other distributions please see
+[https://github.com/DNS-OARC/dnswire](https://github.com/DNS-OARC/dnswire).
+
 ## Building from source tarball
 
-The source tarball from DNS-OARC comes prepared with `configure`:
+The [source tarball from DNS-OARC](https://www.dns-oarc.net/dsc/download)
+comes prepared with `configure`:
 
 ```
 tar zxvf dsc-version.tar.gz
@@ -63,6 +79,9 @@ cd dsc-version
 make
 make install
 ```
+
+NOTE: If building fails on FreeBSD/OpenBSD, try adding these configure
+options: `--with-extra-cflags="-I /usr/local/include" --with-extra-ldflags="-L/usr/local/lib"`.
 
 ## Building from Git repository
 
@@ -80,6 +99,9 @@ git submodule update --init
 make
 make install
 ```
+
+NOTE: If building fails on FreeBSD/OpenBSD, try adding these configure
+options: `--with-extra-cflags="-I /usr/local/include" --with-extra-ldflags="-L/usr/local/lib"`.
 
 ## Puppet
 

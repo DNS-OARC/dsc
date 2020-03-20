@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2019, OARC, Inc.
+ * Copyright (c) 2008-2020, OARC, Inc.
  * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
  * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
@@ -48,6 +48,8 @@
 #ifdef HAVE_MAXMINDDB
 #include <errno.h>
 #endif
+#include <string.h>
+#include <strings.h>
 
 extern int                debug_flag;
 extern char*              geoip_v4_dat;
