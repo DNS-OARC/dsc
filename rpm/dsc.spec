@@ -41,7 +41,7 @@ network traffic. They transmit aggregated data to the presenter as XML data.
 
 %build
 sh autogen.sh
-%configure
+%configure --enable-dnstap
 make %{?_smp_mflags}
 
 
