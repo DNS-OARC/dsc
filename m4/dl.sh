@@ -1,5 +1,5 @@
 #!/bin/sh -e
-# Copyright (c) 2019, OARC, Inc.
+# Copyright (c) 2020, OARC, Inc.
 # All rights reserved.
 #
 # This file is part of dnsjit.
