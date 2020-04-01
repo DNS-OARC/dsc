@@ -42,6 +42,7 @@
 #include "dns_message.h"
 #include "config_hooks.h"
 #include "xmalloc.h"
+#include "dns_protocol.h"
 
 char* dnstap_network_ip4  = 0;
 char* dnstap_network_ip6  = 0;
@@ -432,7 +433,6 @@ static uv_pipe_t unix_server;
 static uv_tcp_t  tcp_server;
 static uv_udp_t  udp_server;
 
-extern int dns_protocol_handler(const u_char* buf, int len, void* udata);
 extern uint64_t statistics_interval;
 
 static int _set_ipv(transport_message* tm, const struct dnstap* m)

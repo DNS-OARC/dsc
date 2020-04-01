@@ -11,8 +11,8 @@ URL:            https://www.dns-oarc.net/oarc/data/dsc
 Source0:        https://www.dns-oarc.net/files/dsc/%{name}-%{version}.tar.gz?/%{name}_%{version}.orig.tar.gz
 
 BuildRequires:  libpcap-devel
-%if 0%{?sle_version}
-BuildRequires:  GeoIP-devel
+%if 0%{?suse_version} || 0%{?sle_version}
+BuildRequires:  libmaxminddb-devel
 %else
 BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel

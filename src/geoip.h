@@ -35,15 +35,6 @@
 #ifndef __dsc_geoip_h
 #define __dsc_geoip_h
 
-#if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
-#define HAVE_GEOIP 1
-#include <GeoIP.h>
-#endif
-#if defined(HAVE_LIBMAXMINDDB) && defined(HAVE_MAXMINDDB_H)
-#define HAVE_MAXMINDDB 1
-#include <maxminddb.h>
-#endif
-
 enum geoip_backend {
     geoip_backend_none,
     geoip_backend_libgeoip,

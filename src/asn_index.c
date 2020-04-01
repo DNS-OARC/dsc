@@ -40,7 +40,17 @@
 #include "xmalloc.h"
 #include "hashtbl.h"
 #include "syslog_debug.h"
+
 #include "geoip.h"
+#if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
+#define HAVE_GEOIP 1
+#include <GeoIP.h>
+#endif
+#if defined(HAVE_LIBMAXMINDDB) && defined(HAVE_MAXMINDDB_H)
+#define HAVE_MAXMINDDB 1
+#include <maxminddb.h>
+#endif
+
 #ifdef HAVE_MAXMINDDB
 #include "compat.h"
 #endif
@@ -73,8 +83,10 @@ static GeoIP* geoip6 = NULL;
 static MMDB_s mmdb;
 static char   _mmasn[32];
 #endif
-static char  ipstr[81];
-static char* nodb       = "NODB";
+static char ipstr[81];
+#ifdef HAVE_GEOIP
+static char* nodb = "NODB";
+#endif
 static char* unknown    = "??";
 static char* unknown_v4 = "?4";
 static char* unknown_v6 = "?6";
@@ -232,11 +244,11 @@ asn_get_from_message(dns_message* m)
                         break;
                     default:
                         dfprintf(1, "asn_index: found entry in MMDB but unknown type %u", entry_data.type);
-                        asn = unknown_v4;
+                        asn = unknown_v6;
                     }
                 }
             } else {
-                asn = unknown_v4;
+                asn = unknown_v6;
             }
 #endif
             break;
