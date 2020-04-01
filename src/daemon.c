@@ -512,7 +512,7 @@ int main(int argc, char* argv[])
             dsyslogf(LOG_ERR, "Unable to install signal handler for SIGTERM: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         if (sigaction(SIGQUIT, &action, NULL))
             dsyslogf(LOG_ERR, "Unable to install signal handler for SIGQUIT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
-        if (!nodaemon_flag && sigaction(SIGINT, &action, NULL))
+        if (nodaemon_flag && sigaction(SIGINT, &action, NULL))
             dsyslogf(LOG_ERR, "Unable to install signal handler for SIGINT: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     }
 
