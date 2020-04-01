@@ -48,6 +48,7 @@ char* dnstap_network_ip6  = 0;
 int   dnstap_network_port = -1;
 
 #include <string.h>
+#include <stdlib.h>
 
 extern struct timeval last_ts;
 static struct timeval start_ts, finish_ts;
@@ -56,7 +57,6 @@ static struct timeval start_ts, finish_ts;
 
 #include <uv.h>
 #include <dnswire/reader.h>
-#include <stdlib.h>
 #include <stdio.h>
 
 // print_dnstap():
@@ -783,12 +783,22 @@ static void stop_uv(uv_timer_t* handle)
     uv_stop(uv_default_loop());
 }
 
-static FILE*          _file = 0;
-struct dnswire_reader _file_reader;
+static FILE*                 _file = 0;
+static struct dnswire_reader _file_reader;
+static char*                 _sock_file = 0;
 
 #endif // USE_DNSTAP
 
 extern int no_wait_interval;
+
+static void _atexit(void)
+{
+#ifdef USE_DNSTAP
+    if (_sock_file) {
+        unlink(_sock_file);
+    }
+#endif
+}
 
 void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
 {
@@ -810,11 +820,11 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
     case dnstap_via_file:
         if (!(_file = fopen(sock_or_host, "r"))) {
             dsyslogf(LOG_ERR, "fopen() failed: %s", strerror(errno));
-            return;
+            exit(1);
         }
         if (dnswire_reader_init(&_file_reader) != dnswire_ok) {
             dsyslog(LOG_ERR, "Unable to initialize dnswire reader");
-            return;
+            exit(1);
         }
         no_wait_interval = 1;
         break;
@@ -823,10 +833,19 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
         uv_pipe_init(uv_default_loop(), &unix_server, 0);
         if ((r = uv_pipe_bind(&unix_server, sock_or_host))) {
             dsyslogf(LOG_ERR, "uv_pipe_bind() failed: %s", uv_strerror(r));
-            return;
+            exit(1);
         }
         if ((r = uv_listen((uv_stream_t*)&unix_server, 128, on_new_unix_connection))) {
             dsyslogf(LOG_ERR, "uv_listen() failed: %s", uv_strerror(r));
+            exit(1);
+        }
+        if (!(_sock_file = xstrdup(sock_or_host))) {
+            dsyslog(LOG_ERR, "Out of memory initializing DNSTAP UNIX socket");
+            exit(1);
+        }
+        if (atexit(_atexit)) {
+            dsyslog(LOG_ERR, "Unable to initializing DNSTAP UNIX socket: atexit() failed");
+            exit(1);
         }
         break;
 
@@ -840,11 +859,11 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
         uv_tcp_init(uv_default_loop(), &tcp_server);
         if ((r = uv_tcp_bind(&tcp_server, (const struct sockaddr*)&addr, 0))) {
             dsyslogf(LOG_ERR, "uv_tcp_bind() failed: %s", uv_strerror(r));
-            return;
+            exit(1);
         }
         if ((r = uv_listen((uv_stream_t*)&tcp_server, 128, on_new_tcp_connection))) {
             dsyslogf(LOG_ERR, "uv_listen() failed: %s", uv_strerror(r));
-            return;
+            exit(1);
         }
         break;
 
@@ -858,16 +877,17 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
         uv_udp_init(uv_default_loop(), &udp_server);
         if ((r = uv_udp_bind(&udp_server, (const struct sockaddr*)&addr, 0))) {
             dsyslogf(LOG_ERR, "uv_udp_bind() failed: %s", uv_strerror(r));
-            return;
+            exit(1);
         }
         if ((r = uv_listen((uv_stream_t*)&udp_server, 128, on_new_udp_connection))) {
             dsyslogf(LOG_ERR, "uv_listen() failed: %s", uv_strerror(r));
-            return;
+            exit(1);
         }
         break;
     }
 #else
     dsyslog(LOG_ERR, "No DNSTAP support built in");
+    exit(1);
 #endif
 }
 
@@ -997,6 +1017,11 @@ void dnstap_close(void)
         _file = 0;
     } else {
         uv_stop(uv_default_loop());
+        if (_sock_file) {
+            unlink(_sock_file);
+            xfree(_sock_file);
+            _sock_file = 0;
+        }
     }
 #endif
 }
