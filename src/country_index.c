@@ -41,6 +41,15 @@
 #include "hashtbl.h"
 #include "syslog_debug.h"
 #include "geoip.h"
+#if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
+#define HAVE_GEOIP 1
+#include <GeoIP.h>
+#endif
+#if defined(HAVE_LIBMAXMINDDB) && defined(HAVE_MAXMINDDB_H)
+#define HAVE_MAXMINDDB 1
+#include <maxminddb.h>
+#endif
+
 #ifdef HAVE_MAXMINDDB
 #include "compat.h"
 #endif
@@ -50,6 +59,7 @@
 #endif
 #include <string.h>
 #include <strings.h>
+#include <stdlib.h>
 
 extern int                debug_flag;
 extern char*              geoip_v4_dat;

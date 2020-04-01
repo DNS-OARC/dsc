@@ -43,6 +43,14 @@
 #include "pcap.h"
 #include "compat.h"
 #include "response_time_index.h"
+#if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
+#define HAVE_GEOIP 1
+#include <GeoIP.h>
+#endif
+#if defined(HAVE_LIBMAXMINDDB) && defined(HAVE_MAXMINDDB_H)
+#define HAVE_MAXMINDDB 1
+#include <maxminddb.h>
+#endif
 
 #include "input_mode.h"
 #include "dnstap.h"
@@ -52,6 +60,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 extern int input_mode;
 extern int promisc_flag;
