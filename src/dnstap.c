@@ -71,9 +71,18 @@ static struct timeval start_ts, finish_ts;
 
 #define BUF_SIZE 4096
 
+#if 1
+#define _dsyslog(x...)
+#define _dsyslogf(x...)
+#define _print_dnstap(x...)
+#else
+#define _dsyslog dsyslog
+#define _dsyslogf dsyslogf
+#define _print_dnstap print_dnstap
+
 static const char* printable_string(const uint8_t* data, size_t len)
 {
-    static char buf[512];
+    static char buf[512], hex;
     size_t      r = 0, w = 0;
 
     while (r < len && w < sizeof(buf) - 1) {
@@ -84,8 +93,20 @@ static const char* printable_string(const uint8_t* data, size_t len)
                 break;
             }
 
-            sprintf(&buf[w], "\\x%02x", data[r++]);
-            w += 4;
+            buf[w++] = '\\';
+            buf[w++] = 'x';
+            hex      = (data[r] & 0xf0) >> 4;
+            if (hex > 9) {
+                buf[w++] = 'a' + (hex - 10);
+            } else {
+                buf[w++] = '0' + hex;
+            }
+            hex = data[r++] & 0xf;
+            if (hex > 9) {
+                buf[w++] = 'a' + (hex - 10);
+            } else {
+                buf[w++] = '0' + hex;
+            }
         }
     }
     if (w >= sizeof(buf)) {
@@ -113,59 +134,60 @@ static const char* printable_ip_address(const uint8_t* data, size_t len)
 
 static void print_dnstap(const struct dnstap* d)
 {
-    dsyslog(LOG_DEBUG, "---- dnstap");
+    dsyslog(LOG_DEBUG, "DNSTAP: ----");
     if (dnstap_has_identity(*d)) {
-        dsyslogf(LOG_DEBUG, "identity: %s", printable_string(dnstap_identity(*d), dnstap_identity_length(*d)));
+        dsyslogf(LOG_DEBUG, "DNSTAP: identity: %s", printable_string(dnstap_identity(*d), dnstap_identity_length(*d)));
     }
     if (dnstap_has_version(*d)) {
-        dsyslogf(LOG_DEBUG, "version: %s", printable_string(dnstap_version(*d), dnstap_version_length(*d)));
+        dsyslogf(LOG_DEBUG, "DNSTAP: version: %s", printable_string(dnstap_version(*d), dnstap_version_length(*d)));
     }
     if (dnstap_has_extra(*d)) {
-        dsyslogf(LOG_DEBUG, "extra: %s", printable_string(dnstap_extra(*d), dnstap_extra_length(*d)));
+        dsyslogf(LOG_DEBUG, "DNSTAP: extra: %s", printable_string(dnstap_extra(*d), dnstap_extra_length(*d)));
     }
 
     if (dnstap_type(*d) == DNSTAP_TYPE_MESSAGE && dnstap_has_message(*d)) {
-        dsyslogf(LOG_DEBUG, "message:  type: %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*d)]);
+        dsyslogf(LOG_DEBUG, "DNSTAP: message:  type: %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*d)]);
 
         if (dnstap_message_has_query_time_sec(*d) && dnstap_message_has_query_time_nsec(*d)) {
-            dsyslogf(LOG_DEBUG, "  query_time: %" PRIu64 ".%" PRIu32 "", dnstap_message_query_time_sec(*d), dnstap_message_query_time_nsec(*d));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   query_time: %" PRIu64 ".%" PRIu32 "", dnstap_message_query_time_sec(*d), dnstap_message_query_time_nsec(*d));
         }
         if (dnstap_message_has_response_time_sec(*d) && dnstap_message_has_response_time_nsec(*d)) {
-            dsyslogf(LOG_DEBUG, "  response_time: %" PRIu64 ".%" PRIu32 "", dnstap_message_response_time_sec(*d), dnstap_message_response_time_nsec(*d));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   response_time: %" PRIu64 ".%" PRIu32 "", dnstap_message_response_time_sec(*d), dnstap_message_response_time_nsec(*d));
         }
         if (dnstap_message_has_socket_family(*d)) {
-            dsyslogf(LOG_DEBUG, "  socket_family: %s", DNSTAP_SOCKET_FAMILY_STRING[dnstap_message_socket_family(*d)]);
+            dsyslogf(LOG_DEBUG, "DNSTAP:   socket_family: %s", DNSTAP_SOCKET_FAMILY_STRING[dnstap_message_socket_family(*d)]);
         }
         if (dnstap_message_has_socket_protocol(*d)) {
-            dsyslogf(LOG_DEBUG, "  socket_protocol: %s", DNSTAP_SOCKET_PROTOCOL_STRING[dnstap_message_socket_protocol(*d)]);
+            dsyslogf(LOG_DEBUG, "DNSTAP:   socket_protocol: %s", DNSTAP_SOCKET_PROTOCOL_STRING[dnstap_message_socket_protocol(*d)]);
         }
         if (dnstap_message_has_query_address(*d)) {
-            dsyslogf(LOG_DEBUG, "  query_address: %s", printable_ip_address(dnstap_message_query_address(*d), dnstap_message_query_address_length(*d)));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   query_address: %s", printable_ip_address(dnstap_message_query_address(*d), dnstap_message_query_address_length(*d)));
         }
         if (dnstap_message_has_query_port(*d)) {
-            dsyslogf(LOG_DEBUG, "  query_port: %u", dnstap_message_query_port(*d));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   query_port: %u", dnstap_message_query_port(*d));
         }
         if (dnstap_message_has_response_address(*d)) {
-            dsyslogf(LOG_DEBUG, "  response_address: %s", printable_ip_address(dnstap_message_response_address(*d), dnstap_message_response_address_length(*d)));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   response_address: %s", printable_ip_address(dnstap_message_response_address(*d), dnstap_message_response_address_length(*d)));
         }
         if (dnstap_message_has_response_port(*d)) {
-            dsyslogf(LOG_DEBUG, "  response_port: %u", dnstap_message_response_port(*d));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   response_port: %u", dnstap_message_response_port(*d));
         }
         if (dnstap_message_has_query_zone(*d)) {
-            dsyslogf(LOG_DEBUG, "  query_zone: %s", printable_string(dnstap_message_query_zone(*d), dnstap_message_query_zone_length(*d)));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   query_zone: %s", printable_string(dnstap_message_query_zone(*d), dnstap_message_query_zone_length(*d)));
         }
         if (dnstap_message_has_query_message(*d)) {
-            dsyslogf(LOG_DEBUG, "  query_message_length: %lu", dnstap_message_query_message_length(*d));
-            dsyslogf(LOG_DEBUG, "  query_message: %s", printable_string(dnstap_message_query_message(*d), dnstap_message_query_message_length(*d)));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   query_message_length: %lu", dnstap_message_query_message_length(*d));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   query_message: %s", printable_string(dnstap_message_query_message(*d), dnstap_message_query_message_length(*d)));
         }
         if (dnstap_message_has_response_message(*d)) {
-            dsyslogf(LOG_DEBUG, "  response_message_length: %lu", dnstap_message_response_message_length(*d));
-            dsyslogf(LOG_DEBUG, "  response_message: %s", printable_string(dnstap_message_response_message(*d), dnstap_message_response_message_length(*d)));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   response_message_length: %lu", dnstap_message_response_message_length(*d));
+            dsyslogf(LOG_DEBUG, "DNSTAP:   response_message: %s", printable_string(dnstap_message_response_message(*d), dnstap_message_response_message_length(*d)));
         }
     }
 
-    dsyslog(LOG_DEBUG, "----");
+    dsyslog(LOG_DEBUG, "DNSTAP: ----");
 }
+#endif
 
 enum client_state {
     no_state,
@@ -229,7 +251,7 @@ static void client_close(uv_handle_t* handle)
 {
     struct client* c = handle->data;
 
-    dsyslogf(LOG_DEBUG, "client %zu closed/freed", c->id);
+    _dsyslogf(LOG_DEBUG, "DNSTAP: client %zu closed/freed", c->id);
 
     if (clients == c) {
         clients = c->next;
@@ -262,7 +284,7 @@ static void client_write(uv_write_t* req, int status);
 static int process_rbuf(uv_stream_t* handle, struct client* c)
 {
     int done = 0;
-    dsyslogf(LOG_DEBUG, "client %zu pushing %zu of %zd", c->id, c->pushed, c->read);
+    _dsyslogf(LOG_DEBUG, "DNSTAP: client %zu pushing %zu of %zd", c->id, c->pushed, c->read);
     if (c->pushed >= c->read) {
         done = 1;
     }
@@ -274,7 +296,7 @@ static int process_rbuf(uv_stream_t* handle, struct client* c)
         if (c->pushed >= c->read) {
             done = 1;
         }
-        dsyslogf(LOG_DEBUG, "client %zu pushed %zu of %zd", c->id, c->pushed, c->read);
+        _dsyslogf(LOG_DEBUG, "DNSTAP: client %zu pushed %zu of %zd", c->id, c->pushed, c->read);
 
         switch (res) {
         case dnswire_have_dnstap:
@@ -289,7 +311,7 @@ static int process_rbuf(uv_stream_t* handle, struct client* c)
         case dnswire_endofdata:
             if (out_len) {
                 c->finished = 1;
-                dsyslogf(LOG_DEBUG, "client %zu finishing %zu", c->id, out_len);
+                _dsyslogf(LOG_DEBUG, "DNSTAP: client %zu finishing %zu", c->id, out_len);
                 uv_read_stop(handle);
                 c->wbuf.len = out_len;
                 uv_write((uv_write_t*)&c->wreq, handle, &c->wbuf, 1, client_write);
@@ -298,13 +320,13 @@ static int process_rbuf(uv_stream_t* handle, struct client* c)
             uv_close((uv_handle_t*)handle, client_close);
             return 0;
         default:
-            dsyslog(LOG_ERR, "dnswire_reader_push() error");
+            dsyslogf(LOG_ERR, "DNSTAP: libdnswire error, closing client %zu connection", c->id);
             uv_close((uv_handle_t*)handle, client_close);
             return 0;
         }
 
         if (out_len) {
-            dsyslogf(LOG_DEBUG, "client %zu writing %zu", c->id, out_len);
+            _dsyslogf(LOG_DEBUG, "DNSTAP: client %zu writing %zu", c->id, out_len);
             uv_read_stop(handle);
             c->wbuf.len = out_len;
             uv_write((uv_write_t*)&c->wreq, handle, &c->wbuf, 1, client_write);
@@ -321,15 +343,15 @@ static void client_read(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 
     if (nread < 0) {
         if (nread != UV_EOF) {
-            dsyslogf(LOG_ERR, "client_read() error: %s", uv_err_name(nread));
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to read from client %zu, closing connection: %s", c->id, uv_err_name(nread));
         } else {
-            dsyslogf(LOG_DEBUG, "client %zu disconnected", c->id);
+            dsyslogf(LOG_INFO, "DNSTAP: Client %zu disconnected", c->id);
         }
         uv_close((uv_handle_t*)handle, client_close);
         return;
     }
     if (nread > 0) {
-        dsyslogf(LOG_DEBUG, "client %zu read %zd", c->id, nread);
+        _dsyslogf(LOG_DEBUG, "DNSTAP: client %zu read %zd", c->id, nread);
         c->read   = nread;
         c->pushed = 0;
         process_rbuf(handle, c);
@@ -338,16 +360,17 @@ static void client_read(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 
 static void client_write(uv_write_t* req, int status)
 {
+    struct client* c = req->handle->data;
+
     if (status) {
-        dsyslogf(LOG_ERR, "client_write() error: %s", uv_strerror(status));
+        dsyslogf(LOG_ERR, "DNSTAP: Unable to write to client %zu, closing connection: %s", c->id, uv_strerror(status));
         uv_close((uv_handle_t*)req->handle, client_close);
         return;
     }
 
-    struct client* c = req->handle->data;
     if (process_rbuf(req->handle, c)) {
         if (c->finished) {
-            dsyslogf(LOG_DEBUG, "client %zu finished", c->id);
+            dsyslogf(LOG_INFO, "DNSTAP: Client %zu is finished, disconnecting", c->id);
             uv_close((uv_handle_t*)req->handle, client_close);
             return;
         }
@@ -358,20 +381,20 @@ static void client_write(uv_write_t* req, int status)
 static void on_new_unix_connection(uv_stream_t* server, int status)
 {
     if (status < 0) {
-        dsyslogf(LOG_ERR, "on_new_unix_connection() error: %s", uv_strerror(status));
+        dsyslogf(LOG_ERR, "DNSTAP: Unable to open UNIX socket connection: %s", uv_strerror(status));
         return;
     }
 
     struct client* client = client_new();
     if (!client) {
-        dsyslog(LOG_ERR, "on_new_unix_connection() out of memory");
+        dsyslog(LOG_ERR, "DNSTAP: Unable to open UNIX socket connection: out of memory");
         return;
     }
 
     uv_pipe_init(uv_default_loop(), &client->unix_conn, 0);
     client->stream = (uv_stream_t*)&client->unix_conn;
     if (uv_accept(server, client->stream) == 0) {
-        dsyslogf(LOG_DEBUG, "client %zu connected", client->id);
+        dsyslogf(LOG_INFO, "DNSTAP: Connected client %zu over UNIX socket", client->id);
 
         uv_read_start(client->stream, client_alloc_buffer, client_read);
     } else {
@@ -381,23 +404,21 @@ static void on_new_unix_connection(uv_stream_t* server, int status)
 
 static void on_new_tcp_connection(uv_stream_t* server, int status)
 {
-    dsyslog(LOG_DEBUG, "new tcp conn");
-
     if (status < 0) {
-        dsyslogf(LOG_ERR, "on_new_tcp_connection() error: %s", uv_strerror(status));
+        dsyslogf(LOG_ERR, "DNSTAP: Unable to open TCP connection: %s", uv_strerror(status));
         return;
     }
 
     struct client* client = client_new();
     if (!client) {
-        dsyslog(LOG_ERR, "on_new_tcp_connection() out of memory");
+        dsyslog(LOG_ERR, "DNSTAP: Unable to open TCP connection: out of memory");
         return;
     }
 
     uv_tcp_init(uv_default_loop(), &client->tcp_conn);
     client->stream = (uv_stream_t*)&client->tcp_conn;
     if (uv_accept(server, (uv_stream_t*)client->stream) == 0) {
-        dsyslogf(LOG_DEBUG, "client %zu connected", client->id);
+        dsyslogf(LOG_INFO, "DNSTAP: Connected client %zu over TCP", client->id);
 
         uv_read_start((uv_stream_t*)client->stream, client_alloc_buffer, client_read);
     } else {
@@ -408,20 +429,20 @@ static void on_new_tcp_connection(uv_stream_t* server, int status)
 static void on_new_udp_connection(uv_stream_t* server, int status)
 {
     if (status < 0) {
-        dsyslogf(LOG_ERR, "on_new_udp_connection() error: %s", uv_strerror(status));
+        dsyslogf(LOG_ERR, "DNSTAP: Unable to open UDP connection: %s", uv_strerror(status));
         return;
     }
 
     struct client* client = client_new();
     if (!client) {
-        dsyslog(LOG_ERR, "on_new_udp_connection() out of memory");
+        dsyslog(LOG_ERR, "DNSTAP: Unable to open UDP connection: out of memory");
         return;
     }
 
     uv_udp_init(uv_default_loop(), &client->udp_conn);
     client->stream = (uv_stream_t*)&client->udp_conn;
     if (uv_accept(server, client->stream) == 0) {
-        dsyslogf(LOG_DEBUG, "client %zu connected", client->id);
+        dsyslogf(LOG_INFO, "DNSTAP: Connected client %zu over UDP", client->id);
 
         uv_read_start(client->stream, client_alloc_buffer, client_read);
     } else {
@@ -485,25 +506,25 @@ static int dnstap_handler(const struct dnstap* m)
         || (dnstap_message_has_response_message(*m) && (!dnstap_message_has_response_time_sec(*m) || !dnstap_message_has_response_time_nsec(*m)))
         || (dnstap_message_has_query_port(*m) && !dnstap_message_has_query_address(*m))
         || (dnstap_message_has_response_port(*m) && !dnstap_message_has_response_address(*m))) {
-        dsyslog(LOG_ERR, "missing part of dnstap message");
+        dsyslog(LOG_ERR, "DNSTAP: Missing critical part(s) of DNSTAP message to be able to process");
         return -1;
     }
 
     memset(&tm, 0, sizeof(tm));
 
-    print_dnstap(m);
+    _print_dnstap(m);
 
     switch (dnstap_message_type(*m)) {
     case DNSTAP_MESSAGE_TYPE_AUTH_QUERY:
         if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.src_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.src_port   = dnstap_message_query_port(*m);
@@ -512,7 +533,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_response_address(*m)) {
             if (_set_addr(&tm.dst_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.dst_port = dnstap_message_response_port(*m);
@@ -530,14 +551,14 @@ static int dnstap_handler(const struct dnstap* m)
 
     case DNSTAP_MESSAGE_TYPE_AUTH_RESPONSE:
         if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.dst_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.dst_port   = dnstap_message_query_port(*m);
@@ -546,7 +567,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_response_address(*m)) {
             if (_set_addr(&tm.src_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.src_port = dnstap_message_response_port(*m);
@@ -564,14 +585,14 @@ static int dnstap_handler(const struct dnstap* m)
 
     case DNSTAP_MESSAGE_TYPE_RESOLVER_QUERY:
         if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.dst_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.dst_port   = dnstap_message_response_port(*m);
@@ -580,7 +601,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_query_address(*m)) {
             if (_set_addr(&tm.src_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.src_port = dnstap_message_query_port(*m);
@@ -598,14 +619,14 @@ static int dnstap_handler(const struct dnstap* m)
 
     case DNSTAP_MESSAGE_TYPE_RESOLVER_RESPONSE:
         if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.src_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.src_port   = dnstap_message_response_port(*m);
@@ -614,7 +635,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_query_address(*m)) {
             if (_set_addr(&tm.dst_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.dst_port = dnstap_message_query_port(*m);
@@ -632,14 +653,14 @@ static int dnstap_handler(const struct dnstap* m)
 
     case DNSTAP_MESSAGE_TYPE_CLIENT_QUERY:
         if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.src_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.src_port   = dnstap_message_query_port(*m);
@@ -648,7 +669,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_response_address(*m)) {
             if (_set_addr(&tm.dst_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.dst_port = dnstap_message_response_port(*m);
@@ -666,14 +687,14 @@ static int dnstap_handler(const struct dnstap* m)
 
     case DNSTAP_MESSAGE_TYPE_CLIENT_RESPONSE:
         if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.dst_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.dst_port   = dnstap_message_query_port(*m);
@@ -682,7 +703,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_response_address(*m)) {
             if (_set_addr(&tm.src_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.src_port = dnstap_message_response_port(*m);
@@ -702,14 +723,14 @@ static int dnstap_handler(const struct dnstap* m)
     case DNSTAP_MESSAGE_TYPE_FORWARDER_QUERY:
     case DNSTAP_MESSAGE_TYPE_TOOL_QUERY:
         if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.dst_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.dst_port   = dnstap_message_response_port(*m);
@@ -718,7 +739,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_query_address(*m)) {
             if (_set_addr(&tm.src_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.src_port = dnstap_message_query_port(*m);
@@ -738,14 +759,14 @@ static int dnstap_handler(const struct dnstap* m)
     case DNSTAP_MESSAGE_TYPE_FORWARDER_RESPONSE:
     case DNSTAP_MESSAGE_TYPE_TOOL_RESPONSE:
         if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
         if (_set_ipv(&tm, m)
             || _set_proto(&tm, m)
             || _set_addr(&tm.src_ip_addr, dnstap_message_response_address(*m), dnstap_message_response_address_length(*m))) {
-            dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+            dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
         tm.src_port   = dnstap_message_response_port(*m);
@@ -754,7 +775,7 @@ static int dnstap_handler(const struct dnstap* m)
 
         if (dnstap_message_has_query_address(*m)) {
             if (_set_addr(&tm.dst_ip_addr, dnstap_message_query_address(*m), dnstap_message_query_address_length(*m))) {
-                dsyslogf(LOG_ERR, "unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to extract values from %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
                 break;
             }
             tm.dst_port = dnstap_message_query_port(*m);
@@ -771,7 +792,7 @@ static int dnstap_handler(const struct dnstap* m)
         break;
 
     default:
-        dsyslogf(LOG_DEBUG, "unknown or unsupported message type %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        _dsyslogf(LOG_DEBUG, "DNSTAP: Unknown or unsupported message type %d", dnstap_message_type(*m));
         return 0;
     }
 
@@ -819,11 +840,11 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
     switch (via) {
     case dnstap_via_file:
         if (!(_file = fopen(sock_or_host, "r"))) {
-            dsyslogf(LOG_ERR, "fopen() failed: %s", strerror(errno));
+            dsyslogf(LOG_ERR, "DNSTAP: fopen() failed: %s", strerror(errno));
             exit(1);
         }
         if (dnswire_reader_init(&_file_reader) != dnswire_ok) {
-            dsyslog(LOG_ERR, "Unable to initialize dnswire reader");
+            dsyslog(LOG_ERR, "DNSTAP: Unable to initialize dnswire reader");
             exit(1);
         }
         no_wait_interval = 1;
@@ -832,19 +853,19 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
     case dnstap_via_unixsock:
         uv_pipe_init(uv_default_loop(), &unix_server, 0);
         if ((r = uv_pipe_bind(&unix_server, sock_or_host))) {
-            dsyslogf(LOG_ERR, "uv_pipe_bind() failed: %s", uv_strerror(r));
+            dsyslogf(LOG_ERR, "DNSTAP: uv_pipe_bind() failed: %s", uv_strerror(r));
             exit(1);
         }
         if ((r = uv_listen((uv_stream_t*)&unix_server, 128, on_new_unix_connection))) {
-            dsyslogf(LOG_ERR, "uv_listen() failed: %s", uv_strerror(r));
+            dsyslogf(LOG_ERR, "DNSTAP: uv_listen() failed: %s", uv_strerror(r));
             exit(1);
         }
         if (!(_sock_file = xstrdup(sock_or_host))) {
-            dsyslog(LOG_ERR, "Out of memory initializing DNSTAP UNIX socket");
+            dsyslog(LOG_ERR, "DNSTAP: Out of memory initializing DNSTAP UNIX socket");
             exit(1);
         }
         if (atexit(_atexit)) {
-            dsyslog(LOG_ERR, "Unable to initializing DNSTAP UNIX socket: atexit() failed");
+            dsyslog(LOG_ERR, "DNSTAP: Unable to initializing DNSTAP UNIX socket: atexit() failed");
             exit(1);
         }
         break;
@@ -858,11 +879,11 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
 
         uv_tcp_init(uv_default_loop(), &tcp_server);
         if ((r = uv_tcp_bind(&tcp_server, (const struct sockaddr*)&addr, 0))) {
-            dsyslogf(LOG_ERR, "uv_tcp_bind() failed: %s", uv_strerror(r));
+            dsyslogf(LOG_ERR, "DNSTAP: uv_tcp_bind() failed: %s", uv_strerror(r));
             exit(1);
         }
         if ((r = uv_listen((uv_stream_t*)&tcp_server, 128, on_new_tcp_connection))) {
-            dsyslogf(LOG_ERR, "uv_listen() failed: %s", uv_strerror(r));
+            dsyslogf(LOG_ERR, "DNSTAP: uv_listen() failed: %s", uv_strerror(r));
             exit(1);
         }
         break;
@@ -876,17 +897,17 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
 
         uv_udp_init(uv_default_loop(), &udp_server);
         if ((r = uv_udp_bind(&udp_server, (const struct sockaddr*)&addr, 0))) {
-            dsyslogf(LOG_ERR, "uv_udp_bind() failed: %s", uv_strerror(r));
+            dsyslogf(LOG_ERR, "DNSTAP: uv_udp_bind() failed: %s", uv_strerror(r));
             exit(1);
         }
         if ((r = uv_listen((uv_stream_t*)&udp_server, 128, on_new_udp_connection))) {
-            dsyslogf(LOG_ERR, "uv_listen() failed: %s", uv_strerror(r));
+            dsyslogf(LOG_ERR, "DNSTAP: uv_listen() failed: %s", uv_strerror(r));
             exit(1);
         }
         break;
     }
 #else
-    dsyslog(LOG_ERR, "No DNSTAP support built in");
+    dsyslog(LOG_ERR, "DNSTAP: No DNSTAP support built in");
     exit(1);
 #endif
 }
@@ -930,7 +951,7 @@ int dnstap_run(void)
                     done = 1;
                     break;
                 default:
-                    dsyslog(LOG_ERR, "dnswire_reader_fread() error");
+                    dsyslog(LOG_ERR, "DNSTAP: dnswire_reader_fread() error");
                     return 0;
                 }
             }
@@ -965,7 +986,7 @@ int dnstap_run(void)
                 if (sig_while_processing) {
                     break;
                 }
-                dsyslog(LOG_ERR, "dnswire_reader_fread() error");
+                dsyslog(LOG_ERR, "DNSTAP: dnswire_reader_fread() error");
                 return 0;
             }
 
@@ -994,7 +1015,7 @@ int dnstap_run(void)
     }
     return 1;
 #else
-    dsyslog(LOG_ERR, "No DNSTAP support built in");
+    dsyslog(LOG_ERR, "DNSTAP: No DNSTAP support built in");
     return 0;
 #endif
 }
