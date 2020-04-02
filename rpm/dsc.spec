@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.9.0
+Version:        2.9.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -65,6 +65,27 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Apr 02 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.9.1-1
+- Release 2.9.1
+  * This release fixes a few bugs, removes a lot of the debug messages
+    about DNSTAP and removes GeoIP from openSUSE/SLE packages as it has
+    been deprecated on those platforms.
+  * Changes:
+    - `daemon`: Fix bug with listening for SIGINT when in foreground mode
+    - `dnstap`:
+      - Fix #217: Unlink UNIX socket on exit if successfully initiated
+      - Fix startup bug, `exit()` if unable to initialize
+      - Fix #220:
+        - Remove/hide a lot of debug messages and the printing of the DNSTAP message
+        - Clarify a lot of the info and error messages
+        - Prefix all DNSTAP related messages with `DNSTAP: `
+    - Fix compile warnings and include headers when GeoIP is missing
+    - `asn_indexer`: Fix bug, said unknown IPv4 when it was IPv6
+  * Commits:
+    08bad5b DNSTAP debug
+    1232264 LGTM
+    589ea7a GeoIP, asn indexer
+    4fea0d2 sigint, DNSTAP UNIX socket, DNSTAP init
 * Fri Mar 20 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.9.0-1
 - Release 2.9.0
   * This release adds support for receiving DNS messages over DNSTAP along
