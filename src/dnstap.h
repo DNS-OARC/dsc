@@ -34,10 +34,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config_hooks.h"
-
 #ifndef __dsc_dnstap_h
 #define __dsc_dnstap_h
+
+#include "config_hooks.h"
 
 void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port);
 int  dnstap_run(void);

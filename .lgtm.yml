@@ -10,7 +10,27 @@ extraction:
         - libpcap-dev
         - libgeoip-dev
         - libmaxminddb-dev
+        - protobuf-c-compiler
+        - libprotobuf-c-dev
+        - libuv1-dev
+    after_prepare:
+      - git clone https://github.com/DNS-OARC/tinyframe.git
+      - cd tinyframe
+      - ./autogen.sh
+      - ./configure --prefix="$PWD/../root"
+      - make
+      - make install
+      - cd ..
+      - export PKG_CONFIG_PATH="$PWD/root/lib/pkgconfig"
+      - git clone https://github.com/DNS-OARC/dnswire.git
+      - cd dnswire
+      - git submodule update --init
+      - ./autogen.sh
+      - ./configure --prefix="$PWD/../root" --disable-examples
+      - make
+      - make install
+      - cd ..
     configure:
       command:
         - ./autogen.sh
-        - ./configure
+        - ./configure --enable-dnstap

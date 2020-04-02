@@ -43,10 +43,19 @@
 #include "dns_message.h"
 #include "compat.h"
 #include "client_subnet_index.h"
+#if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
+#define HAVE_GEOIP 1
+#include <GeoIP.h>
+#endif
+#if defined(HAVE_LIBMAXMINDDB) && defined(HAVE_MAXMINDDB_H)
+#define HAVE_MAXMINDDB 1
+#include <maxminddb.h>
+#endif
 
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define PARSE_CONF_EINVAL -2
 #define PARSE_CONF_ERROR -1
