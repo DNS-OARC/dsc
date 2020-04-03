@@ -100,6 +100,11 @@ pid_file "@DSC_PID_FILE@";
 #  as encapsulated DNS packets as seen or as made by the software.
 #  See https://dnstap.info for more information about DNSTAP.
 #
+#  dnstap_unixsock can have additional optional options to control access
+#  to the socket: [user][:group] [umask]
+#
+#    dnstap_unixsock /path/to/unix.sock user:group 0007;
+#
 #  NOTE:
 #  - Only one DNSTAP input can be specified at a time currently.
 #  - Configuration needs to match that of the DNS software.

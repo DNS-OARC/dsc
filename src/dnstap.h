@@ -38,8 +38,9 @@
 #define __dsc_dnstap_h
 
 #include "config_hooks.h"
+#include <unistd.h>
 
-void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port);
+void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port, uid_t uid, gid_t gid, int mask);
 int  dnstap_run(void);
 void dnstap_stop(void);
 void dnstap_close(void);

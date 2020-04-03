@@ -806,7 +806,7 @@ int parse_conf_dnstap_file(const conf_token_t* tokens)
         return -1;
     }
 
-    ret = open_dnstap(dnstap_via_file, file, 0);
+    ret = open_dnstap(dnstap_via_file, file, 0, 0, 0, 0);
     free(file);
     return ret == 1 ? 0 : 1;
 }
@@ -814,6 +814,9 @@ int parse_conf_dnstap_file(const conf_token_t* tokens)
 int parse_conf_dnstap_unixsock(const conf_token_t* tokens)
 {
     char* unixsock = strndup(tokens[1].token, tokens[1].length);
+    char* user     = 0;
+    char* group    = 0;
+    char* umask    = 0;
     int   ret;
 
     if (!unixsock) {
@@ -821,8 +824,36 @@ int parse_conf_dnstap_unixsock(const conf_token_t* tokens)
         return -1;
     }
 
-    ret = open_dnstap(dnstap_via_unixsock, unixsock, 0);
+    if (tokens[2].type != TOKEN_END) {
+        int t = 2;
+
+        if (tokens[t].token[0] != '0') {
+            if (!(user = strndup(tokens[t].token, tokens[t].length))) {
+                free(unixsock);
+                errno = ENOMEM;
+                return -1;
+            }
+            if ((group = strchr(user, ':'))) {
+                *group = 0;
+                group++;
+            }
+            t++;
+        }
+
+        if (tokens[t].type != TOKEN_END) {
+            if (!(umask = strndup(tokens[t].token, tokens[t].length))) {
+                free(unixsock);
+                free(user);
+                errno = ENOMEM;
+                return -1;
+            }
+        }
+    }
+
+    ret = open_dnstap(dnstap_via_unixsock, unixsock, 0, user, group, umask);
     free(unixsock);
+    free(user);
+    free(umask);
     return ret == 1 ? 0 : 1;
 }
 
@@ -839,7 +870,7 @@ int parse_conf_dnstap_tcp(const conf_token_t* tokens)
         return -1;
     }
 
-    ret = open_dnstap(dnstap_via_tcp, host, port);
+    ret = open_dnstap(dnstap_via_tcp, host, port, 0, 0, 0);
     free(host);
     free(port);
     return ret == 1 ? 0 : 1;
@@ -858,7 +889,7 @@ int parse_conf_dnstap_udp(const conf_token_t* tokens)
         return -1;
     }
 
-    ret = open_dnstap(dnstap_via_udp, host, port);
+    ret = open_dnstap(dnstap_via_udp, host, port, 0, 0, 0);
     free(host);
     free(port);
     return ret == 1 ? 0 : 1;
@@ -999,7 +1030,7 @@ static conf_token_syntax_t _syntax[] = {
         { TOKEN_STRING, TOKEN_END } },
     { "dnstap_unixsock",
         parse_conf_dnstap_unixsock,
-        { TOKEN_STRING, TOKEN_END } },
+        { TOKEN_ANY, TOKEN_END } },
     { "dnstap_tcp",
         parse_conf_dnstap_tcp,
         { TOKEN_STRING, TOKEN_NUMBER, TOKEN_END } },
