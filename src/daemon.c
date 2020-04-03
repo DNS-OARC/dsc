@@ -113,7 +113,7 @@ void daemonize(void)
         exit(1);
     }
     if (pid > 0)
-        exit(0);
+        _exit(0);
     if (setsid() < 0)
         dsyslogf(LOG_ERR, "setsid failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     closelog();
