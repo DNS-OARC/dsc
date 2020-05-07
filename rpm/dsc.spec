@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.9.1
+Version:        2.10.0
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -65,6 +65,17 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu May 07 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.10.0-1
+- Release 2.10.0
+  * This release adds new configuration options to `dnstap_unixsock` to
+    control ownership and permissions for the DNSTAP socket file.
+  * Other fixes:
+    - Unlink the DNSTAP socket file if an error during initialization occur
+    - Do hard exit in forks to not run `atexit()` (which will unlink the
+      DNSTAP socket file)
+  * Commits:
+    9d1d49a fork
+    733b286 DNSTAP socket
 * Thu Apr 02 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.9.1-1
 - Release 2.9.1
   * This release fixes a few bugs, removes a lot of the debug messages

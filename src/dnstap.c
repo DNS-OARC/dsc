@@ -59,13 +59,15 @@ static struct timeval start_ts, finish_ts;
 #include <uv.h>
 #include <dnswire/reader.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 // print_dnstap():
 #include <dnswire/dnstap.h>
 #include <inttypes.h>
 #include <arpa/inet.h>
 #include <ctype.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -821,7 +823,7 @@ static void _atexit(void)
 #endif
 }
 
-void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
+void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port, uid_t uid, gid_t gid, int mask)
 {
     if (!dnstap_network_ip4)
         dnstap_network_ip4 = strdup("127.0.0.1");
@@ -850,7 +852,11 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
         no_wait_interval = 1;
         break;
 
-    case dnstap_via_unixsock:
+    case dnstap_via_unixsock: {
+        mode_t m;
+        if (mask > -1) {
+            m = umask((mode_t)mask);
+        }
         uv_pipe_init(uv_default_loop(), &unix_server, 0);
         if ((r = uv_pipe_bind(&unix_server, sock_or_host))) {
             dsyslogf(LOG_ERR, "DNSTAP: uv_pipe_bind() failed: %s", uv_strerror(r));
@@ -860,15 +866,28 @@ void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port)
             dsyslogf(LOG_ERR, "DNSTAP: uv_listen() failed: %s", uv_strerror(r));
             exit(1);
         }
+        if (uid != -1 || gid != -1) {
+            if (chown(sock_or_host, uid, gid)) {
+                dsyslogf(LOG_ERR, "DNSTAP: Unable to change user/group on socket file: %s", strerror(errno));
+                unlink(sock_or_host);
+                exit(1);
+            }
+        }
         if (!(_sock_file = xstrdup(sock_or_host))) {
             dsyslog(LOG_ERR, "DNSTAP: Out of memory initializing DNSTAP UNIX socket");
+            unlink(sock_or_host);
             exit(1);
         }
         if (atexit(_atexit)) {
             dsyslog(LOG_ERR, "DNSTAP: Unable to initializing DNSTAP UNIX socket: atexit() failed");
+            unlink(sock_or_host);
             exit(1);
         }
+        if (mask > -1) {
+            umask(m);
+        }
         break;
+    }
 
     case dnstap_via_tcp:
         if (strchr(sock_or_host, ':')) {

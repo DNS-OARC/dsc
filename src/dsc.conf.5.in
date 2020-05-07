@@ -142,7 +142,7 @@ that is not directly related to the host.
 .TP
 \fBdnstap_file\fR FILE ;
 .TQ
-\fBdnstap_unixsock\fR FILE ;
+\fBdnstap_unixsock\fR FILE [ USER ][ :GROUP ] [ UMASK ] ;
 .TQ
 \fBdnstap_tcp\fR IP PORT ;
 .TQ
@@ -156,6 +156,25 @@ See
 https://dnstap.info
 .UE
 for more information about DNSTAP.
+
+For UNIX sockets there are additional optional options to control access
+to it.
+The user and group access are specified together as strings (USER:GROUP),
+separated with a colon if a group is specified.
+The file permissions are controlled by a file mode creation mask (UMASK,
+must being with 0) which is set temporarily during socket creation.
+It is not necessary to specify all options, you can specify only USER,
+only :GROUP or only UMASK.
+
+Example below shows how to give read and write access to somegroup,
+remove permissions for others and how the resulting socket file permissions
+would be:
+
+.EX
+  dnstap_unixsock /path/to/file.sock :somegroup 0007;
+
+  srwxrwx--- 1 root somegroup    0 Date dd HH:MM /path/to/file.sock
+.EE
 
 NOTE:
 .RS
@@ -865,6 +884,12 @@ pid_file "/run/dsc.pid";
 #drop_ip_fragments;
 interface eth0;
 #interface any;
+
+#dnstap_file /path/to/file.dnstap;
+#dnstap_unixsock /path/to/unix.sock;
+#dnstap_tcp 127.0.0.1 5353;
+#dnstap_udp 127.0.0.1 5353;
+#dnstap_network 127.0.0.1 ::1 53;
 
 dataset qtype dns All:null Qtype:qtype queries-only;
 dataset rcode dns All:null Rcode:rcode replies-only;

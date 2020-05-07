@@ -61,6 +61,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 extern int input_mode;
 extern int promisc_flag;
@@ -116,9 +120,11 @@ int open_interface(const char* interface)
     return 1;
 }
 
-int open_dnstap(enum dnstap_via via, const char* file_or_ip, const char* port)
+int open_dnstap(enum dnstap_via via, const char* file_or_ip, const char* port, const char* user, const char* group, const char* umask)
 {
-    int port_num = -1;
+    int   port_num = -1, mask = -1;
+    uid_t uid = -1;
+    gid_t gid = -1;
 
     if (input_mode != INPUT_NONE) {
         if (input_mode == INPUT_DNSTAP) {
@@ -138,7 +144,38 @@ int open_dnstap(enum dnstap_via via, const char* file_or_ip, const char* port)
     } else {
         dsyslogf(LOG_INFO, "Opening dnstap %s", file_or_ip);
     }
-    dnstap_init(via, file_or_ip, port_num);
+    if (user && *user != 0) {
+        struct passwd* pw = getpwnam(user);
+        if (!pw) {
+            dsyslog(LOG_ERR, "invalid USER for DNSTAP UNIX socket, does not exist");
+            return 0;
+        }
+        uid = pw->pw_uid;
+        dsyslogf(LOG_INFO, "Using user %s [%d] for DNSTAP", user, uid);
+    }
+    if (group) {
+        struct group* gr = getgrnam(group);
+        if (!gr) {
+            dsyslog(LOG_ERR, "invalid GROUP for DNSTAP UNIX socket, does not exist");
+            return 0;
+        }
+        gid = gr->gr_gid;
+        dsyslogf(LOG_INFO, "Using group %s [%d] for DNSTAP", group, gid);
+    }
+    if (umask) {
+        unsigned int m;
+        if (sscanf(umask, "%o", &m) != 1) {
+            dsyslog(LOG_ERR, "invalid UMASK for DNSTAP UNIX socket, should be octal");
+            return 0;
+        }
+        if (m > 0777) {
+            dsyslog(LOG_ERR, "invalid UMASK for DNSTAP UNIX socket, too large value, maximum 0777");
+            return 0;
+        }
+        mask = (int)m;
+        dsyslogf(LOG_INFO, "Using umask %04o for DNSTAP", mask);
+    }
+    dnstap_init(via, file_or_ip, port_num, uid, gid, mask);
     input_mode = INPUT_DNSTAP;
     return 1;
 }
