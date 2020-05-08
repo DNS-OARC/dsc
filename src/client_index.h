@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int client_indexer(const dns_message*);
-int client_iterator(const char** label);
+int  client_indexer(const dns_message*);
+int  client_iterator(const char** label);
 void client_reset(void);
 
 #endif /* __dsc_client_index_h */

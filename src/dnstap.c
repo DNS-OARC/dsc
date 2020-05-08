@@ -814,14 +814,14 @@ static char*                 _sock_file = 0;
 
 extern int no_wait_interval;
 
+#ifdef USE_DNSTAP
 static void _atexit(void)
 {
-#ifdef USE_DNSTAP
     if (_sock_file) {
         unlink(_sock_file);
     }
-#endif
 }
+#endif
 
 void dnstap_init(enum dnstap_via via, const char* sock_or_host, int port, uid_t uid, gid_t gid, int mask)
 {

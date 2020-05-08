@@ -62,8 +62,8 @@ void response_time_set_bucket_size(unsigned int s);
 void response_time_set_max_queries(size_t q);
 void response_time_set_full_mode(enum response_time_full_mode m);
 
-int response_time_indexer(const dns_message*);
-int response_time_iterator(const char** label);
+int                response_time_indexer(const dns_message*);
+int                response_time_iterator(const char** label);
 void               response_time_reset(void);
 const dns_message* response_time_flush(enum flush_mode mode);
 

@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int qtype_indexer(const dns_message*);
-int qtype_iterator(const char** label);
+int  qtype_indexer(const dns_message*);
+int  qtype_iterator(const char** label);
 void qtype_reset(void);
 
 #endif /* __dsc_qtype_index_h */

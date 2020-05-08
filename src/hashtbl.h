@@ -47,8 +47,8 @@ typedef struct _hashitem {
 } hashitem;
 
 typedef unsigned int hashfunc(const void* key);
-typedef int hashkeycmp(const void* a, const void* b);
-typedef void hashfree(void* p);
+typedef int          hashkeycmp(const void* a, const void* b);
+typedef void         hashfree(void* p);
 
 typedef struct
 {
@@ -67,12 +67,12 @@ typedef struct
 } hashtbl;
 
 hashtbl* hash_create(int N, hashfunc*, hashkeycmp*, int use_arena, hashfree*, hashfree*);
-void hash_destroy(hashtbl*);
-int hash_add(const void* key, void* data, hashtbl*);
-void hash_remove(const void* key, hashtbl* tbl);
-void* hash_find(const void* key, hashtbl*);
-void  hash_iter_init(hashtbl*);
-void* hash_iterate(hashtbl*);
+void     hash_destroy(hashtbl*);
+int      hash_add(const void* key, void* data, hashtbl*);
+void     hash_remove(const void* key, hashtbl* tbl);
+void*    hash_find(const void* key, hashtbl*);
+void     hash_iter_init(hashtbl*);
+void*    hash_iterate(hashtbl*);
 
 /*
  * found in lookup3.c

@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int dns_ip_version_indexer(const dns_message*);
-int dns_ip_version_iterator(const char** label);
+int  dns_ip_version_indexer(const dns_message*);
+int  dns_ip_version_iterator(const char** label);
 void dns_ip_version_reset(void);
 
 #endif /* __dsc_dns_ip_version_index_h */

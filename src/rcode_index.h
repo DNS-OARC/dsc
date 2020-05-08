@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int rcode_indexer(const dns_message*);
-int rcode_iterator(const char** label);
+int  rcode_indexer(const dns_message*);
+int  rcode_iterator(const char** label);
 void rcode_reset(void);
 
 #endif /* __dsc_rcode_index_h */

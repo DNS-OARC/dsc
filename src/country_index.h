@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int country_indexer(const dns_message*);
-int country_iterator(const char** label);
+int  country_indexer(const dns_message*);
+int  country_iterator(const char** label);
 void country_reset(void);
 void country_init(void);
 

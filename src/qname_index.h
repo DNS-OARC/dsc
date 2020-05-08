@@ -39,14 +39,14 @@
 
 #include "dns_message.h"
 
-int qname_indexer(const dns_message*);
-int qname_iterator(const char** label);
+int  qname_indexer(const dns_message*);
+int  qname_iterator(const char** label);
 void qname_reset(void);
 int  second_ld_indexer(const dns_message*);
-int second_ld_iterator(const char** label);
+int  second_ld_iterator(const char** label);
 void second_ld_reset(void);
 int  third_ld_indexer(const dns_message*);
-int third_ld_iterator(const char** label);
+int  third_ld_iterator(const char** label);
 void third_ld_reset(void);
 
 #endif /* __dsc_qname_index_h */
