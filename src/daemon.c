@@ -457,7 +457,7 @@ int main(int argc, char* argv[])
         daemonize();
     write_pid_file();
 
-/*
+    /*
      * Handle signal when using pthreads
      */
 
@@ -580,7 +580,7 @@ int main(int argc, char* argv[])
         if (0 == fork()) {
             struct sigaction action;
 
-/*
+            /*
              * Remove the blocking of signals
              */
 

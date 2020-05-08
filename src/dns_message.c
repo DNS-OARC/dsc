@@ -453,7 +453,7 @@ int add_qname_filter(const char* name, const char* pat)
     int           x;
     while ((*fl))
         fl = &((*fl)->next);
-    r      = xcalloc(1, sizeof(*r));
+    r = xcalloc(1, sizeof(*r));
     if (NULL == r) {
         dsyslogf(LOG_ERR, "Cant allocate memory for '%s' qname filter", name);
         return 0;

@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int sip_indexer(const dns_message*);
-int sip_iterator(const char** label);
+int  sip_indexer(const dns_message*);
+int  sip_iterator(const char** label);
 void sip_reset(void);
 
 #endif /* __dsc_server_ip_addr_index_h */

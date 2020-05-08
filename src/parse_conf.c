@@ -922,6 +922,21 @@ int parse_conf_dnstap_network(const conf_token_t* tokens)
     return dnstap_network_port < 0 ? 1 : 0;
 }
 
+int parse_conf_knowntlds_file(const conf_token_t* tokens)
+{
+    char* file = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!file) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = load_knowntlds(file);
+    free(file);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     { "interface",
         parse_conf_interface,
@@ -1040,6 +1055,9 @@ static conf_token_syntax_t _syntax[] = {
     { "dnstap_network",
         parse_conf_dnstap_network,
         { TOKEN_STRING, TOKEN_STRING, TOKEN_NUMBER, TOKEN_END } },
+    { "knowntlds_file",
+        parse_conf_knowntlds_file,
+        { TOKEN_STRING, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }
 };

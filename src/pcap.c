@@ -884,11 +884,11 @@ void Pcap_init(const char* device, int promisc, int monitor, int immediate, int 
         pcap_layers_init(DLT_EN10MB, drop_ip_fragments ? 0 : 1);
         if (n_vlan_ids)
             callback_vlan = pcap_match_vlan;
-        callback_ipv4     = pcap_ipv4_handler;
-        callback_ipv6     = pcap_ipv6_handler;
-        callback_udp      = pcap_udp_handler;
-        callback_tcp      = pcap_tcp_handler;
-        callback_l7       = dns_protocol_handler;
+        callback_ipv4 = pcap_ipv4_handler;
+        callback_ipv6 = pcap_ipv6_handler;
+        callback_udp  = pcap_udp_handler;
+        callback_tcp  = pcap_tcp_handler;
+        callback_l7   = dns_protocol_handler;
     }
     n_interfaces++;
     if (n_pcap_offline > 1 || (n_pcap_offline > 0 && n_interfaces > n_pcap_offline)) {
@@ -920,7 +920,7 @@ int Pcap_run(void)
     int             i, err;
     extern uint64_t statistics_interval;
 
-    for (i                          = 0; i < n_interfaces; i++)
+    for (i = 0; i < n_interfaces; i++)
         interfaces[i].pkts_captured = 0;
 
     if (n_pcap_offline > 0) {

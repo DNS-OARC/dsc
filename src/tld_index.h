@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int tld_indexer(const dns_message*);
-int tld_iterator(const char** label);
+int  tld_indexer(const dns_message*);
+int  tld_iterator(const char** label);
 void tld_reset(void);
 
 #endif /* __dsc_tld_index_h */
