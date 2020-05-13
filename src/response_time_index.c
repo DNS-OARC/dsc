@@ -368,7 +368,7 @@ int response_time_indexer(const dns_message* m)
     if (!qfirst)
         qfirst = obj;
     num_queries++;
-    dfprintf(2, "response_time: add %p, %lu/%lu queries", obj, num_queries, max_queries);
+    dfprintf(2, "response_time: add %p, %zu/%zu queries", obj, num_queries, max_queries);
 
     return ret;
 }
