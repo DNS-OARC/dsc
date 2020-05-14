@@ -119,17 +119,21 @@ static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
     if (0 != x)
         return 0;
+#ifndef __clang_analyzer__
     if ('\0' == *qname) {
         *qname       = '.';
         *(qname + 1) = 0;
     }
+#endif
     /* XXX remove special characters from QNAME */
     while ((t = strchr(qname, '\n')))
         *t = ' ';
     while ((t = strchr(qname, '\r')))
         *t = ' ';
+#ifndef __clang_analyzer__
     for (t = qname; *t; t++)
         *t = tolower(*t);
+#endif
     if (offset + 4 > len)
         return 0;
     *qtype  = nptohs(buf + offset);

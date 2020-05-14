@@ -620,7 +620,6 @@ int load_knowntlds(const char* file)
     size_t  bufsize       = 0;
     char**  new_KnownTLDS = 0;
     size_t  new_size      = 0;
-    ssize_t nread;
 
     if (KnownTLDS != KnownTLDS_static) {
         dsyslog(LOG_ERR, "Known TLDs already loaded once");
@@ -639,7 +638,7 @@ int load_knowntlds(const char* file)
     new_KnownTLDS[new_size] = ".";
     new_size++;
 
-    while ((nread = getline(&buffer, &bufsize, fp)) > 0) {
+    while (getline(&buffer, &bufsize, fp) > 0) {
         for (p = buffer; *p; p++) {
             if (*p == '\r' || *p == '\n') {
                 *p = 0;
