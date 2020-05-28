@@ -615,11 +615,11 @@ const char** KnownTLDS = KnownTLDS_static;
 
 int load_knowntlds(const char* file)
 {
-    FILE*   fp;
-    char *  buffer        = 0, *p;
-    size_t  bufsize       = 0;
-    char**  new_KnownTLDS = 0;
-    size_t  new_size      = 0;
+    FILE*  fp;
+    char * buffer        = 0, *p;
+    size_t bufsize       = 0;
+    char** new_KnownTLDS = 0;
+    size_t new_size      = 0;
 
     if (KnownTLDS != KnownTLDS_static) {
         dsyslog(LOG_ERR, "Known TLDs already loaded once");

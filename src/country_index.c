@@ -81,6 +81,7 @@ static GeoIP* geoip6 = NULL;
 #ifdef HAVE_MAXMINDDB
 static MMDB_s mmdb;
 static char   _mmcountry[32];
+static int    have_mmdb = 0;
 #endif
 static char  ipstr[81];
 static char* unknown    = "??";
@@ -119,32 +120,33 @@ country_get_from_message(dns_message* m)
             }
 #endif
             break;
-        case geoip_backend_libmaxminddb: {
+        case geoip_backend_libmaxminddb:
 #ifdef HAVE_MAXMINDDB
-            struct sockaddr_in   s;
-            int                  ret;
-            MMDB_lookup_result_s r;
+            if (have_mmdb) {
+                struct sockaddr_in   s;
+                int                  ret;
+                MMDB_lookup_result_s r;
 
-            s.sin_family = AF_INET;
-            s.sin_addr   = tm->src_ip_addr._.in4;
+                s.sin_family = AF_INET;
+                s.sin_addr   = tm->src_ip_addr._.in4;
 
-            r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
-            if (ret == MMDB_SUCCESS && r.found_entry) {
-                MMDB_entry_data_s entry_data;
+                r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
+                if (ret == MMDB_SUCCESS && r.found_entry) {
+                    MMDB_entry_data_s entry_data;
 
-                if (MMDB_get_value(&r.entry, &entry_data, "country", "iso_code", 0) == MMDB_SUCCESS
-                    && entry_data.type == MMDB_DATA_TYPE_UTF8_STRING) {
-                    size_t len = entry_data.data_size > (sizeof(_mmcountry) - 1) ? (sizeof(_mmcountry) - 1) : entry_data.data_size;
-                    memcpy(_mmcountry, entry_data.utf8_string, len);
-                    _mmcountry[len] = 0;
-                    cc              = _mmcountry;
-                    break;
+                    if (MMDB_get_value(&r.entry, &entry_data, "country", "iso_code", 0) == MMDB_SUCCESS
+                        && entry_data.type == MMDB_DATA_TYPE_UTF8_STRING) {
+                        size_t len = entry_data.data_size > (sizeof(_mmcountry) - 1) ? (sizeof(_mmcountry) - 1) : entry_data.data_size;
+                        memcpy(_mmcountry, entry_data.utf8_string, len);
+                        _mmcountry[len] = 0;
+                        cc              = _mmcountry;
+                        break;
+                    }
                 }
             }
             cc = unknown_v4;
 #endif
             break;
-        }
         default:
             break;
         }
@@ -162,32 +164,33 @@ country_get_from_message(dns_message* m)
             }
 #endif
             break;
-        case geoip_backend_libmaxminddb: {
+        case geoip_backend_libmaxminddb:
 #ifdef HAVE_MAXMINDDB
-            struct sockaddr_in6  s;
-            int                  ret;
-            MMDB_lookup_result_s r;
+            if (have_mmdb) {
+                struct sockaddr_in6  s;
+                int                  ret;
+                MMDB_lookup_result_s r;
 
-            s.sin6_family = AF_INET;
-            s.sin6_addr   = tm->src_ip_addr.in6;
+                s.sin6_family = AF_INET;
+                s.sin6_addr   = tm->src_ip_addr.in6;
 
-            r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
-            if (ret == MMDB_SUCCESS && r.found_entry) {
-                MMDB_entry_data_s entry_data;
+                r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
+                if (ret == MMDB_SUCCESS && r.found_entry) {
+                    MMDB_entry_data_s entry_data;
 
-                if (MMDB_get_value(&r.entry, &entry_data, "country", "iso_code", 0) == MMDB_SUCCESS
-                    && entry_data.type == MMDB_DATA_TYPE_UTF8_STRING) {
-                    size_t len = entry_data.data_size > (sizeof(_mmcountry) - 1) ? (sizeof(_mmcountry) - 1) : entry_data.data_size;
-                    memcpy(_mmcountry, entry_data.utf8_string, len);
-                    _mmcountry[len] = 0;
-                    cc              = _mmcountry;
-                    break;
+                    if (MMDB_get_value(&r.entry, &entry_data, "country", "iso_code", 0) == MMDB_SUCCESS
+                        && entry_data.type == MMDB_DATA_TYPE_UTF8_STRING) {
+                        size_t len = entry_data.data_size > (sizeof(_mmcountry) - 1) ? (sizeof(_mmcountry) - 1) : entry_data.data_size;
+                        memcpy(_mmcountry, entry_data.utf8_string, len);
+                        _mmcountry[len] = 0;
+                        cc              = _mmcountry;
+                        break;
+                    }
                 }
             }
             cc = unknown_v6;
 #endif
             break;
-        }
         default:
             break;
         }
@@ -296,27 +299,27 @@ void country_init(void)
         }
 #endif
         break;
-    case geoip_backend_libmaxminddb: {
+    case geoip_backend_libmaxminddb:
 #ifdef HAVE_MAXMINDDB
-        int  ret;
-        char errbuf[512];
+        if (maxminddb_country) {
+            int  ret;
+            char errbuf[512];
 
-        if (!maxminddb_country) {
-            dsyslog(LOG_ERR, "country_index: Error no MaxMind ASN DB configured");
-            exit(1);
+            ret = MMDB_open(maxminddb_country, 0, &mmdb);
+            if (ret == MMDB_IO_ERROR) {
+                dsyslogf(LOG_ERR, "country_index: Error opening MaxMind Country, IO error: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+                exit(1);
+            } else if (ret != MMDB_SUCCESS) {
+                dsyslogf(LOG_ERR, "country_index: Error opening MaxMind Country: %s", MMDB_strerror(ret));
+                exit(1);
+            }
+            dsyslog(LOG_INFO, "country_index: Sucessfully initialized MaxMind Country");
+            have_mmdb = 1;
+        } else {
+            dsyslog(LOG_INFO, "country_index: No database loaded for MaxMind Country");
         }
-        ret = MMDB_open(maxminddb_country, 0, &mmdb);
-        if (ret == MMDB_IO_ERROR) {
-            dsyslogf(LOG_ERR, "country_index: Error opening MaxMind ASN DB, IO error: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
-            exit(1);
-        } else if (ret != MMDB_SUCCESS) {
-            dsyslogf(LOG_ERR, "country_index: Error opening MaxMind ASN DB: %s", MMDB_strerror(ret));
-            exit(1);
-        }
-        dsyslog(LOG_INFO, "country_index: Sucessfully initialized MaxMind ASN DB");
 #endif
         break;
-    }
     default:
         break;
     }
