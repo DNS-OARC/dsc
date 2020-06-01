@@ -39,8 +39,8 @@
 
 #include "dns_message.h"
 
-int ip_proto_indexer(const dns_message*);
-int ip_proto_iterator(const char** label);
+int  ip_proto_indexer(const dns_message*);
+int  ip_proto_iterator(const char** label);
 void ip_proto_reset(void);
 
 #endif /* __dsc_ip_proto_index_h */

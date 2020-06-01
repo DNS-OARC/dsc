@@ -44,7 +44,7 @@ void* xmalloc(size_t size);
 void* xcalloc(size_t number, size_t size);
 void* xrealloc(void* ptr, size_t size);
 char* xstrdup(const char* s);
-void xfree(void* ptr);
+void  xfree(void* ptr);
 
 /* The amalloc family of functions allocates from an "arena", optimized for
  * making a large number of small allocations, and then freeing them all at
@@ -64,6 +64,6 @@ void* amalloc(size_t size);
 void* acalloc(size_t number, size_t size);
 void* arealloc(void* ptr, size_t size);
 char* astrdup(const char* s);
-void afree(void* ptr);
+void  afree(void* ptr);
 
 #endif /* __dsc_xmalloc_h */

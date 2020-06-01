@@ -123,12 +123,12 @@ struct md_array_list {
     md_array_list* next;
 };
 
-md_array* md_array_create(const char* name, filter_list*, const char*, indexer*, const char*, indexer*);
-void md_array_clear(md_array*);
-int  md_array_count(md_array*, const void*);
-void md_array_flush(md_array* a);
-int md_array_print(md_array* a, md_array_printer* pr, FILE* fp);
+md_array*     md_array_create(const char* name, filter_list*, const char*, indexer*, const char*, indexer*);
+void          md_array_clear(md_array*);
+int           md_array_count(md_array*, const void*);
+void          md_array_flush(md_array* a);
+int           md_array_print(md_array* a, md_array_printer* pr, FILE* fp);
 filter_list** md_array_filter_list_append(filter_list** fl, filter_defn* f);
-filter_defn* md_array_create_filter(const char* name, filter_func, const void* context);
+filter_defn*  md_array_create_filter(const char* name, filter_func, const void* context);
 
 #endif /* __dsc_md_array_h */

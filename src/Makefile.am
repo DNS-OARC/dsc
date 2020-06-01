@@ -41,7 +41,7 @@ dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   tld_index.h transport_index.h xmalloc.h response_time_index.h \
   pcap_layers/byteorder.h pcap_layers/pcap_layers.h \
   pcap-thread/pcap_thread.h \
-  dnstap.h input_mode.h
+  dnstap.h input_mode.h knowntlds.inc
 dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS) \
   $(libdnswire_LIBS) $(libuv_LIBS)
 man1_MANS = dsc.1

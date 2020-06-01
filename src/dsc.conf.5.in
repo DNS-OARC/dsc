@@ -331,6 +331,10 @@ The query will be counted as timed out.
 .TP
 \fBresponse_time_bucket_size\fR SIZE ;
 Control the size of bucket (microseconds) in bucket mode.
+.TP
+\fBknowntlds_file\fR FILE ;
+Load known TLDs from FILE, this should be or have the same format as
+.IR https://data.iana.org/TLD/tlds-alpha-by-domain.txt .
 .SH DATASETS
 A \fBdataset\fR is a 2-D array of counters.
 For example, you might have a dataset with \*(lqQuery Type\*(rq along one
@@ -948,6 +952,8 @@ output_format XML;
 #response_time_max_seconds 5;
 #response_time_max_sec_mode ceil;
 #response_time_bucket_size 100;
+
+#knowntlds_file file;
 .fi
 .SH FILES
 @etcdir@/dsc.conf

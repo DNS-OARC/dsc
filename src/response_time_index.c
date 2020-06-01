@@ -303,7 +303,7 @@ int response_time_indexer(const dns_message* m)
                 obj->prev->next = obj->next;
             if (obj->next) {
                 if (obj == qfirst)
-                    qfirst      = obj->next;
+                    qfirst = obj->next;
                 obj->next->prev = obj->prev;
             }
             obj->prev = qlast;
@@ -364,11 +364,11 @@ int response_time_indexer(const dns_message* m)
     obj->next = 0;
     if (qlast)
         qlast->next = obj;
-    qlast           = obj;
+    qlast = obj;
     if (!qfirst)
         qfirst = obj;
     num_queries++;
-    dfprintf(2, "response_time: add %p, %lu/%lu queries", obj, num_queries, max_queries);
+    dfprintf(2, "response_time: add %p, %zu/%zu queries", obj, num_queries, max_queries);
 
     return ret;
 }

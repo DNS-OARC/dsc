@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.10.0
+Version:        2.11.0
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -65,6 +65,26 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Jun 01 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.11.0-1
+- Release 2.11.0
+  * This release updates the built in known TLDs table and adds the optional
+    configuration option `knowntlds_file` to, instead of using the built in
+    table, load the data from a file.
+  * If compiled with only MaxMindDB support then ASN and Country indexer
+    would complain (and exit) that no database has been specified.
+    This release changes the behavior to match that of GeoIP support,
+    making it possible to run without specifying a database.
+  * Other changes:
+    - Fix compile warnings
+    - COPR packaging fixes
+    - `country_indexer`: Fixed typos in log messages (was copied from ASN)
+    - Fix issues and false-positives reported by newer version of scan-build
+  * Commits:
+    e937d1 COPR
+    1382370 country, asn
+    423a813 scanbuild
+    2571b97 Compile warnings
+    4f69447 Known TLDs
 * Thu May 07 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.10.0-1
 - Release 2.10.0
   * This release adds new configuration options to `dnstap_unixsock` to

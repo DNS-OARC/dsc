@@ -43,6 +43,11 @@
 #include "pcap.h"
 #include "compat.h"
 #include "response_time_index.h"
+#include "input_mode.h"
+#include "dnstap.h"
+
+#include "knowntlds.inc"
+
 #if defined(HAVE_LIBGEOIP) && defined(HAVE_GEOIP_H)
 #define HAVE_GEOIP 1
 #include <GeoIP.h>
@@ -51,10 +56,6 @@
 #define HAVE_MAXMINDDB 1
 #include <maxminddb.h>
 #endif
-
-#include "input_mode.h"
-#include "dnstap.h"
-
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
@@ -65,6 +66,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <grp.h>
+#include <ctype.h>
 
 extern int input_mode;
 extern int promisc_flag;
@@ -606,5 +608,70 @@ int set_response_time_bucket_size(const char* s)
     }
     response_time_set_bucket_size(bucket_size);
     dsyslogf(LOG_INFO, "set response time bucket size to %d", bucket_size);
+    return 1;
+}
+
+const char** KnownTLDS = KnownTLDS_static;
+
+int load_knowntlds(const char* file)
+{
+    FILE*  fp;
+    char * buffer        = 0, *p;
+    size_t bufsize       = 0;
+    char** new_KnownTLDS = 0;
+    size_t new_size      = 0;
+
+    if (KnownTLDS != KnownTLDS_static) {
+        dsyslog(LOG_ERR, "Known TLDs already loaded once");
+        return 0;
+    }
+
+    if (!(fp = fopen(file, "r"))) {
+        dsyslogf(LOG_ERR, "unable to open %s", file);
+        return 0;
+    }
+
+    if (!(new_KnownTLDS = xrealloc(new_KnownTLDS, (new_size + 1) * sizeof(char*)))) {
+        dsyslog(LOG_ERR, "out of memory");
+        return 0;
+    }
+    new_KnownTLDS[new_size] = ".";
+    new_size++;
+
+    while (getline(&buffer, &bufsize, fp) > 0) {
+        for (p = buffer; *p; p++) {
+            if (*p == '\r' || *p == '\n') {
+                *p = 0;
+                break;
+            }
+            *p = tolower(*p);
+        }
+        if (buffer[0] == '#') {
+            continue;
+        }
+
+        if (!(new_KnownTLDS = xrealloc(new_KnownTLDS, (new_size + 1) * sizeof(char*)))) {
+            dsyslog(LOG_ERR, "out of memory");
+            return 0;
+        }
+        new_KnownTLDS[new_size] = xstrdup(buffer);
+        if (!new_KnownTLDS[new_size]) {
+            dsyslog(LOG_ERR, "out of memory");
+            return 0;
+        }
+        new_size++;
+    }
+    free(buffer);
+    fclose(fp);
+
+    if (!(new_KnownTLDS = xrealloc(new_KnownTLDS, (new_size + 1) * sizeof(char*)))) {
+        dsyslog(LOG_ERR, "out of memory");
+        return 0;
+    }
+    new_KnownTLDS[new_size] = 0;
+
+    KnownTLDS = (const char**)new_KnownTLDS;
+    dsyslogf(LOG_INFO, "loaded %zd known TLDs from %s", new_size - 1, file);
+
     return 1;
 }

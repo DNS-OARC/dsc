@@ -297,3 +297,9 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #  Control the size of bucket (microseconds) in bucket mode.
 #
 #response_time_bucket_size 100;
+
+# Known TLDs
+#
+#  Load known TLDs from a file, see https://data.iana.org/TLD/tlds-alpha-by-domain.txt
+#
+#knowntlds_file file;
