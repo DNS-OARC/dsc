@@ -64,7 +64,7 @@ void hash_destroy(hashtbl* tbl)
     hashitem *i, *next;
     int       slot;
     for (slot = 0; slot < tbl->modulus; slot++) {
-        for (i = tbl->items[slot]; i; i = next) {
+        for (i = tbl->items[slot]; i;) {
             next = i->next;
             if (tbl->keyfree)
                 tbl->keyfree((void*)i->key);
@@ -72,6 +72,7 @@ void hash_destroy(hashtbl* tbl)
                 tbl->datafree(i->data);
             if (!tbl->use_arena)
                 xfree(i);
+            i = next;
         }
     }
     if (!tbl->use_arena)

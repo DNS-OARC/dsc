@@ -265,7 +265,7 @@ int response_time_indexer(const dns_message* m)
             dfprintf(2, "response_time: found q/r us:%lu, put in bucket %d (%lu-%lu usec)", us, iter, (us / bucket_size) * bucket_size, ((us / bucket_size) + 1) * bucket_size);
             break;
         case response_time_log10: {
-            double d = log10(us);
+            double d = log10((double)us);
             if (d < 0) {
                 dfprintf(1, "response_time: bad log10(%lu) ret %f", us, d);
                 return INTERNAL_ERROR;
@@ -275,7 +275,7 @@ int response_time_indexer(const dns_message* m)
             break;
         }
         case response_time_log2: {
-            double d = log2(us);
+            double d = log2((double)us);
             if (d < 0) {
                 dfprintf(1, "response_time: bad log2(%lu) ret %f", us, d);
                 return INTERNAL_ERROR;

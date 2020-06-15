@@ -152,7 +152,7 @@ static int popular_qtypes_filter(const dns_message* m, const void* ctx)
     case 255:
         return 1;
     default:
-        return 0;
+        break;
     }
     return 0;
 }
@@ -164,7 +164,7 @@ static int aaaa_or_a6_filter(const dns_message* m, const void* ctx)
     case T_A6:
         return 1;
     default:
-        return 0;
+        break;
     }
     return 0;
 }
@@ -217,7 +217,7 @@ static const char* printable_dnsname(const char* name)
     static char buf[MAX_QNAME_SZ];
     int         i;
 
-    for (i = 0; i < sizeof(buf) - 1; name++) {
+    for (i = 0; i < sizeof(buf) - 1;) {
         if (!*name)
             break;
         if (isgraph(*name)) {
@@ -229,6 +229,7 @@ static const char* printable_dnsname(const char* name)
             snprintf(buf + i, sizeof(buf) - i - 1, "%%%02x", (unsigned char)*name);
             i += 3;
         }
+        name++;
     }
     buf[i] = '\0';
     return buf;

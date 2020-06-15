@@ -63,7 +63,7 @@ int ip_proto_iterator(const char** label)
     char buf[1024];
 #endif
     struct protoent  proto;
-    struct protoent* p;
+    struct protoent* p = 0;
     if (NULL == label) {
         next_iter = 0;
         return largest + 1;

@@ -1168,7 +1168,8 @@ int parse_conf(const char* file)
         /*
          * Go to the first non white-space character
          */
-        for (ret = PARSE_CONF_OK, buf = buffer, s = bufsize; *buf && s; buf++, s--) {
+        ret = PARSE_CONF_OK;
+        for (buf = buffer, s = bufsize; *buf && s; buf++, s--) {
             if (*buf != ' ' && *buf != '\t') {
                 if (*buf == '\n' || *buf == '\r') {
                     ret = PARSE_CONF_EMPTY;

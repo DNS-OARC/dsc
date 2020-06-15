@@ -87,7 +87,6 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
              * "(The 10 and 01 combinations are reserved for future use.)"
              */
             return 3; /* reserved label/compression flags */
-            break;
         } else {
             (*off)++;
             len = (size_t)c;
@@ -119,21 +118,17 @@ static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname
     x = rfc1035NameUnpack(buf, len, &offset, qname, MAX_QNAME_SZ);
     if (0 != x)
         return 0;
-#ifndef __clang_analyzer__
     if ('\0' == *qname) {
         *qname       = '.';
         *(qname + 1) = 0;
     }
-#endif
     /* XXX remove special characters from QNAME */
     while ((t = strchr(qname, '\n')))
         *t = ' ';
     while ((t = strchr(qname, '\r')))
         *t = ' ';
-#ifndef __clang_analyzer__
     for (t = qname; *t; t++)
         *t = tolower(*t);
-#endif
     if (offset + 4 > len)
         return 0;
     *qtype  = nptohs(buf + offset);
@@ -232,7 +227,7 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
      */
     while (qdcount > 0 && offset < len) {
         off_t          new_offset;
-        char           t_qname[MAX_QNAME_SZ];
+        char           t_qname[MAX_QNAME_SZ] = { 0 };
         unsigned short t_qtype;
         unsigned short t_qclass;
         new_offset = grok_question(buf, len, offset, t_qname, &t_qtype, &t_qclass);
