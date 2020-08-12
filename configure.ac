@@ -76,6 +76,15 @@ AC_ARG_ENABLE([dnstap], [AS_HELP_STRING([--enable-dnstap], [DNSTAP input support
 ])
 AM_CONDITIONAL([USE_DNSTAP], [test x$use_dnstap = xyes])
 
+# Check --enable-gcov
+AC_ARG_ENABLE([gcov], [AS_HELP_STRING([--enable-gcov], [Enable coverage testing])], [
+  coverage_cflags="--coverage -g -O0 -fno-inline -fno-inline-small-functions -fno-default-inline"
+  AC_MSG_NOTICE([enabling coverage testing... $coverage_cflags])
+  AS_VAR_APPEND(CFLAGS, [" $coverage_cflags"])
+])
+AM_CONDITIONAL([ENABLE_GCOV], [test "x$enable_gcov" != "xno"])
+AM_EXTRA_RECURSIVE_TARGETS([gcov])
+
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [inet_aton])
 AC_CHECK_LIB([nsl], [gethostbyname])
