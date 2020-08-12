@@ -1162,7 +1162,7 @@ int parse_conf(const char* file)
     if (!(fp = fopen(file, "r"))) {
         return 1;
     }
-    while ((ret2 = getline(&buffer, &bufsize, fp)) > 0) {
+    while ((ret2 = getline(&buffer, &bufsize, fp)) > 0 && buffer) {
         memset(tokens, 0, sizeof(conf_token_t) * PARSE_MAX_ARGS);
         line++;
         /*
