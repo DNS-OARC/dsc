@@ -157,7 +157,7 @@ funny_qclass(const dns_message* m)
 static int
 funny_qtype(const dns_message* m)
 {
-    switch (m->qclass) {
+    switch (m->qtype) {
     case T_A:
     case T_NS:
     case T_MD:
