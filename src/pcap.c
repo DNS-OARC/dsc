@@ -380,31 +380,7 @@ pcap_handle_tcp_segment(u_char* segment, int len, uint32_t seq, tcpstate_t* tcps
      * Welcome to reassembly-land.
      */
     /* find the message to which the first byte of this segment belongs */
-    for (m = 0;; m++) {
-        if (m >= MAX_TCP_MSGS) {
-            /* seg does not match any msgbuf; just hold on to it. */
-            dfprintf(1, "pcap_handle_tcp_segment: %s", "seg does not match any msgbuf");
-
-            if (seq - tcpstate->seq_start > MAX_TCP_WINDOW_SIZE) {
-                dfprintf(1, "pcap_handle_tcp_segment: %s", "seg is outside window; discarding");
-                return;
-            }
-            for (s = 0;; s++) {
-                if (s >= MAX_TCP_SEGS) {
-                    dfprintf(1, "pcap_handle_tcp_segment: %s", "out of segbufs");
-                    return;
-                }
-                if (tcpstate->segbuf[s])
-                    continue;
-                tcpstate->segbuf[s]      = xcalloc(1, sizeof(tcp_segbuf_t) + len);
-                tcpstate->segbuf[s]->seq = seq;
-                tcpstate->segbuf[s]->len = len;
-                memcpy(tcpstate->segbuf[s]->buf, segment, len);
-                dfprintf(1, "pcap_handle_tcp_segment: new segbuf %d: seq = %u, len = %d",
-                    s, tcpstate->segbuf[s]->seq, tcpstate->segbuf[s]->len);
-                return;
-            }
-        }
+    for (m = 0; m < MAX_TCP_MSGS; m++) {
         if (!tcpstate->msgbuf[m])
             continue;
         segoff = seq - tcpstate->msgbuf[m]->seq;
@@ -421,6 +397,28 @@ pcap_handle_tcp_segment(u_char* segment, int len, uint32_t seq, tcpstate_t* tcps
             }
             break;
         }
+    }
+    if (m >= MAX_TCP_MSGS) {
+        /* seg does not match any msgbuf; just hold on to it. */
+        dfprintf(1, "pcap_handle_tcp_segment: %s", "seg does not match any msgbuf");
+
+        if (seq - tcpstate->seq_start > MAX_TCP_WINDOW_SIZE) {
+            dfprintf(1, "pcap_handle_tcp_segment: %s", "seg is outside window; discarding");
+            return;
+        }
+        for (s = 0; s < MAX_TCP_SEGS; s++) {
+            if (tcpstate->segbuf[s])
+                continue;
+            tcpstate->segbuf[s]      = xcalloc(1, sizeof(tcp_segbuf_t) + len);
+            tcpstate->segbuf[s]->seq = seq;
+            tcpstate->segbuf[s]->len = len;
+            memcpy(tcpstate->segbuf[s]->buf, segment, len);
+            dfprintf(1, "pcap_handle_tcp_segment: new segbuf %d: seq = %u, len = %d",
+                s, tcpstate->segbuf[s]->seq, tcpstate->segbuf[s]->len);
+            return;
+        }
+        dfprintf(1, "pcap_handle_tcp_segment: %s", "out of segbufs");
+        return;
     }
 
     /* Reassembly algorithm adapted from RFC 815. */
@@ -450,15 +448,15 @@ pcap_handle_tcp_segment(u_char* segment, int len, uint32_t seq, tcpstate_t* tcps
         if (segoff > hole_start) {
             /* create a new hole before the segment */
             int j;
-            for (j = 0;; j++) {
-                if (j == MAX_TCP_HOLES) {
-                    dfprintf(1, "pcap_handle_tcp_segment: %s", "out of hole descriptors");
-                    return;
-                }
+            for (j = 0; j < MAX_TCP_HOLES; j++) {
                 if (tcpstate->msgbuf[m]->hole[j].len == 0) {
                     newhole = &tcpstate->msgbuf[m]->hole[j];
                     break;
                 }
+            }
+            if (j >= MAX_TCP_HOLES) {
+                dfprintf(1, "pcap_handle_tcp_segment: %s", "out of hole descriptors");
+                return;
             }
             tcpstate->msgbuf[m]->holes++;
             newhole->start = hole_start;

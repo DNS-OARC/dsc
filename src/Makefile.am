@@ -1,5 +1,5 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in $(srcdir)/config.h.in
-CLEANFILES = dsc.conf.sample dsc.1 dsc.conf.5
+CLEANFILES = dsc.conf.sample dsc.1 dsc.conf.5 *.gcda *.gcno *.gcov
 
 SUBDIRS = test
 
@@ -71,3 +71,10 @@ dsc.1.html: dsc.1
 
 dsc.conf.5.html: dsc.conf.5
 	cat dsc.conf.5 | groff -mandoc -Thtml > dsc.conf.5.html
+
+if ENABLE_GCOV
+gcov-local:
+	for src in $(dsc_SOURCES); do \
+	  gcov -l -r -s "$(srcdir)" "$$src"; \
+	done
+endif

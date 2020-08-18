@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.11.0
+Version:        2.11.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -65,6 +65,20 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Aug 18 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.11.1-1
+- Release 2.11.1
+  * This release fixes a 17-year old code cut&paste mistake in the
+    classification indexer, until now it's been classifying funny query
+    types based on the query class. This fix was sent in by Jim Hague
+    (Sinodun), thanks Jim!
+  * Other changes are based on code analysis reports and setup for code
+    coverage.
+  * Commits:
+    8d4763c Correct funny-qtype classification.
+    a1dd55e getline
+    29bd143 Coverage
+    685e504 SonarCloud
+    f759515 Badges
 * Mon Jun 01 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.11.0-1
 - Release 2.11.0
   * This release updates the built in known TLDs table and adds the optional

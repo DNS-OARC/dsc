@@ -112,12 +112,16 @@ rfc1918_ptr(const dns_message* m)
 {
     char*        tok = 0;
     char*        t;
-    char         q[128];
+    char         q[1024];
     unsigned int i = 0;
     if (m->qtype != T_PTR)
         return 0;
-    strncpy(q, m->qname, sizeof(q) - 1);
-    q[sizeof(q) - 1] = '\0';
+    q[sizeof(q) - 1] = 0;
+    strncpy(q, m->qname, sizeof(q));
+    if (q[sizeof(q) - 1] != 0) {
+        // String was truncated
+        return 0;
+    }
     if (NULL == (t = strstr(q, ".in-addr.arpa")))
         return 0;
     *t = '\0';
@@ -144,9 +148,7 @@ funny_qclass(const dns_message* m)
     case C_NONE:
     case C_HS:
         return 0;
-        break;
     default:
-        return CLASS_FUNNY_QCLASS;
         break;
     }
     return CLASS_FUNNY_QCLASS;
@@ -155,7 +157,7 @@ funny_qclass(const dns_message* m)
 static int
 funny_qtype(const dns_message* m)
 {
-    switch (m->qclass) {
+    switch (m->qtype) {
     case T_A:
     case T_NS:
     case T_MD:
@@ -199,9 +201,7 @@ funny_qtype(const dns_message* m)
     case T_MAILA:
     case T_ANY:
         return 0;
-        break;
     default:
-        return CLASS_FUNNY_QTYPE;
         break;
     }
     return CLASS_FUNNY_QTYPE;

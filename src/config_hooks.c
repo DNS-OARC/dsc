@@ -638,7 +638,7 @@ int load_knowntlds(const char* file)
     new_KnownTLDS[new_size] = ".";
     new_size++;
 
-    while (getline(&buffer, &bufsize, fp) > 0) {
+    while (getline(&buffer, &bufsize, fp) > 0 && buffer) {
         for (p = buffer; *p; p++) {
             if (*p == '\r' || *p == '\n') {
                 *p = 0;
