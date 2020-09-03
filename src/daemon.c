@@ -112,8 +112,12 @@ void daemonize(void)
         dsyslogf(LOG_ERR, "fork failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
         exit(1);
     }
-    if (pid > 0)
+    if (pid > 0) {
+#ifdef GCOV_FLUSH
+        __gcov_flush();
+#endif
         _exit(0);
+    }
     if (setsid() < 0)
         dsyslogf(LOG_ERR, "setsid failed: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
     closelog();
@@ -611,6 +615,9 @@ int main(int argc, char* argv[])
             sigaction(SIGINT, &action, NULL);
 
             dump_reports();
+#ifdef GCOV_FLUSH
+            __gcov_flush();
+#endif
             _exit(0);
         }
 
