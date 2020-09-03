@@ -8,6 +8,28 @@
     </ifname>
   </data>
 </array>
+<array name="third_ld_vs_rcode" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="Rcode"/>
+  <dimension number="2" type="ThirdLD"/>
+  <data>
+    <Rcode val="0">
+      <ThirdLD val="216.in-addr.arpa" count="2"/>
+      <ThirdLD val="www.google.se" count="1"/>
+      <ThirdLD val="www.google.com" count="1"/>
+    </Rcode>
+  </data>
+</array>
+<array name="second_ld_vs_rcode" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="Rcode"/>
+  <dimension number="2" type="SecondLD"/>
+  <data>
+    <Rcode val="0">
+      <SecondLD val="in-addr.arpa" count="2"/>
+      <SecondLD val="google.com" count="1"/>
+      <SecondLD val="google.se" count="1"/>
+    </Rcode>
+  </data>
+</array>
 <array name="server" dimensions="2" start_time="1458044655" stop_time="1458044657">
   <dimension number="1" type="All"/>
   <dimension number="2" type="IP"/>
@@ -81,6 +103,19 @@
     <Direction val="else">
       <IPProto val="udp" count="8"/>
     </Direction>
+  </data>
+</array>
+<array name="client_port" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Port"/>
+  <data>
+    <All val="ALL">
+      <Port val="59978" count="4"/>
+      <Port val="0" count="1"/>
+      <Port val="53" count="1"/>
+      <Port val="44275" count="1"/>
+      <Port val="57483" count="1"/>
+    </All>
   </data>
 </array>
 <array name="client_port_range" dimensions="2" start_time="1458044655" stop_time="1458044657">

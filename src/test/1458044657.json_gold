@@ -15,6 +15,38 @@
   ]
 },
 {
+  "name": "third_ld_vs_rcode",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Rcode", "ThirdLD" ],
+  "data": [
+    {
+      "Rcode": "0",
+      "ThirdLD": [
+        { "val": "216.in-addr.arpa", "count": 2 },
+        { "val": "www.google.se", "count": 1 },
+        { "val": "www.google.com", "count": 1 }
+      ]
+    }
+  ]
+},
+{
+  "name": "second_ld_vs_rcode",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Rcode", "SecondLD" ],
+  "data": [
+    {
+      "Rcode": "0",
+      "SecondLD": [
+        { "val": "in-addr.arpa", "count": 2 },
+        { "val": "google.com", "count": 1 },
+        { "val": "google.se", "count": 1 }
+      ]
+    }
+  ]
+},
+{
   "name": "server",
   "start_time": 1458044655,
   "stop_time": 1458044657,
@@ -128,6 +160,24 @@
       "Direction": "else",
       "IPProto": [
         { "val": "udp", "count": 8 }
+      ]
+    }
+  ]
+},
+{
+  "name": "client_port",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Port" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Port": [
+        { "val": "59978", "count": 4 },
+        { "val": "0", "count": 1 },
+        { "val": "53", "count": 1 },
+        { "val": "44275", "count": 1 },
+        { "val": "57483", "count": 1 }
       ]
     }
   ]
