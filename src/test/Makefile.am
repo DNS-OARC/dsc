@@ -6,11 +6,12 @@ CLEANFILES = test*.log test*.trs \
   1463589826.dscdata.xml \
   test.dnstap.dist 1573730567.dscdata.xml \
   mmdb.conf.run \
-  dns6.conf.run dns6.pcap.dist 1543333920.dscdata.xml
+  dns6.conf.run dns6.pcap.dist 1543333920.dscdata.xml \
+  dnso1tcp.pcap.dist 1515583363.dscdata.xml
 
 EXTRA_DIST =
 
-TESTS = test1.sh test2.sh test3.sh test4.sh test6.sh test7.sh
+TESTS = test1.sh test2.sh test3.sh test4.sh test6.sh test7.sh test8.sh
 
 if USE_DNSTAP
 TESTS += test5.sh
@@ -44,6 +45,11 @@ test7.sh: dns6.pcap.dist
 dns6.pcap.dist: dns6.pcap
 	ln -s "$(srcdir)/dns6.pcap" dns6.pcap.dist
 
+test8.sh: dnso1tcp.pcap.dist
+
+dnso1tcp.pcap.dist: dnso1tcp.pcap
+	ln -s "$(srcdir)/dnso1tcp.pcap" dnso1tcp.pcap.dist
+
 EXTRA_DIST += $(TESTS) \
   1458044657.conf 1458044657.pcap 1458044657.json_gold 1458044657.xml_gold \
   pid.conf pid.pcap \
@@ -55,4 +61,5 @@ EXTRA_DIST += $(TESTS) \
   response_time3.conf response_time3.gold \
   test.dnstap 1573730567.conf 1573730567.gold \
   mmdb.conf mmdb.gold \
-  dns6.pcap dns6.conf dns6.gold
+  dns6.pcap dns6.conf dns6.gold \
+  dnso1tcp.pcap dnso1tcp.conf dnso1tcp.gold
