@@ -391,6 +391,7 @@ void asn_init(void)
                 exit(1);
             }
             dsyslog(LOG_INFO, "asn_index: Sucessfully initialized MaxMind ASN");
+            have_mmdb = 1;
         } else {
             dsyslog(LOG_INFO, "asn_index: No database loaded for MaxMind ASN");
         }

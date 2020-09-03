@@ -15,6 +15,102 @@
   ]
 },
 {
+  "name": "server",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "IP" ],
+  "data": [
+    {
+      "All": "ALL",
+      "IP": [
+        { "val": "8.8.8.8", "count": 8 }
+      ]
+    }
+  ]
+},
+{
+  "name": "qr_aa_bits",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "Direction", "QRAABits" ],
+  "data": [
+    {
+      "Direction": "sent",
+      "QRAABits": []
+    },
+    {
+      "Direction": "recv",
+      "QRAABits": []
+    },
+    {
+      "Direction": "else",
+      "QRAABits": [
+        { "val": "cXI9MCxhYT0w", "base64": true, "count": 4 },
+        { "val": "cXI9MSxhYT0w", "base64": true, "count": 4 }
+      ]
+    }
+  ]
+},
+{
+  "name": "qname",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Name" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Name": [
+        { "val": "100.209.58.216.in-addr.arpa", "count": 2 },
+        { "val": "www.google.se", "count": 2 },
+        { "val": "131.209.58.216.in-addr.arpa", "count": 2 },
+        { "val": "www.google.com", "count": 2 }
+      ]
+    }
+  ]
+},
+{
+  "name": "qclass",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Class" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Class": [
+        { "val": "1", "count": 8 }
+      ]
+    }
+  ]
+},
+{
+  "name": "dns_ip_version",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Version" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Version": [
+        { "val": "IPv4", "count": 8 }
+      ]
+    }
+  ]
+},
+{
+  "name": "ip_version",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "Version" ],
+  "data": [
+    {
+      "All": "ALL",
+      "Version": [
+        { "val": "IPv4", "count": 8 }
+      ]
+    }
+  ]
+},
+{
   "name": "direction_vs_ipproto",
   "start_time": 1458044655,
   "stop_time": 1458044657,
@@ -86,6 +182,20 @@
   "stop_time": 1458044657,
   "dimensions": [ "All", "TLD" ],
   "data": [
+  ]
+},
+{
+  "name": "tc_bit",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "TC" ],
+  "data": [
+    {
+      "All": "ALL",
+      "TC": [
+        { "val": "clr", "count": 8 }
+      ]
+    }
   ]
 },
 {
