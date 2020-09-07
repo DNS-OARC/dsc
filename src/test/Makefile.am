@@ -7,11 +7,14 @@ CLEANFILES = test*.log test*.trs \
   test.dnstap.dist 1573730567.dscdata.xml \
   mmdb.conf.run \
   dns6.conf.run dns6.pcap.dist 1543333920.dscdata.xml \
-  dnso1tcp.pcap.dist 1515583363.dscdata.xml
+  dnso1tcp.pcap.dist 1515583363.dscdata.xml \
+  test9.out \
+  test10.conf test10.out
 
 EXTRA_DIST =
 
-TESTS = test1.sh test2.sh test3.sh test4.sh test6.sh test7.sh test8.sh
+TESTS = test1.sh test2.sh test3.sh test4.sh test6.sh test7.sh test8.sh \
+  test9.sh test10.sh
 
 if USE_DNSTAP
 TESTS += test5.sh
@@ -50,6 +53,8 @@ test8.sh: dnso1tcp.pcap.dist
 dnso1tcp.pcap.dist: dnso1tcp.pcap
 	ln -s "$(srcdir)/dnso1tcp.pcap" dnso1tcp.pcap.dist
 
+test9.sh: test.dnstap.dist 1458044657.pcap.dist
+
 EXTRA_DIST += $(TESTS) \
   1458044657.conf 1458044657.pcap 1458044657.json_gold 1458044657.xml_gold \
   pid.conf pid.pcap \
@@ -62,4 +67,5 @@ EXTRA_DIST += $(TESTS) \
   test.dnstap 1573730567.conf 1573730567.gold \
   mmdb.conf mmdb.gold \
   dns6.pcap dns6.conf dns6.gold \
-  dnso1tcp.pcap dnso1tcp.conf dnso1tcp.gold
+  dnso1tcp.pcap dnso1tcp.conf dnso1tcp.gold \
+  test9/bpf_vlan_tag_order.conf test9/bpf_vlan_tag_order.grep test9/dataset_already_exists.conf test9/dataset_already_exists.grep test9/dataset_response_time.conf test9/dataset_response_time.grep test9/dns_port.conf test9/dns_port.grep test9/dnstap_input_mode_set.conf test9/dnstap_input_mode_set.grep test9/dnstap_invalid_port_tcp.conf test9/dnstap_invalid_port_tcp.grep test9/dnstap_invalid_port_udp.conf test9/dnstap_invalid_port_udp.grep test9/dnstap_only_one.conf test9/dnstap_only_one.grep test9/geoip_backend2.conf test9/geoip_backend.conf test9/geoip.conf test9/interface_input_mode_set.conf test9/interface_input_mode_set.grep test9/knowntlds.conf test9/knowntlds.grep test9/output_format.conf test9/output_format.grep test9/response_time_full_mode.conf test9/response_time_full_mode.grep test9/response_time_max_sec_mode.conf test9/response_time_max_sec_mode.grep test9/response_time_mode.conf test9/response_time_mode.grep test9/run_dir.conf test9/run_dir.grep
