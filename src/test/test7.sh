@@ -20,6 +20,8 @@ output_format XML;
 asn_indexer_backend maxminddb;
 country_indexer_backend maxminddb;
 maxminddb_asn \"$dir/GeoLite2-ASN.mmdb\";
+maxminddb_country \"$dir/GeoLite2-Country.mmdb\";
+maxminddb_asn \"$dir/GeoLite2-ASN.mmdb\";
 maxminddb_country \"$dir/GeoLite2-Country.mmdb\";" >> dns6.conf.run
 
 rm -f 1543333920.dscdata.xml
