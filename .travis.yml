@@ -26,3 +26,4 @@ script:
   - ../configure --enable-warn-all --enable-dnstap
   - make
   - make test
+  - cat src/test/test*.sh.log
