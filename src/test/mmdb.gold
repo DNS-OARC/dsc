@@ -1,0 +1,30 @@
+<dscdata>
+<array name="pcap_stats" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="ifname"/>
+  <dimension number="2" type="pcap_stat"/>
+  <data>
+    <ifname val="Li8xNDU4MDQ0NjU3LnBjYXAuZGlzdA==" base64="1">
+      <pcap_stat val="pkts_captured" count="8"/>
+    </ifname>
+  </data>
+</array>
+<array name="asn" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="ASN"/>
+  <data>
+    <All val="ALL">
+      <ASN val="PzQ=" base64="1" count="8"/>
+    </All>
+  </data>
+</array>
+<array name="cc" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="CountryCode"/>
+  <data>
+    <All val="ALL">
+      <CountryCode val="PzQ=" base64="1" count="4"/>
+      <CountryCode val="US" count="4"/>
+    </All>
+  </data>
+</array>
+</dscdata>

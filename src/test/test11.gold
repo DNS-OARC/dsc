@@ -1,0 +1,21 @@
+setting current directory to .
+minfree_bytes 5000000
+dns_port 53
+Setting pcap buffer size to: 4194304
+Setting pcap-thread timeout to: 100
+dropping ip fragments
+Opening interface ./1458044657.pcap.dist
+BPF program is: udp port 53
+BPF program is: udp port 53
+PID file is: test11.pid
+PID file is: test11.pid
+bpf_vlan_tag_byte_order is host
+bpf_vlan_tag_byte_order is net
+match_vlan 100
+match_vlan 200
+not waiting on interval sync to start
+Setting statistics interval to: 600
+dump_reports_on_exit
+writing PID to test11.pid
+Running
+renaming to 1458044657.dscdata.xml

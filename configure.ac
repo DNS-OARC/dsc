@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.11.1], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.11.2], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
@@ -54,7 +54,7 @@ AC_ARG_WITH([extra-cflags], [AS_HELP_STRING([--with-extra-cflags=CFLAGS], [Add e
 ])
 
 # Check --with-extra-ldflags
-AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=CFLAGS], [Add extra LDFLAGS])], [
+AC_ARG_WITH([extra-ldflags], [AS_HELP_STRING([--with-extra-ldflags=LDFLAGS], [Add extra LDFLAGS])], [
   AC_MSG_NOTICE([appending extra LDFLAGS... $withval])
   AS_VAR_APPEND(LDFLAGS, [" $withval"])
 ])
@@ -80,7 +80,7 @@ AM_CONDITIONAL([USE_DNSTAP], [test x$use_dnstap = xyes])
 AC_ARG_ENABLE([gcov], [AS_HELP_STRING([--enable-gcov], [Enable coverage testing])], [
   coverage_cflags="--coverage -g -O0 -fno-inline -fno-inline-small-functions -fno-default-inline"
   AC_MSG_NOTICE([enabling coverage testing... $coverage_cflags])
-  AS_VAR_APPEND(CFLAGS, [" $coverage_cflags"])
+  AS_VAR_APPEND(CFLAGS, [" -DGCOV_FLUSH=1 $coverage_cflags"])
 ])
 AM_CONDITIONAL([ENABLE_GCOV], [test "x$enable_gcov" != "xno"])
 AM_EXTRA_RECURSIVE_TARGETS([gcov])

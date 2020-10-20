@@ -1,3 +1,18 @@
+2020-10-20 Jerry Lundström
+
+    Release 2.11.2
+
+    This release fixes a bug in `asn_indexer` that didn't enabled the usage
+    of MaxMindDB after successful initiation. Other changes include a typo
+    fix in `configure` and a lot of coverage tests.
+
+    395b11a Travis, configure
+    ffea9ed Tests
+    8b0bebd Tests
+    09f8174 Config tests
+    d1514d4 Coverage
+    66b018c Coverage, ASN indexer
+
 2020-08-18 Jerry Lundström
 
     Release 2.11.1

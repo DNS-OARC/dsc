@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.11.1
+Version:        2.11.2
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -65,6 +65,18 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Oct 20 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.11.2-1
+- Release 2.11.2
+  * This release fixes a bug in `asn_indexer` that didn't enabled the usage
+    of MaxMindDB after successful initiation. Other changes include a typo
+    fix in `configure` and a lot of coverage tests.
+  * Commits:
+    395b11a Travis, configure
+    ffea9ed Tests
+    8b0bebd Tests
+    09f8174 Config tests
+    d1514d4 Coverage
+    66b018c Coverage, ASN indexer
 * Tue Aug 18 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.11.1-1
 - Release 2.11.1
   * This release fixes a 17-year old code cut&paste mistake in the
