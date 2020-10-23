@@ -18,8 +18,9 @@ More information about DSC/DSP may be found here:
 Issues should be reported here:
 - https://github.com/DNS-OARC/dsc/issues
 
-Mailinglist:
-- https://lists.dns-oarc.net/mailman/listinfo/dsc
+General support and discussion:
+- Mattermost: https://chat.dns-oarc.net/community/channels/oarc-software
+- mailing-list: https://lists.dns-oarc.net/mailman/listinfo/dsc
 
 ## Dependencies
 
