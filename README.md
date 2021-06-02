@@ -1,6 +1,6 @@
 # DNS Statistics Collector
 
-[![Build Status](https://travis-ci.com/DNS-OARC/dsc.svg?branch=develop)](https://travis-ci.com/DNS-OARC/dsc) [![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/dsc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/dsc/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/dsc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/dsc/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc)
 
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring
 statistics from busy DNS servers.  It uses a distributed architecture with
