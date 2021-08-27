@@ -2,7 +2,7 @@ Source: dsc
 Section: net
 Priority: optional
 Maintainer: Jerry Lundström <lundstrom.jerry@gmail.com>
-Build-Depends: debhelper (>= 8.0.0), build-essential, automake, autoconf,
+Build-Depends: debhelper (>= 10), build-essential, automake, autoconf,
  libpcap-dev, libproc-pid-file-perl, netbase, libgeoip-dev, pkg-config,
  libmaxminddb-dev, libdnswire-dev, libuv1-dev
 Standards-Version: 3.9.4
