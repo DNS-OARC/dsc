@@ -133,7 +133,8 @@ Note that this directive must go before the \fBinterface\fR directive.
 \fBinterface\fR IFACE | FILE ;
 The interface name to sniff packets from or a pcap file to read packets
 from.
-You may specify multiple interfaces.
+You may specify multiple interfaces by repeating the \fBinterface\fR line
+any number of times.
 
 Under Linux (kernel v2.2+) libpcap can use an "any" interface which
 will include any interfaces the host has but these interfaces will
