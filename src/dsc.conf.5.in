@@ -236,8 +236,9 @@ to more then a minute you can use with option to begin capture right
 away.
 .TP
 \fBoutput_format\fR FORMAT ;
-Specify the output format, can be give multiple times to output in more
-then one format.
+Specify the output format.
+You may specify multiple formats by repeating the \fBoutput_format\fR line
+any number of times.
 Default output format is XML, see section DATA FORMATS and FILE NAMING
 CONVENTIONS.
 .TP
