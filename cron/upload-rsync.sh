@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2008-2020, OARC, Inc.
+# Copyright (c) 2008-2022, OARC, Inc.
 # Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
 # Copyright (c) 2003-2007, The Measurement Factory, Inc.
 # All rights reserved.
