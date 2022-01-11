@@ -41,7 +41,7 @@
       "SecondLD": [
         { "val": "in-addr.arpa", "count": 2 },
         { "val": "google.com", "count": 1 },
-        { "val": "google.se", "count": 1 }
+        { "val": "www.google.se", "count": 1 }
       ]
     }
   ]
@@ -349,12 +349,14 @@
     {
       "Class": "ok",
       "ClientSubnet": [
-        { "val": "172.17.0.0", "count": 4 }
+        { "val": "172.17.0.0", "count": 3 }
       ]
     },
     {
       "Class": "non-auth-tld",
-      "ClientSubnet": []
+      "ClientSubnet": [
+        { "val": "172.17.0.0", "count": 1 }
+      ]
     }
   ]
 },
@@ -391,7 +393,7 @@
       "Qtype": "1",
       "TLD": [
         { "val": "com", "count": 1 },
-        { "val": "se", "count": 1 }
+        { "val": "google.se", "count": 1 }
       ]
     },
     {

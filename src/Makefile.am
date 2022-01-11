@@ -8,12 +8,14 @@ AM_CFLAGS = -I$(srcdir) \
   $(libmaxminddb_CFLAGS) \
   $(libdnswire_CFLAGS) $(libuv_CFLAGS)
 
-EXTRA_DIST = dsc.sh dsc.conf.sample.in dsc.1.in dsc.conf.5.in
+EXTRA_DIST = dsc.sh dsc.conf.sample.in dsc.1.in dsc.conf.5.in \
+  dsc-psl-convert.1.in
 
 etcdir = $(sysconfdir)/dsc
 etc_DATA = dsc.conf.sample
 
 bin_PROGRAMS = dsc
+dist_bin_SCRIPTS = dsc-psl-convert
 dsc_SOURCES = asn_index.c certain_qnames_index.c client_index.c \
   client_subnet_index.c compat.c config_hooks.c country_index.c daemon.c \
   dns_ip_version_index.c dns_message.c dns_protocol.c dns_source_port_index.c \
@@ -24,7 +26,7 @@ dsc_SOURCES = asn_index.c certain_qnames_index.c client_index.c \
   parse_conf.c pcap.c qclass_index.c qname_index.c qnamelen_index.c \
   qr_aa_bits_index.c qtype_index.c query_classification_index.c rcode_index.c \
   rd_bit_index.c server_ip_addr_index.c tc_bit_index.c tld_index.c \
-  transport_index.c xmalloc.c response_time_index.c \
+  transport_index.c xmalloc.c response_time_index.c tld_list.c \
   ext/base64.c ext/lookup3.c \
   pcap_layers/pcap_layers.c \
   pcap-thread/pcap_thread.c \
@@ -38,13 +40,13 @@ dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   parse_conf.h pcap.h qclass_index.h qname_index.h qnamelen_index.h \
   qr_aa_bits_index.h qtype_index.h query_classification_index.h rcode_index.h \
   rd_bit_index.h server_ip_addr_index.h syslog_debug.h tc_bit_index.h \
-  tld_index.h transport_index.h xmalloc.h response_time_index.h \
+  tld_index.h transport_index.h xmalloc.h response_time_index.h tld_list.h \
   pcap_layers/byteorder.h pcap_layers/pcap_layers.h \
   pcap-thread/pcap_thread.h \
   dnstap.h input_mode.h knowntlds.inc
 dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS) \
   $(libdnswire_LIBS) $(libuv_LIBS)
-man1_MANS = dsc.1
+man1_MANS = dsc.1 dsc-psl-convert.1
 man5_MANS = dsc.conf.5
 
 dsc.conf.sample: dsc.conf.sample.in Makefile
@@ -58,6 +60,12 @@ dsc.1: dsc.1.in Makefile
   -e 's,[@]PACKAGE_BUGREPORT[@],$(PACKAGE_BUGREPORT),g' \
   -e 's,[@]etcdir[@],$(etcdir),g' \
   < $(srcdir)/dsc.1.in > dsc.1
+
+dsc-psl-convert.1: dsc-psl-convert.1.in Makefile
+	sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
+  -e 's,[@]PACKAGE_URL[@],$(PACKAGE_URL),g' \
+  -e 's,[@]PACKAGE_BUGREPORT[@],$(PACKAGE_BUGREPORT),g' \
+  < $(srcdir)/dsc-psl-convert.1.in > dsc-psl-convert.1
 
 dsc.conf.5: dsc.conf.5.in Makefile
 	sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \

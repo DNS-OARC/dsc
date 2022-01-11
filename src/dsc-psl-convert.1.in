@@ -1,0 +1,126 @@
+.\" Copyright (c) 2008-2022, OARC, Inc.
+.\" Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+.\" Copyright (c) 2003-2007, The Measurement Factory, Inc.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in
+.\"    the documentation and/or other materials provided with the
+.\"    distribution.
+.\"
+.\" 3. Neither the name of the copyright holder nor the names of its
+.\"    contributors may be used to endorse or promote products derived
+.\"    from this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+.\" "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+.\" LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+.\" FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+.\" COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+.\" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+.\" BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+.\" CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+.\" ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.TH dsc-psl-convert 1 "@PACKAGE_VERSION@" "DNS Statistics Collector"
+.SH NAME
+dsc-psl-convert \- Convert Public Suffix List (PSL) to DSC TLD List
+.SH SYNOPSIS
+.B dsc-psl-convert
+[
+.B options
+]
+[
+.I PSL file
+]
+.SH DESCRIPTION
+Convert Public Suffix List (PSL) to DSC TLD List (stdout).
+
+If the PSL is not specified then it will use the one installed on the system,
+for example on Debian/Ubuntu the package publicsuffix will be installed
+in /usr/share/publicsuffix.
+
+If "-" is given as file then it will read from stdin.
+
+The PSL can also be downloaded from https://publicsuffix.org/ .
+
+The PSL will be converted to the TLD list format (see dsc.conf(5)) as follows:
+.RS
+.TP
+* Exceptions (!name) are ignored
+.TP
+* Singel label suffixes are ignored
+.TP
+* Wildcards (*.) are removed before processing
+.TP
+* All labels will be encoded in IDN/punycode
+.RE
+.SH OPTIONS
+.TP
+.B \-\-all
+Include all names found in the PSL file.
+Default is to stop after ICANN domains (===END ICANN DOMAINS===).
+.TP
+.B \-\-no\-skip\-idna\-err
+Report errors when trying to convert international domain names into ASCII
+(punycode).
+Default is to ignore these errors.
+.TP
+.BR \-h "|" \-\-help
+Show help and exit.
+.SH OUTPUT FORMAT
+The output format that is used for DSC's
+.I tld_list
+conf option is simply one line per suffix.
+It also supports commenting out an entry with #.
+
+For example:
+
+.EX
+  co.uk
+  net.au
+  #net.cn
+.EE
+.SH EXAMPLE SETUP
+This example fetches the Public Suffix List and converts it in-place to
+a DSC TLD list, stores it in /etc/dsc and configures DSC to use that.
+
+.EX
+  wget -O - https://publicsuffix.org/list/public_suffix_list.dat | \\
+    dsc-psl-convert - > /etc/dsc/tld.list
+  echo "tld_list /etc/dsc/tld.list;" >> /etc/dsc/dsc.conf
+.EE
+.SH "SEE ALSO"
+dsc(1), dsc.conf(5)
+.SH AUTHORS
+Jerry Lundström, DNS-OARC
+.LP
+Maintained by DNS-OARC
+.LP
+.RS
+.I https://www.dns-oarc.net/tools/dsc
+.RE
+.LP
+.SH BUGS
+For issues and feature requests please use:
+.LP
+.RS
+\fI@PACKAGE_URL@\fP
+.RE
+.LP
+For question and help please use:
+.LP
+.RS
+\fI@PACKAGE_BUGREPORT@\fP
+.RE
+.LP

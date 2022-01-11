@@ -80,5 +80,6 @@ int  set_response_time_max_seconds(const char* s);
 int  set_response_time_max_sec_mode(const char* s);
 int  set_response_time_bucket_size(const char* s);
 int  load_knowntlds(const char* file);
+int  load_tld_list(const char* file);
 
 #endif /* __dsc_config_hooks_h */

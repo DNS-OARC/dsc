@@ -26,7 +26,7 @@
     <Rcode val="0">
       <SecondLD val="in-addr.arpa" count="2"/>
       <SecondLD val="google.com" count="1"/>
-      <SecondLD val="google.se" count="1"/>
+      <SecondLD val="www.google.se" count="1"/>
     </Rcode>
   </data>
 </array>
@@ -228,9 +228,10 @@
   <dimension number="2" type="ClientSubnet"/>
   <data>
     <Class val="ok">
-      <ClientSubnet val="172.17.0.0" count="4"/>
+      <ClientSubnet val="172.17.0.0" count="3"/>
     </Class>
     <Class val="non-auth-tld">
+      <ClientSubnet val="172.17.0.0" count="1"/>
     </Class>
   </data>
 </array>
@@ -254,7 +255,7 @@
   <data>
     <Qtype val="1">
       <TLD val="com" count="1"/>
-      <TLD val="se" count="1"/>
+      <TLD val="google.se" count="1"/>
     </Qtype>
     <Qtype val="12">
       <TLD val="arpa" count="2"/>
