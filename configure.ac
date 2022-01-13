@@ -151,6 +151,5 @@ AC_CONFIG_FILES([
   Makefile
   src/Makefile
   src/test/Makefile
-  cron/Makefile
 ])
 AC_OUTPUT

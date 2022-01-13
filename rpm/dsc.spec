@@ -17,8 +17,6 @@ BuildRequires:  libmaxminddb-devel
 BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel
 %endif
-BuildRequires:  perl
-BuildRequires:  perl(Proc::PID::File)
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
@@ -26,8 +24,6 @@ BuildRequires:  pkgconfig
 BuildRequires:  dnswire-devel
 BuildRequires:  libuv-devel
 BuildRequires:  python3
-Requires:       perl
-Requires:       perl(Proc::PID::File)
 Requires:       python3
 
 %description
@@ -60,7 +56,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %config %{_sysconfdir}/*
 %{_bindir}/*
-%{_libexecdir}/*
 %{_datadir}/doc/*
 %{_mandir}/man1/*
 %{_mandir}/man5/*
