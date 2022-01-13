@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.11.2
+Version:        2.12.0
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -62,6 +62,27 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Jan 13 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 2.12.0-1
+- Release 2.12.0
+  * This release adds a new conf option `tld_list` to control what DSC
+    considers are TLDs, and a script to convert the Public Suffix List to
+    this format (see `man dsc-psl-convert` for more information).
+  * For example, using this option will allow DSC to gather statistics on
+    domains like `co.uk` and `net.au` that would otherwise be counted as
+    `uk` and `au`.
+  * The release also updates the man-pages, clarifying how to use multiple
+    `interface` and other similar options. And removes the deprecated cron
+    upload scripts.
+  * Commits:
+    e779a87 Remove upload scripts
+    2880f93 PSL TLD list
+    ea04022 Update Copyright and known TLDs
+    5cbc7a4 Output format
+    b7e6c35 Doc
+    e66dae4 dh_auto_test
+    6a3e817 debhelper
+    89d033f Bye Travis
+    fa1c179 Mattermost
 * Tue Oct 20 2020 Jerry Lundström <lundstrom.jerry@gmail.com> 2.11.2-1
 - Release 2.11.2
   * This release fixes a bug in `asn_indexer` that didn't enabled the usage
