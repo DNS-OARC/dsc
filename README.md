@@ -32,22 +32,17 @@ dependency on the GeoIP library (for the `asn` and `country` indexer).
 
 To install the dependencies under Debian/Ubuntu:
 ```
-apt-get install -y libpcap-dev libproc-pid-file-perl
+apt-get install -y libpcap-dev
 ```
 
 To install the dependencies under CentOS (with EPEL enabled):
 ```
-yum install -y libpcap-devel perl-Proc-PID-File
+yum install -y libpcap-devel
 ```
 
 To install the dependencies under FreeBSD 10+ using `pkg`:
 ```
-pkg install -y libpcap p5-Proc-PID-File
-```
-
-To install the dependencies under OpenBSD 5+ using `pkg_add`:
-```
-pkg_add p5-Proc-PID-File
+pkg install -y libpcap
 ```
 
 NOTE: It is recommended to install the PCAP library from source/ports on

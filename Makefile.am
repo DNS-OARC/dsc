@@ -4,7 +4,7 @@ MAINTAINERCLEANFILES = $(srcdir)/Makefile.in \
     $(srcdir)/src/config.h.in~ \
     $(srcdir)/configure
 
-SUBDIRS = src cron
+SUBDIRS = src
 
 dist_doc_DATA = README.md CHANGES LICENSE UPGRADE.md
 
