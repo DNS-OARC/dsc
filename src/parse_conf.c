@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020, OARC, Inc.
+ * Copyright (c) 2008-2022, OARC, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -937,6 +937,21 @@ int parse_conf_knowntlds_file(const conf_token_t* tokens)
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_tld_list(const conf_token_t* tokens)
+{
+    char* file = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!file) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = load_tld_list(file);
+    free(file);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     { "interface",
         parse_conf_interface,
@@ -1057,6 +1072,9 @@ static conf_token_syntax_t _syntax[] = {
         { TOKEN_STRING, TOKEN_STRING, TOKEN_NUMBER, TOKEN_END } },
     { "knowntlds_file",
         parse_conf_knowntlds_file,
+        { TOKEN_STRING, TOKEN_END } },
+    { "tld_list",
+        parse_conf_tld_list,
         { TOKEN_STRING, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }

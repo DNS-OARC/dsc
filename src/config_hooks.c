@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020, OARC, Inc.
+ * Copyright (c) 2008-2022, OARC, Inc.
  * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
  * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
@@ -45,6 +45,7 @@
 #include "response_time_index.h"
 #include "input_mode.h"
 #include "dnstap.h"
+#include "tld_list.h"
 
 #include "knowntlds.inc"
 
@@ -672,6 +673,38 @@ int load_knowntlds(const char* file)
 
     KnownTLDS = (const char**)new_KnownTLDS;
     dsyslogf(LOG_INFO, "loaded %zd known TLDs from %s", new_size - 1, file);
+
+    return 1;
+}
+
+int load_tld_list(const char* file)
+{
+    FILE*  fp;
+    char * buffer  = 0, *p;
+    size_t bufsize = 0;
+
+    if (!(fp = fopen(file, "r"))) {
+        dsyslogf(LOG_ERR, "unable to open %s", file);
+        return 0;
+    }
+
+    while (getline(&buffer, &bufsize, fp) > 0 && buffer) {
+        for (p = buffer; *p; p++) {
+            if (*p == '\r' || *p == '\n') {
+                *p = 0;
+                break;
+            }
+            *p = tolower(*p);
+        }
+        if (buffer[0] == '#') {
+            continue;
+        }
+        tld_list_add(buffer);
+    }
+    free(buffer);
+    fclose(fp);
+
+    dsyslogf(LOG_INFO, "loaded TLD list from %s", file);
 
     return 1;
 }

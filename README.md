@@ -1,6 +1,6 @@
 # DNS Statistics Collector
 
-[![Build Status](https://travis-ci.com/DNS-OARC/dsc.svg?branch=develop)](https://travis-ci.com/DNS-OARC/dsc) [![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/dsc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/dsc/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/dsc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/dsc/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc)
 
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring
 statistics from busy DNS servers.  It uses a distributed architecture with
@@ -18,8 +18,9 @@ More information about DSC/DSP may be found here:
 Issues should be reported here:
 - https://github.com/DNS-OARC/dsc/issues
 
-Mailinglist:
-- https://lists.dns-oarc.net/mailman/listinfo/dsc
+General support and discussion:
+- Mattermost: https://chat.dns-oarc.net/community/channels/oarc-software
+- mailing-list: https://lists.dns-oarc.net/mailman/listinfo/dsc
 
 ## Dependencies
 
@@ -31,22 +32,17 @@ dependency on the GeoIP library (for the `asn` and `country` indexer).
 
 To install the dependencies under Debian/Ubuntu:
 ```
-apt-get install -y libpcap-dev libproc-pid-file-perl
+apt-get install -y libpcap-dev
 ```
 
 To install the dependencies under CentOS (with EPEL enabled):
 ```
-yum install -y libpcap-devel perl-Proc-PID-File
+yum install -y libpcap-devel
 ```
 
 To install the dependencies under FreeBSD 10+ using `pkg`:
 ```
-pkg install -y libpcap p5-Proc-PID-File
-```
-
-To install the dependencies under OpenBSD 5+ using `pkg_add`:
-```
-pkg_add p5-Proc-PID-File
+pkg install -y libpcap
 ```
 
 NOTE: It is recommended to install the PCAP library from source/ports on

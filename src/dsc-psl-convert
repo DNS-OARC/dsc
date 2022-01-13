@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# Copyright (c) 2008-2022, OARC, Inc.
+# Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
+# Copyright (c) 2003-2007, The Measurement Factory, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
+#    the documentation and/or other materials provided with the
+#    distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+import sys
+import os
+import io
+import re
+import argparse
+from encodings import idna
+
+parser = argparse.ArgumentParser(description='Convert Public Suffix List (PSL) to DSC TLD List (stdout)', epilog='See `man dsc-psl-convert` for more information')
+parser.add_argument('fn', metavar='PSL', type=str, nargs='?',
+    help='specify the PSL to use or use system publicsuffix if exists, "-" will read from stdin')
+parser.add_argument('--all', action='store_true',
+    help='include all of PSL, as default it will stop after ICANN domains')
+parser.add_argument('--no-skip-idna-err', action='store_true',
+    help='fail if idna.ToASCII() fails, default is to ignore these errors')
+args = parser.parse_args()
+
+
+def dn2ascii(dn):
+    labels = []
+    for l in dn.split('.'):
+        # print(l)
+        if args.no_skip_idna_err:
+            labels.append(idna.ToASCII(l).decode('utf-8'))
+        else:
+            try:
+                labels.append(idna.ToASCII(l).decode('utf-8'))
+            except Exception as e:
+                return None
+    return '.'.join(labels)
+
+
+if not args.fn:
+    for e in ['/usr/share/publicsuffix', '/usr/local/share/publicsuffix']:
+        e += '/public_suffix_list.dat'
+        if os.path.isfile(e):
+            args.fn = e
+            break
+
+if not args.fn:
+    parser.error('No installed PSL file found, please specify one')
+
+f = None
+try:
+    if args.fn == "-":
+        f = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
+    else:
+        f = open(args.fn, 'r', encoding='utf-8')
+except Exception as e:
+    parser.exit(1, "Unable to open %r: %s\n" % (args.fn, e))
+
+r = re.compile('^([^\!\s(?://)]+\.[^\s(?://)]+)')
+for l in f:
+    if not args.all and '===END ICANN DOMAINS===' in l:
+        break
+    l = l.replace('*.', '')
+    m = r.search(l)
+    if m:
+        dn = dn2ascii(m.group(1))
+        if dn is None:
+            continue
+        print(dn)

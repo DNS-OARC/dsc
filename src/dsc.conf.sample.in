@@ -303,3 +303,16 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #  Load known TLDs from a file, see https://data.iana.org/TLD/tlds-alpha-by-domain.txt
 #
 #knowntlds_file file;
+
+# TLD list (aka Public Suffix List)
+#
+#  This option changes what DSC considers a TLD (similar to Public Suffix
+#  List) and affects any indexers that gathers statistics on TLDs, such as
+#  the tld, second_ld and third_ld indexers.
+#  The file format is simply one line per suffix and supports commenting out
+#  lines with #.
+#  You can use dsc-psl-convert to convert the Public Suffix List to this
+#  format, see dsc-psl-convert (5) for more information and examples on how
+#  to setup.
+#
+#tld_list file;

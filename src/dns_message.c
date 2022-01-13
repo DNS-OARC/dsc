@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020, OARC, Inc.
+ * Copyright (c) 2008-2022, OARC, Inc.
  * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
  * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
@@ -39,6 +39,7 @@
 #include "dns_message.h"
 #include "xmalloc.h"
 #include "syslog_debug.h"
+#include "tld_list.h"
 
 #include "null_index.h"
 #include "qtype_index.h"
@@ -398,6 +399,39 @@ const char* dns_message_QnameToNld(const char* qname, int nld)
     t = e;
     if (0 == strcmp(t, ".arpa"))
         dotcount--;
+    if (have_tld_list) {
+        // Use TLD list to find labels that are the "TLD"
+        const char *lt = 0, *ot = t;
+        while (t > qname) {
+            t--;
+            if ('.' == *t) {
+                if (0 == state) {
+                    int r = tld_list_find(t + 1);
+                    if (r & 1) {
+                        // this is a tld
+                        lt = t;
+                    }
+                    if (!r || !(r & 2)) {
+                        // no more children
+                        if (lt) {
+                            // reset to what we last found
+                            t = lt;
+                            dotcount++;
+                            state = 1;
+                        } else {
+                            // or reset
+                            t     = ot;
+                            state = 0;
+                        }
+                        break;
+                    }
+                }
+                state = 1;
+            } else {
+                state = 0;
+            }
+        }
+    }
     while (t > qname && dotcount < nld) {
         t--;
         if ('.' == *t) {
