@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Jerry Lundström <lundstrom.jerry@gmail.com>
 Build-Depends: debhelper (>= 10), build-essential, automake, autoconf,
  libpcap-dev, libproc-pid-file-perl, netbase, libgeoip-dev, pkg-config,
- libmaxminddb-dev, libdnswire-dev, libuv1-dev
+ libmaxminddb-dev, libdnswire-dev, libuv1-dev, python3 (>= 3.5)
 Standards-Version: 3.9.4
 Homepage: https://www.dns-oarc.net/oarc/data/dsc
 Vcs-Git: https://github.com/DNS-OARC/dsc.git
@@ -14,7 +14,7 @@ Package: dsc
 Architecture: any
 Conflicts: dsc-statistics-collector
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends},
- libproc-pid-file-perl
+ libproc-pid-file-perl, ${python3:Depends}
 Description: DNS Statistics Collector
  DNS Statistics Collector (DSC) is a tool used for collecting and exploring
  statistics from busy DNS servers. It uses a distributed architecture with

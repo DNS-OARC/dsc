@@ -25,8 +25,10 @@ BuildRequires:  libtool
 BuildRequires:  pkgconfig
 BuildRequires:  dnswire-devel
 BuildRequires:  libuv-devel
+BuildRequires:  python3
 Requires:       perl
 Requires:       perl(Proc::PID::File)
+Requires:       python3
 
 %description
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring

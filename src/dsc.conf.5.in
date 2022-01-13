@@ -337,6 +337,23 @@ Control the size of bucket (microseconds) in bucket mode.
 \fBknowntlds_file\fR FILE ;
 Load known TLDs from FILE, this should be or have the same format as
 .IR https://data.iana.org/TLD/tlds-alpha-by-domain.txt .
+.TP
+\fBtld_list\fR FILE ;
+This option changes what DSC considers a TLD (similar to Public Suffix List)
+and affects any indexers that gathers statistics on TLDs, such as the
+.IR tld ,
+.I second_ld
+and
+.I third_ld
+indexers.
+The file format is simply one line per suffix and supports commenting out
+lines with
+.BR # .
+You can use
+.B dsc-psl-convert
+to convert the Public Suffix List to this format, see
+.IR dsc-psl-convert (5)
+for more information and examples on how to setup.
 .SH DATASETS
 A \fBdataset\fR is a 2-D array of counters.
 For example, you might have a dataset with \*(lqQuery Type\*(rq along one
@@ -962,7 +979,7 @@ output_format XML;
 .br
 @etcdir@/dsc.conf.sample
 .SH "SEE ALSO"
-dsc(1)
+dsc(1), dsc-psl-convert(1)
 .SH AUTHORS
 Jerry Lundström, DNS-OARC
 .br
