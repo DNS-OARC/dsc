@@ -535,6 +535,12 @@ section.
 Note this is the \*(lqexpanded\*(rq length if the message happens to take
 advantage of DNS message \*(lqcompression\*(rq.
 .TP
+\fBlabellen\fR
+The count of labels the first (and usually only) QNAME in a DNS message question
+section.
+Note this count is based on the full QNAME if the message happens to take
+advantage of DNS message \*(lqcompression\*(rq.
+.TP
 \fBqtype\fR
 The query type (QTYPE) for the first QNAME in the DNS message question
 section.

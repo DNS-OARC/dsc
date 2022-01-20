@@ -52,6 +52,7 @@
 #include "client_subnet_index.h"
 #include "server_ip_addr_index.h"
 #include "qnamelen_index.h"
+#include "labellen_index.h"
 #include "qname_index.h"
 #include "msglen_index.h"
 #include "certain_qnames_index.h"
@@ -91,6 +92,7 @@ static indexer indexers[] = {
     { "null", 0, null_indexer, null_iterator },
     { "qclass", 0, qclass_indexer, qclass_iterator, qclass_reset },
     { "qnamelen", 0, qnamelen_indexer, qnamelen_iterator, qnamelen_reset },
+    { "labellen", 0, labellen_indexer, labellen_iterator, labellen_reset },
     { "qname", 0, qname_indexer, qname_iterator, qname_reset },
     { "second_ld", 0, second_ld_indexer, second_ld_iterator, second_ld_reset },
     { "third_ld", 0, third_ld_indexer, third_ld_iterator, third_ld_reset },
