@@ -105,24 +105,24 @@ int ip_local_address(const char* presentation, const char* mask)
 
                 if (bits > 96) {
                     bit_mask <<= 128 - bits;
-                    n->mask._.in4.s_addr = htonl(bit_mask);
+                    n->mask.in6.s6_addr32[3] = htonl(bit_mask);
                 } else {
-                    n->mask._.in4.s_addr = 0;
+                    n->mask.in6.s6_addr32[3] = 0;
                     if (bits > 64) {
                         bit_mask <<= 96 - bits;
-                        n->mask._.pad2.s_addr = htonl(bit_mask);
+                        n->mask.in6.s6_addr32[2] = htonl(bit_mask);
                     } else {
-                        n->mask._.pad2.s_addr = 0;
+                        n->mask.in6.s6_addr32[2] = 0;
                         if (bits > 32) {
                             bit_mask <<= 64 - bits;
-                            n->mask._.pad1.s_addr = htonl(bit_mask);
+                            n->mask.in6.s6_addr32[1] = htonl(bit_mask);
                         } else {
-                            n->mask._.pad1.s_addr = 0;
+                            n->mask.in6.s6_addr32[1] = 0;
                             if (bits) {
                                 bit_mask <<= 32 - bits;
-                                n->mask._.pad0.s_addr = htonl(bit_mask);
+                                n->mask.in6.s6_addr32[0] = htonl(bit_mask);
                             } else {
-                                n->mask._.pad0.s_addr = 0;
+                                n->mask.in6.s6_addr32[0] = 0;
                             }
                         }
                     }
@@ -136,9 +136,9 @@ int ip_local_address(const char* presentation, const char* mask)
 
                 if (bits) {
                     bit_mask <<= 32 - bits;
-                    n->mask._.in4.s_addr = htonl(bit_mask);
+                    n->mask.in4.s_addr = htonl(bit_mask);
                 } else {
-                    n->mask._.in4.s_addr = 0;
+                    n->mask.in4.s_addr = 0;
                 }
             }
         } else if (inXaddr_pton(mask, &n->mask) != 1) {
