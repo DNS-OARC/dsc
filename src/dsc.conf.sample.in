@@ -167,6 +167,7 @@ dataset client_port_range dns All:null PortRange:dns_sport_range queries-only;
 dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset dns_ip_version_vs_qtype dns IPVersion:dns_ip_version Qtype:qtype queries-only;
 #dataset response_time dns All:null ResponseTime:response_time;
+#dataset label_count dns All:null LabelCount:label_count any;
 
 #  datasets for collecting data on priming queries at root nameservers
 #dataset priming_queries dns Transport:transport EDNSBufSiz:edns_bufsiz priming-query,queries-only;

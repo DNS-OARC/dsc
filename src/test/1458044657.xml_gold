@@ -8,6 +8,16 @@
     </ifname>
   </data>
 </array>
+<array name="label_count" dimensions="2" start_time="1458044655" stop_time="1458044657">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="LabelCount"/>
+  <data>
+    <All val="ALL">
+      <LabelCount val="3" count="4"/>
+      <LabelCount val="6" count="4"/>
+    </All>
+  </data>
+</array>
 <array name="third_ld_vs_rcode" dimensions="2" start_time="1458044655" stop_time="1458044657">
   <dimension number="1" type="Rcode"/>
   <dimension number="2" type="ThirdLD"/>

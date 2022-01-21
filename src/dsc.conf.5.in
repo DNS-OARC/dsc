@@ -535,11 +535,10 @@ section.
 Note this is the \*(lqexpanded\*(rq length if the message happens to take
 advantage of DNS message \*(lqcompression\*(rq.
 .TP
-\fBlabellen\fR
-The count of labels the first (and usually only) QNAME in a DNS message question
-section.
-Note this count is based on the full QNAME if the message happens to take
-advantage of DNS message \*(lqcompression\*(rq.
+\fBlabel_count\fR
+The number of labels (between "." dots) in the first (and usually only)
+QNAME in a DNS message question section.
+Note that a value of 0 (zero) means DNS root (.).
 .TP
 \fBqtype\fR
 The query type (QTYPE) for the first QNAME in the DNS message question
@@ -952,6 +951,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 #dataset servfail_qname dns ALL:null Qname:qname servfail-only,replies-only;
 #dataset ad_qname dns ALL:null Qname:qname authentic-data-only,replies-only;
+#dataset label_count dns All:null LabelCount:label_count any;
 
 #statistics_interval 60;
 #no_wait_interval;

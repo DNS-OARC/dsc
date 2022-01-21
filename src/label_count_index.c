@@ -34,13 +34,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_labellen_index_h
-#define __dsc_labellen_index_h
+#include "config.h"
 
-#include "dns_message.h"
+#include "label_count_index.h"
 
-int  labellen_indexer(const dns_message*);
-int  labellen_iterator(const char** label);
-void labellen_reset(void);
+#include <string.h>
 
-#endif /* __dsc_labellen_index_h */
+static int largest = 0;
+
+#define MAX_LABELS 64
+
+int label_count_indexer(const dns_message* m)
+{
+    if (m->malformed)
+        return -1;
+
+    int i, count = 1;
+    int len = strlen(m->qname);
+    if (len == 0 || (len == 1 && m->qname[0] == '.')) {
+        count = 0;
+    } else {
+        for (i = 0; i < len; i++)
+            if (m->qname[i] == '.')
+                count++;
+    }
+    if (count >= MAX_LABELS)
+        count = MAX_LABELS - 1;
+    if (count > largest)
+        largest = count;
+    return count;
+}
+
+static int next_iter;
+
+int label_count_iterator(const char** label)
+{
+    static char label_buf[10];
+    if (NULL == label) {
+        next_iter = 0;
+        return largest + 1;
+    }
+    if (next_iter > largest)
+        return -1;
+    snprintf(label_buf, sizeof(label_buf), "%d", next_iter);
+    *label = label_buf;
+    return next_iter++;
+}
+
+void label_count_reset()
+{
+    largest = 0;
+}
