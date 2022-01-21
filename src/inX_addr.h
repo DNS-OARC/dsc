@@ -38,16 +38,14 @@
 #define __dsc_inX_addr_h
 
 #include <netinet/in.h>
+#ifndef s6_addr32
+#define s6_addr32 __u6_addr.__u6_addr32
+#endif
 
-typedef union {
+typedef struct {
+    int             family;
     struct in6_addr in6;
-    struct
-    {
-        struct in_addr pad0;
-        struct in_addr pad1;
-        struct in_addr pad2;
-        struct in_addr in4;
-    } _;
+    struct in_addr  in4;
 } inX_addr;
 
 extern int          inXaddr_version(const inX_addr*);

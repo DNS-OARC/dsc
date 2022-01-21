@@ -149,7 +149,7 @@ asn_get_from_message(dns_message* m)
                 MMDB_lookup_result_s r;
 
                 s.sin_family = AF_INET;
-                s.sin_addr   = tm->src_ip_addr._.in4;
+                s.sin_addr   = tm->src_ip_addr.in4;
 
                 r = MMDB_lookup_sockaddr(&mmdb, (struct sockaddr*)&s, &ret);
                 if (ret == MMDB_SUCCESS && r.found_entry) {

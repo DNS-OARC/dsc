@@ -232,12 +232,33 @@ tcpstate_free(void* p)
     xfree(p);
 }
 
+inline static void tcpkey_set(tcpHashkey_t* key, inX_addr src, uint16_t sport, inX_addr dst, uint16_t dport)
+{
+    memset(key, 0, sizeof(*key));
+    key->src_ip_addr.family = src.family;
+    if (src.family == AF_INET6) {
+        key->src_ip_addr.in6 = src.in6;
+    } else {
+        key->src_ip_addr.in4 = src.in4;
+    }
+    key->sport = sport;
+
+    key->dst_ip_addr.family = dst.family;
+    if (dst.family == AF_INET6) {
+        key->dst_ip_addr.in6 = dst.in6;
+    } else {
+        key->dst_ip_addr.in4 = dst.in4;
+    }
+    key->dport = dport;
+}
+
 static unsigned int
 tcp_hashfunc(const void* key)
 {
-    tcpHashkey_t* k = (tcpHashkey_t*)key;
-    return (k->dport << 16) | k->sport | k->src_ip_addr._.in4.s_addr | k->dst_ip_addr._.in4.s_addr;
-    /* 32 low bits of ipv6 address are good enough for a hash */
+    if (!(sizeof(tcpHashkey_t) % 4)) {
+        return hashword(key, sizeof(tcpHashkey_t) / 4, 0);
+    }
+    return hashendian(key, sizeof(tcpHashkey_t), 0);
 }
 
 static int
@@ -541,10 +562,7 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
     tm->dst_port = nptohs(&tcp->th_dport);
     tm->proto    = IPPROTO_TCP;
 
-    key.src_ip_addr = tm->src_ip_addr;
-    key.dst_ip_addr = tm->dst_ip_addr;
-    key.sport       = tm->src_port;
-    key.dport       = tm->dst_port;
+    tcpkey_set(&key, tm->src_ip_addr, tm->src_port, tm->dst_ip_addr, tm->dst_port);
 
     if (debug_flag > 1) {
         char src[128], dst[128];
@@ -590,11 +608,8 @@ pcap_tcp_handler(const struct tcphdr* tcp, int len, void* udata)
             hash_remove(&key, tcpHash); /* this also frees tcpstate */
 
         /* remove the state for the opposite direction */
-        key.src_ip_addr = tm->dst_ip_addr;
-        key.dst_ip_addr = tm->src_ip_addr;
-        key.sport       = tm->dst_port;
-        key.dport       = tm->src_port;
-        tcpstate        = hash_find(&key, tcpHash);
+        tcpkey_set(&key, tm->dst_ip_addr, tm->dst_port, tm->src_ip_addr, tm->src_port);
+        tcpstate = hash_find(&key, tcpHash);
         if (tcpstate) {
             tcpList_remove(tcpstate);
             hash_remove(&key, tcpHash); /* this also frees tcpstate */
