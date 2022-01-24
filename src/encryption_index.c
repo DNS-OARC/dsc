@@ -36,42 +36,38 @@
 
 #include "config.h"
 
-#include "transport_index.h"
-
-/*
- * This is very similar to ip_proto_index, but this
- * indexer is applied only for DNS messages, rather than
- * all IP packets.
- */
+#include "encryption_index.h"
 
 #include "md_array.h"
 
-#define LARGEST 2
-
-int transport_indexer(const dns_message* m)
+int encryption_indexer(const dns_message* m)
 {
-    if (IPPROTO_UDP == m->tm->proto)
-        return 0;
-    if (IPPROTO_TCP == m->tm->proto)
-        return 1;
-    return LARGEST;
+    return m->tm->encryption;
 }
 
 static int next_iter = 0;
 
-int transport_iterator(const char** label)
+int encryption_iterator(const char** label)
 {
     if (NULL == label) {
         next_iter = 0;
-        return LARGEST + 1;
+        return TRANSPORT_ENCRYPTION_DNSCrypt + 1;
     }
-    if (0 == next_iter)
-        *label = "udp";
-    else if (1 == next_iter)
-        *label = "tcp";
-    else if (LARGEST == next_iter)
-        *label = "else";
-    else
+    switch (next_iter) {
+    case TRANSPORT_ENCRYPTION_UNENCRYPTED:
+        *label = "unencrypted";
+        break;
+    case TRANSPORT_ENCRYPTION_DOT:
+        *label = "dot";
+        break;
+    case TRANSPORT_ENCRYPTION_DOH:
+        *label = "doh";
+        break;
+    case TRANSPORT_ENCRYPTION_DNSCrypt:
+        *label = "dnscrypt";
+        break;
+    default:
         return -1;
+    }
     return next_iter++;
 }

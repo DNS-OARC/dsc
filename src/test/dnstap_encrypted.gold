@@ -1,0 +1,310 @@
+<dscdata>
+<array name="pcap_stats" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="ifname"/>
+  <dimension number="2" type="pcap_stat"/>
+  <data>
+  </data>
+</array>
+<array name="encryption" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Encryption"/>
+  <data>
+    <All val="ALL">
+      <Encryption val="unencrypted" count="2"/>
+      <Encryption val="dot" count="1"/>
+      <Encryption val="doh" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="label_count" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="LabelCount"/>
+  <data>
+    <All val="ALL">
+      <LabelCount val="2" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="third_ld_vs_rcode" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Rcode"/>
+  <dimension number="2" type="ThirdLD"/>
+  <data>
+    <Rcode val="0">
+      <ThirdLD val="google.com" count="3"/>
+    </Rcode>
+  </data>
+</array>
+<array name="second_ld_vs_rcode" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Rcode"/>
+  <dimension number="2" type="SecondLD"/>
+  <data>
+    <Rcode val="0">
+      <SecondLD val="google.com" count="3"/>
+    </Rcode>
+  </data>
+</array>
+<array name="server" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="IP"/>
+  <data>
+    <All val="ALL">
+      <IP val="127.0.0.1" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="qr_aa_bits" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Direction"/>
+  <dimension number="2" type="QRAABits"/>
+  <data>
+    <Direction val="sent">
+      <QRAABits val="cXI9MCxhYT0w" base64="1" count="4"/>
+      <QRAABits val="cXI9MSxhYT0w" base64="1" count="3"/>
+    </Direction>
+    <Direction val="recv">
+    </Direction>
+  </data>
+</array>
+<array name="qname" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Name"/>
+  <data>
+    <All val="ALL">
+      <Name val="google.com" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="qclass" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Class"/>
+  <data>
+    <All val="ALL">
+      <Class val="1" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="dns_ip_version" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Version"/>
+  <data>
+    <All val="ALL">
+      <Version val="IPv4" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="ip_version" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Version"/>
+  <data>
+    <All val="ALL">
+      <Version val="IPv4" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="direction_vs_ipproto" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Direction"/>
+  <dimension number="2" type="IPProto"/>
+  <data>
+    <Direction val="sent">
+      <IPProto val="tcp" count="4"/>
+      <IPProto val="udp" count="3"/>
+    </Direction>
+    <Direction val="recv">
+    </Direction>
+  </data>
+</array>
+<array name="client_port_range" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="PortRange"/>
+  <data>
+    <All val="ALL">
+      <PortRange val="34816-35839" count="1"/>
+      <PortRange val="45056-46079" count="1"/>
+      <PortRange val="57344-58367" count="1"/>
+      <PortRange val="59392-60415" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="transport_vs_qtype" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Transport"/>
+  <dimension number="2" type="Qtype"/>
+  <data>
+    <Transport val="udp">
+      <Qtype val="1" count="2"/>
+    </Transport>
+    <Transport val="tcp">
+      <Qtype val="1" count="2"/>
+    </Transport>
+  </data>
+</array>
+<array name="ipv6_rsn_abusers" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="ClientAddr"/>
+  <data>
+  </data>
+</array>
+<array name="idn_vs_tld" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="TLD"/>
+  <data>
+  </data>
+</array>
+<array name="tc_bit" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="TC"/>
+  <data>
+    <All val="ALL">
+      <TC val="clr" count="7"/>
+    </All>
+  </data>
+</array>
+<array name="rd_bit" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="RD"/>
+  <data>
+    <All val="ALL">
+      <RD val="set" count="4"/>
+    </All>
+  </data>
+</array>
+<array name="do_bit" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="D0"/>
+  <data>
+    <All val="ALL">
+      <D0 val="clr" count="4"/>
+    </All>
+  </data>
+</array>
+<array name="edns_bufsiz" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="EDNSBufSiz"/>
+  <data>
+    <All val="ALL">
+      <EDNSBufSiz val="None" count="2"/>
+      <EDNSBufSiz val="4096-4607" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_version" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="EDNSVersion"/>
+  <data>
+    <All val="ALL">
+      <EDNSVersion val="none" count="2"/>
+      <EDNSVersion val="0" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="idn_qname" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="IDNQname"/>
+  <data>
+    <All val="ALL">
+      <IDNQname val="normal" count="4"/>
+    </All>
+  </data>
+</array>
+<array name="chaos_types_and_names" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Qtype"/>
+  <dimension number="2" type="Qname"/>
+  <data>
+  </data>
+</array>
+<array name="client_addr_vs_rcode" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Rcode"/>
+  <dimension number="2" type="ClientAddr"/>
+  <data>
+    <Rcode val="0">
+      <ClientAddr val="127.0.0.1" count="3"/>
+    </Rcode>
+  </data>
+</array>
+<array name="client_subnet2" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Class"/>
+  <dimension number="2" type="ClientSubnet"/>
+  <data>
+    <Class val="ok">
+      <ClientSubnet val="127.0.0.0" count="4"/>
+    </Class>
+    <Class val="non-auth-tld">
+    </Class>
+  </data>
+</array>
+<array name="certain_qnames_vs_qtype" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="CertainQnames"/>
+  <dimension number="2" type="Qtype"/>
+  <data>
+    <CertainQnames val="localhost">
+    </CertainQnames>
+    <CertainQnames val="X.root-servers.net">
+    </CertainQnames>
+    <CertainQnames val="else">
+      <Qtype val="1" count="4"/>
+    </CertainQnames>
+  </data>
+</array>
+<array name="qtype_vs_tld" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Qtype"/>
+  <dimension number="2" type="TLD"/>
+  <data>
+    <Qtype val="1">
+      <TLD val="com" count="4"/>
+    </Qtype>
+  </data>
+</array>
+<array name="qtype_vs_qnamelen" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Qtype"/>
+  <dimension number="2" type="QnameLen"/>
+  <data>
+    <Qtype val="1">
+      <QnameLen val="10" count="4"/>
+    </Qtype>
+  </data>
+</array>
+<array name="client_subnet" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="ClientSubnet"/>
+  <data>
+    <All val="ALL">
+      <ClientSubnet val="127.0.0.0" count="4"/>
+    </All>
+  </data>
+</array>
+<array name="rcode_vs_replylen" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="Rcode"/>
+  <dimension number="2" type="ReplyLen"/>
+  <data>
+    <Rcode val="0">
+      <ReplyLen val="55" count="2"/>
+      <ReplyLen val="44" count="1"/>
+    </Rcode>
+  </data>
+</array>
+<array name="opcode" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Opcode"/>
+  <data>
+    <All val="ALL">
+      <Opcode val="0" count="4"/>
+    </All>
+  </data>
+</array>
+<array name="rcode" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Rcode"/>
+  <data>
+    <All val="ALL">
+      <Rcode val="0" count="3"/>
+    </All>
+  </data>
+</array>
+<array name="qtype" dimensions="2" start_time="1643283221" stop_time="1643283234">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="Qtype"/>
+  <data>
+    <All val="ALL">
+      <Qtype val="1" count="4"/>
+    </All>
+  </data>
+</array>
+</dscdata>

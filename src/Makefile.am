@@ -30,7 +30,7 @@ dsc_SOURCES = asn_index.c certain_qnames_index.c client_index.c \
   ext/base64.c ext/lookup3.c \
   pcap_layers/pcap_layers.c \
   pcap-thread/pcap_thread.c \
-  dnstap.c
+  dnstap.c encryption_index.c
 dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   client_subnet_index.h compat.h config_hooks.h country_index.h dataset_opt.h \
   dns_ip_version_index.h dns_message.h dns_protocol.h dns_source_port_index.h \
@@ -43,7 +43,7 @@ dist_dsc_SOURCES = asn_index.h base64.h certain_qnames_index.h client_index.h \
   tld_index.h transport_index.h xmalloc.h response_time_index.h tld_list.h \
   pcap_layers/byteorder.h pcap_layers/pcap_layers.h \
   pcap-thread/pcap_thread.h \
-  dnstap.h input_mode.h knowntlds.inc
+  dnstap.h input_mode.h knowntlds.inc encryption_index.h
 dsc_LDADD = $(PTHREAD_LIBS) $(libmaxminddb_LIBS) \
   $(libdnswire_LIBS) $(libuv_LIBS)
 man1_MANS = dsc.1 dsc-psl-convert.1

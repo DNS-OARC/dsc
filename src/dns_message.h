@@ -58,14 +58,22 @@ typedef struct dns_message       dns_message;
 
 #define MAX_QNAME_SZ 512
 
+enum transport_encryption {
+    TRANSPORT_ENCRYPTION_UNENCRYPTED = 0,
+    TRANSPORT_ENCRYPTION_DOT         = 1,
+    TRANSPORT_ENCRYPTION_DOH         = 2,
+    TRANSPORT_ENCRYPTION_DNSCrypt    = 3,
+};
+
 struct transport_message {
-    struct timeval ts;
-    inX_addr       src_ip_addr;
-    inX_addr       dst_ip_addr;
-    unsigned short src_port;
-    unsigned short dst_port;
-    unsigned char  ip_version;
-    unsigned char  proto;
+    struct timeval            ts;
+    inX_addr                  src_ip_addr;
+    inX_addr                  dst_ip_addr;
+    unsigned short            src_port;
+    unsigned short            dst_port;
+    unsigned char             ip_version;
+    unsigned char             proto;
+    enum transport_encryption encryption;
 };
 
 struct dns_message {
