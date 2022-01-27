@@ -34,44 +34,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#ifndef __dsc_encryption_index_h
+#define __dsc_encryption_index_h
 
-#include "transport_index.h"
+#include "dns_message.h"
 
-/*
- * This is very similar to ip_proto_index, but this
- * indexer is applied only for DNS messages, rather than
- * all IP packets.
- */
+int encryption_indexer(const dns_message*);
+int encryption_iterator(const char** label);
 
-#include "md_array.h"
-
-#define LARGEST 2
-
-int transport_indexer(const dns_message* m)
-{
-    if (IPPROTO_UDP == m->tm->proto)
-        return 0;
-    if (IPPROTO_TCP == m->tm->proto)
-        return 1;
-    return LARGEST;
-}
-
-static int next_iter = 0;
-
-int transport_iterator(const char** label)
-{
-    if (NULL == label) {
-        next_iter = 0;
-        return LARGEST + 1;
-    }
-    if (0 == next_iter)
-        *label = "udp";
-    else if (1 == next_iter)
-        *label = "tcp";
-    else if (LARGEST == next_iter)
-        *label = "else";
-    else
-        return -1;
-    return next_iter++;
-}
+#endif /* __dsc_encryption_index_h */

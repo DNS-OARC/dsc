@@ -70,7 +70,7 @@ AC_ARG_ENABLE(threads,
 use_dnstap=no
 AC_ARG_ENABLE([dnstap], [AS_HELP_STRING([--enable-dnstap], [DNSTAP input support])], [
   AC_DEFINE([USE_DNSTAP], [1], [Define to 1 if DNSTAP support is built in.])
-  PKG_CHECK_MODULES([libdnswire], [libdnswire])
+  PKG_CHECK_MODULES([libdnswire], [libdnswire >= 0.3.0])
   PKG_CHECK_MODULES([libuv], [libuv])
   use_dnstap=yes
 ])
