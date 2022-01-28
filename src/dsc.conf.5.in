@@ -640,8 +640,9 @@ NOTE: Only one instance of this indexer can be used in a dataset, this is due
 to the state to stores and the design of DSC.
 .TP
 \fBencryption\fR
-Indicates whether the DNS message is carried over an encrypted connection,
-for example DNS-over-TLS (DOT) or DNS-over-HTTPS (DOH).
+Indicates whether the DNS message was carried over an encrypted connection
+or not, and if so over which.
+For example "unencrypted", "dot" (DNS-over-TLS), "doh" (DNS-over-HTTPS).
 This information is only available via DNSTAP and if supported by the
 software generating it.
 .SH "DNS FILTERS"
