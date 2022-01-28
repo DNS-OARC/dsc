@@ -34,28 +34,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_inX_addr_h
-#define __dsc_inX_addr_h
+#include "config.h"
 
-#include <netinet/in.h>
-#ifndef s6_addr32
-#define s6_addr32 __u6_addr.__u6_addr32
-#endif
+#include "label_count_index.h"
 
-typedef struct {
-    int             family;
-    struct in6_addr in6;
-    struct in_addr  in4;
-} inX_addr;
+#include <string.h>
 
-extern int          inXaddr_version(const inX_addr*);
-extern const char*  inXaddr_ntop(const inX_addr*, char*, socklen_t len);
-extern int          inXaddr_pton(const char*, inX_addr*);
-extern unsigned int inXaddr_hash(const inX_addr*);
-extern int          inXaddr_cmp(const inX_addr* a, const inX_addr* b);
-extern inX_addr     inXaddr_mask(const inX_addr* a, const inX_addr* mask);
+static int largest = 0;
 
-extern int inXaddr_assign_v4(inX_addr*, const struct in_addr*);
-extern int inXaddr_assign_v6(inX_addr*, const struct in6_addr*);
+#define MAX_LABELS 64
 
-#endif /* __dsc_inX_addr_h */
+int label_count_indexer(const dns_message* m)
+{
+    if (m->malformed)
+        return -1;
+
+    int i, count = 1;
+    int len = strlen(m->qname);
+    if (len == 0 || (len == 1 && m->qname[0] == '.')) {
+        count = 0;
+    } else {
+        for (i = 0; i < len; i++)
+            if (m->qname[i] == '.')
+                count++;
+    }
+    if (count >= MAX_LABELS)
+        count = MAX_LABELS - 1;
+    if (count > largest)
+        largest = count;
+    return count;
+}
+
+static int next_iter;
+
+int label_count_iterator(const char** label)
+{
+    static char label_buf[10];
+    if (NULL == label) {
+        next_iter = 0;
+        return largest + 1;
+    }
+    if (next_iter > largest)
+        return -1;
+    snprintf(label_buf, sizeof(label_buf), "%d", next_iter);
+    *label = label_buf;
+    return next_iter++;
+}
+
+void label_count_reset()
+{
+    largest = 0;
+}

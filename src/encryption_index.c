@@ -34,28 +34,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_inX_addr_h
-#define __dsc_inX_addr_h
+#include "config.h"
 
-#include <netinet/in.h>
-#ifndef s6_addr32
-#define s6_addr32 __u6_addr.__u6_addr32
-#endif
+#include "encryption_index.h"
 
-typedef struct {
-    int             family;
-    struct in6_addr in6;
-    struct in_addr  in4;
-} inX_addr;
+#include "md_array.h"
 
-extern int          inXaddr_version(const inX_addr*);
-extern const char*  inXaddr_ntop(const inX_addr*, char*, socklen_t len);
-extern int          inXaddr_pton(const char*, inX_addr*);
-extern unsigned int inXaddr_hash(const inX_addr*);
-extern int          inXaddr_cmp(const inX_addr* a, const inX_addr* b);
-extern inX_addr     inXaddr_mask(const inX_addr* a, const inX_addr* mask);
+int encryption_indexer(const dns_message* m)
+{
+    return m->tm->encryption;
+}
 
-extern int inXaddr_assign_v4(inX_addr*, const struct in_addr*);
-extern int inXaddr_assign_v6(inX_addr*, const struct in6_addr*);
+static int next_iter = 0;
 
-#endif /* __dsc_inX_addr_h */
+int encryption_iterator(const char** label)
+{
+    if (NULL == label) {
+        next_iter = 0;
+        return TRANSPORT_ENCRYPTION_DNSCrypt + 1;
+    }
+    switch (next_iter) {
+    case TRANSPORT_ENCRYPTION_UNENCRYPTED:
+        *label = "unencrypted";
+        break;
+    case TRANSPORT_ENCRYPTION_DOT:
+        *label = "dot";
+        break;
+    case TRANSPORT_ENCRYPTION_DOH:
+        *label = "doh";
+        break;
+    case TRANSPORT_ENCRYPTION_DNSCrypt:
+        *label = "dnscrypt";
+        break;
+    default:
+        return -1;
+    }
+    return next_iter++;
+}

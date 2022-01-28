@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.12.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.13.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])
@@ -70,7 +70,7 @@ AC_ARG_ENABLE(threads,
 use_dnstap=no
 AC_ARG_ENABLE([dnstap], [AS_HELP_STRING([--enable-dnstap], [DNSTAP input support])], [
   AC_DEFINE([USE_DNSTAP], [1], [Define to 1 if DNSTAP support is built in.])
-  PKG_CHECK_MODULES([libdnswire], [libdnswire])
+  PKG_CHECK_MODULES([libdnswire], [libdnswire >= 0.3.0])
   PKG_CHECK_MODULES([libuv], [libuv])
   use_dnstap=yes
 ])

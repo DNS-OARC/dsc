@@ -535,6 +535,11 @@ section.
 Note this is the \*(lqexpanded\*(rq length if the message happens to take
 advantage of DNS message \*(lqcompression\*(rq.
 .TP
+\fBlabel_count\fR
+The number of labels (between "." dots) in the first (and usually only)
+QNAME in a DNS message question section.
+Note that a value of 0 (zero) means DNS root (.).
+.TP
 \fBqtype\fR
 The query type (QTYPE) for the first QNAME in the DNS message question
 section.
@@ -633,6 +638,13 @@ There are a few configuration options to control how response time statistics
 are gathered and handled, please see CONFIGURATION.
 NOTE: Only one instance of this indexer can be used in a dataset, this is due
 to the state to stores and the design of DSC.
+.TP
+\fBencryption\fR
+Indicates whether the DNS message was carried over an encrypted connection
+or not, and if so over which.
+For example "unencrypted", "dot" (DNS-over-TLS), "doh" (DNS-over-HTTPS).
+This information is only available via DNSTAP and if supported by the
+software generating it.
 .SH "DNS FILTERS"
 You must specify one or more of the following filters (separated by commas)
 on the \fBdataset\fR line.
@@ -946,6 +958,8 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #dataset qr_aa_bits dns Direction:ip_direction QRAABits:qr_aa_bits any;
 #dataset servfail_qname dns ALL:null Qname:qname servfail-only,replies-only;
 #dataset ad_qname dns ALL:null Qname:qname authentic-data-only,replies-only;
+#dataset label_count dns All:null LabelCount:label_count any;
+#dataset encryption dns All:null Encryption:encryption queries-only;
 
 #statistics_interval 60;
 #no_wait_interval;

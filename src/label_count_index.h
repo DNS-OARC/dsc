@@ -34,28 +34,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_inX_addr_h
-#define __dsc_inX_addr_h
+#ifndef __dsc_label_count_index_h
+#define __dsc_label_count_index_h
 
-#include <netinet/in.h>
-#ifndef s6_addr32
-#define s6_addr32 __u6_addr.__u6_addr32
-#endif
+#include "dns_message.h"
 
-typedef struct {
-    int             family;
-    struct in6_addr in6;
-    struct in_addr  in4;
-} inX_addr;
+int  label_count_indexer(const dns_message*);
+int  label_count_iterator(const char** label);
+void label_count_reset(void);
 
-extern int          inXaddr_version(const inX_addr*);
-extern const char*  inXaddr_ntop(const inX_addr*, char*, socklen_t len);
-extern int          inXaddr_pton(const char*, inX_addr*);
-extern unsigned int inXaddr_hash(const inX_addr*);
-extern int          inXaddr_cmp(const inX_addr* a, const inX_addr* b);
-extern inX_addr     inXaddr_mask(const inX_addr* a, const inX_addr* mask);
-
-extern int inXaddr_assign_v4(inX_addr*, const struct in_addr*);
-extern int inXaddr_assign_v6(inX_addr*, const struct in6_addr*);
-
-#endif /* __dsc_inX_addr_h */
+#endif /* __dsc_label_count_index_h */

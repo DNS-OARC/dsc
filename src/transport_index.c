@@ -39,7 +39,7 @@
 #include "transport_index.h"
 
 /*
- * This is very similar to transport_index, but this
+ * This is very similar to ip_proto_index, but this
  * indexer is applied only for DNS messages, rather than
  * all IP packets.
  */

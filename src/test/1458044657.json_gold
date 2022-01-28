@@ -15,6 +15,21 @@
   ]
 },
 {
+  "name": "label_count",
+  "start_time": 1458044655,
+  "stop_time": 1458044657,
+  "dimensions": [ "All", "LabelCount" ],
+  "data": [
+    {
+      "All": "ALL",
+      "LabelCount": [
+        { "val": "3", "count": 4 },
+        { "val": "6", "count": 4 }
+      ]
+    }
+  ]
+},
+{
   "name": "third_ld_vs_rcode",
   "start_time": 1458044655,
   "stop_time": 1458044657,

@@ -52,6 +52,7 @@
 #include "client_subnet_index.h"
 #include "server_ip_addr_index.h"
 #include "qnamelen_index.h"
+#include "label_count_index.h"
 #include "qname_index.h"
 #include "msglen_index.h"
 #include "certain_qnames_index.h"
@@ -68,6 +69,7 @@
 #include "dns_ip_version_index.h"
 #include "dns_source_port_index.h"
 #include "response_time_index.h"
+#include "encryption_index.h"
 
 #include "ip_direction_index.h"
 #include "ip_proto_index.h"
@@ -91,6 +93,7 @@ static indexer indexers[] = {
     { "null", 0, null_indexer, null_iterator },
     { "qclass", 0, qclass_indexer, qclass_iterator, qclass_reset },
     { "qnamelen", 0, qnamelen_indexer, qnamelen_iterator, qnamelen_reset },
+    { "label_count", 0, label_count_indexer, label_count_iterator, label_count_reset },
     { "qname", 0, qname_indexer, qname_iterator, qname_reset },
     { "second_ld", 0, second_ld_indexer, second_ld_iterator, second_ld_reset },
     { "third_ld", 0, third_ld_indexer, third_ld_iterator, third_ld_reset },
@@ -116,6 +119,7 @@ static indexer indexers[] = {
     { "ip_direction", 0, ip_direction_indexer, ip_direction_iterator },
     { "ip_proto", 0, ip_proto_indexer, ip_proto_iterator, ip_proto_reset },
     { "ip_version", 0, ip_version_indexer, ip_version_iterator, ip_version_reset },
+    { "encryption", 0, encryption_indexer, encryption_iterator },
     { 0 }
 };
 

@@ -1,3 +1,52 @@
+2022-01-28 Jerry Lundström
+
+    Release 2.13.0
+
+    This release fixes a huge performance issue with hashing IPv6
+    addresses, adds support for new DNSTAP messages types and protocols,
+    and adds two new indexers.
+
+    Thanks to a patch sent in by Ken Renard (@kdrenard) a rather huge
+    performance issue related to hashing IPv6 addresses has been solved.
+    Old code used a very incorrect assumption about addresses in general
+    and while same way was used for IPv4, it didn't hit as hard as it did
+    for IPv6.
+    New code uses hashing functions on both address types and to quote
+    the GitHub issue (by Ken):
+    -"This performs about 5% better than what I did (51 sec versus 54 sec)
+      for 5GB pcap file with nearly 50/50 split of IPv4 and IPv6 (3.7M/3.5M
+      v4/v6 queries).
+      Old inXaddr_hash() has been running for 75 minutes and is about 20%
+      done. I say this is a winner!"
+
+    Many thanks to Ken for pointing this out and supplying a patch!
+
+    DSC now depends on dnswire v0.3.0 which includes new DNSTAP messages
+    types and protocols that was recently added to DNSTAP's Protobuf
+    definition.
+    The new `UPDATE_QUERY` and `UPDATE_RESPONSE` messages types are
+    now supported and are interpret as `AUTH_QUERY` and `AUTH_RESPONSE`.
+    The new socket protocols for DOT, DOH and DNSCrypt are also supported
+    and are interpret as TCP for indexers such as `ip_proto` and
+    `transport`. To get stats on the encryption itself you can use the
+    new indexer `encryption`.
+
+    Two new indexers have been added:
+    - `label_count`: Number of labels in the QNAME
+    - `encryption`: Indicates whether the DNS message was carried over an
+      encrypted connection or not, and if so over which. For example
+      "unencrypted", "dot" (DNS-over-TLS), "doh" (DNS-over-HTTPS).
+
+    Other changes:
+    - `inX_addr`: Rework structure, separate IPv4 and IPv6 addresses
+    - Fix some DNSTAP tests
+    - `transport_index`: Fix typo in code documentation
+
+    37df703 DNSTAP update, encryption indexer
+    d27171f Label count indexer
+    6932247 Adding labellen indexer which counts the number of labels in a DNS message
+    68cc9c7 New IP hashing
+
 2022-01-13 Jerry Lundström
 
     Release 2.12.0
