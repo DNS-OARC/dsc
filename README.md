@@ -28,7 +28,7 @@ General support and discussion:
 environment with autoconf, automake, libtool and pkgconfig.
 
 `dsc` has a non-optional dependency on the PCAP library and optional
-dependency on the GeoIP library (for the `asn` and `country` indexer).
+dependency on the MaxMindDB library (for the `asn` and `country` indexer).
 
 To install the dependencies under Debian/Ubuntu:
 ```
