@@ -32,10 +32,14 @@ Requires:       python3
 
 %description
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring
-statistics from busy DNS servers. It uses a distributed architecture with
-collectors running on or near nameservers sending their data to one or more
-central presenters for display and archiving. Collectors use pcap to sniff
-network traffic. They transmit aggregated data to the presenter as XML data.
+statistics from busy DNS servers. It can be set up to run on or near
+nameservers to generate aggregated data that can then be transported to
+central systems for processing, displaying and archiving.
+
+Together with dsc-datatool the aggregated data can be furthur enriched
+and converted for import into for example InfluxDB which can then be
+accessed by Grafana for visualzation.
+
 
 %prep
 %setup -q -n %{name}_%{version}

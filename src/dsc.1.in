@@ -44,9 +44,17 @@ dsc \- DNS Statistics Collector
 .SH DESCRIPTION
 DNS Statistics Collector (\fIdsc\fR) is a tool used for collecting and
 exploring statistics from busy DNS servers.
-It can be used in a distributed architecture to run collectors on or
-near nameservers sending their data to one or more central presenters
-for display and archiving.
+It can be set up to run on or near nameservers to generate aggregated data
+that can then be transported to central systems for processing, displaying
+and archiving.
+
+Together with \fBdsc-datatool\fR the aggregated data can be furthur enriched
+and converted for import into for example InfluxDB which can then be
+accessed by Grafana for visualzation, see this wiki on how to set up that:
+
+.RS
+\fIhttps://github.com/DNS-OARC/dsc-datatool/wiki/Setting-up-a-test-Grafana\fP
+.RE
 
 .I dsc
 will chroot to a directory on startup and output statistics into files in
@@ -86,7 +94,8 @@ Print version and exit.
 @etcdir@/dsc.conf
 Default configuration file for dsc
 .SH "SEE ALSO"
-dsc.conf(5)
+dsc.conf(5),
+dsc-datatool(1)
 .SH AUTHORS
 Jerry Lundström, DNS-OARC
 .br
