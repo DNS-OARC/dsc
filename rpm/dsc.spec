@@ -12,6 +12,15 @@ Source0:        https://www.dns-oarc.net/files/dsc/%{name}-%{version}.tar.gz?/%{
 
 BuildRequires:  libpcap-devel
 BuildRequires:  libmaxminddb-devel
+%if 0%{?fedora}
+BuildRequires:  GeoIP-devel
+%endif
+%if 0%{?centos} == 0 && 0%{?el7}
+BuildRequires:  GeoIP-devel
+%endif
+%if 0%{?centos} == 0 && 0%{?el8}
+BuildRequires:  GeoIP-devel
+%endif
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool

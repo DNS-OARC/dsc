@@ -4,7 +4,8 @@ Priority: optional
 Maintainer: Jerry Lundström <lundstrom.jerry@gmail.com>
 Build-Depends: debhelper (>= 10), build-essential, automake, autoconf,
  libpcap-dev, netbase, pkg-config, libmaxminddb-dev,
- libdnswire-dev (>= 0.3.0), libuv1-dev, python3 (>= 3.5)
+ libdnswire-dev (>= 0.3.0), libuv1-dev, python3 (>= 3.5),
+ libgeoip-dev | libmaxminddb-dev
 Standards-Version: 3.9.4
 Homepage: https://www.dns-oarc.net/oarc/data/dsc
 Vcs-Git: https://github.com/DNS-OARC/dsc.git
