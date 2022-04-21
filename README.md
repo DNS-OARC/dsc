@@ -3,15 +3,19 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/DNS-OARC/dsc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DNS-OARC/dsc/alerts/) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=bugs)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=security_rating)](https://sonarcloud.io/dashboard?id=dns-oarc%3Adsc)
 
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring
-statistics from busy DNS servers.  It uses a distributed architecture with
-collectors running on or near nameservers sending their data to one or more
-central presenters for display and archiving.  Collectors use pcap to sniff
-network traffic.  They transmit aggregated data to the presenter as XML data.
+statistics from busy DNS servers. It can be set up to run on or near
+nameservers to generate aggregated data that can then be transported to
+central systems for processing, displaying and archiving.
 
-DNS Statistics Presenter can be found here:
-- https://github.com/DNS-OARC/dsp
+Together with `dsc-datatool` the aggregated data can be furthur enriched
+and converted for import into for example InfluxDB which can then be
+accessed by Grafana for visualzation, see this wiki on how to set up that:
+- https://github.com/DNS-OARC/dsc-datatool/wiki/Setting-up-a-test-Grafana
 
-More information about DSC/DSP may be found here:
+DSC data transforming and enriching tool can be found here:
+- https://github.com/DNS-OARC/dsc-datatool
+
+More information about DSC may be found here:
 - https://www.dns-oarc.net/tools/dsc
 - https://www.dns-oarc.net/oarc/data/dsc
 
@@ -28,7 +32,7 @@ General support and discussion:
 environment with autoconf, automake, libtool and pkgconfig.
 
 `dsc` has a non-optional dependency on the PCAP library and optional
-dependency on the GeoIP library (for the `asn` and `country` indexer).
+dependency on the MaxMindDB library (for the `asn` and `country` indexer).
 
 To install the dependencies under Debian/Ubuntu:
 ```

@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.13.0
+Version:        2.13.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -11,11 +11,15 @@ URL:            https://www.dns-oarc.net/oarc/data/dsc
 Source0:        https://www.dns-oarc.net/files/dsc/%{name}-%{version}.tar.gz?/%{name}_%{version}.orig.tar.gz
 
 BuildRequires:  libpcap-devel
-%if 0%{?suse_version} || 0%{?sle_version}
 BuildRequires:  libmaxminddb-devel
-%else
+%if 0%{?fedora}
 BuildRequires:  GeoIP-devel
-BuildRequires:  libmaxminddb-devel
+%endif
+%if 0%{?centos} == 0 && 0%{?el7}
+BuildRequires:  GeoIP-devel
+%endif
+%if 0%{?centos} == 0 && 0%{?el8}
+BuildRequires:  GeoIP-devel
 %endif
 BuildRequires:  autoconf
 BuildRequires:  automake
@@ -28,10 +32,14 @@ Requires:       python3
 
 %description
 DNS Statistics Collector (DSC) is a tool used for collecting and exploring
-statistics from busy DNS servers. It uses a distributed architecture with
-collectors running on or near nameservers sending their data to one or more
-central presenters for display and archiving. Collectors use pcap to sniff
-network traffic. They transmit aggregated data to the presenter as XML data.
+statistics from busy DNS servers. It can be set up to run on or near
+nameservers to generate aggregated data that can then be transported to
+central systems for processing, displaying and archiving.
+
+Together with dsc-datatool the aggregated data can be furthur enriched
+and converted for import into for example InfluxDB which can then be
+accessed by Grafana for visualzation.
+
 
 %prep
 %setup -q -n %{name}_%{version}
@@ -62,6 +70,18 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Apr 21 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.1-1
+- Release 2.13.1
+  * This patch release is mainly for build and packages where MaxMind DB
+    library is preferred over the legacy GeoIP library.
+    MaxMind has announced that the databases for GeoIP will be EOL May 2022
+    and recommends switching to GeoIP2 databases.
+  * Also updated DSC's description, removing references to the now
+    discontinued Presenter and pointing to dsc-datatool instead.
+  * Commits:
+    d891e2c Package, description
+    c23406c Optional GeoIP
+    26dd506 GeoIP
 * Fri Jan 28 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.0-1
 - Release 2.13.0
   * This release fixes a huge performance issue with hashing IPv6
