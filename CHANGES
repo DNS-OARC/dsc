@@ -1,3 +1,19 @@
+2022-04-21 Jerry Lundström
+
+    Release 2.13.1
+
+    This patch release is mainly for build and packages where MaxMind DB
+    library is preferred over the legacy GeoIP library.
+    MaxMind has announced that the databases for GeoIP will be EOL May 2022
+    and recommends switching to GeoIP2 databases.
+
+    Also updated DSC's description, removing references to the now
+    discontinued Presenter and pointing to dsc-datatool instead.
+
+    d891e2c Package, description
+    c23406c Optional GeoIP
+    26dd506 GeoIP
+
 2022-01-28 Jerry Lundström
 
     Release 2.13.0
