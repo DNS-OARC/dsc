@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.13.0
+Version:        2.13.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -70,6 +70,18 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Apr 21 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.1-1
+- Release 2.13.1
+  * This patch release is mainly for build and packages where MaxMind DB
+    library is preferred over the legacy GeoIP library.
+    MaxMind has announced that the databases for GeoIP will be EOL May 2022
+    and recommends switching to GeoIP2 databases.
+  * Also updated DSC's description, removing references to the now
+    discontinued Presenter and pointing to dsc-datatool instead.
+  * Commits:
+    d891e2c Package, description
+    c23406c Optional GeoIP
+    26dd506 GeoIP
 * Fri Jan 28 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.0-1
 - Release 2.13.0
   * This release fixes a huge performance issue with hashing IPv6
