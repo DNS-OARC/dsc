@@ -1,3 +1,24 @@
+dsc (2.13.2-1~unstable+1) unstable; urgency=low
+
+  * Release 2.13.2
+
+    Updated pcap-thread to v4.0.1:
+
+    Fixed issue with `pcap_dispatch()` during non-threaded timed runs by
+    checking packet timestamp and use `pcap_breakloop()` if the run
+    should end.
+    Based on reports, it looks like `pcap_dispatch()` won't stop
+    processing if load is high enough even if documentation says "only
+    one bufferful of packets is read at a time".
+
+    Many thanks to Klaus Darilion @klaus3000 (NIC.AT) for the report
+    and helping to track down the issue and test fixes!
+
+    e7d92fe Fix COPR
+    7ecf217 pcap-thread
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Fri, 10 Feb 2023 15:15:54 +0100
+
 dsc (2.13.1-1~unstable+1) unstable; urgency=low
 
   * Release 2.13.1

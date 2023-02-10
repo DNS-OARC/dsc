@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.13.1
+Version:        2.13.2
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -70,6 +70,20 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Feb 10 2023 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.2-1
+- Release 2.13.2
+  * Updated pcap-thread to v4.0.1:
+    Fixed issue with `pcap_dispatch()` during non-threaded timed runs by
+    checking packet timestamp and use `pcap_breakloop()` if the run
+    should end.
+    Based on reports, it looks like `pcap_dispatch()` won't stop
+    processing if load is high enough even if documentation says "only
+    one bufferful of packets is read at a time".
+  * Many thanks to Klaus Darilion @klaus3000 (NIC.AT) for the report
+    and helping to track down the issue and test fixes!
+  * Commits:
+    e7d92fe Fix COPR
+    7ecf217 pcap-thread
 * Thu Apr 21 2022 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.1-1
 - Release 2.13.1
   * This patch release is mainly for build and packages where MaxMind DB
