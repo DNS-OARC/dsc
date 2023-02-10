@@ -1,3 +1,22 @@
+2023-02-10 Jerry Lundström
+
+    Release 2.13.2
+
+    Updated pcap-thread to v4.0.1:
+
+    Fixed issue with `pcap_dispatch()` during non-threaded timed runs by
+    checking packet timestamp and use `pcap_breakloop()` if the run
+    should end.
+    Based on reports, it looks like `pcap_dispatch()` won't stop
+    processing if load is high enough even if documentation says "only
+    one bufferful of packets is read at a time".
+
+    Many thanks to Klaus Darilion @klaus3000 (NIC.AT) for the report
+    and helping to track down the issue and test fixes!
+
+    e7d92fe Fix COPR
+    7ecf217 pcap-thread
+
 2022-04-21 Jerry Lundström
 
     Release 2.13.1
