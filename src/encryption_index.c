@@ -51,7 +51,7 @@ int encryption_iterator(const char** label)
 {
     if (NULL == label) {
         next_iter = 0;
-        return TRANSPORT_ENCRYPTION_DNSCrypt + 1;
+        return TRANSPORT_ENCRYPTION_DOQ + 1;
     }
     switch (next_iter) {
     case TRANSPORT_ENCRYPTION_UNENCRYPTED:
@@ -65,6 +65,9 @@ int encryption_iterator(const char** label)
         break;
     case TRANSPORT_ENCRYPTION_DNSCrypt:
         *label = "dnscrypt";
+        break;
+    case TRANSPORT_ENCRYPTION_DOQ:
+        *label = "doq";
         break;
     default:
         return -1;

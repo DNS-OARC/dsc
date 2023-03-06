@@ -498,6 +498,10 @@ static int _set_proto(transport_message* tm, const struct dnstap* m)
         tm->proto      = IPPROTO_TCP;
         tm->encryption = TRANSPORT_ENCRYPTION_DNSCrypt;
         break;
+    case DNSTAP_SOCKET_PROTOCOL_DOQ:
+        tm->proto      = IPPROTO_UDP;
+        tm->encryption = TRANSPORT_ENCRYPTION_DOQ;
+        break;
     default:
         return -1;
     }

@@ -25,7 +25,7 @@ BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
 BuildRequires:  pkgconfig
-BuildRequires:  dnswire-devel >= 0.3.0
+BuildRequires:  dnswire-devel >= 0.4.0
 BuildRequires:  libuv-devel
 BuildRequires:  python3
 Requires:       python3
