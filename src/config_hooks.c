@@ -77,6 +77,9 @@ extern int threads_flag;
 uint64_t   minfree_bytes      = 0;
 int        output_format_xml  = 0;
 int        output_format_json = 0;
+uid_t      output_uid         = -1;
+gid_t      output_gid         = -1;
+mode_t     output_mod         = 0664;
 #define MAX_HASH_SIZE 512
 static hashtbl* dataset_hash         = NULL;
 uint64_t        statistics_interval  = 60; /* default interval in seconds*/
@@ -705,6 +708,49 @@ int load_tld_list(const char* file)
     fclose(fp);
 
     dsyslogf(LOG_INFO, "loaded TLD list from %s", file);
+
+    return 1;
+}
+
+int set_output_user(const char* user)
+{
+    struct passwd* pw = getpwnam(user);
+    if (!pw) {
+        dsyslogf(LOG_ERR, "user %s does not exist", user);
+        return 0;
+    }
+    output_uid = pw->pw_uid;
+
+    dsyslogf(LOG_INFO, "using user %s[%d] for output file", user, output_uid);
+
+    return 1;
+}
+
+int set_output_group(const char* group)
+{
+    struct group* gr = getgrnam(group);
+    if (!gr) {
+        dsyslogf(LOG_ERR, "group %s does not exist", group);
+        return 0;
+    }
+    output_gid = gr->gr_gid;
+
+    dsyslogf(LOG_INFO, "using group %s[%d] for output file", group, output_gid);
+
+    return 1;
+}
+
+int set_output_mod(const char* mod)
+{
+    unsigned long int m = strtoul(mod, NULL, 8);
+    if (m == ULONG_MAX) {
+        char errbuf[512];
+        dsyslogf(LOG_ERR, "invalid file mode, strtoul: %s", dsc_strerror(errno, errbuf, sizeof(errbuf)));
+        return 0;
+    }
+    output_mod = m;
+
+    dsyslogf(LOG_INFO, "using file mode %o for output file", output_mod);
 
     return 1;
 }
