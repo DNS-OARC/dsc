@@ -520,27 +520,22 @@ static int _set_addr(inX_addr* addr, const uint8_t* data, const size_t len)
 
 static int dnstap_handler(const struct dnstap* m)
 {
-    transport_message tm;
-
-    if (!dnstap_message_has_socket_family(*m)
-        || !dnstap_message_has_socket_protocol(*m)
-        || (dnstap_message_has_query_message(*m) && (!dnstap_message_has_query_time_sec(*m) || !dnstap_message_has_query_time_nsec(*m)))
-        || (dnstap_message_has_response_message(*m) && (!dnstap_message_has_response_time_sec(*m) || !dnstap_message_has_response_time_nsec(*m)))
-        || (dnstap_message_has_query_port(*m) && !dnstap_message_has_query_address(*m))
-        || (dnstap_message_has_response_port(*m) && !dnstap_message_has_response_address(*m))) {
-        dsyslog(LOG_ERR, "DNSTAP: Missing critical part(s) of DNSTAP message to be able to process");
-        return -1;
-    }
-
-    memset(&tm, 0, sizeof(tm));
+    transport_message tm = {};
 
     _print_dnstap(m);
 
     switch (dnstap_message_type(*m)) {
     case DNSTAP_MESSAGE_TYPE_AUTH_QUERY:
     case DNSTAP_MESSAGE_TYPE_UPDATE_QUERY:
-        if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_query_message(*m)
+            || !dnstap_message_has_query_address(*m)
+            || !dnstap_message_has_query_port(*m)
+            || !dnstap_message_has_query_time_sec(*m)
+            || !dnstap_message_has_query_time_nsec(*m)
+            || (dnstap_message_has_response_address(*m) && !dnstap_message_has_response_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -574,8 +569,15 @@ static int dnstap_handler(const struct dnstap* m)
 
     case DNSTAP_MESSAGE_TYPE_AUTH_RESPONSE:
     case DNSTAP_MESSAGE_TYPE_UPDATE_RESPONSE:
-        if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_response_message(*m)
+            || !dnstap_message_has_query_address(*m)
+            || !dnstap_message_has_query_port(*m)
+            || !dnstap_message_has_response_time_sec(*m)
+            || !dnstap_message_has_response_time_nsec(*m)
+            || (dnstap_message_has_response_address(*m) && !dnstap_message_has_response_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -608,8 +610,15 @@ static int dnstap_handler(const struct dnstap* m)
         break;
 
     case DNSTAP_MESSAGE_TYPE_RESOLVER_QUERY:
-        if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_query_message(*m)
+            || !dnstap_message_has_response_address(*m)
+            || !dnstap_message_has_response_port(*m)
+            || !dnstap_message_has_query_time_sec(*m)
+            || !dnstap_message_has_query_time_nsec(*m)
+            || (dnstap_message_has_query_address(*m) && !dnstap_message_has_query_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -642,8 +651,15 @@ static int dnstap_handler(const struct dnstap* m)
         break;
 
     case DNSTAP_MESSAGE_TYPE_RESOLVER_RESPONSE:
-        if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_response_message(*m)
+            || !dnstap_message_has_response_address(*m)
+            || !dnstap_message_has_response_port(*m)
+            || !dnstap_message_has_response_time_sec(*m)
+            || !dnstap_message_has_response_time_nsec(*m)
+            || (dnstap_message_has_query_address(*m) && !dnstap_message_has_query_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -676,8 +692,15 @@ static int dnstap_handler(const struct dnstap* m)
         break;
 
     case DNSTAP_MESSAGE_TYPE_CLIENT_QUERY:
-        if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_query_message(*m)
+            || !dnstap_message_has_query_address(*m)
+            || !dnstap_message_has_query_port(*m)
+            || !dnstap_message_has_query_time_sec(*m)
+            || !dnstap_message_has_query_time_nsec(*m)
+            || (dnstap_message_has_response_address(*m) && !dnstap_message_has_response_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -710,8 +733,15 @@ static int dnstap_handler(const struct dnstap* m)
         break;
 
     case DNSTAP_MESSAGE_TYPE_CLIENT_RESPONSE:
-        if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_query_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_response_message(*m)
+            || !dnstap_message_has_query_address(*m)
+            || !dnstap_message_has_query_port(*m)
+            || !dnstap_message_has_response_time_sec(*m)
+            || !dnstap_message_has_response_time_nsec(*m)
+            || (dnstap_message_has_response_address(*m) && !dnstap_message_has_response_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -746,8 +776,15 @@ static int dnstap_handler(const struct dnstap* m)
     case DNSTAP_MESSAGE_TYPE_STUB_QUERY:
     case DNSTAP_MESSAGE_TYPE_FORWARDER_QUERY:
     case DNSTAP_MESSAGE_TYPE_TOOL_QUERY:
-        if (!dnstap_message_has_query_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_query_message(*m)
+            || !dnstap_message_has_response_address(*m)
+            || !dnstap_message_has_response_port(*m)
+            || !dnstap_message_has_query_time_sec(*m)
+            || !dnstap_message_has_query_time_nsec(*m)
+            || (dnstap_message_has_query_address(*m) && !dnstap_message_has_query_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
@@ -782,8 +819,15 @@ static int dnstap_handler(const struct dnstap* m)
     case DNSTAP_MESSAGE_TYPE_STUB_RESPONSE:
     case DNSTAP_MESSAGE_TYPE_FORWARDER_RESPONSE:
     case DNSTAP_MESSAGE_TYPE_TOOL_RESPONSE:
-        if (!dnstap_message_has_response_message(*m) || !dnstap_message_has_response_address(*m)) {
-            dsyslogf(LOG_ERR, "DNSTAP: Missing parts of %s", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
+        if (!dnstap_message_has_socket_family(*m)
+            || !dnstap_message_has_socket_protocol(*m)
+            || !dnstap_message_has_response_message(*m)
+            || !dnstap_message_has_response_address(*m)
+            || !dnstap_message_has_response_port(*m)
+            || !dnstap_message_has_response_time_sec(*m)
+            || !dnstap_message_has_response_time_nsec(*m)
+            || (dnstap_message_has_query_address(*m) && !dnstap_message_has_query_port(*m))) {
+            dsyslogf(LOG_ERR, "DNSTAP: Missing essential parts of %s to be able to process", DNSTAP_MESSAGE_TYPE_STRING[dnstap_message_type(*m)]);
             break;
         }
 
