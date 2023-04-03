@@ -224,6 +224,15 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #output_format XML;
 #output_format JSON;
 
+# output file access
+#
+#   Following options controls the user, group and file mode bits for the
+#   output file.
+#
+#output_user root;
+#output_group root;
+#output_mod 0664;
+
 # dump_reports_on_exit
 #
 #   Dump any remaining report before exiting.

@@ -14,13 +14,14 @@ CLEANFILES = test*.log test*.trs \
   test12.out \
   1458044657.tld_list.dist \
   tld_list.dat \
-  dotdoh.dnstap.dist 1643283234.dscdata.xml
+  dotdoh.dnstap.dist 1643283234.dscdata.xml \
+  test13.conf
 
 EXTRA_DIST =
 
 TESTS = test1.sh test2.sh test3.sh test4.sh test6.sh test7.sh test8.sh \
   test9.sh test10.sh test11.sh test12.sh test_dnstap_unixsock.sh \
-  test_dnstap_tcp.sh test_pslconv.sh test_encrypted.sh
+  test_dnstap_tcp.sh test_pslconv.sh test_encrypted.sh test13.sh
 
 if USE_DNSTAP
 TESTS += test5.sh
@@ -75,6 +76,8 @@ test_encrypted.sh: dotdoh.dnstap.dist
 
 dotdoh.dnstap.dist: dotdoh.dnstap
 	ln -s "$(srcdir)/dotdoh.dnstap" dotdoh.dnstap.dist
+
+test13.sh: 1458044657.pcap.dist 1458044657.tld_list.dist
 
 EXTRA_DIST += $(TESTS) \
   1458044657.conf 1458044657.pcap 1458044657.json_gold 1458044657.xml_gold \

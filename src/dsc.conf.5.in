@@ -242,6 +242,19 @@ any number of times.
 Default output format is XML, see section DATA FORMATS and FILE NAMING
 CONVENTIONS.
 .TP
+\fBoutput_user\fR USER ;
+Specify which user should own the output file, default to the user running
+.IR dsc .
+.TP
+\fBoutput_group\fR GROUP ;
+Specify which group should own the output file, default to the group of the
+user running
+.IR dsc .
+.TP
+\fBoutput_mod\fR FILE_MODE_BITS ;
+Specify the file mode bits (in octal) for the output file permissions,
+default to 0664.
+.TP
 \fBdump_reports_on_exit\fR ;
 Dump any remaining report before exiting.
 
@@ -965,6 +978,9 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #no_wait_interval;
 output_format XML;
 #output_format JSON;
+#output_user root;
+#output_group root;
+#output_mod 0664;
 
 #geoip_v4_dat "/usr/share/GeoIP/GeoIP.dat" STANDARD MEMORY_CACHE MMAP_CACHE;
 #geoip_v6_dat "/usr/share/GeoIP/GeoIPv6.dat";

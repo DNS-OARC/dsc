@@ -952,6 +952,51 @@ int parse_conf_tld_list(const conf_token_t* tokens)
     return ret == 1 ? 0 : 1;
 }
 
+int parse_conf_output_user(const conf_token_t* tokens)
+{
+    char* user = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!user) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_output_user(user);
+    free(user);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_output_group(const conf_token_t* tokens)
+{
+    char* group = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!group) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_output_group(group);
+    free(group);
+    return ret == 1 ? 0 : 1;
+}
+
+int parse_conf_output_mod(const conf_token_t* tokens)
+{
+    char* mod = strndup(tokens[1].token, tokens[1].length);
+    int   ret;
+
+    if (!mod) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    ret = set_output_mod(mod);
+    free(mod);
+    return ret == 1 ? 0 : 1;
+}
+
 static conf_token_syntax_t _syntax[] = {
     { "interface",
         parse_conf_interface,
@@ -1076,6 +1121,15 @@ static conf_token_syntax_t _syntax[] = {
     { "tld_list",
         parse_conf_tld_list,
         { TOKEN_STRING, TOKEN_END } },
+    { "output_user",
+        parse_conf_output_user,
+        { TOKEN_STRING, TOKEN_END } },
+    { "output_group",
+        parse_conf_output_group,
+        { TOKEN_STRING, TOKEN_END } },
+    { "output_mod",
+        parse_conf_output_mod,
+        { TOKEN_NUMBER, TOKEN_END } },
 
     { 0, 0, { TOKEN_END } }
 };

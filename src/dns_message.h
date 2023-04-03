@@ -63,6 +63,7 @@ enum transport_encryption {
     TRANSPORT_ENCRYPTION_DOT         = 1,
     TRANSPORT_ENCRYPTION_DOH         = 2,
     TRANSPORT_ENCRYPTION_DNSCrypt    = 3,
+    TRANSPORT_ENCRYPTION_DOQ         = 4,
 };
 
 struct transport_message {

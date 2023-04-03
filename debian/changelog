@@ -1,3 +1,26 @@
+dsc (2.14.0-1~unstable+1) unstable; urgency=low
+
+  * Release 2.14.0
+
+    This release adds new configure option to control the file access to
+    the output files, support for newer DNSTAP, improved DNSTAP message
+    handling and updated Public Suffix List.
+
+    - Fix #279: Add new conf options to control output file access:
+      - `output_user`: set output file user ownership
+      - `output_group`: set output file group ownership
+      - `output_mod`: set output file mode bits
+    - `dnstap`: Move DNSTAP essential attributes checks inside each type and customize them for that specific type
+    - Update dnswire dependencies to v0.4.0
+    - `encryption_index`: Add support for new DNSTAP DNS-over-QUIC socket protocol
+    - Update builtin Public Suffix List (PSL)
+
+    abfe245 DNSTAP
+    da06317 Output file access
+    af01a48 DOQ transport, PSL update
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Mon, 03 Apr 2023 15:35:03 +0200
+
 dsc (2.13.2-1~unstable+1) unstable; urgency=low
 
   * Release 2.13.2

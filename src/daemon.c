@@ -98,6 +98,9 @@ extern md_array_printer xml_printer;
 extern md_array_printer json_printer;
 extern int              output_format_xml;
 extern int              output_format_json;
+extern uid_t            output_uid;
+extern gid_t            output_gid;
+extern mode_t           output_mod;
 extern int              dump_reports_on_exit;
 extern uint64_t         statistics_interval;
 extern int              no_wait_interval;
@@ -290,11 +293,12 @@ dump_report(md_array_printer* printer)
 
     fputs(printer->end_file, fp);
 
-    /*
-     * XXX need chmod because files are written as root, but may be processed
-     * by a non-priv user
-     */
-    fchmod(fd, 0664);
+    if (fchown(fd, output_uid, output_gid)) {
+        dsyslogf(LOG_ERR, "%s: unable to fchown(): %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    }
+    if (fchmod(fd, output_mod)) {
+        dsyslogf(LOG_ERR, "%s: unable to fchmod(): %s", tname, dsc_strerror(errno, errbuf, sizeof(errbuf)));
+    }
     fclose(fp);
     dfprintf(0, "renaming to %s", fname);
 
