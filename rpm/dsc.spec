@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.13.2
+Version:        2.14.0
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -70,6 +70,23 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Apr 03 2023 Jerry Lundström <lundstrom.jerry@gmail.com> 2.14.0-1
+- Release 2.14.0
+  * This release adds new configure option to control the file access to
+    the output files, support for newer DNSTAP, improved DNSTAP message
+    handling and updated Public Suffix List.
+    - Fix #279: Add new conf options to control output file access:
+      - `output_user`: set output file user ownership
+      - `output_group`: set output file group ownership
+      - `output_mod`: set output file mode bits
+    - `dnstap`: Move DNSTAP essential attributes checks inside each type and customize them for that specific type
+    - Update dnswire dependencies to v0.4.0
+    - `encryption_index`: Add support for new DNSTAP DNS-over-QUIC socket protocol
+    - Update builtin Public Suffix List (PSL)
+  * Commits:
+    abfe245 DNSTAP
+    da06317 Output file access
+    af01a48 DOQ transport, PSL update
 * Fri Feb 10 2023 Jerry Lundström <lundstrom.jerry@gmail.com> 2.13.2-1
 - Release 2.13.2
   * Updated pcap-thread to v4.0.1:
