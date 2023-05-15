@@ -990,7 +990,7 @@ output_format XML;
 #asn_indexer_backend geoip;
 #country_indexer_backend geoip;
 #maxminddb_asn "/path/to/GeoLite2/ASN.mmdb";
-#maxminddb_country "/path/to/GeoList2/Country.mmdb";
+#maxminddb_country "/path/to/GeoLite2/Country.mmdb";
 
 #client_v4_mask 255.255.255.0;
 #client_v6_mask ffff:ffff:ffff:ffff:ffff:ffff:0000:0000;

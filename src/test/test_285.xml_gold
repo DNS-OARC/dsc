@@ -1,0 +1,21 @@
+<dscdata>
+<array name="pcap_stats" dimensions="2" start_time="1683879751" stop_time="1683879752">
+  <dimension number="1" type="ifname"/>
+  <dimension number="2" type="pcap_stat"/>
+  <data>
+    <ifname val="Li90ZXN0XzI4NS5wY2FwLmRpc3Q=" base64="1">
+      <pcap_stat val="pkts_captured" count="4"/>
+    </ifname>
+  </data>
+</array>
+<array name="test285" dimensions="2" start_time="1683879751" stop_time="1683879752">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="TLD"/>
+  <data>
+    <All val="ALL">
+      <TLD val="org" count="1"/>
+      <TLD val="at" count="1"/>
+    </All>
+  </data>
+</array>
+</dscdata>
