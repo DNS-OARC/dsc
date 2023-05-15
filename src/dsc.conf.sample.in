@@ -263,7 +263,7 @@ dataset direction_vs_ipproto ip Direction:ip_direction IPProto:ip_proto any;
 #asn_indexer_backend geoip;
 #country_indexer_backend geoip;
 #maxminddb_asn "/path/to/GeoLite2/ASN.mmdb";
-#maxminddb_country "/path/to/GeoList2/Country.mmdb";
+#maxminddb_country "/path/to/GeoLite2/Country.mmdb";
 
 # Client Subnet Mask
 #

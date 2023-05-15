@@ -406,6 +406,7 @@ const char* dns_message_QnameToNld(const char* qname, int nld)
     if (have_tld_list) {
         // Use TLD list to find labels that are the "TLD"
         const char *lt = 0, *ot = t;
+        int done = 0;
         while (t > qname) {
             t--;
             if ('.' == *t) {
@@ -427,6 +428,7 @@ const char* dns_message_QnameToNld(const char* qname, int nld)
                             t     = ot;
                             state = 0;
                         }
+                        done = 1;
                         break;
                     }
                 }
@@ -434,6 +436,10 @@ const char* dns_message_QnameToNld(const char* qname, int nld)
             } else {
                 state = 0;
             }
+        }
+        if (!done) {
+            // nothing found, reset t
+            t = e;
         }
     }
     while (t > qname && dotcount < nld) {
