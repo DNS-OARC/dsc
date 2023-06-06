@@ -99,6 +99,11 @@ struct dns_message {
         unsigned int   DO : 1; /* set if DNSSEC DO bit is set */
         unsigned char  version; /* version field from OPT RR */
         unsigned short bufsiz; /* class field from OPT RR */
+        unsigned short cookie_len; /* cookie length from OPT RR, 0 means none, and (n>1) means (n-1) */
+        unsigned short nsid_len; /* nsid length from OPT RR, 0 means none, and (n>1) means (n-1) */
+        unsigned short ede_code; /* ede_code from OPT RR, 0 means none, and (n>1) means (n-1) */
+        unsigned short ede_text_len; /* ede_text_length from OPT RR, 0 means none, and (n>1) means (n-1) */
+        unsigned short ecs_family; /* ECS family from OPT RR, 0 means none, and (n>1) means (n-1) */
     } edns;
 };
 

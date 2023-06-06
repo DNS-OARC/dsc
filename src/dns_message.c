@@ -53,6 +53,11 @@
 #include "server_ip_addr_index.h"
 #include "qnamelen_index.h"
 #include "label_count_index.h"
+#include "edns0_cookielen_index.h"
+#include "edns0_nsidlen_index.h"
+#include "edns0_edetextlen_index.h"
+#include "edns0_edecode_index.h"
+#include "edns0_ecsfamily_index.h"
 #include "qname_index.h"
 #include "msglen_index.h"
 #include "certain_qnames_index.h"
@@ -94,6 +99,11 @@ static indexer indexers[] = {
     { "qclass", 0, qclass_indexer, qclass_iterator, qclass_reset },
     { "qnamelen", 0, qnamelen_indexer, qnamelen_iterator, qnamelen_reset },
     { "label_count", 0, label_count_indexer, label_count_iterator, label_count_reset },
+    { "edns0_cookielen", 0, edns0_cookielen_indexer, edns0_cookielen_iterator, edns0_cookielen_reset },
+    { "edns0_nsidlen", 0, edns0_nsidlen_indexer, edns0_nsidlen_iterator, edns0_nsidlen_reset },
+    { "edns0_edetextlen", 0, edns0_edetextlen_indexer, edns0_edetextlen_iterator, edns0_edetextlen_reset },
+    { "edns0_edecode", 0, edns0_edecode_indexer, edns0_edecode_iterator, edns0_edecode_reset },
+    { "edns0_ecsfamily", 0, edns0_ecsfamily_indexer, edns0_ecsfamily_iterator, edns0_ecsfamily_reset },
     { "qname", 0, qname_indexer, qname_iterator, qname_reset },
     { "second_ld", 0, second_ld_indexer, second_ld_iterator, second_ld_reset },
     { "third_ld", 0, third_ld_indexer, third_ld_iterator, third_ld_reset },
@@ -211,6 +221,13 @@ static int qname_filter(const dns_message* m, const void* ctx)
 static int servfail_filter(const dns_message* m, const void* ctx)
 {
     return m->rcode == 2;
+}
+
+static int edns0_filter(const dns_message* m, const void* ctx)
+{
+    if ((m->edns.found == 1) && (m->edns.version == 0))
+        return 1;
+    return 0;
 }
 
 /*
@@ -478,6 +495,7 @@ void dns_message_filters_init(void)
     fl = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-only", edns0_filter, 0));
     (void)md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
 }
 

@@ -553,6 +553,27 @@ The number of labels (between "." dots) in the first (and usually only)
 QNAME in a DNS message question section.
 Note that a value of 0 (zero) means DNS root (.).
 .TP
+\fBedns0_cookielen\fR
+The length of the EDNS0 cookie option, when present.  Will report
+"none" for DNS messages without EDNS0 or cookies.
+.TP
+\fBedns0_nsidlen\fR
+The length of the EDNS0 nsid option, when present.  Will report
+"none" for DNS messages without EDNS0 or nsid.
+.TP
+\fBedns0_edetextlen\fR
+The length of the EDNS0 extended error text, when present.  Will report
+"none" for DNS messages without EDNS0, extended error option or
+extended error text
+.TP
+\fBedns0_edecode\fR
+The EDNS0 extended error code, when present.  Will report
+"none" for DNS messages without EDNS0 or extended error option
+.TP
+\fBedns0_ecsfamily\fR
+The EDNS0 Client Subnet address family, when present.  Will report
+"none" for DNS messages without EDNS0 or Client Subnet option
+.TP
 \fBqtype\fR
 The query type (QTYPE) for the first QNAME in the DNS message question
 section.
