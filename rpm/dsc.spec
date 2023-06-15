@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.14.0
+Version:        2.14.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -70,6 +70,15 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Jun 15 2023 Jerry Lundström <lundstrom.jerry@gmail.com> 2.14.1-1
+- Release 2.14.1
+  * Fixed a bug in TLD handling when using `tld_list`, it did not reset
+    where it was in the QNAME when nothing was found and could therefor
+    wrongly indicate something as a TLD.
+    Also fixed a typo in the `dsc.conf` man-page.
+  * Commits:
+    976589d GCOV
+    c3afee4 TLD list, doc typo
 * Mon Apr 03 2023 Jerry Lundström <lundstrom.jerry@gmail.com> 2.14.0-1
 - Release 2.14.0
   * This release adds new configure option to control the file access to

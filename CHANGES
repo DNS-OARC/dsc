@@ -1,3 +1,16 @@
+2023-06-15 Jerry Lundström
+
+    Release 2.14.1
+
+    Fixed a bug in TLD handling when using `tld_list`, it did not reset
+    where it was in the QNAME when nothing was found and could therefor
+    wrongly indicate something as a TLD.
+
+    Also fixed a typo in the `dsc.conf` man-page.
+
+    976589d GCOV
+    c3afee4 TLD list, doc typo
+
 2023-04-03 Jerry Lundström
 
     Release 2.14.0
