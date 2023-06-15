@@ -80,6 +80,9 @@
 #if HAVE_PTHREAD
 #include <pthread.h>
 #endif
+#if GCOV_FLUSH
+#include <gcov.h>
+#endif
 
 char* progname       = NULL;
 char* pid_file_name  = NULL;
@@ -117,7 +120,11 @@ void daemonize(void)
     }
     if (pid > 0) {
 #ifdef GCOV_FLUSH
+#if __GNUC__ >= 11
+        __gcov_dump();
+#else
         __gcov_flush();
+#endif
 #endif
         _exit(0);
     }
@@ -620,7 +627,11 @@ int main(int argc, char* argv[])
 
             dump_reports();
 #ifdef GCOV_FLUSH
+#if __GNUC__ >= 11
+            __gcov_dump();
+#else
             __gcov_flush();
+#endif
 #endif
             _exit(0);
         }
