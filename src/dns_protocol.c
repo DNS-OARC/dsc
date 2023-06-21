@@ -54,7 +54,7 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
     unsigned char c;
     size_t        len;
     static int    loop_detect = 0;
-    if (loop_detect > 2)
+    if (loop_detect > 5)
         return 4; /* compression loop */
     if (ns <= 0)
         return 4; /* probably compression loop */
@@ -137,34 +137,67 @@ static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname
     return offset;
 }
 
-static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
+static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m, int arcount)
 {
-    int            x;
+    int            i, x, have_edns = 0;
     unsigned short sometype;
     unsigned short someclass;
     unsigned short us;
     char           somename[MAX_QNAME_SZ];
-    x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
-    if (0 != x)
-        return 0;
-    if (offset + 10 > len)
-        return 0;
-    sometype  = nptohs(buf + offset);
-    someclass = nptohs(buf + offset + 2);
-    if (sometype == T_OPT) {
-        m->edns.found  = 1;
-        m->edns.bufsiz = someclass;
-        memcpy(&m->edns.version, buf + offset + 5, 1);
-        us         = nptohs(buf + offset + 6);
-        m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
+
+    while (arcount > 0) {
+        somename[0] = (char)0;
+        x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
+        if (0 != x)
+            return 0;
+        if (offset + 10 > len)
+            return 0;
+        sometype  = nptohs(buf + offset);
+        if ((sometype == T_OPT) && (somename[0] == 0) && (have_edns == 0)) {
+            someclass = nptohs(buf + offset + 2);
+            m->edns.found  = 1;
+            m->edns.bufsiz = someclass;
+            memcpy(&m->edns.version, buf + offset + 5, 1);
+            us         = nptohs(buf + offset + 6);
+            m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
+            have_edns = 1;
+            us = nptohs(buf + offset + 8);
+            offset += 10;
+            if (offset + us > len)
+                return 0;
+            offset += us;
+        } else {
+            /* get rdlength */
+            us = nptohs(buf + offset + 8);
+            offset += 10;
+            if (offset + us > len)
+                return 0;
+            offset += us;
+        }
+        arcount--;
+        continue;
     }
-    /* get rdlength */
-    us = nptohs(buf + offset + 8);
-    offset += 10;
-    if (offset + us > len)
-        return 0;
-    offset += us;
-    return offset;
+    return (offset);
+}
+
+static off_t skip_rrs (const unsigned char *buf, int len, off_t offset, int rr_count) {
+    unsigned short rdlen;
+    char t_qname[MAX_QNAME_SZ] = { 0 };
+
+    while(rr_count > 0) {
+        int x;
+        if (offset + 1 > len)   /* minimum name length */
+            return 0;
+        x = rfc1035NameUnpack(buf, len, &offset, t_qname, MAX_QNAME_SZ);
+        if (offset + 10 > len)  /* minimum record length */
+            return 0;
+        rdlen = nptohs(buf + offset + 8);
+        offset += 10 + rdlen;
+        if (offset > len)
+            return 0;
+        rr_count--;
+    }
+    return(offset);
 }
 
 int dns_protocol_handler(const u_char* buf, int len, void* udata)
@@ -173,9 +206,9 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
     unsigned short     us;
     off_t              offset;
     int                qdcount;
-    /* int ancount; */
-    /* int nscount; */
-    int arcount;
+    int                ancount;
+    int                nscount;
+    int                arcount;
 
     dns_message m;
 
@@ -202,8 +235,8 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
     m.rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
-    /* ancount = nptohs(buf + 6); */
-    /* nscount = nptohs(buf + 8); */
+    ancount = nptohs(buf + 6);
+    nscount = nptohs(buf + 8);
     arcount = nptohs(buf + 10);
 
     offset = DNS_MSG_HDR_SZ;
@@ -243,15 +276,38 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
     }
     assert(offset <= len);
 
+    /* Gobble up AN RRs */
+    if (ancount > 0) {
+        off_t new_offset;
+        new_offset = skip_rrs (buf, len, offset, ancount);
+        if (0 == new_offset) {
+            m.malformed = 1;
+            return 0;
+        }
+        offset = new_offset;
+    }
+    assert(offset <= len);
+
+    /* Gobble up NS RRs */
+    if (nscount > 0) {
+        off_t new_offset;
+        new_offset = skip_rrs (buf, len, offset, nscount);
+        if (0 == new_offset) {
+            m.malformed = 1;
+            return 0;
+        }
+        offset = new_offset;
+    }
+    assert(offset <= len);
+
     if (arcount > 0 && offset < len) {
         off_t new_offset;
-        new_offset = grok_additional_for_opt_rr(buf, len, offset, &m);
+        new_offset = grok_additional_for_opt_rr(buf, len, offset, &m, arcount);
         if (0 == new_offset) {
             offset = len;
         } else {
             offset = new_offset;
         }
-        arcount--;
     }
     assert(offset <= len);
     dns_message_handle(&m);
