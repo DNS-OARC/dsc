@@ -53,9 +53,11 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
     off_t         no = 0;
     unsigned char c;
     size_t        len;
-    static int    loop_detect = 0;
-    if (loop_detect > 2)
-        return 4; /* compression loop */
+    /*
+     * loop_detect[] tracks which position in the DNS message it has
+     * jumped to so it can't jump to the same twice, aka loop
+     */
+    static unsigned char loop_detect[0x3FFF] = { 0 };
     if (ns <= 0)
         return 4; /* probably compression loop */
     do {
@@ -66,7 +68,7 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
             /* blasted compression */
             int            rc;
             unsigned short s;
-            off_t          ptr;
+            off_t          ptr, loop_ptr;
             s = nptohs(buf + (*off));
             (*off) += sizeof(s);
             /* Sanity check */
@@ -78,9 +80,13 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
                 return 2; /* bad compression ptr */
             if (ptr < DNS_MSG_HDR_SZ)
                 return 2; /* bad compression ptr */
-            loop_detect++;
+            if (loop_detect[ptr])
+                return 4; /* compression loop */
+            loop_detect[(loop_ptr = ptr)] = 1;
+
             rc = rfc1035NameUnpack(buf, sz, &ptr, name + no, ns - no);
-            loop_detect--;
+
+            loop_detect[loop_ptr] = 0;
             return rc;
         } else if (c > RFC1035_MAXLABELSZ) {
             /*
@@ -115,9 +121,11 @@ static int rfc1035NameSkip(const u_char* buf, size_t sz, off_t* off)
 {
     unsigned char c;
     size_t        len;
-    static int    loop_detect = 0;
-    if (loop_detect > 2)
-        return 4; /* compression loop */
+    /*
+     * loop_detect[] tracks which position in the DNS message it has
+     * jumped to so it can't jump to the same twice, aka loop
+     */
+    static unsigned char loop_detect[0x3FFF] = { 0 };
     do {
         if ((*off) >= sz)
             break;
@@ -126,7 +134,7 @@ static int rfc1035NameSkip(const u_char* buf, size_t sz, off_t* off)
             /* blasted compression */
             int            rc;
             unsigned short s;
-            off_t          ptr;
+            off_t          ptr, loop_ptr;
             s = nptohs(buf + (*off));
             (*off) += sizeof(s);
             /* Sanity check */
@@ -138,9 +146,13 @@ static int rfc1035NameSkip(const u_char* buf, size_t sz, off_t* off)
                 return 2; /* bad compression ptr */
             if (ptr < DNS_MSG_HDR_SZ)
                 return 2; /* bad compression ptr */
-            loop_detect++;
+            if (loop_detect[ptr])
+                return 4; /* compression loop */
+            loop_detect[(loop_ptr = ptr)] = 1;
+
             rc = rfc1035NameSkip(buf, sz, &ptr);
-            loop_detect--;
+
+            loop_detect[loop_ptr] = 0;
             return rc;
         } else if (c > RFC1035_MAXLABELSZ) {
             /*
