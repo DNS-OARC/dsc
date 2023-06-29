@@ -210,23 +210,27 @@ static off_t skip_question(const u_char* buf, int len, off_t offset)
 
 static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
 {
-    int            x;
-    unsigned short sometype;
-    unsigned short someclass;
     unsigned short us;
-    x = rfc1035NameSkip(buf, len, &offset);
-    if (0 != x)
-        return 0;
-    if (offset + 10 > len)
-        return 0;
-    sometype  = nptohs(buf + offset);
-    someclass = nptohs(buf + offset + 2);
-    if (sometype == T_OPT) {
-        m->edns.found  = 1;
-        m->edns.bufsiz = someclass;
-        memcpy(&m->edns.version, buf + offset + 5, 1);
-        us         = nptohs(buf + offset + 6);
-        m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
+    /*
+     * OPT RR for EDNS0 MUST be 0 (root domain), so if the first byte of
+     * the name is anything it can't be a valid EDNS0 record.
+     */
+    if (*(buf + offset)) {
+        if (rfc1035NameSkip(buf, len, &offset))
+            return 0;
+        if (offset + 10 > len)
+            return 0;
+    } else {
+        offset++;
+        if (offset + 10 > len)
+            return 0;
+        if (nptohs(buf + offset) == T_OPT && !m->edns.found) {
+            m->edns.found  = 1;
+            m->edns.bufsiz = nptohs(buf + offset + 2);
+            memcpy(&m->edns.version, buf + offset + 5, 1);
+            us         = nptohs(buf + offset + 6);
+            m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
+        }
     }
     /* get rdlength */
     us = nptohs(buf + offset + 8);
