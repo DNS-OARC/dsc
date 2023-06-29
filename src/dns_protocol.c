@@ -111,6 +111,55 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
     return 0;
 }
 
+static int rfc1035NameSkip(const u_char* buf, size_t sz, off_t* off)
+{
+    unsigned char c;
+    size_t        len;
+    static int    loop_detect = 0;
+    if (loop_detect > 2)
+        return 4; /* compression loop */
+    do {
+        if ((*off) >= sz)
+            break;
+        c = *(buf + (*off));
+        if (c > 191) {
+            /* blasted compression */
+            int            rc;
+            unsigned short s;
+            off_t          ptr;
+            s = nptohs(buf + (*off));
+            (*off) += sizeof(s);
+            /* Sanity check */
+            if ((*off) >= sz)
+                return 1; /* message too short */
+            ptr = s & 0x3FFF;
+            /* Make sure the pointer is inside this message */
+            if (ptr >= sz)
+                return 2; /* bad compression ptr */
+            if (ptr < DNS_MSG_HDR_SZ)
+                return 2; /* bad compression ptr */
+            loop_detect++;
+            rc = rfc1035NameSkip(buf, sz, &ptr);
+            loop_detect--;
+            return rc;
+        } else if (c > RFC1035_MAXLABELSZ) {
+            /*
+             * "(The 10 and 01 combinations are reserved for future use.)"
+             */
+            return 3; /* reserved label/compression flags */
+        } else {
+            (*off)++;
+            len = (size_t)c;
+            if (len == 0)
+                break;
+            if ((*off) + len > sz)
+                return 4; /* message is too short */
+            (*off) += len;
+        }
+    } while (c > 0);
+    return 0;
+}
+
 static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned short* qtype, unsigned short* qclass)
 {
     char* t;
@@ -137,14 +186,23 @@ static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname
     return offset;
 }
 
+static off_t skip_question(const u_char* buf, int len, off_t offset)
+{
+    if (rfc1035NameSkip(buf, len, &offset))
+        return 0;
+    if (offset + 4 > len)
+        return 0;
+    offset += 4;
+    return offset;
+}
+
 static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
 {
     int            x;
     unsigned short sometype;
     unsigned short someclass;
     unsigned short us;
-    char           somename[MAX_QNAME_SZ];
-    x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
+    x = rfc1035NameSkip(buf, len, &offset);
     if (0 != x)
         return 0;
     if (offset + 10 > len)
@@ -167,15 +225,26 @@ static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset
     return offset;
 }
 
+static off_t skip_rr(const u_char* buf, int len, off_t offset)
+{
+    if (rfc1035NameSkip(buf, len, &offset))
+        return 0;
+    if (offset + 10 > len)
+        return 0;
+    unsigned short us = nptohs(buf + offset + 8);
+    offset += 10;
+    if (offset + us > len)
+        return 0;
+    offset += us;
+    return offset;
+}
+
 int dns_protocol_handler(const u_char* buf, int len, void* udata)
 {
     transport_message* tm = udata;
     unsigned short     us;
-    off_t              offset;
-    int                qdcount;
-    /* int ancount; */
-    /* int nscount; */
-    int arcount;
+    off_t              offset, new_offset;
+    int                qdcount, ancount, nscount, arcount;
 
     dns_message m;
 
@@ -202,8 +271,8 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
     m.rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
-    /* ancount = nptohs(buf + 6); */
-    /* nscount = nptohs(buf + 8); */
+    ancount = nptohs(buf + 6);
+    nscount = nptohs(buf + 8);
     arcount = nptohs(buf + 10);
 
     offset = DNS_MSG_HDR_SZ;
@@ -212,9 +281,7 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
      * Grab the first question
      */
     if (qdcount > 0 && offset < len) {
-        off_t new_offset;
-        new_offset = grok_question(buf, len, offset, m.qname, &m.qtype, &m.qclass);
-        if (0 == new_offset) {
+        if (!(new_offset = grok_question(buf, len, offset, m.qname, &m.qtype, &m.qclass))) {
             m.malformed = 1;
             return 0;
         }
@@ -222,37 +289,55 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
         qdcount--;
     }
     assert(offset <= len);
+
     /*
      * Gobble up subsequent questions, if any
      */
     while (qdcount > 0 && offset < len) {
-        off_t          new_offset;
-        char           t_qname[MAX_QNAME_SZ] = { 0 };
-        unsigned short t_qtype;
-        unsigned short t_qclass;
-        new_offset = grok_question(buf, len, offset, t_qname, &t_qtype, &t_qclass);
-        if (0 == new_offset) {
-            /*
-             * point offset to the end of the buffer to avoid any subsequent processing
-             */
-            offset = len;
-            break;
+        if (!(new_offset = skip_question(buf, len, offset))) {
+            goto handle_m;
         }
         offset = new_offset;
         qdcount--;
     }
     assert(offset <= len);
 
-    if (arcount > 0 && offset < len) {
-        off_t new_offset;
-        new_offset = grok_additional_for_opt_rr(buf, len, offset, &m);
-        if (0 == new_offset) {
-            offset = len;
-        } else {
-            offset = new_offset;
+    /*
+     * Gobble up answers, if any
+     */
+    while (ancount > 0 && offset < len) {
+        if (!(new_offset = skip_rr(buf, len, offset))) {
+            goto handle_m;
         }
+        offset = new_offset;
+        ancount--;
+    }
+    assert(offset <= len);
+
+    /*
+     * Gobble up authorities, if any
+     */
+    while (nscount > 0 && offset < len) {
+        if (!(new_offset = skip_rr(buf, len, offset))) {
+            goto handle_m;
+        }
+        offset = new_offset;
+        nscount--;
+    }
+    assert(offset <= len);
+
+    /*
+     * Process additional
+     */
+    while (arcount > 0 && offset < len) {
+        if (!(new_offset = grok_additional_for_opt_rr(buf, len, offset, &m))) {
+            goto handle_m;
+        }
+        offset = new_offset;
         arcount--;
     }
+
+handle_m:
     assert(offset <= len);
     dns_message_handle(&m);
     return 0;
