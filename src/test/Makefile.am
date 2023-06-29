@@ -16,14 +16,15 @@ CLEANFILES = test*.log test*.trs \
   tld_list.dat \
   dotdoh.dnstap.dist 1643283234.dscdata.xml \
   test13.conf \
-  test_285.pcap.dist test_285.tldlist.dist 1683879752.xml
+  test_285.pcap.dist test_285.tldlist.dist 1683879752.dscdata.xml \
+  h-root-aaa.pcap-dist 1688028728.dscdata.xml
 
 EXTRA_DIST =
 
 TESTS = test1.sh test2.sh test3.sh test4.sh test6.sh test7.sh test8.sh \
   test9.sh test10.sh test11.sh test12.sh test_dnstap_unixsock.sh \
   test_dnstap_tcp.sh test_pslconv.sh test_encrypted.sh test13.sh \
-  test_285.sh
+  test_285.sh test_291.sh
 
 if USE_DNSTAP
 TESTS += test5.sh
@@ -89,6 +90,11 @@ test_285.tldlist.dist: test_285.tldlist
 
 test_285.sh: test_285.pcap.dist test_285.tldlist.dist
 
+h-root-aaa.pcap-dist: h-root-aaa.pcap
+	ln -s "$(srcdir)/h-root-aaa.pcap" h-root-aaa.pcap-dist
+
+test_291.sh: h-root-aaa.pcap-dist
+
 EXTRA_DIST += $(TESTS) \
   1458044657.conf 1458044657.pcap 1458044657.json_gold 1458044657.xml_gold \
   pid.conf pid.pcap \
@@ -109,4 +115,5 @@ EXTRA_DIST += $(TESTS) \
   1458044657.tld_list \
   public_suffix_list.dat tld_list.dat.gold \
   dnstap_encrypted.conf dnstap_encrypted.gold dotdoh.dnstap \
-  test_285.pcap test_285.conf test_285.tldlist test_285.xml_gold
+  test_285.pcap test_285.conf test_285.tldlist test_285.xml_gold \
+  h-root-aaa.pcap test_291.conf test_291.xml_gold

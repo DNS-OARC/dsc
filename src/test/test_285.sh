@@ -1,6 +1,6 @@
 #!/bin/sh -xe
 
-rm -f 1683879752.xml
+rm -f 1683879752.dscdata.xml
 
 ../dsc "$srcdir/test_285.conf"
 
