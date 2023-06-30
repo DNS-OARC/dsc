@@ -37,6 +37,12 @@
 #include "config.h"
 
 #include "edns_version_index.h"
+#include "dns_protocol.h"
+
+void edns_version_init(void)
+{
+    dns_protocol_parse_edns0 = 1;
+}
 
 int edns_version_max = 0;
 

@@ -39,6 +39,7 @@
 
 #include "dns_message.h"
 
+void edns_bufsiz_init(void);
 int edns_bufsiz_indexer(const dns_message*);
 int edns_bufsiz_iterator(const char** label);
 

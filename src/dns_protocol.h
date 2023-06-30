@@ -39,6 +39,8 @@
 
 #include <sys/types.h>
 
+extern int dns_protocol_parse_edns0;
+
 int dns_protocol_handler(const u_char* buf, int len, void* udata);
 
 #endif /* __dsc_dns_protocol_h */
