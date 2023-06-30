@@ -255,6 +255,8 @@ static off_t skip_rr(const u_char* buf, int len, off_t offset)
     return offset;
 }
 
+int dns_protocol_parse_edns0 = 0;
+
 int dns_protocol_handler(const u_char* buf, int len, void* udata)
 {
     transport_message* tm = udata;
@@ -304,6 +306,8 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
         offset = new_offset;
         qdcount--;
     }
+    if (!dns_protocol_parse_edns0)
+        goto handle_m;
     assert(offset <= len);
 
     /*
