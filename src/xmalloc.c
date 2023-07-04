@@ -162,21 +162,27 @@ void* amalloc(size_t size)
 
 void* acalloc(size_t number, size_t size)
 {
-    void* p;
-    size *= number;
-    p = amalloc(size);
-    return memset(p, 0, size);
+    void* p = amalloc(size * number);
+    if (p)
+        memset(p, 0, size * number);
+    return p;
 }
 
 void* arealloc(void* p, size_t size)
 {
-    return memcpy(amalloc(size), p, size);
+    void* r = amalloc(size);
+    if (p)
+        memcpy(r, p, size);
+    return r;
 }
 
 char* astrdup(const char* s)
 {
     size_t size = strlen(s) + 1;
-    return memcpy(amalloc(size), s, size);
+    char*  p    = amalloc(size);
+    if (p)
+        memcpy(p, s, size);
+    return p;
 }
 
 void afree(void* p)
