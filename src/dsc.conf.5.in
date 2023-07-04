@@ -511,6 +511,54 @@ EDNS Version 0 is documented in RFC 2671.
 \fBedns_bufsiz\fR
 The EDNS buffer size per 512 chunks (0-511, 512-1023 etc).
 .TP
+\fBedns_cookie\fR
+Indicates whether or not a EDNS(0) Cookie (RFC7873) was present with "yes" or "no".
+.TP
+\fBedns_cookie_len\fR
+The combined length of the EDNS(0) client and server cookies.
+.TP
+\fBedns_cookie_client\fR
+The EDNS(0) Client Cookie bytes as a hexadecimal string.
+.TP
+\fBedns_cookie_server\fR
+The EDNS(0) Server Cookie bytes as a hexadecimal string.
+.TP
+\fBedns_ecs\fR
+Indicates whether or not a EDNS(0) Client Subnet (RFC7871) was present with "yes" or "no".
+.TP
+\fBedns_ecs_family\fR
+The EDNS(0) Client Subnet address family.
+.TP
+\fBedns_ecs_source_prefix\fR
+The EDNS(0) Client Subnet source prefix-length.
+.TP
+\fBedns_ecs_scope_prefix\fR
+The EDNS(0) Client Subnet scope prefix-length.
+.TP
+\fBedns_ecs_address\fR
+The EDNS(0) Client Subnet address bytes as a hexadecimal string.
+.TP
+\fBedns_ede\fR
+Indicates whether or not a EDNS(0) Extended DNS Errors (RFC8914) was present with "yes" or "no".
+.TP
+\fBedns_ede_code\fR
+The EDNS(0) Extended DNS Errors code.
+.TP
+\fBedns_ede_textlen\fR
+The length of the EDNS(0) Extended DNS Errors extra-text.
+.TP
+\fBedns_ede_text\fR
+The EDNS(0) Extended DNS Errors extra-text.
+.TP
+\fBedns_nsid\fR
+Indicates whether or not a EDNS(0) DNS Name Server Identifier (RFC5001) was present with "yes" or "no".
+.TP
+\fBedns_nsid_len\fR
+The length of the EDNS(0) DNS Name Server Identifier (NSID).
+.TP
+\fBedns_nsid_data\fR
+The EDNS(0) DNS Name Server Identifier (NSID) bytes as a hexadecimal string.
+.TP
 \fBidn_qname\fR
 This indexer has only two values: 0 or 1.
 It returns 1 when the first QNAME in the DNS message question section
@@ -552,27 +600,6 @@ advantage of DNS message \*(lqcompression\*(rq.
 The number of labels (between "." dots) in the first (and usually only)
 QNAME in a DNS message question section.
 Note that a value of 0 (zero) means DNS root (.).
-.TP
-\fBedns0_cookielen\fR
-The length of the EDNS0 cookie option, when present.  Will report
-"none" for DNS messages without EDNS0 or cookies.
-.TP
-\fBedns0_nsidlen\fR
-The length of the EDNS0 nsid option, when present.  Will report
-"none" for DNS messages without EDNS0 or nsid.
-.TP
-\fBedns0_edetextlen\fR
-The length of the EDNS0 extended error text, when present.  Will report
-"none" for DNS messages without EDNS0, extended error option or
-extended error text
-.TP
-\fBedns0_edecode\fR
-The EDNS0 extended error code, when present.  Will report
-"none" for DNS messages without EDNS0 or extended error option
-.TP
-\fBedns0_ecsfamily\fR
-The EDNS0 Client Subnet address family, when present.  Will report
-"none" for DNS messages without EDNS0 or Client Subnet option
 .TP
 \fBqtype\fR
 The query type (QTYPE) for the first QNAME in the DNS message question
@@ -727,6 +754,9 @@ Count only SERVFAIL responses.
 .TP
 \fBauthentic-data-only\fR
 Count only DNS messages with the AD bit is set.
+.TP
+\fBedns0-only\fR
+Count only DNS messages with EDNS(0) options.
 .SH "QNAME FILTERS"
 Defines a custom QNAME-based filter for DNS messages.
 If you refer to this named filter on a dataset line, then only queries

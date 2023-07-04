@@ -39,7 +39,6 @@
 
 #include "dns_message.h"
 
-void edns_version_init(void);
 int edns_version_indexer(const dns_message*);
 int edns_version_iterator(const char** label);
 

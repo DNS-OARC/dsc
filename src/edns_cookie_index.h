@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2022, OARC, Inc.
+ * Copyright (c) 2008-2023, OARC, Inc.
  * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
  * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
@@ -34,45 +34,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
+#ifndef __dsc_edns_cookie_index_h
+#define __dsc_edns_cookie_index_h
 
-#include "edns0_cookielen_index.h"
+#include "dns_message.h"
 
-#include <string.h>
+int  edns_cookie_indexer(const dns_message*);
+int  edns_cookie_iterator(const char** label);
+void edns_cookie_reset(void);
 
-static int largest = 0;
+int  edns_cookie_len_indexer(const dns_message*);
+int  edns_cookie_len_iterator(const char** label);
+void edns_cookie_len_reset(void);
 
-#define MAX_LABELS 64
+int  edns_cookie_client_indexer(const dns_message*);
+int  edns_cookie_client_iterator(const char** label);
+void edns_cookie_client_reset(void);
 
-int edns0_cookielen_indexer(const dns_message* m)
-{
-    if (m->malformed)
-        return -1;
-    if (m->edns.cookie_len > largest)
-        largest = m->edns.cookie_len;
-    return m->edns.cookie_len;
-}
+int  edns_cookie_server_indexer(const dns_message*);
+int  edns_cookie_server_iterator(const char** label);
+void edns_cookie_server_reset(void);
 
-static int next_iter;
-
-int edns0_cookielen_iterator(const char** label)
-{
-    static char label_buf[10];
-    if (NULL == label) {
-        next_iter = 0;
-        return largest + 1;
-    }
-    if (next_iter > largest)
-        return -1;
-    if (next_iter == 0)
-        snprintf(label_buf, sizeof(label_buf), "none");
-    else
-        snprintf(label_buf, sizeof(label_buf), "%d", next_iter - 1);
-    *label = label_buf;
-    return next_iter++;
-}
-
-void edns0_cookielen_reset()
-{
-    largest = 0;
-}
+#endif /* __dsc_edns_cookie_index_h */

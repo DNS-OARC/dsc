@@ -1,49 +1,208 @@
 <dscdata>
-<array name="pcap_stats" dimensions="2" start_time="1688028728" stop_time="1688028728">
+<array name="pcap_stats" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="ifname"/>
   <dimension number="2" type="pcap_stat"/>
   <data>
-    <ifname val="h-root-aaa.pcap-dist">
-      <pcap_stat val="pkts_captured" count="6"/>
+    <ifname val="edns.pcap-dist">
+      <pcap_stat val="pkts_captured" count="14"/>
     </ifname>
   </data>
 </array>
-<array name="edns_bufsiz" dimensions="2" start_time="1688028728" stop_time="1688028728">
+<array name="edns_ede_text" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ede_text"/>
+  <data>
+    <All val="ALL">
+      <edns_ede_text val="bm8gU0VQIG1hdGNoaW5nIHRoZSBEUyBmb3VuZCBmb3IgZG5zc2VjLWZhaWxlZC5vcmcu" base64="1" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ede_textlen" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ede_textlen"/>
+  <data>
+    <All val="ALL">
+      <edns_ede_textlen val="none" count="5"/>
+      <edns_ede_textlen val="51" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ede_code" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ede_code"/>
+  <data>
+    <All val="ALL">
+      <edns_ede_code val="none" count="5"/>
+      <edns_ede_code val="9" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ede" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ede"/>
+  <data>
+    <All val="ALL">
+      <edns_ede val="no" count="13"/>
+      <edns_ede val="yes" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ecs_address" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ecs_address"/>
+  <data>
+    <All val="ALL">
+      <edns_ecs_address val="CA1100" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ecs_scope_prefix" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ecs_scope_prefix"/>
+  <data>
+    <All val="ALL">
+      <edns_ecs_scope_prefix val="none" count="4"/>
+      <edns_ecs_scope_prefix val="0" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ecs_source_prefix" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ecs_source_prefix"/>
+  <data>
+    <All val="ALL">
+      <edns_ecs_source_prefix val="none" count="4"/>
+      <edns_ecs_source_prefix val="24" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ecs_family" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ecs_family"/>
+  <data>
+    <All val="ALL">
+      <edns_ecs_family val="none" count="4"/>
+      <edns_ecs_family val="1" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_ecs" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ecs"/>
+  <data>
+    <All val="ALL">
+      <edns_ecs val="no" count="12"/>
+      <edns_ecs val="yes" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_cookie_server" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_cookie_server"/>
+  <data>
+    <All val="ALL">
+      <edns_cookie_server val="10000000465AA160277069BC52DDB85E" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_cookie_client" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_cookie_client"/>
+  <data>
+    <All val="ALL">
+      <edns_cookie_client val="2A801E4FA7BFCD4B" count="2"/>
+      <edns_cookie_client val="A8EC1C7B804E6CE4" count="1"/>
+      <edns_cookie_client val="662F3B908BF45C0D" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_cookie_len" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_cookie_len"/>
+  <data>
+    <All val="ALL">
+      <edns_cookie_len val="8" count="3"/>
+      <edns_cookie_len val="none" count="2"/>
+      <edns_cookie_len val="24" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_cookie" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_cookie"/>
+  <data>
+    <All val="ALL">
+      <edns_cookie val="no" count="10"/>
+      <edns_cookie val="yes" count="4"/>
+    </All>
+  </data>
+</array>
+<array name="edns_nsid_data" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_nsid_data"/>
+  <data>
+    <All val="ALL">
+      <edns_nsid_data val="030313E2662716E286E227F6F647D237562767562737E2F62776" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_nsid_len" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_nsid_len"/>
+  <data>
+    <All val="ALL">
+      <edns_nsid_len val="none" count="5"/>
+      <edns_nsid_len val="26" count="1"/>
+    </All>
+  </data>
+</array>
+<array name="edns_nsid" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_nsid"/>
+  <data>
+    <All val="ALL">
+      <edns_nsid val="no" count="12"/>
+      <edns_nsid val="yes" count="2"/>
+    </All>
+  </data>
+</array>
+<array name="edns_bufsiz" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="All"/>
   <dimension number="2" type="EDNSBufSiz"/>
   <data>
     <All val="ALL">
-      <EDNSBufSiz val="None" count="2"/>
-      <EDNSBufSiz val="4096-4607" count="1"/>
+      <EDNSBufSiz val="None" count="4"/>
+      <EDNSBufSiz val="4096-4607" count="3"/>
     </All>
   </data>
 </array>
-<array name="edns_version" dimensions="2" start_time="1688028728" stop_time="1688028728">
+<array name="edns_version" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="All"/>
   <dimension number="2" type="EDNSVersion"/>
   <data>
     <All val="ALL">
-      <EDNSVersion val="none" count="2"/>
-      <EDNSVersion val="0" count="1"/>
+      <EDNSVersion val="none" count="4"/>
+      <EDNSVersion val="0" count="3"/>
     </All>
   </data>
 </array>
-<array name="rcode" dimensions="2" start_time="1688028728" stop_time="1688028728">
+<array name="rcode" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="All"/>
   <dimension number="2" type="Rcode"/>
   <data>
     <All val="ALL">
-      <Rcode val="0" count="3"/>
+      <Rcode val="0" count="6"/>
+      <Rcode val="2" count="1"/>
     </All>
   </data>
 </array>
-<array name="qtype" dimensions="2" start_time="1688028728" stop_time="1688028728">
+<array name="qtype" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="All"/>
   <dimension number="2" type="Qtype"/>
   <data>
     <All val="ALL">
-      <Qtype val="1" count="1"/>
-      <Qtype val="28" count="1"/>
+      <Qtype val="1" count="4"/>
+      <Qtype val="28" count="2"/>
       <Qtype val="2" count="1"/>
     </All>
   </data>

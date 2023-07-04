@@ -37,12 +37,6 @@
 #include "config.h"
 
 #include "edns_bufsiz_index.h"
-#include "dns_protocol.h"
-
-void edns_bufsiz_init(void)
-{
-    dns_protocol_parse_edns0 = 1;
-}
 
 int edns_bufsiz_max = 0;
 

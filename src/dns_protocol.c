@@ -208,6 +208,75 @@ static off_t skip_question(const u_char* buf, int len, off_t offset)
     return offset;
 }
 
+#define EDNS0_TYPE_NSID 3
+#define EDNS0_TYPE_ECS 8
+#define EDNS0_TYPE_COOKIE 10
+#define EDNS0_TYPE_EXTENDED_ERROR 15
+
+static void process_edns0_options(const u_char* buf, int len, struct dns_message* m)
+{
+    unsigned short edns0_type;
+    unsigned short edns0_len;
+    off_t          offset = 0;
+
+    while (len >= 4) {
+        edns0_type = nptohs(buf + offset);
+        edns0_len  = nptohs(buf + offset + 2);
+        if (len < 4 + edns0_len)
+            break;
+        switch (edns0_type) {
+        case EDNS0_TYPE_COOKIE:
+            if (m->edns.option.cookie)
+                break;
+            if (edns0_len == 8) {
+                m->edns.option.cookie = 1;
+                m->edns.cookie.client = buf + offset + 4;
+            } else if (edns0_len >= 16 && edns0_len <= 40) {
+                m->edns.option.cookie     = 1;
+                m->edns.cookie.client     = buf + offset + 4;
+                m->edns.cookie.server     = m->edns.cookie.client + 8;
+                m->edns.cookie.server_len = edns0_len - 8;
+            }
+            break;
+        case EDNS0_TYPE_NSID:
+            if (m->edns.option.nsid)
+                break;
+            m->edns.option.nsid = 1;
+            if (edns0_len) {
+                m->edns.nsid.data = buf + offset + 4;
+                m->edns.nsid.len  = edns0_len;
+            }
+            break;
+        case EDNS0_TYPE_ECS:
+            if (m->edns.option.ecs || edns0_len < 4)
+                break;
+            m->edns.option.ecs        = 1;
+            m->edns.ecs.family        = nptohs(buf + offset + 4);
+            m->edns.ecs.source_prefix = *(buf + offset + 6);
+            m->edns.ecs.scope_prefix  = *(buf + offset + 7);
+            if (edns0_len > 4) {
+                m->edns.ecs.address = buf + offset + 8;
+                m->edns.ecs.len     = edns0_len - 4;
+            }
+            break;
+        case EDNS0_TYPE_EXTENDED_ERROR:
+            if (m->edns.option.ede || edns0_len < 2)
+                break;
+            m->edns.option.ede = 1;
+            m->edns.ede.code   = nptohs(buf + offset + 4);
+            if (edns0_len > 2) {
+                m->edns.ede.text = buf + offset + 6;
+                m->edns.ede.len  = edns0_len - 2;
+            }
+            break;
+        }
+        offset += 4 + edns0_len;
+        len -= 4 + edns0_len;
+    }
+}
+
+int dns_protocol_parse_edns_options = 0;
+
 static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
 {
     unsigned short us;
@@ -225,11 +294,20 @@ static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset
         if (offset + 10 > len)
             return 0;
         if (nptohs(buf + offset) == T_OPT && !m->edns.found) {
-            m->edns.found  = 1;
-            m->edns.bufsiz = nptohs(buf + offset + 2);
-            memcpy(&m->edns.version, buf + offset + 5, 1);
-            us         = nptohs(buf + offset + 6);
-            m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
+            m->edns.found   = 1;
+            m->edns.bufsiz  = nptohs(buf + offset + 2);
+            m->edns.version = *(buf + offset + 5);
+            us              = nptohs(buf + offset + 6);
+            m->edns.DO      = (us >> 15) & 0x01; /* RFC 3225 */
+
+            us = nptohs(buf + offset + 8); // rd len
+            offset += 10;
+            if (offset + us > len)
+                return 0;
+            if (dns_protocol_parse_edns_options && !m->edns.version && us > 0)
+                process_edns0_options(buf + offset, us, m);
+            offset += us;
+            return offset;
         }
     }
     /* get rdlength */
@@ -255,7 +333,7 @@ static off_t skip_rr(const u_char* buf, int len, off_t offset)
     return offset;
 }
 
-int dns_protocol_parse_edns0 = 0;
+int dns_protocol_parse_edns = 0;
 
 int dns_protocol_handler(const u_char* buf, int len, void* udata)
 {
@@ -306,7 +384,7 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
         offset = new_offset;
         qdcount--;
     }
-    if (!dns_protocol_parse_edns0)
+    if (!dns_protocol_parse_edns)
         goto handle_m;
     assert(offset <= len);
 

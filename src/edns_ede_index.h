@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2022, OARC, Inc.
+ * Copyright (c) 2008-2023, OARC, Inc.
  * Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
  * Copyright (c) 2003-2007, The Measurement Factory, Inc.
  * All rights reserved.
@@ -34,13 +34,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_edns0_ecsfamily_index_h
-#define __dsc_edns0_ecsfamily_index_h
+#ifndef __dsc_edns_ede_index_h
+#define __dsc_edns_ede_index_h
 
 #include "dns_message.h"
 
-int  edns0_ecsfamily_indexer(const dns_message*);
-int  edns0_ecsfamily_iterator(const char** label);
-void edns0_ecsfamily_reset(void);
+int edns_ede_indexer(const dns_message*);
+int edns_ede_iterator(const char** label);
 
-#endif /* __dsc_edns0_ecsfamily_index_h */
+int  edns_ede_code_indexer(const dns_message*);
+int  edns_ede_code_iterator(const char** label);
+void edns_ede_code_reset(void);
+
+int  edns_ede_textlen_indexer(const dns_message*);
+int  edns_ede_textlen_iterator(const char** label);
+void edns_ede_textlen_reset(void);
+
+int  edns_ede_text_indexer(const dns_message*);
+int  edns_ede_text_iterator(const char** label);
+void edns_ede_text_reset(void);
+
+#endif /* __dsc_edns_ede_index_h */
