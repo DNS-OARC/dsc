@@ -39,8 +39,10 @@
 #include "edns_ecs_index.h"
 #include "xmalloc.h"
 #include "hashtbl.h"
+#include "inX_addr.h"
 
 #include <string.h>
+#include <sys/socket.h> // For AF_ on BSDs
 
 // edns_ecs
 
@@ -288,4 +290,93 @@ void edns_ecs_address_reset()
 {
     addressHash      = NULL;
     address_next_idx = 0;
+}
+
+// edns_ecs_subnet
+
+static hashtbl* subnetHash      = NULL;
+static int      subnet_next_idx = 0;
+
+typedef struct
+{
+    inX_addr addr;
+    int      index;
+} subnetobj;
+
+static unsigned int
+subnet_hashfunc(const void* key)
+{
+    return inXaddr_hash((const inX_addr*)key);
+}
+
+static int
+subnet_cmpfunc(const void* a, const void* b)
+{
+    return inXaddr_cmp((const inX_addr*)a, (const inX_addr*)b);
+}
+
+int edns_ecs_subnet_indexer(const dns_message* m)
+{
+    subnetobj* obj;
+    inX_addr   addr = { 0 };
+
+    if (m->malformed || !m->edns.ecs.address)
+        return -1;
+    switch (m->edns.ecs.family) { // IANA Address Family Numbers
+    case 1:
+        if (m->edns.ecs.len > sizeof(addr.in4))
+            return -1;
+        addr.family = AF_INET;
+        memcpy(&addr.in4, m->edns.ecs.address, m->edns.ecs.len);
+        break;
+    case 2:
+        if (m->edns.ecs.len > sizeof(addr.in6))
+            return -1;
+        addr.family = AF_INET6;
+        memcpy(&addr.in6, m->edns.ecs.address, m->edns.ecs.len);
+        break;
+    default:
+        return -1;
+    }
+    if (NULL == subnetHash) {
+        subnetHash = hash_create(MAX_ARRAY_SZ, subnet_hashfunc, subnet_cmpfunc, 1, NULL, afree);
+        if (NULL == subnetHash)
+            return -1;
+    }
+    if ((obj = hash_find(&addr, subnetHash)))
+        return obj->index;
+    obj = acalloc(1, sizeof(*obj));
+    if (NULL == obj)
+        return -1;
+    obj->addr  = addr;
+    obj->index = subnet_next_idx;
+    if (0 != hash_add(&obj->addr, obj, subnetHash)) {
+        afree(obj);
+        return -1;
+    }
+    subnet_next_idx++;
+    return obj->index;
+}
+
+int edns_ecs_subnet_iterator(const char** label)
+{
+    subnetobj*  obj;
+    static char label_buf[128];
+    if (0 == subnet_next_idx)
+        return -1;
+    if (NULL == label) {
+        hash_iter_init(subnetHash);
+        return subnet_next_idx;
+    }
+    if ((obj = hash_iterate(subnetHash)) == NULL)
+        return -1;
+    inXaddr_ntop(&obj->addr, label_buf, 128);
+    *label = label_buf;
+    return obj->index;
+}
+
+void edns_ecs_subnet_reset()
+{
+    subnetHash      = NULL;
+    subnet_next_idx = 0;
 }

@@ -538,6 +538,9 @@ The EDNS(0) Client Subnet scope prefix-length.
 \fBedns_ecs_address\fR
 The EDNS(0) Client Subnet address bytes as a hexadecimal string.
 .TP
+\fBedns_ecs_subnet\fR
+The EDNS(0) Client Subnet address as an IPv4/IPv6 textual address.
+.TP
 \fBedns_ede\fR
 Indicates whether or not a EDNS(0) Extended DNS Errors (RFC8914) was present with "yes" or "no".
 .TP
