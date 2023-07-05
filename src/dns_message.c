@@ -120,6 +120,7 @@ static indexer indexers[] = {
     { "edns_ecs_source_prefix", indexer_want_edns_options, edns_ecs_source_prefix_indexer, edns_ecs_source_prefix_iterator, edns_ecs_source_prefix_reset },
     { "edns_ecs_scope_prefix", indexer_want_edns_options, edns_ecs_scope_prefix_indexer, edns_ecs_scope_prefix_iterator, edns_ecs_scope_prefix_reset },
     { "edns_ecs_address", indexer_want_edns_options, edns_ecs_address_indexer, edns_ecs_address_iterator, edns_ecs_address_reset },
+    { "edns_ecs_subnet", indexer_want_edns_options, edns_ecs_subnet_indexer, edns_ecs_subnet_iterator, edns_ecs_subnet_reset },
     { "edns_ede", indexer_want_edns_options, edns_ede_indexer, edns_ede_iterator },
     { "edns_ede_code", indexer_want_edns_options, edns_ede_code_indexer, edns_ede_code_iterator, edns_ede_code_reset },
     { "edns_ede_textlen", indexer_want_edns_options, edns_ede_textlen_indexer, edns_ede_textlen_iterator, edns_ede_textlen_reset },

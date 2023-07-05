@@ -58,4 +58,8 @@ int  edns_ecs_address_indexer(const dns_message*);
 int  edns_ecs_address_iterator(const char** label);
 void edns_ecs_address_reset(void);
 
+int  edns_ecs_subnet_indexer(const dns_message*);
+int  edns_ecs_subnet_iterator(const char** label);
+void edns_ecs_subnet_reset(void);
+
 #endif /* __dsc_edns_ecs_index_h */

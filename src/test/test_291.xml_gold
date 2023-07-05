@@ -47,6 +47,15 @@
     </All>
   </data>
 </array>
+<array name="edns_ecs_subnet" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_ecs_subnet"/>
+  <data>
+    <All val="ALL">
+      <edns_ecs_subnet val="172.17.0.0" count="2"/>
+    </All>
+  </data>
+</array>
 <array name="edns_ecs_address" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="All"/>
   <dimension number="2" type="edns_ecs_address"/>
