@@ -40,6 +40,7 @@
 #include "xmalloc.h"
 #include "syslog_debug.h"
 #include "tld_list.h"
+#include "dns_protocol.h"
 
 #include "null_index.h"
 #include "qtype_index.h"
@@ -53,6 +54,10 @@
 #include "server_ip_addr_index.h"
 #include "qnamelen_index.h"
 #include "label_count_index.h"
+#include "edns_cookie_index.h"
+#include "edns_nsid_index.h"
+#include "edns_ede_index.h"
+#include "edns_ecs_index.h"
 #include "qname_index.h"
 #include "msglen_index.h"
 #include "certain_qnames_index.h"
@@ -104,8 +109,24 @@ static indexer indexers[] = {
     { "certain_qnames", 0, certain_qnames_indexer, certain_qnames_iterator },
     { "query_classification", 0, query_classification_indexer, query_classification_iterator },
     { "idn_qname", 0, idn_qname_indexer, idn_qname_iterator },
-    { "edns_version", edns_version_init, edns_version_indexer, edns_version_iterator },
-    { "edns_bufsiz", edns_bufsiz_init, edns_bufsiz_indexer, edns_bufsiz_iterator },
+    { "edns_version", indexer_want_edns, edns_version_indexer, edns_version_iterator },
+    { "edns_bufsiz", indexer_want_edns, edns_bufsiz_indexer, edns_bufsiz_iterator },
+    { "edns_cookie", indexer_want_edns_options, edns_cookie_indexer, edns_cookie_iterator },
+    { "edns_cookie_len", indexer_want_edns_options, edns_cookie_len_indexer, edns_cookie_len_iterator, edns_cookie_len_reset },
+    { "edns_cookie_client", indexer_want_edns_options, edns_cookie_client_indexer, edns_cookie_client_iterator, edns_cookie_client_reset },
+    { "edns_cookie_server", indexer_want_edns_options, edns_cookie_server_indexer, edns_cookie_server_iterator, edns_cookie_server_reset },
+    { "edns_ecs", indexer_want_edns_options, edns_ecs_indexer, edns_ecs_iterator },
+    { "edns_ecs_family", indexer_want_edns_options, edns_ecs_family_indexer, edns_ecs_family_iterator, edns_ecs_family_reset },
+    { "edns_ecs_source_prefix", indexer_want_edns_options, edns_ecs_source_prefix_indexer, edns_ecs_source_prefix_iterator, edns_ecs_source_prefix_reset },
+    { "edns_ecs_scope_prefix", indexer_want_edns_options, edns_ecs_scope_prefix_indexer, edns_ecs_scope_prefix_iterator, edns_ecs_scope_prefix_reset },
+    { "edns_ecs_address", indexer_want_edns_options, edns_ecs_address_indexer, edns_ecs_address_iterator, edns_ecs_address_reset },
+    { "edns_ede", indexer_want_edns_options, edns_ede_indexer, edns_ede_iterator },
+    { "edns_ede_code", indexer_want_edns_options, edns_ede_code_indexer, edns_ede_code_iterator, edns_ede_code_reset },
+    { "edns_ede_textlen", indexer_want_edns_options, edns_ede_textlen_indexer, edns_ede_textlen_iterator, edns_ede_textlen_reset },
+    { "edns_ede_text", indexer_want_edns_options, edns_ede_text_indexer, edns_ede_text_iterator, edns_ede_text_reset },
+    { "edns_nsid", indexer_want_edns_options, edns_nsid_indexer, edns_nsid_iterator },
+    { "edns_nsid_len", indexer_want_edns_options, edns_nsid_len_indexer, edns_nsid_len_iterator, edns_nsid_len_reset },
+    { "edns_nsid_data", indexer_want_edns_options, edns_nsid_data_indexer, edns_nsid_data_iterator, edns_nsid_data_reset },
     { "do_bit", 0, do_bit_indexer, do_bit_iterator },
     { "rd_bit", 0, rd_bit_indexer, rd_bit_iterator },
     { "tc_bit", 0, tc_bit_indexer, tc_bit_iterator },
@@ -211,6 +232,11 @@ static int qname_filter(const dns_message* m, const void* ctx)
 static int servfail_filter(const dns_message* m, const void* ctx)
 {
     return m->rcode == 2;
+}
+
+static int edns0_filter(const dns_message* m, const void* ctx)
+{
+    return m->edns.found && m->edns.version == 0;
 }
 
 /*
@@ -406,7 +432,7 @@ const char* dns_message_QnameToNld(const char* qname, int nld)
     if (have_tld_list) {
         // Use TLD list to find labels that are the "TLD"
         const char *lt = 0, *ot = t;
-        int done = 0;
+        int         done = 0;
         while (t > qname) {
             t--;
             if ('.' == *t) {
@@ -478,6 +504,7 @@ void dns_message_filters_init(void)
     fl = md_array_filter_list_append(fl, md_array_create_filter("chaos-class", chaos_class_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-only", edns0_filter, 0));
     (void)md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
 }
 
@@ -510,4 +537,15 @@ int add_qname_filter(const char* name, const char* pat)
     }
     (void)md_array_filter_list_append(fl, md_array_create_filter(name, qname_filter, r));
     return 1;
+}
+
+void indexer_want_edns(void)
+{
+    dns_protocol_parse_edns = 1;
+}
+
+void indexer_want_edns_options(void)
+{
+    dns_protocol_parse_edns         = 1;
+    dns_protocol_parse_edns_options = 1;
 }

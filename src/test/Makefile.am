@@ -17,7 +17,7 @@ CLEANFILES = test*.log test*.trs \
   dotdoh.dnstap.dist 1643283234.dscdata.xml \
   test13.conf \
   test_285.pcap.dist test_285.tldlist.dist 1683879752.dscdata.xml \
-  h-root-aaa.pcap-dist 1688028728.dscdata.xml
+  edns.pcap-dist 1688541706.dscdata.xml
 
 EXTRA_DIST =
 
@@ -90,10 +90,10 @@ test_285.tldlist.dist: test_285.tldlist
 
 test_285.sh: test_285.pcap.dist test_285.tldlist.dist
 
-h-root-aaa.pcap-dist: h-root-aaa.pcap
-	ln -s "$(srcdir)/h-root-aaa.pcap" h-root-aaa.pcap-dist
+edns.pcap-dist: edns.pcap
+	ln -s "$(srcdir)/edns.pcap" edns.pcap-dist
 
-test_291.sh: h-root-aaa.pcap-dist
+test_291.sh: edns.pcap-dist
 
 EXTRA_DIST += $(TESTS) \
   1458044657.conf 1458044657.pcap 1458044657.json_gold 1458044657.xml_gold \
@@ -116,4 +116,4 @@ EXTRA_DIST += $(TESTS) \
   public_suffix_list.dat tld_list.dat.gold \
   dnstap_encrypted.conf dnstap_encrypted.gold dotdoh.dnstap \
   test_285.pcap test_285.conf test_285.tldlist test_285.xml_gold \
-  h-root-aaa.pcap test_291.conf test_291.xml_gold
+  edns.pcap test_291.conf test_291.xml_gold

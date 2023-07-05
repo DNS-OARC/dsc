@@ -99,6 +99,43 @@ struct dns_message {
         unsigned int   DO : 1; /* set if DNSSEC DO bit is set */
         unsigned char  version; /* version field from OPT RR */
         unsigned short bufsiz; /* class field from OPT RR */
+
+        // bitmap of found EDNS(0) options
+        struct {
+            unsigned int cookie : 1;
+            unsigned int nsid : 1;
+            unsigned int ede : 1;
+            unsigned int ecs : 1;
+        } option;
+
+        // cookie rfc 7873
+        struct {
+            const u_char*  client; // pointer to 8 byte client part
+            const u_char*  server; // pointer to server part, may be null
+            unsigned short server_len; // length of server part, if any
+        } cookie;
+
+        // nsid rfc 5001
+        struct {
+            const u_char*  data; // pointer to nsid payload, may be null
+            unsigned short len; // length of nsid, if any
+        } nsid;
+
+        // extended error codes rfc 8914
+        struct {
+            unsigned short code;
+            const u_char*  text; // pointer to EXTRA-TEXT, may be null
+            unsigned short len; // length of text, if any
+        } ede;
+
+        // client subnet rfc 7871
+        struct {
+            unsigned short family;
+            unsigned char  source_prefix;
+            unsigned char  scope_prefix;
+            const u_char*  address; // pointer to address, may be null
+            unsigned short len; // length of address, if any
+        } ecs;
     } edns;
 };
 
@@ -112,6 +149,9 @@ const char* dns_message_tld(dns_message* m);
 void        dns_message_filters_init(void);
 void        dns_message_indexers_init(void);
 int         add_qname_filter(const char* name, const char* pat);
+
+void indexer_want_edns(void);
+void indexer_want_edns_options(void);
 
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
