@@ -764,6 +764,18 @@ Count only DNS messages with the AD bit is set.
 .TP
 \fBedns0-only\fR
 Count only DNS messages with EDNS(0) options.
+.TP
+\fBedns0-cookie-only\fR
+Count only DNS messages with EDNS(0) Cookie option.
+.TP
+\fBedns0-nsid-only\fR
+Count only DNS messages with EDNS(0) DNS Name Server Identifier option.
+.TP
+\fBedns0-ede-only\fR
+Count only DNS messages with EDNS(0) Extended DNS Errors option.
+.TP
+\fBedns0-ecs-only\fR
+Count only DNS messages with EDNS(0) Client Subnet option.
 .SH "QNAME FILTERS"
 Defines a custom QNAME-based filter for DNS messages.
 If you refer to this named filter on a dataset line, then only queries
