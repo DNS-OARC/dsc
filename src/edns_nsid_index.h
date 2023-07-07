@@ -50,4 +50,8 @@ int  edns_nsid_data_indexer(const dns_message*);
 int  edns_nsid_data_iterator(const char** label);
 void edns_nsid_data_reset(void);
 
+int  edns_nsid_text_indexer(const dns_message*);
+int  edns_nsid_text_iterator(const char** label);
+void edns_nsid_text_reset(void);
+
 #endif /* __dsc_edns_nsid_index_h */
