@@ -241,6 +241,26 @@ static int edns0_filter(const dns_message* m, const void* ctx)
     return m->edns.found && m->edns.version == 0;
 }
 
+static int edns0_cookie_filter(const dns_message* m, const void* ctx)
+{
+    return m->edns.option.cookie;
+}
+
+static int edns0_nsid_filter(const dns_message* m, const void* ctx)
+{
+    return m->edns.option.nsid;
+}
+
+static int edns0_ede_filter(const dns_message* m, const void* ctx)
+{
+    return m->edns.option.ede;
+}
+
+static int edns0_ecs_filter(const dns_message* m, const void* ctx)
+{
+    return m->edns.option.ecs;
+}
+
 /*
  * Helpers
  */
@@ -507,6 +527,10 @@ void dns_message_filters_init(void)
     fl = md_array_filter_list_append(fl, md_array_create_filter("priming-query", priming_query_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("servfail-only", servfail_filter, 0));
     fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-only", edns0_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-cookie-only", edns0_cookie_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-nsid-only", edns0_nsid_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-ede-only", edns0_ede_filter, 0));
+    fl = md_array_filter_list_append(fl, md_array_create_filter("edns0-ecs-only", edns0_ecs_filter, 0));
     (void)md_array_filter_list_append(fl, md_array_create_filter("authentic-data-only", ad_filter, 0));
 }
 
