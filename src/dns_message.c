@@ -128,6 +128,7 @@ static indexer indexers[] = {
     { "edns_nsid", indexer_want_edns_options, edns_nsid_indexer, edns_nsid_iterator },
     { "edns_nsid_len", indexer_want_edns_options, edns_nsid_len_indexer, edns_nsid_len_iterator, edns_nsid_len_reset },
     { "edns_nsid_data", indexer_want_edns_options, edns_nsid_data_indexer, edns_nsid_data_iterator, edns_nsid_data_reset },
+    { "edns_nsid_text", indexer_want_edns_options, edns_nsid_text_indexer, edns_nsid_text_iterator, edns_nsid_text_reset },
     { "do_bit", 0, do_bit_indexer, do_bit_iterator },
     { "rd_bit", 0, rd_bit_indexer, rd_bit_iterator },
     { "tc_bit", 0, tc_bit_indexer, tc_bit_iterator },

@@ -61,7 +61,7 @@
   <dimension number="2" type="edns_ecs_address"/>
   <data>
     <All val="ALL">
-      <edns_ecs_address val="CA1100" count="2"/>
+      <edns_ecs_address val="AC1100" count="2"/>
     </All>
   </data>
 </array>
@@ -110,7 +110,7 @@
   <dimension number="2" type="edns_cookie_server"/>
   <data>
     <All val="ALL">
-      <edns_cookie_server val="10000000465AA160277069BC52DDB85E" count="1"/>
+      <edns_cookie_server val="0100000064A51A06720796CB25DD8BE5" count="1"/>
     </All>
   </data>
 </array>
@@ -119,9 +119,9 @@
   <dimension number="2" type="edns_cookie_client"/>
   <data>
     <All val="ALL">
-      <edns_cookie_client val="2A801E4FA7BFCD4B" count="2"/>
-      <edns_cookie_client val="A8EC1C7B804E6CE4" count="1"/>
-      <edns_cookie_client val="662F3B908BF45C0D" count="1"/>
+      <edns_cookie_client val="A208E1F47AFBDCB4" count="2"/>
+      <edns_cookie_client val="8ACEC1B708E4C64E" count="1"/>
+      <edns_cookie_client val="66F2B309B84FC5D0" count="1"/>
     </All>
   </data>
 </array>
@@ -146,12 +146,21 @@
     </All>
   </data>
 </array>
+<array name="edns_nsid_text" dimensions="2" start_time="1688541698" stop_time="1688541706">
+  <dimension number="1" type="All"/>
+  <dimension number="2" type="edns_nsid_text"/>
+  <data>
+    <All val="ALL">
+      <edns_nsid_text val="001.fra.h.root-servers.org" count="1"/>
+    </All>
+  </data>
+</array>
 <array name="edns_nsid_data" dimensions="2" start_time="1688541698" stop_time="1688541706">
   <dimension number="1" type="All"/>
   <dimension number="2" type="edns_nsid_data"/>
   <data>
     <All val="ALL">
-      <edns_nsid_data val="030313E2662716E286E227F6F647D237562767562737E2F62776" count="1"/>
+      <edns_nsid_data val="3030312E6672612E682E726F6F742D736572766572732E6F7267" count="1"/>
     </All>
   </data>
 </array>

@@ -41,6 +41,7 @@
 #include "hashtbl.h"
 
 #include <string.h>
+#include <ctype.h>
 
 // edns_nsid
 
@@ -125,8 +126,8 @@ static int nsid_cmpfunc(const void* a, const void* b)
     return strcasecmp(a, b);
 }
 
-static hashtbl* nsidHash      = NULL;
-static int      nsid_next_idx = 0;
+static hashtbl* dataHash      = NULL;
+static int      data_next_idx = 0;
 
 int edns_nsid_data_indexer(const dns_message* m)
 {
@@ -136,12 +137,12 @@ int edns_nsid_data_indexer(const dns_message* m)
     char nsid[m->edns.nsid.len * 2 + 1];
     strtohex(nsid, (char*)m->edns.nsid.data, m->edns.nsid.len);
     nsid[m->edns.nsid.len * 2] = 0;
-    if (NULL == nsidHash) {
-        nsidHash = hash_create(MAX_ARRAY_SZ, nsid_hashfunc, nsid_cmpfunc, 1, afree, afree);
-        if (NULL == nsidHash)
+    if (NULL == dataHash) {
+        dataHash = hash_create(MAX_ARRAY_SZ, nsid_hashfunc, nsid_cmpfunc, 1, afree, afree);
+        if (NULL == dataHash)
             return -1;
     }
-    if ((obj = hash_find(nsid, nsidHash)))
+    if ((obj = hash_find(nsid, dataHash)))
         return obj->index;
     obj = acalloc(1, sizeof(*obj));
     if (NULL == obj)
@@ -151,27 +152,27 @@ int edns_nsid_data_indexer(const dns_message* m)
         afree(obj);
         return -1;
     }
-    obj->index = nsid_next_idx;
-    if (0 != hash_add(obj->nsid, obj, nsidHash)) {
+    obj->index = data_next_idx;
+    if (0 != hash_add(obj->nsid, obj, dataHash)) {
         afree(obj->nsid);
         afree(obj);
         return -1;
     }
-    nsid_next_idx++;
+    data_next_idx++;
     return obj->index;
 }
 
 int edns_nsid_data_iterator(const char** label)
 {
     nsidobj* obj;
-    if (0 == nsid_next_idx)
+    if (0 == data_next_idx)
         return -1;
     if (NULL == label) {
         /* initialize and tell caller how big the array is */
-        hash_iter_init(nsidHash);
-        return nsid_next_idx;
+        hash_iter_init(dataHash);
+        return data_next_idx;
     }
-    if ((obj = hash_iterate(nsidHash)) == NULL)
+    if ((obj = hash_iterate(dataHash)) == NULL)
         return -1;
     *label = obj->nsid;
     return obj->index;
@@ -179,6 +180,73 @@ int edns_nsid_data_iterator(const char** label)
 
 void edns_nsid_data_reset()
 {
-    nsidHash      = NULL;
-    nsid_next_idx = 0;
+    dataHash      = NULL;
+    data_next_idx = 0;
+}
+
+// edns_nsid_text
+
+static hashtbl* textHash      = NULL;
+static int      text_next_idx = 0;
+
+int edns_nsid_text_indexer(const dns_message* m)
+{
+    nsidobj* obj;
+    if (m->malformed || !m->edns.nsid.data)
+        return -1;
+    char   nsid[m->edns.nsid.len + 1];
+    size_t i;
+    for (i = 0; i < m->edns.nsid.len; i++) {
+        if (isprint(m->edns.nsid.data[i])) {
+            nsid[i] = m->edns.nsid.data[i];
+        } else {
+            nsid[i] = '.';
+        }
+    }
+    nsid[i] = 0;
+    if (NULL == textHash) {
+        textHash = hash_create(MAX_ARRAY_SZ, nsid_hashfunc, nsid_cmpfunc, 1, afree, afree);
+        if (NULL == textHash)
+            return -1;
+    }
+    if ((obj = hash_find(nsid, textHash)))
+        return obj->index;
+    obj = acalloc(1, sizeof(*obj));
+    if (NULL == obj)
+        return -1;
+    obj->nsid = astrdup(nsid);
+    if (NULL == obj->nsid) {
+        afree(obj);
+        return -1;
+    }
+    obj->index = text_next_idx;
+    if (0 != hash_add(obj->nsid, obj, textHash)) {
+        afree(obj->nsid);
+        afree(obj);
+        return -1;
+    }
+    text_next_idx++;
+    return obj->index;
+}
+
+int edns_nsid_text_iterator(const char** label)
+{
+    nsidobj* obj;
+    if (0 == text_next_idx)
+        return -1;
+    if (NULL == label) {
+        /* initialize and tell caller how big the array is */
+        hash_iter_init(textHash);
+        return text_next_idx;
+    }
+    if ((obj = hash_iterate(textHash)) == NULL)
+        return -1;
+    *label = obj->nsid;
+    return obj->index;
+}
+
+void edns_nsid_text_reset()
+{
+    textHash      = NULL;
+    text_next_idx = 0;
 }

@@ -562,6 +562,10 @@ The length of the EDNS(0) DNS Name Server Identifier (NSID).
 \fBedns_nsid_data\fR
 The EDNS(0) DNS Name Server Identifier (NSID) bytes as a hexadecimal string.
 .TP
+\fBedns_nsid_text\fR
+The EDNS(0) DNS Name Server Identifier (NSID) as a string of printable characters.
+Unprintable characters are replaced with ".".
+.TP
 \fBidn_qname\fR
 This indexer has only two values: 0 or 1.
 It returns 1 when the first QNAME in the DNS message question section
