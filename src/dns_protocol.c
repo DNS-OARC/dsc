@@ -53,9 +53,11 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
     off_t         no = 0;
     unsigned char c;
     size_t        len;
-    static int    loop_detect = 0;
-    if (loop_detect > 2)
-        return 4; /* compression loop */
+    /*
+     * loop_detect[] tracks which position in the DNS message it has
+     * jumped to so it can't jump to the same twice, aka loop
+     */
+    static unsigned char loop_detect[0x3FFF] = { 0 };
     if (ns <= 0)
         return 4; /* probably compression loop */
     do {
@@ -66,7 +68,7 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
             /* blasted compression */
             int            rc;
             unsigned short s;
-            off_t          ptr;
+            off_t          ptr, loop_ptr;
             s = nptohs(buf + (*off));
             (*off) += sizeof(s);
             /* Sanity check */
@@ -78,9 +80,13 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
                 return 2; /* bad compression ptr */
             if (ptr < DNS_MSG_HDR_SZ)
                 return 2; /* bad compression ptr */
-            loop_detect++;
+            if (loop_detect[ptr])
+                return 4; /* compression loop */
+            loop_detect[(loop_ptr = ptr)] = 1;
+
             rc = rfc1035NameUnpack(buf, sz, &ptr, name + no, ns - no);
-            loop_detect--;
+
+            loop_detect[loop_ptr] = 0;
             return rc;
         } else if (c > RFC1035_MAXLABELSZ) {
             /*
@@ -111,6 +117,61 @@ static int rfc1035NameUnpack(const u_char* buf, size_t sz, off_t* off, char* nam
     return 0;
 }
 
+static int rfc1035NameSkip(const u_char* buf, size_t sz, off_t* off)
+{
+    unsigned char c;
+    size_t        len;
+    /*
+     * loop_detect[] tracks which position in the DNS message it has
+     * jumped to so it can't jump to the same twice, aka loop
+     */
+    static unsigned char loop_detect[0x3FFF] = { 0 };
+    do {
+        if ((*off) >= sz)
+            break;
+        c = *(buf + (*off));
+        if (c > 191) {
+            /* blasted compression */
+            int            rc;
+            unsigned short s;
+            off_t          ptr, loop_ptr;
+            s = nptohs(buf + (*off));
+            (*off) += sizeof(s);
+            /* Sanity check */
+            if ((*off) >= sz)
+                return 1; /* message too short */
+            ptr = s & 0x3FFF;
+            /* Make sure the pointer is inside this message */
+            if (ptr >= sz)
+                return 2; /* bad compression ptr */
+            if (ptr < DNS_MSG_HDR_SZ)
+                return 2; /* bad compression ptr */
+            if (loop_detect[ptr])
+                return 4; /* compression loop */
+            loop_detect[(loop_ptr = ptr)] = 1;
+
+            rc = rfc1035NameSkip(buf, sz, &ptr);
+
+            loop_detect[loop_ptr] = 0;
+            return rc;
+        } else if (c > RFC1035_MAXLABELSZ) {
+            /*
+             * "(The 10 and 01 combinations are reserved for future use.)"
+             */
+            return 3; /* reserved label/compression flags */
+        } else {
+            (*off)++;
+            len = (size_t)c;
+            if (len == 0)
+                break;
+            if ((*off) + len > sz)
+                return 4; /* message is too short */
+            (*off) += len;
+        }
+    } while (c > 0);
+    return 0;
+}
+
 static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname, unsigned short* qtype, unsigned short* qclass)
 {
     char* t;
@@ -137,26 +198,117 @@ static off_t grok_question(const u_char* buf, int len, off_t offset, char* qname
     return offset;
 }
 
+static off_t skip_question(const u_char* buf, int len, off_t offset)
+{
+    if (rfc1035NameSkip(buf, len, &offset))
+        return 0;
+    if (offset + 4 > len)
+        return 0;
+    offset += 4;
+    return offset;
+}
+
+#define EDNS0_TYPE_NSID 3
+#define EDNS0_TYPE_ECS 8
+#define EDNS0_TYPE_COOKIE 10
+#define EDNS0_TYPE_EXTENDED_ERROR 15
+
+static void process_edns0_options(const u_char* buf, int len, struct dns_message* m)
+{
+    unsigned short edns0_type;
+    unsigned short edns0_len;
+    off_t          offset = 0;
+
+    while (len >= 4) {
+        edns0_type = nptohs(buf + offset);
+        edns0_len  = nptohs(buf + offset + 2);
+        if (len < 4 + edns0_len)
+            break;
+        switch (edns0_type) {
+        case EDNS0_TYPE_COOKIE:
+            if (m->edns.option.cookie)
+                break;
+            if (edns0_len == 8) {
+                m->edns.option.cookie = 1;
+                m->edns.cookie.client = buf + offset + 4;
+            } else if (edns0_len >= 16 && edns0_len <= 40) {
+                m->edns.option.cookie     = 1;
+                m->edns.cookie.client     = buf + offset + 4;
+                m->edns.cookie.server     = m->edns.cookie.client + 8;
+                m->edns.cookie.server_len = edns0_len - 8;
+            }
+            break;
+        case EDNS0_TYPE_NSID:
+            if (m->edns.option.nsid)
+                break;
+            m->edns.option.nsid = 1;
+            if (edns0_len) {
+                m->edns.nsid.data = buf + offset + 4;
+                m->edns.nsid.len  = edns0_len;
+            }
+            break;
+        case EDNS0_TYPE_ECS:
+            if (m->edns.option.ecs || edns0_len < 4)
+                break;
+            m->edns.option.ecs        = 1;
+            m->edns.ecs.family        = nptohs(buf + offset + 4);
+            m->edns.ecs.source_prefix = *(buf + offset + 6);
+            m->edns.ecs.scope_prefix  = *(buf + offset + 7);
+            if (edns0_len > 4) {
+                m->edns.ecs.address = buf + offset + 8;
+                m->edns.ecs.len     = edns0_len - 4;
+            }
+            break;
+        case EDNS0_TYPE_EXTENDED_ERROR:
+            if (m->edns.option.ede || edns0_len < 2)
+                break;
+            m->edns.option.ede = 1;
+            m->edns.ede.code   = nptohs(buf + offset + 4);
+            if (edns0_len > 2) {
+                m->edns.ede.text = buf + offset + 6;
+                m->edns.ede.len  = edns0_len - 2;
+            }
+            break;
+        }
+        offset += 4 + edns0_len;
+        len -= 4 + edns0_len;
+    }
+}
+
+int dns_protocol_parse_edns_options = 0;
+
 static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset, dns_message* m)
 {
-    int            x;
-    unsigned short sometype;
-    unsigned short someclass;
     unsigned short us;
-    char           somename[MAX_QNAME_SZ];
-    x = rfc1035NameUnpack(buf, len, &offset, somename, MAX_QNAME_SZ);
-    if (0 != x)
-        return 0;
-    if (offset + 10 > len)
-        return 0;
-    sometype  = nptohs(buf + offset);
-    someclass = nptohs(buf + offset + 2);
-    if (sometype == T_OPT) {
-        m->edns.found  = 1;
-        m->edns.bufsiz = someclass;
-        memcpy(&m->edns.version, buf + offset + 5, 1);
-        us         = nptohs(buf + offset + 6);
-        m->edns.DO = (us >> 15) & 0x01; /* RFC 3225 */
+    /*
+     * OPT RR for EDNS0 MUST be 0 (root domain), so if the first byte of
+     * the name is anything it can't be a valid EDNS0 record.
+     */
+    if (*(buf + offset)) {
+        if (rfc1035NameSkip(buf, len, &offset))
+            return 0;
+        if (offset + 10 > len)
+            return 0;
+    } else {
+        offset++;
+        if (offset + 10 > len)
+            return 0;
+        if (nptohs(buf + offset) == T_OPT && !m->edns.found) {
+            m->edns.found   = 1;
+            m->edns.bufsiz  = nptohs(buf + offset + 2);
+            m->edns.version = *(buf + offset + 5);
+            us              = nptohs(buf + offset + 6);
+            m->edns.DO      = (us >> 15) & 0x01; /* RFC 3225 */
+
+            us = nptohs(buf + offset + 8); // rd len
+            offset += 10;
+            if (offset + us > len)
+                return 0;
+            if (dns_protocol_parse_edns_options && !m->edns.version && us > 0)
+                process_edns0_options(buf + offset, us, m);
+            offset += us;
+            return offset;
+        }
     }
     /* get rdlength */
     us = nptohs(buf + offset + 8);
@@ -167,15 +319,28 @@ static off_t grok_additional_for_opt_rr(const u_char* buf, int len, off_t offset
     return offset;
 }
 
+static off_t skip_rr(const u_char* buf, int len, off_t offset)
+{
+    if (rfc1035NameSkip(buf, len, &offset))
+        return 0;
+    if (offset + 10 > len)
+        return 0;
+    unsigned short us = nptohs(buf + offset + 8);
+    offset += 10;
+    if (offset + us > len)
+        return 0;
+    offset += us;
+    return offset;
+}
+
+int dns_protocol_parse_edns = 0;
+
 int dns_protocol_handler(const u_char* buf, int len, void* udata)
 {
     transport_message* tm = udata;
     unsigned short     us;
-    off_t              offset;
-    int                qdcount;
-    /* int ancount; */
-    /* int nscount; */
-    int arcount;
+    off_t              offset, new_offset;
+    int                qdcount, ancount, nscount, arcount;
 
     dns_message m;
 
@@ -202,8 +367,8 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
     m.rcode = us & 0x0F;
 
     qdcount = nptohs(buf + 4);
-    /* ancount = nptohs(buf + 6); */
-    /* nscount = nptohs(buf + 8); */
+    ancount = nptohs(buf + 6);
+    nscount = nptohs(buf + 8);
     arcount = nptohs(buf + 10);
 
     offset = DNS_MSG_HDR_SZ;
@@ -212,47 +377,65 @@ int dns_protocol_handler(const u_char* buf, int len, void* udata)
      * Grab the first question
      */
     if (qdcount > 0 && offset < len) {
-        off_t new_offset;
-        new_offset = grok_question(buf, len, offset, m.qname, &m.qtype, &m.qclass);
-        if (0 == new_offset) {
+        if (!(new_offset = grok_question(buf, len, offset, m.qname, &m.qtype, &m.qclass))) {
             m.malformed = 1;
             return 0;
         }
         offset = new_offset;
         qdcount--;
     }
+    if (!dns_protocol_parse_edns)
+        goto handle_m;
     assert(offset <= len);
+
     /*
      * Gobble up subsequent questions, if any
      */
     while (qdcount > 0 && offset < len) {
-        off_t          new_offset;
-        char           t_qname[MAX_QNAME_SZ] = { 0 };
-        unsigned short t_qtype;
-        unsigned short t_qclass;
-        new_offset = grok_question(buf, len, offset, t_qname, &t_qtype, &t_qclass);
-        if (0 == new_offset) {
-            /*
-             * point offset to the end of the buffer to avoid any subsequent processing
-             */
-            offset = len;
-            break;
+        if (!(new_offset = skip_question(buf, len, offset))) {
+            goto handle_m;
         }
         offset = new_offset;
         qdcount--;
     }
     assert(offset <= len);
 
-    if (arcount > 0 && offset < len) {
-        off_t new_offset;
-        new_offset = grok_additional_for_opt_rr(buf, len, offset, &m);
-        if (0 == new_offset) {
-            offset = len;
-        } else {
-            offset = new_offset;
+    /*
+     * Gobble up answers, if any
+     */
+    while (ancount > 0 && offset < len) {
+        if (!(new_offset = skip_rr(buf, len, offset))) {
+            goto handle_m;
         }
+        offset = new_offset;
+        ancount--;
+    }
+    assert(offset <= len);
+
+    /*
+     * Gobble up authorities, if any
+     */
+    while (nscount > 0 && offset < len) {
+        if (!(new_offset = skip_rr(buf, len, offset))) {
+            goto handle_m;
+        }
+        offset = new_offset;
+        nscount--;
+    }
+    assert(offset <= len);
+
+    /*
+     * Process additional
+     */
+    while (arcount > 0 && offset < len) {
+        if (!(new_offset = grok_additional_for_opt_rr(buf, len, offset, &m))) {
+            goto handle_m;
+        }
+        offset = new_offset;
         arcount--;
     }
+
+handle_m:
     assert(offset <= len);
     dns_message_handle(&m);
     return 0;

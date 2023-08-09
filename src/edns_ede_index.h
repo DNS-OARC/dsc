@@ -34,14 +34,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_dns_protocol_h
-#define __dsc_dns_protocol_h
+#ifndef __dsc_edns_ede_index_h
+#define __dsc_edns_ede_index_h
 
-#include <sys/types.h>
+#include "dns_message.h"
 
-extern int dns_protocol_parse_edns;
-extern int dns_protocol_parse_edns_options;
+int edns_ede_indexer(const dns_message*);
+int edns_ede_iterator(const char** label);
 
-int dns_protocol_handler(const u_char* buf, int len, void* udata);
+int  edns_ede_code_indexer(const dns_message*);
+int  edns_ede_code_iterator(const char** label);
+void edns_ede_code_reset(void);
 
-#endif /* __dsc_dns_protocol_h */
+int  edns_ede_textlen_indexer(const dns_message*);
+int  edns_ede_textlen_iterator(const char** label);
+void edns_ede_textlen_reset(void);
+
+int  edns_ede_text_indexer(const dns_message*);
+int  edns_ede_text_iterator(const char** label);
+void edns_ede_text_reset(void);
+
+#endif /* __dsc_edns_ede_index_h */

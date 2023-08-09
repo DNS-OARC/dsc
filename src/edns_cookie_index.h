@@ -34,14 +34,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __dsc_dns_protocol_h
-#define __dsc_dns_protocol_h
+#ifndef __dsc_edns_cookie_index_h
+#define __dsc_edns_cookie_index_h
 
-#include <sys/types.h>
+#include "dns_message.h"
 
-extern int dns_protocol_parse_edns;
-extern int dns_protocol_parse_edns_options;
+int  edns_cookie_indexer(const dns_message*);
+int  edns_cookie_iterator(const char** label);
+void edns_cookie_reset(void);
 
-int dns_protocol_handler(const u_char* buf, int len, void* udata);
+int  edns_cookie_len_indexer(const dns_message*);
+int  edns_cookie_len_iterator(const char** label);
+void edns_cookie_len_reset(void);
 
-#endif /* __dsc_dns_protocol_h */
+int  edns_cookie_client_indexer(const dns_message*);
+int  edns_cookie_client_iterator(const char** label);
+void edns_cookie_client_reset(void);
+
+int  edns_cookie_server_indexer(const dns_message*);
+int  edns_cookie_server_iterator(const char** label);
+void edns_cookie_server_reset(void);
+
+#endif /* __dsc_edns_cookie_index_h */

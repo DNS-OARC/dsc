@@ -74,6 +74,9 @@ void*    hash_find(const void* key, hashtbl*);
 void     hash_iter_init(hashtbl*);
 void*    hash_iterate(hashtbl*);
 
+// dst needs to be at least len * 2 in size
+void strtohex(char* dst, const char* src, size_t len);
+
 /*
  * found in lookup3.c
  */

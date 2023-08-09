@@ -155,3 +155,14 @@ void* hash_iterate(hashtbl* tbl)
     }
     return this ? this->data : NULL;
 }
+
+// dst needs to be at least len * 2 in size
+void strtohex(char* dst, const char* src, size_t len)
+{
+    const char xx[] = "0123456789ABCDEF";
+    size_t     i;
+    for (i = 0; i < len; i++) {
+        dst[i * 2]     = xx[(unsigned char)src[i] >> 4];
+        dst[i * 2 + 1] = xx[(unsigned char)src[i] & 0xf];
+    }
+}
