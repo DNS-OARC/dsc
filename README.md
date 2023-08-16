@@ -39,7 +39,7 @@ To install the dependencies under Debian/Ubuntu:
 apt-get install -y libpcap-dev
 ```
 
-To install the dependencies under CentOS (with EPEL enabled):
+To install the dependencies under CentOS (with EPEL/PowerTools enabled):
 ```
 yum install -y libpcap-devel
 ```
