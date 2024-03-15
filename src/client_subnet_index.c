@@ -45,6 +45,7 @@ static hashfunc   ipnet_hashfunc;
 static hashkeycmp ipnet_cmpfunc;
 static inX_addr   v4mask;
 static inX_addr   v6mask;
+static int        v4set = 0, v6set = 0;
 
 #define MAX_ARRAY_SZ 65536
 static hashtbl* theHash  = NULL;
@@ -113,18 +114,24 @@ void client_subnet_reset()
 
 void client_subnet_init(void)
 {
-    inXaddr_pton("255.255.255.0", &v4mask);
-    inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
+    if (!v4set) {
+        inXaddr_pton("255.255.255.0", &v4mask);
+    }
+    if (!v6set) {
+        inXaddr_pton("ffff:ffff:ffff:ffff:ffff:ffff:0000:0000", &v6mask);
+    }
 }
 
 int client_subnet_v4_mask_set(const char* mask)
 {
+    v4set = 1;
     dsyslogf(LOG_INFO, "change v4 mask to %s", mask);
     return inXaddr_pton(mask, &v4mask);
 }
 
 int client_subnet_v6_mask_set(const char* mask)
 {
+    v6set = 1;
     dsyslogf(LOG_INFO, "change v6 mask to %s", mask);
     return inXaddr_pton(mask, &v6mask);
 }
