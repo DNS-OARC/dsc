@@ -364,13 +364,13 @@
     {
       "Class": "ok",
       "ClientSubnet": [
-        { "val": "172.17.0.0", "count": 3 }
+        { "val": "172.17.0.16", "count": 3 }
       ]
     },
     {
       "Class": "non-auth-tld",
       "ClientSubnet": [
-        { "val": "172.17.0.0", "count": 1 }
+        { "val": "172.17.0.16", "count": 1 }
       ]
     }
   ]
@@ -449,7 +449,7 @@
     {
       "All": "ALL",
       "ClientSubnet": [
-        { "val": "172.17.0.0", "count": 4 }
+        { "val": "172.17.0.16", "count": 4 }
       ]
     }
   ]
