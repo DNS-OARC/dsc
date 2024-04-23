@@ -1,3 +1,21 @@
+2024-04-23 Jerry Lundström
+
+    Release 2.15.1
+
+    This release fixes client subnet indexer which overwrote the mask
+    options during initialization so the conf option `client_v4_mask` and
+    `client_v6_mask` was never used.
+
+    Other changes:
+    - Update documentation
+    - Update builtin known TLDs based on PSL
+    - Update copyright year
+
+    d577a97 Copyright
+    f71edff Known TLDs
+    dedafdd Client mask
+    8ef947c Doc
+
 2023-08-09 Jerry Lundström
 
     Release 2.15.0
