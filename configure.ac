@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2023, OARC, Inc.
+# Copyright (c) 2008-2024 OARC, Inc.
 # Copyright (c) 2007-2008, Internet Systems Consortium, Inc.
 # Copyright (c) 2003-2007, The Measurement Factory, Inc.
 # All rights reserved.
@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.61)
-AC_INIT([DSC], [2.15.0], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
+AC_INIT([DSC], [2.15.1], [dsc@dns-oarc.net], [dsc], [https://github.com/DNS-OARC/dsc/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/md_array.c])
 AC_CONFIG_HEADER([src/config.h])

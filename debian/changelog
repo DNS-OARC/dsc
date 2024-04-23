@@ -1,3 +1,23 @@
+dsc (2.15.1-1~unstable+1) unstable; urgency=low
+
+  * Release 2.15.1
+
+    This release fixes client subnet indexer which overwrote the mask
+    options during initialization so the conf option `client_v4_mask` and
+    `client_v6_mask` was never used.
+
+    Other changes:
+    - Update documentation
+    - Update builtin known TLDs based on PSL
+    - Update copyright year
+
+    d577a97 Copyright
+    f71edff Known TLDs
+    dedafdd Client mask
+    8ef947c Doc
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Tue, 23 Apr 2024 14:52:53 +0200
+
 dsc (2.15.0-1~unstable+1) unstable; urgency=low
 
   * Release 2.15.0

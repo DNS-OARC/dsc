@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.15.0
+Version:        2.15.1
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -70,6 +70,20 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Apr 23 2024 Jerry Lundström <lundstrom.jerry@gmail.com> 2.15.1-1
+- Release 2.15.1
+  * This release fixes client subnet indexer which overwrote the mask
+    options during initialization so the conf option `client_v4_mask` and
+    `client_v6_mask` was never used.
+  * Other changes:
+    - Update documentation
+    - Update builtin known TLDs based on PSL
+    - Update copyright year
+  * Commits:
+    d577a97 Copyright
+    f71edff Known TLDs
+    dedafdd Client mask
+    8ef947c Doc
 * Wed Aug 09 2023 Jerry Lundström <lundstrom.jerry@gmail.com> 2.15.0-1
 - Release 2.15.0
   * This release fixes DNS parsing w.r.t. EDNS, implements better loop
