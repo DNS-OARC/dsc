@@ -3,7 +3,7 @@ Upstream-Name: dsc
 Source: https://github.com/DNS-OARC/dsc
 
 Files: *
-Copyright: 2008-2023 OARC, Inc.
+Copyright: 2008-2024 OARC, Inc.
            2007-2008 Internet Systems Consortium, Inc.
            2003-2007 The Measurement Factory, Inc.
 License: BSD-3-Clause
