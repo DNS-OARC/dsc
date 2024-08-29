@@ -375,7 +375,7 @@ int response_time_indexer(const dns_message* m)
 
 int response_time_iterator(const char** label)
 {
-    char label_buf[128];
+    static char label_buf[128];
 
     if (!label) {
         next_iter = 0;
