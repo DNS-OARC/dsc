@@ -1,5 +1,5 @@
 Name:           dsc
-Version:        2.15.1
+Version:        2.15.2
 Release:        1%{?dist}
 Summary:        DNS Statistics Collector
 Group:          Productivity/Networking/DNS/Utilities
@@ -70,6 +70,21 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Aug 30 2024 Jerry Lundström <lundstrom.jerry@gmail.com> 2.15.2-1
+- Release 2.15.2
+  * This releases fixes 3 issues detected by code analysis tools:
+    - File not closed and memory not freed during error while loading known
+      TLD file
+    - https://github.com/DNS-OARC/dsc/security/code-scanning/22
+      label buffer should be static
+    - https://github.com/DNS-OARC/dsc/security/code-scanning/20
+      unsigned difference expression
+  * Commits:
+    855f037 CodeQL
+    b00cb11 Stack
+    c4d3634 Sonar
+    26c3b9e Badges, fixes
+    b4a9171 Workflow
 * Tue Apr 23 2024 Jerry Lundström <lundstrom.jerry@gmail.com> 2.15.1-1
 - Release 2.15.1
   * This release fixes client subnet indexer which overwrote the mask
