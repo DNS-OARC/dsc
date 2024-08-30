@@ -1,3 +1,23 @@
+dsc (2.15.2-1~unstable+1) unstable; urgency=low
+
+  * Release 2.15.2
+
+    This releases fixes 3 issues detected by code analysis tools:
+    - File not closed and memory not freed during error while loading known
+      TLD file
+    - https://github.com/DNS-OARC/dsc/security/code-scanning/22
+      label buffer should be static
+    - https://github.com/DNS-OARC/dsc/security/code-scanning/20
+      unsigned difference expression
+
+    855f037 CodeQL
+    b00cb11 Stack
+    c4d3634 Sonar
+    26c3b9e Badges, fixes
+    b4a9171 Workflow
+
+ -- Jerry Lundström <lundstrom.jerry@gmail.com>  Fri, 30 Aug 2024 10:49:27 +0200
+
 dsc (2.15.1-1~unstable+1) unstable; urgency=low
 
   * Release 2.15.1

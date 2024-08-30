@@ -637,6 +637,7 @@ int load_knowntlds(const char* file)
 
     if (!(new_KnownTLDS = xrealloc(new_KnownTLDS, (new_size + 1) * sizeof(char*)))) {
         dsyslog(LOG_ERR, "out of memory");
+        fclose(fp);
         return 0;
     }
     new_KnownTLDS[new_size] = ".";
@@ -656,11 +657,15 @@ int load_knowntlds(const char* file)
 
         if (!(new_KnownTLDS = xrealloc(new_KnownTLDS, (new_size + 1) * sizeof(char*)))) {
             dsyslog(LOG_ERR, "out of memory");
+            free(buffer);
+            fclose(fp);
             return 0;
         }
         new_KnownTLDS[new_size] = xstrdup(buffer);
         if (!new_KnownTLDS[new_size]) {
             dsyslog(LOG_ERR, "out of memory");
+            free(buffer);
+            fclose(fp);
             return 0;
         }
         new_size++;
