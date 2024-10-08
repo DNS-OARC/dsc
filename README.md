@@ -24,7 +24,6 @@ Issues should be reported here:
 
 General support and discussion:
 - Mattermost: https://chat.dns-oarc.net/community/channels/oarc-software
-- mailing-list: https://lists.dns-oarc.net/mailman/listinfo/dsc
 
 ## Dependencies
 
