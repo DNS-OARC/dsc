@@ -28,6 +28,9 @@ BuildRequires:  pkgconfig
 BuildRequires:  dnswire-devel >= 0.4.0
 BuildRequires:  libuv-devel
 BuildRequires:  python3
+%if 0%{?suse_version}
+BuildRequires:  netcfg
+%endif
 Requires:       python3
 
 %description
@@ -56,7 +59,7 @@ sh autogen.sh
 
 
 %check
-%make_build test
+%make_build -j1 test
 
 
 %files
