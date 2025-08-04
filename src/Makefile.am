@@ -1,5 +1,6 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in $(srcdir)/config.h.in
-CLEANFILES = dsc.conf.sample dsc.1 dsc.conf.5 *.gcda *.gcno *.gcov
+CLEANFILES = dsc.conf.sample dsc.1 dsc.conf.5 *.gcda *.gcno *.gcov \
+  */*.gcda */*.gcno */*.gcov
 
 SUBDIRS = test
 
