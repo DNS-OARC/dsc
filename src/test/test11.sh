@@ -9,7 +9,9 @@ test -f 1458044657.dscdata.xml || sleep 2
 test -f 1458044657.dscdata.xml || sleep 3
 test -f 1458044657.dscdata.xml
 
-grep -v "writing to 1458044657.dscdata.xml." test11.out | grep -v "_index: No database loaded for" > test11.out.tmp
+grep -v "writing to 1458044657.dscdata.xml." test11.out | \
+  grep -v "_index: No database loaded for" | \
+  grep -v "^libgcov profiling error:" > test11.out.tmp
 mv test11.out.tmp test11.out
 
 diff -u test11.out "$srcdir/test11.gold"
