@@ -7,8 +7,8 @@ Build-Depends: debhelper (>= 10), build-essential, automake, autoconf,
  libdnswire-dev (>= 0.4.0), libuv1-dev, python3 (>= 3.5)
 Standards-Version: 3.9.4
 Homepage: https://www.dns-oarc.net/oarc/data/dsc
-Vcs-Git: https://github.com/DNS-OARC/dsc.git
-Vcs-Browser: https://github.com/DNS-OARC/dsc
+Vcs-Git: https://codeberg.org/DNS-OARC/dsc.git
+Vcs-Browser: https://codeberg.org/DNS-OARC/dsc
 
 Package: dsc
 Architecture: any

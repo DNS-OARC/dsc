@@ -53,7 +53,7 @@ and converted for import into for example InfluxDB which can then be
 accessed by Grafana for visualzation, see this wiki on how to set up that:
 
 .RS
-\fIhttps://github.com/DNS-OARC/dsc-datatool/wiki/Setting-up-a-test-Grafana\fP
+\fIhttps://codeberg.org/DNS-OARC/dsc-datatool/wiki/Setting-up-a-test-Grafana\fP
 .RE
 
 .I dsc
