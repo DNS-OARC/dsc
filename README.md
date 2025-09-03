@@ -10,17 +10,17 @@ central systems for processing, displaying and archiving.
 Together with `dsc-datatool` the aggregated data can be furthur enriched
 and converted for import into for example InfluxDB which can then be
 accessed by Grafana for visualzation, see this wiki on how to set up that:
-- https://github.com/DNS-OARC/dsc-datatool/wiki/Setting-up-a-test-Grafana
+- https://codeberg.org/DNS-OARC/dsc-datatool/wiki/Setting-up-a-test-Grafana
 
 DSC data transforming and enriching tool can be found here:
-- https://github.com/DNS-OARC/dsc-datatool
+- https://codeberg.org/DNS-OARC/dsc-datatool
 
 More information about DSC may be found here:
 - https://www.dns-oarc.net/tools/dsc
 - https://www.dns-oarc.net/oarc/data/dsc
 
 Issues should be reported here:
-- https://github.com/DNS-OARC/dsc/issues
+- https://codeberg.org/DNS-OARC/dsc/issues
 
 General support and discussion:
 - Mattermost: https://chat.dns-oarc.net/community/channels/oarc-software
@@ -64,7 +64,7 @@ then run `configure` with `--enable-dnstap`.
 `dnswire` packages for Debian, Ubuntu and CentOS exists at
 [https://dev.dns-oarc.net/packages/](https://dev.dns-oarc.net/packages/),
 for other distributions please see
-[https://github.com/DNS-OARC/dnswire](https://github.com/DNS-OARC/dnswire).
+[https://codeberg.org/DNS-OARC/dnswire](https://codeberg.org/DNS-OARC/dnswire).
 
 ## Building from source tarball
 
@@ -90,7 +90,7 @@ files, this will require a build environment with autoconf, automake, libtool
 and pkgconfig to be installed.
 
 ```
-git clone https://github.com/DNS-OARC/dsc.git
+git clone https://codeberg.org/DNS-OARC/dsc.git
 cd dsc
 git submodule update --init
 ./autogen.sh
