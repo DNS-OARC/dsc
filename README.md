@@ -1,3 +1,5 @@
+# NOTE: Moved to https://codeberg.org/DNS-OARC/dsc
+
 # DNS Statistics Collector
 
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=dns-oarc%3Adsc) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dns-oarc%3Adsc&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=dns-oarc%3Adsc)
